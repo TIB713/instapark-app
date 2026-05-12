@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
+import { deleteItem as secureDelete } from "../../lib/secure";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
@@ -41,7 +41,7 @@ export default function DriverHome() {
       {
         text: "Sign Out", style: "destructive",
         onPress: async () => {
-          await SecureStore.deleteItemAsync("auth_token");
+          await secureDelete("auth_token");
           await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
           signOut();
           router.replace("/(auth)/login");

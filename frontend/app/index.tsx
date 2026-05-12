@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import * as SecureStore from "expo-secure-store";
+import { getItem } from "../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useAppStore } from "../lib/store";
@@ -14,7 +14,7 @@ export default function Index() {
   useEffect(() => {
     const restore = async () => {
       try {
-        const token = await SecureStore.getItemAsync("auth_token");
+        const token = await getItem("auth_token");
         if (token) {
           try {
             const { data } = await api.get("/auth/me");

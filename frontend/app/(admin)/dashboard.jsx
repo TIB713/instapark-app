@@ -8,12 +8,11 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
+import { deleteItem as secureDelete } from "../../lib/secure";
 import { format } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
@@ -82,7 +81,7 @@ export default function Dashboard() {
         text: "Sign Out",
         style: "destructive",
         onPress: async () => {
-          await SecureStore.deleteItemAsync("auth_token");
+          await secureDelete("auth_token");
           await AsyncStorage.multiRemove([
             "driver_session",
             "current_event_id",

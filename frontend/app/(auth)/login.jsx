@@ -13,7 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
+import { setItem } from "../../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
@@ -44,7 +44,7 @@ export default function Login() {
           email: email.trim(),
           password,
         });
-        await SecureStore.setItemAsync("auth_token", data.token);
+        await setItem("auth_token", data.token);
         setToken(data.token);
         setUser(data.user);
         router.replace("/(admin)/dashboard");
@@ -58,7 +58,7 @@ export default function Login() {
           employee_id: empId.trim().toUpperCase(),
           pin,
         });
-        await SecureStore.setItemAsync("auth_token", data.token);
+        await setItem("auth_token", data.token);
         await AsyncStorage.setItem(
           "driver_session",
           JSON.stringify(data.driver)
