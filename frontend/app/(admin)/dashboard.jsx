@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,21 +76,19 @@ export default function Dashboard() {
   };
 
   const handleSignOut = () => {
+    const doSignOut = async () => {
+      await secureDelete("auth_token");
+      await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
+      signOut();
+      router.replace("/(auth)/login");
+    };
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Sign out?")) doSignOut();
+      return;
+    }
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await secureDelete("auth_token");
-          await AsyncStorage.multiRemove([
-            "driver_session",
-            "current_event_id",
-          ]);
-          signOut();
-          router.replace("/(auth)/login");
-        },
-      },
+      { text: "Sign Out", style: "destructive", onPress: doSignOut },
     ]);
   };
 

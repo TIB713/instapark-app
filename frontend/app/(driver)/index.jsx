@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -36,17 +36,19 @@ export default function DriverHome() {
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
   const handleSignOut = () => {
+    const doSignOut = async () => {
+      await secureDelete("auth_token");
+      await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
+      signOut();
+      router.replace("/(auth)/login");
+    };
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("Sign out?")) doSignOut();
+      return;
+    }
     Alert.alert("Sign Out", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out", style: "destructive",
-        onPress: async () => {
-          await secureDelete("auth_token");
-          await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
-          signOut();
-          router.replace("/(auth)/login");
-        },
-      },
+      { text: "Sign Out", style: "destructive", onPress: doSignOut },
     ]);
   };
 
