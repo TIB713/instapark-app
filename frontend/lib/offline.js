@@ -1,80 +1,57 @@
-import { Platform } from "react-native";
-import api from "./api";
+import * as FileSystem from "expo-file-system";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// expo-sqlite is not supported on web (wa-sqlite.wasm missing). Provide stubs on web.
-const isWeb = Platform.OS === "web";
-
-let SQLite, FileSystem;
-if (!isWeb) {
-  // Lazy native imports to avoid web bundling failure
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  SQLite = require("expo-sqlite");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  FileSystem = require("expo-file-system");
-}
-
-let dbPromise = null;
-const getDb = async () => {
-  if (isWeb) return null;
-  if (!dbPromise) dbPromise = SQLite.openDatabaseAsync("instapark_offline.db");
-  const db = await dbPromise;
-  await db.execAsync(
-    `CREATE TABLE IF NOT EXISTS handover_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, car_id TEXT NOT NULL, local_path TEXT NOT NULL, created_at INTEGER NOT NULL);`
-  );
-  return db;
-};
+const QUEUE_KEY = "offline_handover_queue";
 
 export const enqueueHandover = async (carId, localPath) => {
-  if (isWeb) return;
-  const db = await getDb();
-  await db.runAsync(
-    "INSERT INTO handover_queue (car_id, local_path, created_at) VALUES (?, ?, ?)",
-    [carId, localPath, Date.now()]
-  );
+  try {
+    const existing = await AsyncStorage.getItem(QUEUE_KEY);
+    const queue = existing ? JSON.parse(existing) : [];
+    queue.push({ carId, localPath, timestamp: Date.now() });
+    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  } catch {}
 };
 
 export const getQueueCount = async () => {
-  if (isWeb) return 0;
   try {
-    const db = await getDb();
-    const row = await db.getFirstAsync(
-      "SELECT COUNT(*) as count FROM handover_queue"
-    );
-    return row?.count || 0;
+    const existing = await AsyncStorage.getItem(QUEUE_KEY);
+    const queue = existing ? JSON.parse(existing) : [];
+    return queue.length;
   } catch {
     return 0;
   }
 };
 
 export const processPendingQueue = async () => {
-  if (isWeb) return;
   try {
-    const db = await getDb();
-    const items = await db.getAllAsync(
-      "SELECT * FROM handover_queue ORDER BY created_at ASC"
-    );
-    for (const it of items) {
+    const existing = await AsyncStorage.getItem(QUEUE_KEY);
+    if (!existing) return;
+    const queue = JSON.parse(existing);
+    if (!queue.length) return;
+    const remaining = [];
+    for (const item of queue) {
       try {
+        const fileInfo = await FileSystem.getInfoAsync(item.localPath);
+        if (!fileInfo.exists) continue;
         const formData = new FormData();
         formData.append("file", {
-          uri: it.local_path,
+          uri: item.localPath,
           type: "image/jpeg",
           name: "handover.jpg",
         });
-        formData.append("folder", `handover/${it.car_id}`);
+        formData.append("folder", `handover/${item.carId}`);
+        const { default: api } = await import("./api");
         const up = await api.post("/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        await api.patch(`/cars/${it.car_id}/deliver`, {
+        await api.patch(`/cars/${item.carId}/deliver`, {
           delivery_photo_url: up.data.url,
         });
-        await db.runAsync("DELETE FROM handover_queue WHERE id = ?", [it.id]);
-        try {
-          await FileSystem.deleteAsync(it.local_path, { idempotent: true });
-        } catch {}
+        try { await FileSystem.deleteAsync(item.localPath); } catch {}
       } catch {
-        // Skip and try next time
+        remaining.push(item);
       }
     }
+    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(remaining));
   } catch {}
 };

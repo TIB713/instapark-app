@@ -54,7 +54,8 @@ export default function DriverStats() {
     try {
       const { data: evs } = await api.get("/events");
       const results = [];
-      for (const e of evs) {
+      const limited = (evs || []).slice(0, 20);
+      for (const e of limited) {
         try {
           const { data: drs } = await api.get(`/events/${e.id}/drivers`);
           const found = drs.find((d) => d.id === driverId && d.assigned);

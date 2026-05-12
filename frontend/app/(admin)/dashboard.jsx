@@ -49,7 +49,13 @@ export default function Dashboard() {
         }
       }
       const { data: refreshed } = await api.get("/events");
-      setEvents(refreshed || []);
+      const seen = new Set();
+      const unique = (refreshed || []).filter((e) => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      });
+      setEvents(unique);
       try {
         const { data: drs } = await api.get("/drivers");
         setDrivers(drs || []);
@@ -281,7 +287,7 @@ export default function Dashboard() {
                       </Text>
                     </View>
                     <Text className="text-gray-500 text-xs ml-2">
-                      {e.total_cars || 0}/{e.max_cars} cars
+                      0/{e.max_cars} cars
                     </Text>
                   </View>
                 </View>

@@ -10,6 +10,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
+function Lbl({ children }) {
+  return <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2">{children}</Text>;
+}
+
 export default function CheckIn() {
   const router = useRouter();
   const { driver, currentEventId } = useAppStore();
@@ -148,8 +152,4 @@ export default function CheckIn() {
       </KeyboardAvoidingView>
     </View>
   );
-}
-
-function Lbl({ children }) {
-  return <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2">{children}</Text>;
 }
