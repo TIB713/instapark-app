@@ -1,0 +1,51 @@
+{
+  "summary": "Initial Expo Web preview testing for InstaPark. Encountered TWO critical web-bundling/runtime blockers. Fixed two: (1) missing babel-preset-expo dependency; (2) expo-sqlite not supported on web. A THIRD blocker remains: expo-secure-store fails at runtime on web ('ExpoSecureStore.default.getValueWithKeyAsync is not a function'), preventing admin login and all downstream flows.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Admin login (and any auth-protected API call)",
+        "issue": "Runtime error 'ExpoSecureStore.default.getValueWithKeyAsync is not a function' surfaces inside the login screen error banner when SIGN IN is tapped. Root cause: expo-secure-store@55.0.13 is incompatible with Expo SDK 54 (expected ~15.0.8). lib/api.js axios request interceptor calls SecureStore.getItemAsync which throws on web, causing the request to never reach the backend. Same issue will affect session restore in app/index.tsx.",
+        "affected_testIDs": ["login-submit", "admin-email-input", "admin-password-input"]
+      },
+      {
+        "flow": "Web bundling (initial blocker - FIXED)",
+        "issue": "babel-preset-expo was missing from node_modules / package.json. Metro web bundle failed with 'Cannot find module babel-preset-expo'. Added via `yarn add -D babel-preset-expo@55.0.21`.",
+        "affected_testIDs": []
+      },
+      {
+        "flow": "Web bundling (second blocker - FIXED)",
+        "issue": "expo-sqlite/web/worker.ts references missing wa-sqlite.wasm causing 'Unable to resolve module ./wa-sqlite/wa-sqlite.wasm' bundle failure on web. lib/offline.js imports expo-sqlite statically, transitively pulled in by app/(driver)/tasks.jsx. Created lib/offline.web.js stub (Metro web platform extension) to provide no-op enqueueHandover/getQueueCount/processPendingQueue on web. Also refactored lib/offline.js to lazy-require expo-sqlite via Platform.OS check.",
+        "affected_testIDs": []
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "expo-secure-store / lib/api.js", "issue": "expo-secure-store v55 throws at runtime on web. Either downgrade to ~15.0.8 (matches SDK 54 expectation) or wrap SecureStore calls with Platform.OS check and fall back to AsyncStorage/localStorage for web."},
+      {"component": "lib/offline.js (expo-sqlite)", "issue": "expo-sqlite v55 mismatched with SDK 54 (~16.0.10 expected). The wa-sqlite.wasm asset shipped with v55 path differs and breaks web bundling."}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "FIX expo-secure-store web compatibility: Either (a) downgrade to ~15.0.8 to match Expo SDK 54, or (b) add a web shim in lib/api.js (use localStorage on web). Without this, NO auth flow works on Expo Web.",
+    "Consider downgrading mismatched packages flagged by expo (expo-sqlite, expo-file-system, async-storage, datetimepicker, image-picker, netinfo, react-native-svg) to versions expected by SDK 54 — version mismatches are causing real runtime breakage, not just warnings.",
+    "After fixes, re-test: admin login → dashboard → create driver (capture EMP-id/PIN via Alert) → sign out → driver login → driver-home rendering."
+  ],
+  "critical_code_review_comments": [
+    "lib/api.js calls SecureStore.getItemAsync inside an axios request interceptor — every API request fails on web because of expo-secure-store native module mismatch. Needs Platform-aware token storage.",
+    "package.json did not include babel-preset-expo even though babel.config.js requires it. This must be added explicitly.",
+    "lib/offline.js statically imports expo-sqlite at module top; since Expo Router preloads all routes, this brings down the entire web bundle. Use Metro platform extensions (.web.js / .native.js) — now done as a stopgap."
+  ],
+  "updated_files": [
+    "/app/frontend/lib/offline.js (refactored to Platform.OS-aware lazy require)",
+    "/app/frontend/lib/offline.web.js (new web stub for expo-sqlite)",
+    "/app/frontend/package.json (yarn add -D babel-preset-expo@55.0.21)"
+  ],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "~15% (login screen renders; auth submission blocked by SecureStore web error; all downstream flows unreachable)"},
+  "seed_data_creation": "Attempted to create TEST_Driver_<ts> via admin → manage-drivers, but never reached dashboard due to SecureStore blocker. No seed data created on the live backend.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login screen now renders on Expo Web after the two fixes above. The blocker is expo-secure-store: clicking SIGN IN surfaces 'ExpoSecureStore.default.getValueWithKeyAsync is not a function' in the red login-error banner (visible in screenshot). Once main agent adds a web shim for SecureStore (or downgrades to ~15.0.8), restart expo, clear .metro-cache, then re-run the full flow: admin login → dashboard testIDs → manage-drivers create driver (capture emp_id/PIN from Alert dialog — playwright dialog handler works) → signout → driver login → driver-home. The page.on('dialog') pattern in the previous scripts captures Alert.alert messages on web.",
+  "rca_of_issue": "Three cascading SDK-54 ↔ package-version mismatches: (1) babel-preset-expo absent → bundler can't transform any file; (2) expo-sqlite@55 ships a wa-sqlite.wasm path not resolvable on web → static import in lib/offline.js (preloaded by Expo Router) breaks the whole web bundle; (3) expo-secure-store@55 native-binding shape differs from web shim → SecureStore.getItemAsync throws at runtime inside axios request interceptor → every authenticated API call (including /auth/admin/login itself, which calls the interceptor) fails before hitting the network. Mitigation: align packages with `npx expo install --check` versions, or add Platform.OS-aware shims."
+}
