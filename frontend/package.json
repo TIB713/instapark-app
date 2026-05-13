@@ -28,6 +28,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
+    "react-native-css-interop": "0.1.22",
     "react-native-gesture-handler": "~2.16.1",
     "react-native-qrcode-svg": "^6.3.0",
     "react-native-reanimated": "~3.10.1",
@@ -35,6 +36,7 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "^15.2.0",
     "react-native-web": "~0.19.10",
+    "react-native-worklets-core": "^1.6.3",
     "tailwindcss": "3.3.5",
     "zustand": "^4.5.0"
   },
@@ -42,7 +44,11 @@
     "@babel/core": "^7.25.2",
     "@types/react": "~18.2.79",
     "babel-preset-expo": "~11.0.14",
+    "lightningcss": "^1.32.0",
     "typescript": "~5.3.3"
+  },
+  "resolutions": {
+    "react-native-css-interop": "0.1.22"
   },
   "private": true
 }

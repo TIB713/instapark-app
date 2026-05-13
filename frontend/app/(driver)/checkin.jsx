@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,16 +19,20 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
-function Lbl({ children }) {
-  return <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2">{children}</Text>;
-}
-
 const validatePlate = (plate) => {
   const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
   const standard = /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{1,4}$/.test(cleaned);
   const bharat = /^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$/.test(cleaned);
   return standard || bharat;
 };
+
+function Lbl({ children }) {
+  return (
+    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 8, marginTop: 4 }}>
+      {children}
+    </Text>
+  );
+}
 
 export default function CheckIn() {
   const router = useRouter();
@@ -46,8 +59,11 @@ export default function CheckIn() {
         const savedPhotos = await AsyncStorage.getItem("checkin_photos");
         if (draft) {
           const d = JSON.parse(draft);
-          setPlate(d.plate || ""); setColor(d.color || ""); setMake(d.make || "");
-          setNotes(d.notes || ""); setSelectedGate(d.selectedGate || "");
+          setPlate(d.plate || "");
+          setColor(d.color || "");
+          setMake(d.make || "");
+          setNotes(d.notes || "");
+          setSelectedGate(d.selectedGate || "");
         }
         if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
       } catch {}
@@ -84,8 +100,11 @@ export default function CheckIn() {
     try {
       const { data: car } = await api.post("/cars", {
         plate: plate.trim().toUpperCase(),
-        color: color.trim(), make: make.trim(), notes: notes.trim(),
-        gate: selectedGate || "", event_id: currentEventId,
+        color: color.trim(),
+        make: make.trim(),
+        notes: notes.trim(),
+        gate: selectedGate || "",
+        event_id: currentEventId,
         check_in_driver_id: resolvedDriverId,
       });
       const urls = [];
@@ -109,70 +128,182 @@ export default function CheckIn() {
   };
 
   return (
-    <View className="flex-1 bg-[#F9FAFB]" testID="checkin-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#059669]">
-        <View className="bg-[#059669] px-5 py-4 rounded-b-[30px] flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2 mr-3">
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text className="text-white text-xl font-black flex-1">Check In Vehicle</Text>
+    <View style={{ flex: 1, backgroundColor: "#ECFDF5" }} testID="checkin-screen">
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#059669" }}>
+        <View
+          style={{
+            backgroundColor: "#059669",
+            borderBottomLeftRadius: 44,
+            borderBottomRightRadius: 44,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+            paddingBottom: 24,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(8,145,178,0.5)",
+              borderBottomLeftRadius: 44,
+              borderBottomRightRadius: 44,
+            }}
+          />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+            >
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+              Check In Vehicle
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-        <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
+
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 18 }} keyboardShouldPersistTaps="handled">
           <Lbl>LICENSE PLATE *</Lbl>
-          <View className="bg-white rounded-2xl px-4 border border-gray-200 mb-3">
-            <TextInput testID="plate-input" value={plate} onChangeText={(v) => setPlate(v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase())} placeholder="GJ01AB1234" autoCapitalize="characters" maxLength={13} className="py-3 text-base" />
+          <View style={inputRow}>
+            <Ionicons name="car-outline" size={20} color="#059669" />
+            <TextInput
+              testID="plate-input"
+              value={plate}
+              onChangeText={(v) => setPlate(v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase())}
+              placeholder="GJ01AB1234"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="characters"
+              maxLength={13}
+              style={textInput}
+            />
           </View>
           <Lbl>COLOR</Lbl>
-          <View className="bg-white rounded-2xl px-4 border border-gray-200 mb-3">
-            <TextInput value={color} onChangeText={setColor} placeholder="Black" className="py-3 text-base" />
+          <View style={inputRow}>
+            <Ionicons name="color-palette-outline" size={20} color="#059669" />
+            <TextInput value={color} onChangeText={setColor} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
           <Lbl>MAKE / MODEL</Lbl>
-          <View className="bg-white rounded-2xl px-4 border border-gray-200 mb-3">
-            <TextInput value={make} onChangeText={setMake} placeholder="Honda Civic" className="py-3 text-base" />
+          <View style={inputRow}>
+            <Ionicons name="construct-outline" size={20} color="#059669" />
+            <TextInput value={make} onChangeText={setMake} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
           <Lbl>NOTES</Lbl>
-          <View className="bg-white rounded-2xl px-4 border border-gray-200 mb-3">
-            <TextInput value={notes} onChangeText={setNotes} multiline placeholder="Existing damage, special notes..." className="py-3 text-base" style={{ minHeight: 60 }} />
+          <View style={[inputRow, { alignItems: "flex-start", paddingTop: 12 }]}>
+            <Ionicons name="document-text-outline" size={20} color="#059669" />
+            <TextInput
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              placeholder="Existing damage, special notes..."
+              placeholderTextColor="#9CA3AF"
+              style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
+            />
           </View>
 
           {eventGates.length > 0 && (
             <>
               <Lbl>ENTRY GATE</Lbl>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} className="mb-3">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }} style={{ marginBottom: 12 }}>
                 {eventGates.map((g) => (
-                  <TouchableOpacity key={g} onPress={() => setSelectedGate(g)} className={`px-4 py-2 rounded-full ${selectedGate === g ? "bg-[#059669]" : "bg-white border border-[#059669]"}`}>
-                    <Text className={`text-xs font-bold ${selectedGate === g ? "text-white" : "text-[#059669]"}`}>{g}</Text>
+                  <TouchableOpacity
+                    key={g}
+                    onPress={() => setSelectedGate(g)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 99,
+                      backgroundColor: selectedGate === g ? "#059669" : "#fff",
+                      borderWidth: 1,
+                      borderColor: "#059669",
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: selectedGate === g ? "#fff" : "#059669", letterSpacing: 0.5 }}>{g}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </>
           )}
 
-          <Lbl>VEHICLE PHOTOS * (min 1, max 5)</Lbl>
-          <View className="flex-row flex-wrap gap-2 mb-4">
+          <Lbl>VEHICLE PHOTOS * (MIN 1, MAX 5)</Lbl>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
             {photos.map((u, i) => (
               <View key={i} style={{ width: 80, height: 80 }}>
-                <Image source={{ uri: u }} style={{ width: 80, height: 80, borderRadius: 12 }} />
-                <TouchableOpacity onPress={() => setPhotos(photos.filter((_, k) => k !== i))} className="absolute -top-1 -right-1 bg-red-500 rounded-full p-1">
+                <Image source={{ uri: u }} style={{ width: 80, height: 80, borderRadius: 16 }} />
+                <TouchableOpacity
+                  onPress={() => setPhotos(photos.filter((_, k) => k !== i))}
+                  style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#F43F5E", borderRadius: 99, padding: 4 }}
+                >
                   <Ionicons name="close" size={14} color="#fff" />
                 </TouchableOpacity>
               </View>
             ))}
             {photos.length < 5 && (
-              <TouchableOpacity onPress={takePhoto} testID="add-photo-btn" className="bg-white items-center justify-center" style={{ width: 80, height: 80, borderRadius: 12, borderWidth: 2, borderColor: "#D1D5DB", borderStyle: "dashed" }}>
+              <TouchableOpacity
+                onPress={takePhoto}
+                testID="add-photo-btn"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 16,
+                  borderWidth: 2,
+                  borderColor: "#059669",
+                  borderStyle: "dashed",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#fff",
+                }}
+              >
                 <Ionicons name="camera-outline" size={24} color="#059669" />
-                <Text className="text-xs text-[#059669] mt-1">Add</Text>
+                <Text style={{ fontSize: 10, color: "#059669", marginTop: 2, fontWeight: "800" }}>Add Photo</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          <TouchableOpacity onPress={submit} disabled={submitting} testID="submit-checkin" className="bg-[#059669] rounded-2xl py-4 items-center mb-10">
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-black tracking-widest">CHECK IN VEHICLE</Text>}
+          <TouchableOpacity
+            onPress={submit}
+            disabled={submitting}
+            testID="submit-checkin"
+            style={{
+              backgroundColor: "#059669",
+              borderRadius: 16,
+              paddingVertical: 16,
+              alignItems: "center",
+              marginBottom: 16,
+              shadowColor: "#059669",
+              shadowOpacity: 0.3,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 6,
+            }}
+          >
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: 15, letterSpacing: 2 }}>CHECK IN VEHICLE</Text>}
           </TouchableOpacity>
+          <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
+
+const inputRow = {
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 14,
+  marginBottom: 16,
+};
+const textInput = {
+  flex: 1,
+  paddingVertical: 14,
+  marginLeft: 10,
+  fontSize: 15,
+  color: "#111827",
+};

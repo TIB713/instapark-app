@@ -1,6 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, Modal, FlatList, Alert, ActivityIndicator, Image,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +19,14 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
 import { enqueueHandover, getQueueCount, processPendingQueue } from "../../lib/offline";
+
+const cardShadow = {
+  shadowColor: "#059669",
+  shadowOpacity: 0.08,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 4,
+};
 
 export default function Tasks() {
   const router = useRouter();
@@ -70,7 +84,6 @@ export default function Tasks() {
     };
   }, [currentEventId, fetchMyCars, fetchRetrievals]);
 
-  // Restore pending handover after camera-induced restart
   useEffect(() => {
     (async () => {
       const pending = await AsyncStorage.getItem("pending_handover");
@@ -155,89 +168,323 @@ export default function Tasks() {
   const retrievalRequested = retrievals.filter((c) => c.status === "RETRIEVAL_REQUESTED").length;
 
   return (
-    <View className="flex-1 bg-[#F9FAFB]" testID="tasks-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#059669]">
-        <View className="bg-[#059669] px-5 py-4 rounded-b-[30px]">
-          <View className="flex-row items-center mb-3">
-            <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2">
+    <View style={{ flex: 1, backgroundColor: "#ECFDF5" }} testID="tasks-screen">
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#059669" }}>
+        <View
+          style={{
+            backgroundColor: "#059669",
+            borderBottomLeftRadius: 44,
+            borderBottomRightRadius: 44,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+            paddingBottom: 18,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(8,145,178,0.5)",
+              borderBottomLeftRadius: 44,
+              borderBottomRightRadius: 44,
+            }}
+          />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+            >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text className="text-white text-xl font-black flex-1 text-center">My Tasks</Text>
-            <TouchableOpacity onPress={() => router.push("/(driver)/checkin")} testID="add-checkin-btn" className="bg-white rounded-full w-10 h-10 items-center justify-center">
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", flex: 1, textAlign: "center", marginRight: 40 }}>
+              My Tasks
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(driver)/checkin")}
+              testID="add-checkin-btn"
+              style={{ backgroundColor: "#fff", borderRadius: 99, width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+            >
               <Ionicons name="add" size={24} color="#059669" />
-            </TouchableOpacity>
-          </View>
-          <View className="flex-row bg-white/10 rounded-2xl p-1">
-            <TouchableOpacity onPress={() => setTab("mycars")} className={`flex-1 py-2 rounded-xl ${tab === "mycars" ? "bg-white" : ""}`}>
-              <Text className={`text-center font-bold ${tab === "mycars" ? "text-[#059669]" : "text-white"}`}>My Cars</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setTab("retrievals")} className={`flex-1 py-2 rounded-xl flex-row justify-center items-center ${tab === "retrievals" ? "bg-white" : ""}`}>
-              <Text className={`font-bold ${tab === "retrievals" ? "text-[#059669]" : "text-white"}`}>Retrievals</Text>
-              {retrievalRequested > 0 && (
-                <View className="bg-red-500 rounded-full px-2 ml-2">
-                  <Text className="text-white text-xs font-bold">{retrievalRequested}</Text>
-                </View>
-              )}
             </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
 
+      {/* Tab pill */}
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: "#fff",
+          marginHorizontal: 16,
+          marginTop: -18,
+          borderRadius: 20,
+          padding: 4,
+          ...cardShadow,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => setTab("mycars")}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 16,
+            backgroundColor: tab === "mycars" ? "#059669" : "transparent",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: 1 }}>My Cars</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setTab("retrievals")}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 16,
+            backgroundColor: tab === "retrievals" ? "#059669" : "transparent",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: 1 }}>Retrievals</Text>
+          {retrievalRequested > 0 && (
+            <View style={{ backgroundColor: "#F43F5E", borderRadius: 99, paddingHorizontal: 7, marginLeft: 6 }}>
+              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900" }}>{retrievalRequested}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {pendingCount > 0 && (
-        <View className="bg-amber-100 px-4 py-2 mx-4 mt-3 rounded-xl border border-amber-300">
-          <Text className="text-amber-800 text-xs font-bold">⬆ {pendingCount} photo(s) pending upload — will sync when online</Text>
+        <View
+          style={{
+            backgroundColor: "#FEF3C7",
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            marginHorizontal: 16,
+            marginTop: 12,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: "#F59E0B",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <Ionicons name="cloud-offline" size={16} color="#92400E" />
+          <Text style={{ color: "#92400E", fontSize: 12, fontWeight: "700", marginLeft: 8 }}>
+            {pendingCount} photo(s) pending upload — will sync when online
+          </Text>
         </View>
       )}
 
-      <ScrollView className="flex-1 px-4 pt-4">
-        {tab === "mycars" && cars.length === 0 && <Text className="text-gray-400 text-center mt-10">No cars yet. Tap + to check in.</Text>}
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}>
+        {tab === "mycars" && cars.length === 0 && (
+          <View style={{ alignItems: "center", marginTop: 60 }}>
+            <Text style={{ fontSize: 64 }}>🚗</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No cars yet</Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>Tap + to check in a vehicle</Text>
+          </View>
+        )}
         {tab === "mycars" && cars.map((car) => (
-          <View key={car.id} className="bg-white rounded-2xl p-4 mb-3" style={{ borderLeftWidth: 4, borderLeftColor: car.status === "PARKED" ? "#22C55E" : "#3B82F6" }}>
-            <Text className="font-black text-[#059669] text-base">{car.plate}</Text>
-            <Text className="text-gray-500 text-xs">{car.color} {car.make}</Text>
+          <View
+            key={car.id}
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 24,
+              padding: 18,
+              marginBottom: 12,
+              borderLeftWidth: 4,
+              borderLeftColor: car.status === "PARKED" ? "#059669" : "#0EA5E9",
+              ...cardShadow,
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
+                <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+              </View>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 99,
+                  backgroundColor: car.status === "PARKED" ? "#D1FAE5" : "#E0F2FE",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: "800",
+                    letterSpacing: 1,
+                    color: car.status === "PARKED" ? "#059669" : "#0284C7",
+                  }}
+                >
+                  {car.status === "PARKED" ? "PARKED" : "CHECKED IN"}
+                </Text>
+              </View>
+            </View>
+
             {car.status === "PARKED" ? (
               <View>
-                <Text className="text-green-600 font-bold mt-1">✓ Zone {car.zone} · Slot {car.slot}</Text>
-                <TouchableOpacity onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
-                  className="border border-[#059669] rounded-xl py-2 items-center mt-3">
-                  <Text className="text-[#059669] font-bold text-xs">SHOW QR CODE</Text>
+                <View
+                  style={{
+                    alignSelf: "flex-start",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#ECFDF5",
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 99,
+                    marginTop: 10,
+                  }}
+                >
+                  <Ionicons name="location" size={13} color="#059669" />
+                  <Text style={{ color: "#059669", fontWeight: "800", fontSize: 12, marginLeft: 4 }}>
+                    Zone {car.zone} · Slot {car.slot}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: "#059669",
+                    borderRadius: 14,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    marginTop: 12,
+                    flexDirection: "row",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="qr-code-outline" size={16} color="#059669" />
+                  <Text style={{ color: "#059669", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>
+                    SHOW QR CODE
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View className="flex-row gap-2 mt-3">
-                <TouchableOpacity onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
-                  className="flex-1 border border-[#059669] rounded-xl py-2 items-center">
-                  <Text className="text-[#059669] font-bold text-xs">QR CODE</Text>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
+                  style={{
+                    flex: 1,
+                    borderWidth: 1.5,
+                    borderColor: "#059669",
+                    borderRadius: 14,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="qr-code-outline" size={14} color="#059669" />
+                  <Text style={{ color: "#059669", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>QR CODE</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => openParkModal(car)} className="flex-1 bg-[#059669] rounded-xl py-2 items-center">
-                  <Text className="text-white font-bold text-xs">MARK AS PARKED</Text>
+                <TouchableOpacity
+                  onPress={() => openParkModal(car)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#059669",
+                    borderRadius: 14,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="location" size={14} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>MARK PARKED</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
         ))}
 
-        {tab === "retrievals" && retrievals.length === 0 && <Text className="text-gray-400 text-center mt-10">No retrieval requests</Text>}
+        {tab === "retrievals" && retrievals.length === 0 && (
+          <View style={{ alignItems: "center", marginTop: 60 }}>
+            <Text style={{ fontSize: 64 }}>🔔</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No retrieval requests</Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>You're all caught up!</Text>
+          </View>
+        )}
         {tab === "retrievals" && retrievals.map((car) => {
           const isMine = car.retrieval_driver_id === resolvedDriverId;
-          const borderColor = car.status === "RETRIEVAL_REQUESTED" ? "#EAB308" : isMine ? "#F97316" : "#9CA3AF";
+          let borderColor = "#9CA3AF";
+          if (car.status === "RETRIEVAL_REQUESTED") borderColor = "#F59E0B";
+          else if (car.status === "BEING_FETCHED" && isMine) borderColor = "#F97316";
           return (
-            <View key={car.id} className="bg-white rounded-2xl p-4 mb-3" style={{ borderLeftWidth: 4, borderLeftColor: borderColor }}>
-              <Text className="font-black text-[#059669] text-base">{car.plate}</Text>
-              <Text className="text-gray-500 text-xs">{car.color} {car.make}</Text>
-              <Text className="text-gray-400 text-xs mt-1">Zone {car.zone} · Slot {car.slot}</Text>
+            <View
+              key={car.id}
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 24,
+                padding: 18,
+                marginBottom: 12,
+                borderLeftWidth: 4,
+                borderLeftColor: borderColor,
+                ...cardShadow,
+              }}
+            >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+                  <View
+                    style={{
+                      alignSelf: "flex-start",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#F3F4F6",
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 99,
+                      marginTop: 6,
+                    }}
+                  >
+                    <Ionicons name="location-outline" size={11} color="#6B7280" />
+                    <Text style={{ color: "#6B7280", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>
+                      Zone {car.zone} · Slot {car.slot}
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
+                    borderRadius: 99,
+                    backgroundColor: borderColor,
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>
+                    {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : isMine ? "YOURS" : "OTHER"}
+                  </Text>
+                </View>
+              </View>
               {car.status === "RETRIEVAL_REQUESTED" && (
-                <TouchableOpacity onPress={() => pickup(car)} className="bg-amber-500 rounded-xl py-2 items-center mt-3">
-                  <Text className="text-white font-bold text-xs">PICK UP REQUEST</Text>
+                <TouchableOpacity
+                  onPress={() => pickup(car)}
+                  style={{ backgroundColor: "#F59E0B", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+                >
+                  <Ionicons name="hand-right" size={14} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>PICK UP</Text>
                 </TouchableOpacity>
               )}
               {car.status === "BEING_FETCHED" && isMine && (
-                <TouchableOpacity onPress={() => handleHandover(car)} className="bg-green-600 rounded-xl py-2 items-center mt-3">
-                  <Text className="text-white font-bold text-xs">HANDED TO GUEST</Text>
+                <TouchableOpacity
+                  onPress={() => handleHandover(car)}
+                  style={{ backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+                >
+                  <Ionicons name="camera" size={14} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>HANDED TO GUEST</Text>
                 </TouchableOpacity>
               )}
               {car.status === "BEING_FETCHED" && !isMine && (
-                <Text className="text-gray-400 text-xs mt-3">Being fetched by another driver</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
+                  Being fetched by another driver
+                </Text>
               )}
             </View>
           );
@@ -246,33 +493,48 @@ export default function Tasks() {
       </ScrollView>
 
       <Modal visible={showParkModal} transparent animationType="slide">
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-[30px] p-5" style={{ maxHeight: "85%" }}>
-            <View className="items-center mb-3"><View className="bg-gray-300 w-12 h-1 rounded-full" /></View>
-            <Text className="text-xl font-black text-[#059669]">Park {selectedCar?.plate}</Text>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "85%" }}>
+            <View style={{ alignItems: "center", marginBottom: 12 }}>
+              <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+            </View>
+            <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}>PARK VEHICLE</Text>
+            <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", marginTop: 2 }}>{selectedCar?.plate}</Text>
             {eventZones.length === 0 ? (
-              <View className="items-center py-10">
+              <View style={{ alignItems: "center", paddingVertical: 40 }}>
                 <Ionicons name="map-outline" size={64} color="#9CA3AF" />
-                <Text className="text-gray-700 font-bold mt-3">No Parking Zones Configured</Text>
-                <Text className="text-gray-500 text-xs mt-1">Please ask your admin to set up zones</Text>
+                <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12 }}>No Parking Zones Configured</Text>
+                <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 4 }}>Please ask your admin to set up zones</Text>
               </View>
             ) : (
               <>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 12 }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 18, marginBottom: 8 }}>SELECT ZONE</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
                   {eventZones.map((z) => {
                     const zoneSlots = slots.filter((s) => s.zone_name === z.name);
                     const free = zoneSlots.filter((s) => !s.is_occupied).length;
                     const isFull = zoneSlots.length > 0 && free === 0;
                     return (
-                      <TouchableOpacity key={z.name} onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
-                        className={`px-4 py-2 rounded-full ${isFull ? "bg-red-500" : selectedZone === z.name ? "bg-[#059669]" : "bg-white border border-gray-300"}`}>
-                        <Text className={`text-xs font-bold ${isFull || selectedZone === z.name ? "text-white" : "text-gray-700"}`}>
+                      <TouchableOpacity
+                        key={z.name}
+                        onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
+                        style={{
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderRadius: 99,
+                          backgroundColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#fff",
+                          borderWidth: 1,
+                          borderColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#E5E7EB",
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: 0.5 }}>
                           {z.name} — {isFull ? "FULL" : `${free} free`}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>SELECT SLOT</Text>
                 <FlatList
                   data={slots.filter((s) => s.zone_name === selectedZone)}
                   numColumns={5}
@@ -280,32 +542,52 @@ export default function Tasks() {
                   columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
                   renderItem={({ item }) => {
                     const isSel = selectedSlot === item.slot_number;
-                    const bg = item.is_occupied ? "#FECACA" : isSel ? "#059669" : "#BBF7D0";
+                    let bg = "#D1FAE5";
+                    if (item.is_occupied) bg = "#FECACA";
+                    else if (isSel) bg = "#7C3AED";
                     return (
                       <TouchableOpacity
                         disabled={item.is_occupied}
                         onPress={() => setSelectedSlot(item.slot_number)}
-                        style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: bg, alignItems: "center", justifyContent: "center" }}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 14,
+                          backgroundColor: bg,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
                       >
                         {item.is_occupied ? (
                           <Ionicons name="close" size={18} color="#991B1B" />
                         ) : (
-                          <Text className={`font-black ${isSel ? "text-white" : "text-green-800"}`}>{item.slot_number}</Text>
+                          <Text style={{ fontWeight: "900", color: isSel ? "#fff" : "#065F46" }}>
+                            {item.slot_number}
+                          </Text>
                         )}
                       </TouchableOpacity>
                     );
                   }}
-                  ListEmptyComponent={<Text className="text-gray-400 text-center py-6">No slots in this zone</Text>}
+                  ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>No slots in this zone</Text>}
                   style={{ maxHeight: 280 }}
                 />
-                <TouchableOpacity onPress={confirmPark} disabled={!selectedSlot}
-                  className={`rounded-2xl py-4 items-center mt-3 ${selectedSlot ? "bg-[#059669]" : "bg-gray-300"}`}>
-                  <Text className="text-white font-black tracking-widest">CONFIRM PARKING</Text>
+                <TouchableOpacity
+                  onPress={confirmPark}
+                  disabled={!selectedSlot}
+                  style={{
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    alignItems: "center",
+                    marginTop: 14,
+                    backgroundColor: selectedSlot ? "#7C3AED" : "#D1D5DB",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>CONFIRM PARKING</Text>
                 </TouchableOpacity>
               </>
             )}
-            <TouchableOpacity onPress={() => setShowParkModal(false)} className="py-3 items-center mt-2">
-              <Text className="text-gray-500 font-bold">Close</Text>
+            <TouchableOpacity onPress={() => setShowParkModal(false)} style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}>
+              <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>

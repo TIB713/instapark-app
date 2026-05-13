@@ -1,5 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator, Platform } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,6 +16,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteItem as secureDelete } from "../../lib/secure";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+
+const cardShadow = {
+  shadowColor: "#059669",
+  shadowOpacity: 0.1,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 4,
+};
 
 export default function DriverHome() {
   const router = useRouter();
@@ -16,7 +33,10 @@ export default function DriverHome() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchEvents = useCallback(async () => {
-    if (!driver?.id) { setLoading(false); return; }
+    if (!driver?.id) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data: evs } = await api.get("/events");
       const active = (evs || []).filter((e) => e.status === "active");
@@ -59,50 +79,113 @@ export default function DriverHome() {
   };
 
   return (
-    <View className="flex-1 bg-[#F9FAFB]" testID="driver-home">
-      <SafeAreaView edges={["top"]} className="bg-[#059669]">
-        <View className="bg-[#059669] px-5 py-4 rounded-b-[40px] flex-row items-center">
-          <View className="flex-1">
-            <Text className="text-white text-2xl font-black">My Events</Text>
-            <Text className="text-white/70 text-sm mt-1">{driver?.name}</Text>
+    <View style={{ flex: 1, backgroundColor: "#ECFDF5" }} testID="driver-home">
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#059669" }}>
+        <View
+          style={{
+            backgroundColor: "#059669",
+            borderBottomLeftRadius: 44,
+            borderBottomRightRadius: 44,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+            paddingBottom: 32,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(8,145,178,0.5)",
+              borderBottomLeftRadius: 44,
+              borderBottomRightRadius: 44,
+            }}
+          />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, letterSpacing: 1.5, fontWeight: "700" }}>WELCOME</Text>
+              <Text style={{ color: "#fff", fontSize: 26, fontWeight: "900", marginTop: 2 }}>{driver?.name || "Driver"}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 4 }}>My assigned events</Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleSignOut}
+              testID="driver-signout"
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 12 }}
+            >
+              <Ionicons name="log-out-outline" size={22} color="#fff" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={handleSignOut} testID="driver-signout" className="bg-white/10 rounded-full p-3">
-            <Ionicons name="log-out-outline" size={22} color="#fff" />
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
+
       <ScrollView
-        className="flex-1 px-4 pt-4"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchEvents(); }} />}
+        style={{ flex: 1, paddingHorizontal: 16, marginTop: -14 }}
+        contentContainerStyle={{ paddingTop: 14, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchEvents();
+            }}
+            tintColor="#059669"
+          />
+        }
       >
         {loading && <ActivityIndicator color="#059669" />}
         {!loading && events.length === 0 && (
-          <View className="items-center mt-20">
-            <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-500 text-center mt-3 px-8">No active events assigned.{"\n"}Contact your admin.</Text>
+          <View style={{ alignItems: "center", marginTop: 60, paddingHorizontal: 32 }}>
+            <Text style={{ fontSize: 64 }}>📅</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12, textAlign: "center" }}>
+              No active events assigned
+            </Text>
+            <Text style={{ color: "#6B7280", textAlign: "center", marginTop: 6, fontSize: 13 }}>
+              Contact your admin to get assigned
+            </Text>
           </View>
         )}
         {events.map((e) => (
-          <TouchableOpacity key={e.id} onPress={() => openEvent(e)} activeOpacity={0.7}
-            className="bg-white rounded-2xl p-4 mb-3 flex-row items-center" style={{ borderLeftWidth: 4, borderLeftColor: "#22C55E" }}>
-            <View className="flex-1">
-              <Text className="font-black text-[#059669] text-base">{e.name}</Text>
-              <View className="flex-row items-center mt-1">
-                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                <Text className="text-gray-500 text-xs ml-1">{e.date}</Text>
+          <TouchableOpacity
+            key={e.id}
+            onPress={() => openEvent(e)}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 24,
+              padding: 18,
+              marginBottom: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              borderLeftWidth: 4,
+              borderLeftColor: "#059669",
+              ...cardShadow,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: "900", color: "#111827", fontSize: 17 }}>{e.name}</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                <View style={chipStyle}>
+                  <Ionicons name="calendar-outline" size={11} color="#6B7280" />
+                  <Text style={chipText}>{e.date}</Text>
+                </View>
+                <View style={chipStyle}>
+                  <Ionicons name="location-outline" size={11} color="#6B7280" />
+                  <Text style={chipText}>{e.venue}</Text>
+                </View>
               </View>
-              <View className="flex-row items-center mt-1">
-                <Ionicons name="location-outline" size={14} color="#6B7280" />
-                <Text className="text-gray-500 text-xs ml-1">{e.venue}</Text>
-              </View>
-              <View className="bg-green-100 self-start px-2 py-0.5 rounded-full mt-2">
-                <Text className="text-green-700 text-[10px] font-bold">ACTIVE</Text>
+              <View style={{ backgroundColor: "#D1FAE5", alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, marginTop: 10 }}>
+                <Text style={{ color: "#059669", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>ACTIVE</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={22} color="#059669" />
           </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
   );
 }
+
+const chipStyle = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, gap: 4 };
+const chipText = { color: "#6B7280", fontSize: 11, fontWeight: "600" };

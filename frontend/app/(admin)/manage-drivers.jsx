@@ -1,11 +1,28 @@
 import { useEffect, useState } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import api from "../../lib/api";
+
+const cardShadow = {
+  shadowColor: "#7C3AED",
+  shadowOpacity: 0.08,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 4,
+};
 
 export default function ManageDrivers() {
   const router = useRouter();
@@ -36,7 +53,9 @@ export default function ManageDrivers() {
     try {
       const { data } = await api.post("/drivers", { name: name.trim(), phone: phone.trim(), pin });
       setShowModal(false);
-      setName(""); setPhone(""); setPin("");
+      setName("");
+      setPhone("");
+      setPin("");
       Alert.alert("Driver Added!", `Name: ${data.name}\nEmployee ID: ${data.employee_id}\nPIN: ${data.pin}\n\nPlease note these down.`);
       fetchDrivers();
     } catch (e) {
@@ -47,54 +66,159 @@ export default function ManageDrivers() {
   };
 
   return (
-    <View className="flex-1 bg-[#F9FAFB]" testID="manage-drivers-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
-        <View className="bg-[#7C3AED] px-5 py-4 rounded-b-[30px] flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2 mr-3">
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text className="text-white text-xl font-black flex-1">Drivers</Text>
-          <TouchableOpacity onPress={() => setShowModal(true)} testID="add-driver-btn" className="bg-white rounded-full w-10 h-10 items-center justify-center">
-            <Ionicons name="add" size={24} color="#7C3AED" />
-          </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: "#F5F3FF" }} testID="manage-drivers-screen">
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#7C3AED" }}>
+        <View
+          style={{
+            backgroundColor: "#7C3AED",
+            borderBottomLeftRadius: 44,
+            borderBottomRightRadius: 44,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+            paddingBottom: 24,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(79,70,229,0.5)",
+              borderBottomLeftRadius: 44,
+              borderBottomRightRadius: 44,
+            }}
+          />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+            >
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+              Drivers
+            </Text>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99 }}>
+              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 12 }}>{drivers.length}</Text>
+            </View>
+          </View>
         </View>
       </SafeAreaView>
-      <ScrollView className="flex-1 px-4 pt-4">
+
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
         {loading && <ActivityIndicator color="#7C3AED" />}
         {drivers.map((d) => (
-          <TouchableOpacity key={d.id} onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}
-            activeOpacity={0.7} className="bg-white rounded-2xl p-4 mb-3 flex-row items-center">
-            <View className="bg-[#7C3AED] rounded-full w-12 h-12 items-center justify-center">
-              <Text className="text-white font-black text-lg">{d.name?.[0]?.toUpperCase()}</Text>
+          <TouchableOpacity
+            key={d.id}
+            onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 24,
+              padding: 16,
+              marginBottom: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              ...cardShadow,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#7C3AED",
+                borderRadius: 99,
+                width: 52,
+                height: 52,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "900", fontSize: 20 }}>
+                {d.name?.[0]?.toUpperCase()}
+              </Text>
             </View>
-            <View className="flex-1 ml-3">
-              <Text className="font-black text-[#7C3AED]">{d.name}</Text>
-              <Text className="text-gray-500 text-xs">{d.employee_id}</Text>
-              {d.phone && <Text className="text-gray-400 text-xs">{d.phone}</Text>}
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{d.name}</Text>
+              <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{d.employee_id}</Text>
+              {d.phone ? (
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                  <Ionicons name="call-outline" size={11} color="#9CA3AF" />
+                  <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 4 }}>{d.phone}</Text>
+                </View>
+              ) : null}
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
         ))}
-        {!loading && drivers.length === 0 && <Text className="text-gray-400 text-center mt-10">No drivers yet</Text>}
+        {!loading && drivers.length === 0 && (
+          <View style={{ alignItems: "center", marginTop: 80 }}>
+            <Text style={{ fontSize: 64 }}>👥</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 8 }}>No drivers yet</Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>Tap + to add a driver</Text>
+          </View>
+        )}
+        <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* FAB */}
+      <TouchableOpacity
+        onPress={() => setShowModal(true)}
+        testID="add-driver-btn"
+        activeOpacity={0.85}
+        style={{
+          position: "absolute",
+          bottom: 28,
+          right: 24,
+          width: 60,
+          height: 60,
+          borderRadius: 99,
+          backgroundColor: "#7C3AED",
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#7C3AED",
+          shadowOpacity: 0.4,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 10,
+        }}
+      >
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
+
       <Modal visible={showModal} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-          <View className="flex-1 bg-black/50 justify-end">
-            <View className="bg-white rounded-t-[30px] p-5">
-              <View className="items-center mb-3"><View className="bg-gray-300 w-12 h-1 rounded-full" /></View>
-              <Text className="text-xl font-black text-[#7C3AED] mb-4">Add Driver</Text>
-              <Text className="text-xs font-bold text-gray-500 tracking-widest mb-1">NAME</Text>
-              <TextInput value={name} onChangeText={setName} testID="driver-name-input" className="bg-gray-50 rounded-2xl px-4 py-3 mb-3 border border-gray-200" />
-              <Text className="text-xs font-bold text-gray-500 tracking-widest mb-1">PHONE (OPTIONAL)</Text>
-              <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" className="bg-gray-50 rounded-2xl px-4 py-3 mb-3 border border-gray-200" />
-              <Text className="text-xs font-bold text-gray-500 tracking-widest mb-1">4-DIGIT PIN</Text>
-              <TextInput value={pin} onChangeText={setPin} testID="driver-pin-input" keyboardType="numeric" maxLength={4} secureTextEntry className="bg-gray-50 rounded-2xl px-4 py-3 mb-5 border border-gray-200" />
-              <TouchableOpacity onPress={save} disabled={saving} testID="save-driver-btn" className="bg-[#7C3AED] rounded-2xl py-4 items-center">
-                {saving ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-black tracking-widest">SAVE</Text>}
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20 }}>
+              <View style={{ alignItems: "center", marginBottom: 12 }}>
+                <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+              </View>
+              <Text style={{ fontSize: 22, fontWeight: "900", color: "#7C3AED", marginBottom: 18 }}>Add Driver</Text>
+              <Text style={modalLabel}>NAME</Text>
+              <View style={modalInput}>
+                <Ionicons name="person-outline" size={18} color="#7C3AED" />
+                <TextInput value={name} onChangeText={setName} testID="driver-name-input" placeholder="John Doe" placeholderTextColor="#9CA3AF" style={modalInputText} />
+              </View>
+              <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+              <View style={modalInput}>
+                <Ionicons name="call-outline" size={18} color="#7C3AED" />
+                <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+91 9876543210" placeholderTextColor="#9CA3AF" style={modalInputText} />
+              </View>
+              <Text style={modalLabel}>4-DIGIT PIN</Text>
+              <View style={modalInput}>
+                <Ionicons name="keypad-outline" size={18} color="#7C3AED" />
+                <TextInput value={pin} onChangeText={setPin} testID="driver-pin-input" keyboardType="numeric" maxLength={4} secureTextEntry placeholder="••••" placeholderTextColor="#9CA3AF" style={modalInputText} />
+              </View>
+              <TouchableOpacity
+                onPress={save}
+                disabled={saving}
+                testID="save-driver-btn"
+                style={{ backgroundColor: "#7C3AED", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 8 }}
+              >
+                {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE DRIVER</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowModal(false)} className="py-3 items-center mt-2">
-                <Text className="text-gray-500 font-bold">Cancel</Text>
+              <TouchableOpacity onPress={() => setShowModal(false)} style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}>
+                <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -103,3 +227,28 @@ export default function ManageDrivers() {
     </View>
   );
 }
+
+const modalLabel = {
+  fontSize: 11,
+  fontWeight: "800",
+  color: "#6B7280",
+  letterSpacing: 3,
+  marginBottom: 8,
+};
+const modalInput = {
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 14,
+  marginBottom: 16,
+};
+const modalInputText = {
+  flex: 1,
+  paddingVertical: 14,
+  marginLeft: 10,
+  fontSize: 15,
+  color: "#111827",
+};
