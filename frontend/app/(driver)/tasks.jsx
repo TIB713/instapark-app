@@ -126,7 +126,7 @@ export default function Tasks() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
     try { await AsyncStorage.setItem("pending_handover", JSON.stringify({ carId: car.id })); } catch {}
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true });
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true });
     try { await AsyncStorage.removeItem("pending_handover"); } catch {}
     if (result.canceled) return;
     const net = await NetInfo.fetch();
