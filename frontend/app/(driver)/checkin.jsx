@@ -62,7 +62,7 @@ export default function CheckIn() {
       await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, selectedGate }));
       await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
     } catch {}
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
       const np = [...photos, result.assets[0].uri];
       setPhotos(np);
