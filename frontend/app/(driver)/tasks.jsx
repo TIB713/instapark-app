@@ -135,6 +135,20 @@ export default function Tasks() {
     }
   };
 
+  const uploadHandoverInBackground = async (carId, uri) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", { uri, type: "image/jpeg", name: "handover.jpg" });
+      formData.append("folder", `handover/${carId}`);
+      const up = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await api.patch(`/cars/${carId}/update-photo`, {
+        delivery_photo_url: up.data.url,
+      });
+    } catch {}
+  };
+
   const handleHandover = async (car) => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
@@ -154,12 +168,9 @@ export default function Tasks() {
       return;
     }
     try {
-      const fd = new FormData();
-      fd.append("file", { uri: result.assets[0].uri, type: "image/jpeg", name: "handover.jpg" });
-      fd.append("folder", `handover/${car.id}`);
-      const up = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      await api.patch(`/cars/${car.id}/deliver`, { delivery_photo_url: up.data.url });
+      await api.patch(`/cars/${car.id}/deliver`, { delivery_photo_url: "" });
       fetchRetrievals();
+      uploadHandoverInBackground(car.id, result.assets[0].uri);
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Handover failed");
     }

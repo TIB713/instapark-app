@@ -87,6 +87,26 @@ export default function CheckIn() {
     try { await AsyncStorage.removeItem("checkin_draft"); } catch {}
   };
 
+  const uploadPhotosInBackground = async (carId, photoUris) => {
+    try {
+      const urls = [];
+      for (const uri of photoUris) {
+        try {
+          const fd = new FormData();
+          fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+          fd.append("folder", `checkin/${carId}`);
+          const up = await api.post("/upload", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          urls.push(up.data.url);
+        } catch {}
+      }
+      if (urls.length > 0) {
+        await api.post(`/cars/${carId}/photos`, { urls, type: "checkin" });
+      }
+    } catch {}
+  };
+
   const submit = async () => {
     if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; }
     if (!validatePlate(plate.trim())) {
@@ -107,18 +127,10 @@ export default function CheckIn() {
         event_id: currentEventId,
         check_in_driver_id: resolvedDriverId,
       });
-      const urls = [];
-      for (const uri of photos) {
-        const fd = new FormData();
-        fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
-        fd.append("folder", `checkin/${car.id}`);
-        const up = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-        urls.push(up.data.url);
-      }
-      await api.post(`/cars/${car.id}/photos`, { urls, type: "checkin" });
       try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {}
       try { await AsyncStorage.removeItem("checkin_photos"); } catch {}
       router.replace({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } });
+      uploadPhotosInBackground(car.id, photos);
     } catch (err) {
       const msg = err.response?.data?.detail || "Check-in failed";
       if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in.");

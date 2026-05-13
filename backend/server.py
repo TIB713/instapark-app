@@ -25,6 +25,9 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+def now_iso():
+    return datetime.utcnow().isoformat()
+
 
 # Define Models
 class StatusCheck(BaseModel):
@@ -51,6 +54,14 @@ async def create_status_check(input: StatusCheckCreate):
 async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
+
+@api_router.patch("/cars/{cid}/update-photo")
+async def update_car_photo(cid: str, body: dict):
+    await db.cars.update_one(
+        {"id": cid},
+        {"$set": {"delivery_photo_url": body.get("delivery_photo_url", ""), "updated_at": now_iso()}}
+    )
+    return {"ok": True}
 
 # Include the router in the main app
 app.include_router(api_router)
