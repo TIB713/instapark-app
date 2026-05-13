@@ -110,8 +110,8 @@ export default function CheckIn() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="checkin-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[30px] flex-row items-center">
+      <SafeAreaView edges={["top"]} className="bg-[#059669]">
+        <View className="bg-[#059669] px-5 py-4 rounded-b-[30px] flex-row items-center">
           <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2 mr-3">
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
@@ -142,8 +142,8 @@ export default function CheckIn() {
               <Lbl>ENTRY GATE</Lbl>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} className="mb-3">
                 {eventGates.map((g) => (
-                  <TouchableOpacity key={g} onPress={() => setSelectedGate(g)} className={`px-4 py-2 rounded-full ${selectedGate === g ? "bg-[#0F2044]" : "bg-white border border-[#0F2044]"}`}>
-                    <Text className={`text-xs font-bold ${selectedGate === g ? "text-white" : "text-[#0F2044]"}`}>{g}</Text>
+                  <TouchableOpacity key={g} onPress={() => setSelectedGate(g)} className={`px-4 py-2 rounded-full ${selectedGate === g ? "bg-[#059669]" : "bg-white border border-[#059669]"}`}>
+                    <Text className={`text-xs font-bold ${selectedGate === g ? "text-white" : "text-[#059669]"}`}>{g}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -162,13 +162,13 @@ export default function CheckIn() {
             ))}
             {photos.length < 5 && (
               <TouchableOpacity onPress={takePhoto} testID="add-photo-btn" className="bg-white items-center justify-center" style={{ width: 80, height: 80, borderRadius: 12, borderWidth: 2, borderColor: "#D1D5DB", borderStyle: "dashed" }}>
-                <Ionicons name="camera-outline" size={24} color="#0F2044" />
-                <Text className="text-xs text-[#0F2044] mt-1">Add</Text>
+                <Ionicons name="camera-outline" size={24} color="#059669" />
+                <Text className="text-xs text-[#059669] mt-1">Add</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          <TouchableOpacity onPress={submit} disabled={submitting} testID="submit-checkin" className="bg-[#0F2044] rounded-2xl py-4 items-center mb-10">
+          <TouchableOpacity onPress={submit} disabled={submitting} testID="submit-checkin" className="bg-[#059669] rounded-2xl py-4 items-center mb-10">
             {submitting ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-black tracking-widest">CHECK IN VEHICLE</Text>}
           </TouchableOpacity>
         </ScrollView>

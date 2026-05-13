@@ -36,8 +36,8 @@ export default function AllEvents() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="all-events-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[30px] flex-row items-center">
+      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
+        <View className="bg-[#7C3AED] px-5 py-4 rounded-b-[30px] flex-row items-center">
           <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2 mr-3">
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
@@ -46,19 +46,19 @@ export default function AllEvents() {
       </SafeAreaView>
       <View className="flex-row gap-2 px-4 pt-4">
         {["all", "active", "closed"].map((f) => (
-          <TouchableOpacity key={f} onPress={() => setFilter(f)} className={`px-4 py-2 rounded-full ${filter === f ? "bg-[#0F2044]" : "bg-white border border-gray-200"}`}>
+          <TouchableOpacity key={f} onPress={() => setFilter(f)} className={`px-4 py-2 rounded-full ${filter === f ? "bg-[#7C3AED]" : "bg-white border border-gray-200"}`}>
             <Text className={`text-xs font-bold ${filter === f ? "text-white" : "text-gray-600"}`}>{f.toUpperCase()}</Text>
           </TouchableOpacity>
         ))}
       </View>
       <ScrollView className="flex-1 px-4 pt-4">
-        {loading && <ActivityIndicator color="#0F2044" />}
+        {loading && <ActivityIndicator color="#7C3AED" />}
         {filtered.map((e) => (
           <TouchableOpacity key={e.id} onPress={() => open(e)} activeOpacity={0.7}
             className="bg-white rounded-2xl p-4 mb-3 flex-row items-center"
             style={{ borderLeftWidth: 4, borderLeftColor: e.status === "active" ? "#22C55E" : "#9CA3AF" }}>
             <View className="flex-1">
-              <Text className="font-black text-[#0F2044]">{e.name}</Text>
+              <Text className="font-black text-[#7C3AED]">{e.name}</Text>
               <Text className="text-gray-500 text-xs mt-1">{e.date}{e.start_time ? ` · ${e.start_time}—${e.end_time}` : ""}</Text>
               <Text className="text-gray-500 text-xs">{e.venue}</Text>
               <View className="flex-row items-center mt-1">

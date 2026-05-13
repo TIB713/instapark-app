@@ -98,15 +98,15 @@ export default function EditEvent() {
   if (loading) {
     return (
       <View className="flex-1 bg-[#F9FAFB] justify-center items-center">
-        <ActivityIndicator size="large" color="#0F2044" />
+        <ActivityIndicator size="large" color="#7C3AED" />
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="edit-event-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[30px] flex-row items-center">
+      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
+        <View className="bg-[#7C3AED] px-5 py-4 rounded-b-[30px] flex-row items-center">
           <TouchableOpacity
             onPress={() => router.back()}
             className="bg-white/10 rounded-full p-2 mr-3"
@@ -156,7 +156,7 @@ export default function EditEvent() {
             <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" className="py-3" />
           </View>
 
-          <TouchableOpacity onPress={save} disabled={saving} activeOpacity={0.7} className="bg-[#0F2044] rounded-2xl py-4 items-center mb-10">
+          <TouchableOpacity onPress={save} disabled={saving} activeOpacity={0.7} className="bg-[#7C3AED] rounded-2xl py-4 items-center mb-10">
             {saving ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-black tracking-widest">SAVE CHANGES</Text>}
           </TouchableOpacity>
         </ScrollView>

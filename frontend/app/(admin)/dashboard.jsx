@@ -118,15 +118,15 @@ export default function Dashboard() {
   if (loading) {
     return (
       <View className="flex-1 bg-[#F9FAFB] justify-center items-center">
-        <ActivityIndicator size="large" color="#0F2044" />
+        <ActivityIndicator size="large" color="#7C3AED" />
       </View>
     );
   }
 
   return (
     <View testID="admin-dashboard" className="flex-1 bg-[#F9FAFB]">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-6 pt-2 pb-10 rounded-b-[40px]">
+      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
+        <View className="bg-[#7C3AED] px-6 pt-2 pb-10 rounded-b-[40px]">
           <View className="flex-row justify-between items-start">
             <View className="flex-1">
               <Text className="text-white/70 text-sm">{greeting()},</Text>
@@ -162,13 +162,13 @@ export default function Dashboard() {
             testID="stat-total-events"
             onPress={() => router.push("/(admin)/all-events")}
             activeOpacity={0.7}
-            className="bg-white rounded-2xl px-5 py-4 border-l-4 border-[#1A3C6E] shadow-sm"
+            className="bg-white rounded-2xl px-5 py-4 border-l-4 border-[#4F46E5] shadow-sm"
             style={{ minWidth: 140 }}
           >
             <Text className="text-xs font-bold text-gray-500 tracking-widest">
               TOTAL EVENTS
             </Text>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
               {events.length}
             </Text>
           </TouchableOpacity>
@@ -185,7 +185,7 @@ export default function Dashboard() {
                 ACTIVE NOW
               </Text>
             </View>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
               {active.length}
             </Text>
           </TouchableOpacity>
@@ -199,7 +199,7 @@ export default function Dashboard() {
             <Text className="text-xs font-bold text-gray-500 tracking-widest">
               TOTAL DRIVERS
             </Text>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
               {drivers.length}
             </Text>
           </TouchableOpacity>
@@ -213,7 +213,7 @@ export default function Dashboard() {
             <Text className="text-xs font-bold text-gray-500 tracking-widest">
               ⭐ AVG RATING
             </Text>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
               {avgRating}
             </Text>
           </TouchableOpacity>
@@ -224,7 +224,7 @@ export default function Dashboard() {
             testID="quick-new-event"
             onPress={() => router.push("/(admin)/create-event")}
             activeOpacity={0.7}
-            className="bg-[#0F2044] rounded-2xl px-5 py-4 flex-row items-center justify-between"
+            className="bg-[#7C3AED] rounded-2xl px-5 py-4 flex-row items-center justify-between"
           >
             <View className="flex-row items-center">
               <Ionicons name="add-circle" size={22} color="#fff" />
@@ -238,7 +238,7 @@ export default function Dashboard() {
             testID="quick-manage-drivers"
             onPress={() => router.push("/(admin)/manage-drivers")}
             activeOpacity={0.7}
-            className="bg-[#1A3C6E] rounded-2xl px-5 py-4 flex-row items-center justify-between"
+            className="bg-[#4F46E5] rounded-2xl px-5 py-4 flex-row items-center justify-between"
           >
             <View className="flex-row items-center">
               <Ionicons name="people" size={22} color="#fff" />
@@ -252,7 +252,7 @@ export default function Dashboard() {
 
         <View className="px-4 mt-8">
           <View className="flex-row items-center mb-3">
-            <Text className="text-lg font-black text-[#0F2044]">
+            <Text className="text-lg font-black text-[#7C3AED]">
               Active Events
             </Text>
             <View className="ml-2 bg-green-100 px-2.5 py-0.5 rounded-full">
@@ -273,7 +273,7 @@ export default function Dashboard() {
                 className="bg-white rounded-2xl p-4 mb-3 border-l-4 border-green-500 flex-row items-center"
               >
                 <View className="flex-1">
-                  <Text className="font-black text-[#0F2044] text-base">
+                  <Text className="font-black text-[#7C3AED] text-base">
                     {e.name}
                   </Text>
                   <Text className="text-gray-500 text-xs mt-1">
@@ -299,7 +299,7 @@ export default function Dashboard() {
 
         {past.length > 0 && (
           <View className="px-4 mt-6">
-            <Text className="text-lg font-black text-[#0F2044] mb-3">
+            <Text className="text-lg font-black text-[#7C3AED] mb-3">
               Past Events
             </Text>
             {past.slice(0, 5).map((e) => (
