@@ -196,7 +196,13 @@ export default function Tasks() {
             <Text className="font-black text-[#0F2044] text-base">{car.plate}</Text>
             <Text className="text-gray-500 text-xs">{car.color} {car.make}</Text>
             {car.status === "PARKED" ? (
-              <Text className="text-green-600 font-bold mt-1">✓ Zone {car.zone} · Slot {car.slot}</Text>
+              <View>
+                <Text className="text-green-600 font-bold mt-1">✓ Zone {car.zone} · Slot {car.slot}</Text>
+                <TouchableOpacity onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
+                  className="border border-[#0F2044] rounded-xl py-2 items-center mt-3">
+                  <Text className="text-[#0F2044] font-bold text-xs">SHOW QR CODE</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <View className="flex-row gap-2 mt-3">
                 <TouchableOpacity onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
