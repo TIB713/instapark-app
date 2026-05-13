@@ -76,7 +76,7 @@ export default function Login() {
   };
 
   return (
-    <View testID="login-screen" className="flex-1 bg-[#0F2044]">
+    <View testID="login-screen" className="flex-1 bg-[#7C3AED]">
       <SafeAreaView className="flex-1">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -252,7 +252,7 @@ export default function Login() {
                 onPress={submit}
                 disabled={loading}
                 activeOpacity={0.7}
-                className="bg-[#0F2044] rounded-2xl py-4 items-center"
+                className="bg-[#7C3AED] rounded-2xl py-4 items-center"
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />

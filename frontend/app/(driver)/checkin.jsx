@@ -14,6 +14,13 @@ function Lbl({ children }) {
   return <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2">{children}</Text>;
 }
 
+const validatePlate = (plate) => {
+  const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
+  const standard = /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{1,4}$/.test(cleaned);
+  const bharat = /^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$/.test(cleaned);
+  return standard || bharat;
+};
+
 export default function CheckIn() {
   const router = useRouter();
   const { driver, currentEventId } = useAppStore();
@@ -36,11 +43,13 @@ export default function CheckIn() {
       } catch {}
       try {
         const draft = await AsyncStorage.getItem("checkin_draft");
+        const savedPhotos = await AsyncStorage.getItem("checkin_photos");
         if (draft) {
           const d = JSON.parse(draft);
           setPlate(d.plate || ""); setColor(d.color || ""); setMake(d.make || "");
           setNotes(d.notes || ""); setSelectedGate(d.selectedGate || "");
         }
+        if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
       } catch {}
     })();
   }, [currentEventId]);
@@ -49,14 +58,27 @@ export default function CheckIn() {
     if (photos.length >= 5) { Alert.alert("Max 5 photos"); return; }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
-    try { await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, selectedGate })); } catch {}
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true });
+    try {
+      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, selectedGate }));
+      await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
+    } catch {}
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    if (!result.canceled) {
+      const np = [...photos, result.assets[0].uri];
+      setPhotos(np);
+      try { await AsyncStorage.setItem("checkin_photos", JSON.stringify(np)); } catch {}
+    }
     try { await AsyncStorage.removeItem("checkin_draft"); } catch {}
-    if (!result.canceled) setPhotos((p) => [...p, result.assets[0].uri]);
   };
 
   const submit = async () => {
     if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; }
+    if (!validatePlate(plate.trim())) {
+      Alert.alert("Invalid Plate", "Please enter a valid Indian vehicle number plate.\n\nExamples:\nGJ01AB1234\nMH12CD5678\n22BH1234AA");
+      return;
+    }
+    if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; }
+    if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; }
     if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; }
     setSubmitting(true);
     try {
@@ -76,6 +98,7 @@ export default function CheckIn() {
       }
       await api.post(`/cars/${car.id}/photos`, { urls, type: "checkin" });
       try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {}
+      try { await AsyncStorage.removeItem("checkin_photos"); } catch {}
       router.replace({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } });
     } catch (err) {
       const msg = err.response?.data?.detail || "Check-in failed";
@@ -99,7 +122,7 @@ export default function CheckIn() {
         <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
           <Lbl>LICENSE PLATE *</Lbl>
           <View className="bg-white rounded-2xl px-4 border border-gray-200 mb-3">
-            <TextInput testID="plate-input" value={plate} onChangeText={(v) => setPlate(v.toUpperCase())} placeholder="ABC-1234" autoCapitalize="characters" className="py-3 text-base" />
+            <TextInput testID="plate-input" value={plate} onChangeText={(v) => setPlate(v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase())} placeholder="GJ01AB1234" autoCapitalize="characters" maxLength={13} className="py-3 text-base" />
           </View>
           <Lbl>COLOR</Lbl>
           <View className="bg-white rounded-2xl px-4 border border-gray-200 mb-3">

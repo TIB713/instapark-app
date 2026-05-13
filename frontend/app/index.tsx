@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { getItem } from "../lib/secure";
+import { getItem, deleteItem as secureDelete } from "../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useAppStore } from "../lib/store";
 import api from "../lib/api";
 
 export default function Index() {
-  const { setUser, setDriver, setCurrentEventId } = useAppStore();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
 
@@ -18,20 +17,42 @@ export default function Index() {
         if (token) {
           try {
             const { data } = await api.get("/auth/me");
-            setUser(data);
-            setChecking(false);
-            router.replace("/(admin)/dashboard");
-            return;
+            const role = data.role;
+            if (role === "admin" || role === "superadmin") {
+              await AsyncStorage.removeItem("driver_session");
+              useAppStore.getState().signOut();
+              useAppStore.getState().setUser(data);
+              setChecking(false);
+              router.replace("/(admin)/dashboard");
+              return;
+            }
+            if (role === "driver") {
+              const driverData = {
+                id: data.user_id,
+                name: data.name,
+                role: data.role,
+                provider_id: data.provider_id,
+              };
+              await AsyncStorage.setItem("driver_session", JSON.stringify(driverData));
+              const eid = await AsyncStorage.getItem("current_event_id");
+              useAppStore.getState().signOut();
+              useAppStore.getState().setDriver(driverData);
+              if (eid) useAppStore.getState().setCurrentEventId(eid);
+              setChecking(false);
+              router.replace("/(driver)");
+              return;
+            }
+            await secureDelete("auth_token");
           } catch {
-            // token invalid — fall through to driver/login
+            await secureDelete("auth_token");
           }
         }
         const ds = await AsyncStorage.getItem("driver_session");
         const eid = await AsyncStorage.getItem("current_event_id");
         if (ds) {
           const d = JSON.parse(ds);
-          setDriver(d);
-          if (eid) setCurrentEventId(eid);
+          useAppStore.getState().setDriver(d);
+          if (eid) useAppStore.getState().setCurrentEventId(eid);
           setChecking(false);
           router.replace("/(driver)");
           return;
@@ -46,12 +67,7 @@ export default function Index() {
   return (
     <View
       testID="splash-screen"
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#0F2044",
-      }}
+      style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#6D28D9" }}
     >
       <ActivityIndicator size="large" color="#ffffff" />
     </View>
