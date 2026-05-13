@@ -60,8 +60,8 @@ export default function DriverHome() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="driver-home">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[40px] flex-row items-center">
+      <SafeAreaView edges={["top"]} className="bg-[#059669]">
+        <View className="bg-[#059669] px-5 py-4 rounded-b-[40px] flex-row items-center">
           <View className="flex-1">
             <Text className="text-white text-2xl font-black">My Events</Text>
             <Text className="text-white/70 text-sm mt-1">{driver?.name}</Text>
@@ -75,7 +75,7 @@ export default function DriverHome() {
         className="flex-1 px-4 pt-4"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchEvents(); }} />}
       >
-        {loading && <ActivityIndicator color="#0F2044" />}
+        {loading && <ActivityIndicator color="#059669" />}
         {!loading && events.length === 0 && (
           <View className="items-center mt-20">
             <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
@@ -86,7 +86,7 @@ export default function DriverHome() {
           <TouchableOpacity key={e.id} onPress={() => openEvent(e)} activeOpacity={0.7}
             className="bg-white rounded-2xl p-4 mb-3 flex-row items-center" style={{ borderLeftWidth: 4, borderLeftColor: "#22C55E" }}>
             <View className="flex-1">
-              <Text className="font-black text-[#0F2044] text-base">{e.name}</Text>
+              <Text className="font-black text-[#059669] text-base">{e.name}</Text>
               <View className="flex-row items-center mt-1">
                 <Ionicons name="calendar-outline" size={14} color="#6B7280" />
                 <Text className="text-gray-500 text-xs ml-1">{e.date}</Text>

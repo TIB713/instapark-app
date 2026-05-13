@@ -156,8 +156,8 @@ export default function EventDetail() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="event-detail-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[30px]">
+      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
+        <View className="bg-[#7C3AED] px-5 py-4 rounded-b-[30px]">
           <View className="flex-row items-center mb-3">
             <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2 mr-3">
               <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -185,7 +185,7 @@ export default function EventDetail() {
                 testID={`tab-${k}`}
                 className={`flex-1 py-2 rounded-xl ${tab === k ? "bg-white" : ""}`}
               >
-                <Text className={`text-center font-bold ${tab === k ? "text-[#0F2044]" : "text-white"}`}>{l}</Text>
+                <Text className={`text-center font-bold ${tab === k ? "text-[#7C3AED]" : "text-white"}`}>{l}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -202,7 +202,7 @@ export default function EventDetail() {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 8 }}>
             {FILTERS.map((f) => (
-              <TouchableOpacity key={f} onPress={() => setStatusFilter(f)} className={`px-4 py-2 rounded-full ${statusFilter === f ? "bg-[#0F2044]" : "bg-white border border-gray-200"}`}>
+              <TouchableOpacity key={f} onPress={() => setStatusFilter(f)} className={`px-4 py-2 rounded-full ${statusFilter === f ? "bg-[#7C3AED]" : "bg-white border border-gray-200"}`}>
                 <Text className={`text-xs font-bold ${statusFilter === f ? "text-white" : "text-gray-600"}`}>{f === "ALL" ? "All" : STATUS_CONFIG[f]?.label || f}</Text>
               </TouchableOpacity>
             ))}
@@ -213,7 +213,7 @@ export default function EventDetail() {
             return (
               <TouchableOpacity key={car.id} onPress={() => openCar(car)} activeOpacity={0.7} className="bg-white rounded-2xl p-4 mb-3 flex-row items-center" style={{ borderLeftWidth: 4, borderLeftColor: cfg.border }}>
                 <View className="flex-1">
-                  <Text className="font-black text-[#0F2044] text-base">{car.plate}</Text>
+                  <Text className="font-black text-[#7C3AED] text-base">{car.plate}</Text>
                   <Text className="text-gray-500 text-xs mt-0.5">{car.color} {car.make}</Text>
                   <Text className="text-gray-400 text-xs mt-1">
                     {car.zone && car.slot ? `Zone ${car.zone} · Slot ${car.slot}` : "Not parked yet"}
@@ -241,11 +241,11 @@ export default function EventDetail() {
           {drivers.map((d) => (
             <View key={d.id} className="bg-white rounded-2xl p-4 mb-3">
               <View className="flex-row items-center">
-                <View className="bg-[#0F2044] rounded-full w-12 h-12 items-center justify-center">
+                <View className="bg-[#7C3AED] rounded-full w-12 h-12 items-center justify-center">
                   <Text className="text-white font-black text-lg">{d.name?.[0]?.toUpperCase()}</Text>
                 </View>
                 <TouchableOpacity className="flex-1 ml-3" onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}>
-                  <Text className="font-black text-[#0F2044]">{d.name}</Text>
+                  <Text className="font-black text-[#7C3AED]">{d.name}</Text>
                   <Text className="text-gray-500 text-xs">{d.employee_id}</Text>
                   <View className="flex-row items-center mt-1">
                     <View className={`w-2 h-2 rounded-full mr-1 ${d.available ? "bg-green-500" : "bg-red-500"}`} />
@@ -262,7 +262,7 @@ export default function EventDetail() {
               {d.available || d.assigned ? (
                 <TouchableOpacity
                   onPress={() => toggleAssign(d)}
-                  className={`mt-3 rounded-xl py-2 items-center ${d.assigned ? "border border-red-500" : "bg-[#0F2044]"}`}
+                  className={`mt-3 rounded-xl py-2 items-center ${d.assigned ? "border border-red-500" : "bg-[#7C3AED]"}`}
                 >
                   <Text className={`font-bold ${d.assigned ? "text-red-600" : "text-white"}`}>{d.assigned ? "UNASSIGN" : "ASSIGN"}</Text>
                 </TouchableOpacity>
@@ -279,23 +279,23 @@ export default function EventDetail() {
       {tab === "stats" && (
         <ScrollView className="flex-1 px-4 pt-4">
           <TouchableOpacity onPress={fetchStats} className="bg-white rounded-2xl py-2 items-center mb-4 border border-gray-200">
-            <Text className="text-[#0F2044] font-bold">↻ Refresh Stats</Text>
+            <Text className="text-[#7C3AED] font-bold">↻ Refresh Stats</Text>
           </TouchableOpacity>
           <View className="bg-white rounded-2xl p-5 mb-3">
             <Text className="text-xs font-bold text-gray-500 tracking-widest">⭐ AVG RATING</Text>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">{stats?.avg_rating || "Not enough data"}</Text>
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">{stats?.avg_rating || "Not enough data"}</Text>
           </View>
           <View className="bg-white rounded-2xl p-5 mb-3">
             <Text className="text-xs font-bold text-gray-500 tracking-widest">🏆 TOP DRIVER</Text>
-            <Text className="text-xl font-black text-[#0F2044] mt-1">{stats?.top_driver || "Not enough data"}</Text>
+            <Text className="text-xl font-black text-[#7C3AED] mt-1">{stats?.top_driver || "Not enough data"}</Text>
           </View>
           <View className="bg-white rounded-2xl p-5 mb-3">
             <Text className="text-xs font-bold text-gray-500 tracking-widest">⏱️ AVG RETRIEVAL</Text>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">{stats?.avg_retrieval_minutes ? `${stats.avg_retrieval_minutes} min` : "Not enough data"}</Text>
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">{stats?.avg_retrieval_minutes ? `${stats.avg_retrieval_minutes} min` : "Not enough data"}</Text>
           </View>
           <View className="bg-white rounded-2xl p-5 mb-3">
             <Text className="text-xs font-bold text-gray-500 tracking-widest">🚗 TOTAL CARS</Text>
-            <Text className="text-3xl font-black text-[#0F2044] mt-1">{stats?.total_cars || 0}</Text>
+            <Text className="text-3xl font-black text-[#7C3AED] mt-1">{stats?.total_cars || 0}</Text>
           </View>
         </ScrollView>
       )}
@@ -311,7 +311,7 @@ export default function EventDetail() {
                 <>
                   <View className="flex-row items-start justify-between">
                     <View>
-                      <Text className="text-3xl font-black text-[#0F2044]">{selectedCar.plate}</Text>
+                      <Text className="text-3xl font-black text-[#7C3AED]">{selectedCar.plate}</Text>
                       <Text className="text-gray-500 mt-1">{selectedCar.color} {selectedCar.make}</Text>
                       <Text className="text-gray-400 text-sm mt-1">
                         {selectedCar.zone ? `Zone ${selectedCar.zone} · Slot ${selectedCar.slot}` : "Not parked"}
@@ -346,7 +346,7 @@ export default function EventDetail() {
                       setShowCarModal(false);
                       router.push({ pathname: "/(admin)/qr-display", params: { token: selectedCar.qr_token, plate: selectedCar.plate } });
                     }}
-                    className="bg-[#0F2044] rounded-2xl py-3 items-center mt-5"
+                    className="bg-[#7C3AED] rounded-2xl py-3 items-center mt-5"
                   >
                     <Text className="text-white font-black tracking-widest">VIEW QR</Text>
                   </TouchableOpacity>

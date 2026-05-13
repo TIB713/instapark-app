@@ -156,23 +156,23 @@ export default function Tasks() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="tasks-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[30px]">
+      <SafeAreaView edges={["top"]} className="bg-[#059669]">
+        <View className="bg-[#059669] px-5 py-4 rounded-b-[30px]">
           <View className="flex-row items-center mb-3">
             <TouchableOpacity onPress={() => router.back()} className="bg-white/10 rounded-full p-2">
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <Text className="text-white text-xl font-black flex-1 text-center">My Tasks</Text>
             <TouchableOpacity onPress={() => router.push("/(driver)/checkin")} testID="add-checkin-btn" className="bg-white rounded-full w-10 h-10 items-center justify-center">
-              <Ionicons name="add" size={24} color="#0F2044" />
+              <Ionicons name="add" size={24} color="#059669" />
             </TouchableOpacity>
           </View>
           <View className="flex-row bg-white/10 rounded-2xl p-1">
             <TouchableOpacity onPress={() => setTab("mycars")} className={`flex-1 py-2 rounded-xl ${tab === "mycars" ? "bg-white" : ""}`}>
-              <Text className={`text-center font-bold ${tab === "mycars" ? "text-[#0F2044]" : "text-white"}`}>My Cars</Text>
+              <Text className={`text-center font-bold ${tab === "mycars" ? "text-[#059669]" : "text-white"}`}>My Cars</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setTab("retrievals")} className={`flex-1 py-2 rounded-xl flex-row justify-center items-center ${tab === "retrievals" ? "bg-white" : ""}`}>
-              <Text className={`font-bold ${tab === "retrievals" ? "text-[#0F2044]" : "text-white"}`}>Retrievals</Text>
+              <Text className={`font-bold ${tab === "retrievals" ? "text-[#059669]" : "text-white"}`}>Retrievals</Text>
               {retrievalRequested > 0 && (
                 <View className="bg-red-500 rounded-full px-2 ml-2">
                   <Text className="text-white text-xs font-bold">{retrievalRequested}</Text>
@@ -193,23 +193,23 @@ export default function Tasks() {
         {tab === "mycars" && cars.length === 0 && <Text className="text-gray-400 text-center mt-10">No cars yet. Tap + to check in.</Text>}
         {tab === "mycars" && cars.map((car) => (
           <View key={car.id} className="bg-white rounded-2xl p-4 mb-3" style={{ borderLeftWidth: 4, borderLeftColor: car.status === "PARKED" ? "#22C55E" : "#3B82F6" }}>
-            <Text className="font-black text-[#0F2044] text-base">{car.plate}</Text>
+            <Text className="font-black text-[#059669] text-base">{car.plate}</Text>
             <Text className="text-gray-500 text-xs">{car.color} {car.make}</Text>
             {car.status === "PARKED" ? (
               <View>
                 <Text className="text-green-600 font-bold mt-1">✓ Zone {car.zone} · Slot {car.slot}</Text>
                 <TouchableOpacity onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
-                  className="border border-[#0F2044] rounded-xl py-2 items-center mt-3">
-                  <Text className="text-[#0F2044] font-bold text-xs">SHOW QR CODE</Text>
+                  className="border border-[#059669] rounded-xl py-2 items-center mt-3">
+                  <Text className="text-[#059669] font-bold text-xs">SHOW QR CODE</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View className="flex-row gap-2 mt-3">
                 <TouchableOpacity onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
-                  className="flex-1 border border-[#0F2044] rounded-xl py-2 items-center">
-                  <Text className="text-[#0F2044] font-bold text-xs">QR CODE</Text>
+                  className="flex-1 border border-[#059669] rounded-xl py-2 items-center">
+                  <Text className="text-[#059669] font-bold text-xs">QR CODE</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => openParkModal(car)} className="flex-1 bg-[#0F2044] rounded-xl py-2 items-center">
+                <TouchableOpacity onPress={() => openParkModal(car)} className="flex-1 bg-[#059669] rounded-xl py-2 items-center">
                   <Text className="text-white font-bold text-xs">MARK AS PARKED</Text>
                 </TouchableOpacity>
               </View>
@@ -223,7 +223,7 @@ export default function Tasks() {
           const borderColor = car.status === "RETRIEVAL_REQUESTED" ? "#EAB308" : isMine ? "#F97316" : "#9CA3AF";
           return (
             <View key={car.id} className="bg-white rounded-2xl p-4 mb-3" style={{ borderLeftWidth: 4, borderLeftColor: borderColor }}>
-              <Text className="font-black text-[#0F2044] text-base">{car.plate}</Text>
+              <Text className="font-black text-[#059669] text-base">{car.plate}</Text>
               <Text className="text-gray-500 text-xs">{car.color} {car.make}</Text>
               <Text className="text-gray-400 text-xs mt-1">Zone {car.zone} · Slot {car.slot}</Text>
               {car.status === "RETRIEVAL_REQUESTED" && (
@@ -249,7 +249,7 @@ export default function Tasks() {
         <View className="flex-1 bg-black/50 justify-end">
           <View className="bg-white rounded-t-[30px] p-5" style={{ maxHeight: "85%" }}>
             <View className="items-center mb-3"><View className="bg-gray-300 w-12 h-1 rounded-full" /></View>
-            <Text className="text-xl font-black text-[#0F2044]">Park {selectedCar?.plate}</Text>
+            <Text className="text-xl font-black text-[#059669]">Park {selectedCar?.plate}</Text>
             {eventZones.length === 0 ? (
               <View className="items-center py-10">
                 <Ionicons name="map-outline" size={64} color="#9CA3AF" />
@@ -265,7 +265,7 @@ export default function Tasks() {
                     const isFull = zoneSlots.length > 0 && free === 0;
                     return (
                       <TouchableOpacity key={z.name} onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
-                        className={`px-4 py-2 rounded-full ${isFull ? "bg-red-500" : selectedZone === z.name ? "bg-[#0F2044]" : "bg-white border border-gray-300"}`}>
+                        className={`px-4 py-2 rounded-full ${isFull ? "bg-red-500" : selectedZone === z.name ? "bg-[#059669]" : "bg-white border border-gray-300"}`}>
                         <Text className={`text-xs font-bold ${isFull || selectedZone === z.name ? "text-white" : "text-gray-700"}`}>
                           {z.name} — {isFull ? "FULL" : `${free} free`}
                         </Text>
@@ -280,7 +280,7 @@ export default function Tasks() {
                   columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
                   renderItem={({ item }) => {
                     const isSel = selectedSlot === item.slot_number;
-                    const bg = item.is_occupied ? "#FECACA" : isSel ? "#0F2044" : "#BBF7D0";
+                    const bg = item.is_occupied ? "#FECACA" : isSel ? "#059669" : "#BBF7D0";
                     return (
                       <TouchableOpacity
                         disabled={item.is_occupied}
@@ -299,7 +299,7 @@ export default function Tasks() {
                   style={{ maxHeight: 280 }}
                 />
                 <TouchableOpacity onPress={confirmPark} disabled={!selectedSlot}
-                  className={`rounded-2xl py-4 items-center mt-3 ${selectedSlot ? "bg-[#0F2044]" : "bg-gray-300"}`}>
+                  className={`rounded-2xl py-4 items-center mt-3 ${selectedSlot ? "bg-[#059669]" : "bg-gray-300"}`}>
                   <Text className="text-white font-black tracking-widest">CONFIRM PARKING</Text>
                 </TouchableOpacity>
               </>

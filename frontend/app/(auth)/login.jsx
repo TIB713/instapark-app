@@ -111,13 +111,13 @@ export default function Login() {
                 >
                   <Text
                     className={`font-bold text-base ${
-                      tab === "admin" ? "text-[#0F2044]" : "text-gray-400"
+                      tab === "admin" ? "text-[#7C3AED]" : "text-gray-400"
                     }`}
                   >
                     ADMIN
                   </Text>
                   {tab === "admin" && (
-                    <View className="h-1 w-12 bg-[#0F2044] rounded-full mt-2" />
+                    <View className="h-1 w-12 bg-[#7C3AED] rounded-full mt-2" />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -131,13 +131,13 @@ export default function Login() {
                 >
                   <Text
                     className={`font-bold text-base ${
-                      tab === "driver" ? "text-[#0F2044]" : "text-gray-400"
+                      tab === "driver" ? "text-[#7C3AED]" : "text-gray-400"
                     }`}
                   >
                     DRIVER
                   </Text>
                   {tab === "driver" && (
-                    <View className="h-1 w-12 bg-[#0F2044] rounded-full mt-2" />
+                    <View className="h-1 w-12 bg-[#7C3AED] rounded-full mt-2" />
                   )}
                 </TouchableOpacity>
               </View>

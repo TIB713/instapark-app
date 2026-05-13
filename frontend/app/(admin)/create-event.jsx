@@ -84,8 +84,8 @@ export default function CreateEvent() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]" testID="create-event-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#0F2044]">
-        <View className="bg-[#0F2044] px-5 py-4 rounded-b-[30px] flex-row items-center">
+      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
+        <View className="bg-[#7C3AED] px-5 py-4 rounded-b-[30px] flex-row items-center">
           <TouchableOpacity
             onPress={() => router.back()}
             className="bg-white/10 rounded-full p-2 mr-3"
@@ -132,7 +132,7 @@ export default function CreateEvent() {
                   className="flex-row items-center py-3"
                   testID="start-date-btn"
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#0F2044" />
+                  <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
                   <Text className="ml-2 text-gray-900">
                     {format(date, "MMM d, yyyy")}
                   </Text>
@@ -145,7 +145,7 @@ export default function CreateEvent() {
                   onPress={() => setShowEDP(true)}
                   className="flex-row items-center py-3"
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#0F2044" />
+                  <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
                   <Text className="ml-2 text-gray-900">
                     {format(endDate, "MMM d, yyyy")}
                   </Text>
@@ -161,7 +161,7 @@ export default function CreateEvent() {
                   onPress={() => setShowSTP(true)}
                   className="flex-row items-center py-3"
                 >
-                  <Ionicons name="time-outline" size={18} color="#0F2044" />
+                  <Ionicons name="time-outline" size={18} color="#7C3AED" />
                   <Text className="ml-2 text-gray-900">{startTime}</Text>
                 </TouchableOpacity>
               </Field>
@@ -172,7 +172,7 @@ export default function CreateEvent() {
                   onPress={() => setShowETP(true)}
                   className="flex-row items-center py-3"
                 >
-                  <Ionicons name="time-outline" size={18} color="#0F2044" />
+                  <Ionicons name="time-outline" size={18} color="#7C3AED" />
                   <Text className="ml-2 text-gray-900">{endTime}</Text>
                 </TouchableOpacity>
               </Field>
@@ -228,7 +228,7 @@ export default function CreateEvent() {
             onPress={() => setZones([...zones, { name: "", slots: 10 }])}
             className="bg-white rounded-2xl py-3 items-center border border-dashed border-gray-300 mb-3"
           >
-            <Text className="text-[#0F2044] font-bold">+ Add Zone</Text>
+            <Text className="text-[#7C3AED] font-bold">+ Add Zone</Text>
           </TouchableOpacity>
 
           <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2 mt-3">
@@ -260,7 +260,7 @@ export default function CreateEvent() {
             onPress={() => setGates([...gates, ""])}
             className="bg-white rounded-2xl py-3 items-center border border-dashed border-gray-300 mb-6"
           >
-            <Text className="text-[#0F2044] font-bold">+ Add Gate</Text>
+            <Text className="text-[#7C3AED] font-bold">+ Add Gate</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -268,7 +268,7 @@ export default function CreateEvent() {
             onPress={save}
             disabled={saving}
             activeOpacity={0.7}
-            className="bg-[#0F2044] rounded-2xl py-4 items-center mb-10"
+            className="bg-[#7C3AED] rounded-2xl py-4 items-center mb-10"
           >
             {saving ? (
               <ActivityIndicator color="#fff" />
