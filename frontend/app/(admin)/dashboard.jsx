@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteItem as secureDelete } from "../../lib/secure";
-import { format } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
@@ -23,6 +22,14 @@ const greeting = () => {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
+};
+
+const cardShadow = {
+  shadowColor: "#7C3AED",
+  shadowOpacity: 0.08,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 4,
 };
 
 export default function Dashboard() {
@@ -36,7 +43,6 @@ export default function Dashboard() {
   const fetchAll = useCallback(async () => {
     try {
       const { data: evs } = await api.get("/events");
-      // Auto-close expired active events
       const now = new Date();
       for (const e of evs) {
         if (e.status === "active" && e.end_date && e.end_time) {
@@ -62,9 +68,8 @@ export default function Dashboard() {
       } catch {
         setDrivers([]);
       }
-    } catch (err) {
-      // 401 handled by interceptor
-    } finally {
+    } catch (err) {}
+    finally {
       setLoading(false);
       setRefreshing(false);
     }
@@ -106,7 +111,6 @@ export default function Dashboard() {
 
   const active = events.filter((e) => e.status === "active");
   const past = events.filter((e) => e.status !== "active");
-  const totalCars = events.reduce((s, e) => s + (e.total_cars || 0), 0);
   const avgRating =
     events.filter((e) => e.avg_rating).length > 0
       ? (
@@ -117,27 +121,55 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-[#F9FAFB] justify-center items-center">
+      <View style={{ flex: 1, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#7C3AED" />
       </View>
     );
   }
 
+  const statCards = [
+    { id: "total", testID: "stat-total-events", color: "#7C3AED", icon: "calendar", value: events.length, label: "TOTAL EVENTS", onPress: () => router.push("/(admin)/all-events") },
+    { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: active.length, label: "ACTIVE NOW", onPress: () => router.push("/(admin)/all-events") },
+    { id: "drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-drivers") },
+    { id: "rating", testID: "stat-rating", color: "#F59E0B", icon: "star", value: avgRating, label: "AVG RATING", onPress: () => router.push("/(admin)/all-events") },
+  ];
+
   return (
-    <View testID="admin-dashboard" className="flex-1 bg-[#F9FAFB]">
-      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
-        <View className="bg-[#7C3AED] px-6 pt-2 pb-10 rounded-b-[40px]">
-          <View className="flex-row justify-between items-start">
-            <View className="flex-1">
-              <Text className="text-white/70 text-sm">{greeting()},</Text>
-              <Text className="text-white text-2xl font-black mt-1">
+    <View testID="admin-dashboard" style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#7C3AED" }}>
+        <View
+          style={{
+            backgroundColor: "#7C3AED",
+            borderBottomLeftRadius: 44,
+            borderBottomRightRadius: 44,
+            paddingBottom: 36,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(79,70,229,0.5)",
+              borderBottomLeftRadius: 44,
+              borderBottomRightRadius: 44,
+            }}
+          />
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{greeting()},</Text>
+              <Text style={{ color: "#fff", fontSize: 26, fontWeight: "900", marginTop: 4 }}>
                 {user?.name || "Admin"}
               </Text>
             </View>
             <TouchableOpacity
               testID="signout-btn"
               onPress={handleSignOut}
-              className="bg-white/10 rounded-full p-3"
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 12 }}
               activeOpacity={0.7}
             >
               <Ionicons name="log-out-outline" size={22} color="#fff" />
@@ -147,175 +179,148 @@ export default function Dashboard() {
       </SafeAreaView>
 
       <ScrollView
-        className="flex-1 -mt-4"
+        style={{ flex: 1, marginTop: -20 }}
         contentContainerStyle={{ paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
         >
-          <TouchableOpacity
-            testID="stat-total-events"
-            onPress={() => router.push("/(admin)/all-events")}
-            activeOpacity={0.7}
-            className="bg-white rounded-2xl px-5 py-4 border-l-4 border-[#4F46E5] shadow-sm"
-            style={{ minWidth: 140 }}
-          >
-            <Text className="text-xs font-bold text-gray-500 tracking-widest">
-              TOTAL EVENTS
-            </Text>
-            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
-              {events.length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="stat-active"
-            onPress={() => router.push("/(admin)/all-events")}
-            activeOpacity={0.7}
-            className="bg-white rounded-2xl px-5 py-4 border-l-4 border-green-500 shadow-sm"
-            style={{ minWidth: 140 }}
-          >
-            <View className="flex-row items-center">
-              <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-              <Text className="text-xs font-bold text-gray-500 tracking-widest">
-                ACTIVE NOW
+          {statCards.map((s) => (
+            <TouchableOpacity
+              key={s.id}
+              testID={s.testID}
+              onPress={s.onPress}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: s.color,
+                borderRadius: 24,
+                paddingHorizontal: 18,
+                paddingVertical: 18,
+                minWidth: 150,
+                shadowColor: s.color,
+                shadowOpacity: 0.25,
+                shadowRadius: 14,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 5,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Ionicons name={s.icon} size={22} color="#fff" />
+                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 99, padding: 4 }}>
+                  <Ionicons name="chevron-forward" size={14} color="#fff" />
+                </View>
+              </View>
+              <Text style={{ color: "#fff", fontSize: 32, fontWeight: "900", marginTop: 10 }}>{s.value}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: 2 }}>
+                {s.label}
               </Text>
-            </View>
-            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
-              {active.length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="stat-drivers"
-            onPress={() => router.push("/(admin)/manage-drivers")}
-            activeOpacity={0.7}
-            className="bg-white rounded-2xl px-5 py-4 border-l-4 border-purple-500 shadow-sm"
-            style={{ minWidth: 140 }}
-          >
-            <Text className="text-xs font-bold text-gray-500 tracking-widest">
-              TOTAL DRIVERS
-            </Text>
-            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
-              {drivers.length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="stat-rating"
-            onPress={() => router.push("/(admin)/all-events")}
-            activeOpacity={0.7}
-            className="bg-white rounded-2xl px-5 py-4 border-l-4 border-amber-500 shadow-sm"
-            style={{ minWidth: 140 }}
-          >
-            <Text className="text-xs font-bold text-gray-500 tracking-widest">
-              ⭐ AVG RATING
-            </Text>
-            <Text className="text-3xl font-black text-[#7C3AED] mt-1">
-              {avgRating}
-            </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
 
-        <View className="px-4 mt-6 gap-3">
-          <TouchableOpacity
-            testID="quick-new-event"
-            onPress={() => router.push("/(admin)/create-event")}
-            activeOpacity={0.7}
-            className="bg-[#7C3AED] rounded-2xl px-5 py-4 flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="add-circle" size={22} color="#fff" />
-              <Text className="text-white font-bold text-base ml-3">
-                New Event
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="quick-manage-drivers"
-            onPress={() => router.push("/(admin)/manage-drivers")}
-            activeOpacity={0.7}
-            className="bg-[#4F46E5] rounded-2xl px-5 py-4 flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="people" size={22} color="#fff" />
-              <Text className="text-white font-bold text-base ml-3">
-                Manage Drivers
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color="#fff" />
-          </TouchableOpacity>
+        {/* Quick Actions */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <Text style={labelStyle}>QUICK ACTIONS</Text>
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
+            <TouchableOpacity
+              testID="quick-new-event"
+              onPress={() => router.push("/(admin)/create-event")}
+              activeOpacity={0.85}
+              style={[quickAction, cardShadow]}
+            >
+              <View style={{ backgroundColor: "#EDE9FE", borderRadius: 99, padding: 10 }}>
+                <Ionicons name="add-circle" size={22} color="#7C3AED" />
+              </View>
+              <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>New Event</Text>
+              <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Create new valet event</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="quick-manage-drivers"
+              onPress={() => router.push("/(admin)/manage-drivers")}
+              activeOpacity={0.85}
+              style={[quickAction, cardShadow]}
+            >
+              <View style={{ backgroundColor: "#E0E7FF", borderRadius: 99, padding: 10 }}>
+                <Ionicons name="people" size={22} color="#4F46E5" />
+              </View>
+              <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Drivers</Text>
+              <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Manage your team</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View className="px-4 mt-8">
-          <View className="flex-row items-center mb-3">
-            <Text className="text-lg font-black text-[#7C3AED]">
-              Active Events
-            </Text>
-            <View className="ml-2 bg-green-100 px-2.5 py-0.5 rounded-full">
-              <Text className="text-green-700 font-bold text-xs">
-                {active.length}
-              </Text>
+        {/* Active events */}
+        <View style={{ paddingHorizontal: 16, marginTop: 28 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+            <Text style={labelStyle}>ACTIVE EVENTS</Text>
+            <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 10, paddingVertical: 2, borderRadius: 99, marginLeft: 8 }}>
+              <Text style={{ color: "#059669", fontWeight: "800", fontSize: 11 }}>{active.length}</Text>
             </View>
           </View>
           {active.length === 0 ? (
-            <Text className="text-gray-400 text-sm">No active events</Text>
+            <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: 28 }]}>
+              <Text style={{ fontSize: 36 }}>📅</Text>
+              <Text style={{ color: "#6B7280", marginTop: 6, fontSize: 13 }}>No active events</Text>
+            </View>
           ) : (
             active.map((e) => (
               <TouchableOpacity
                 key={e.id}
                 testID={`active-event-${e.id}`}
                 onPress={() => openEvent(e)}
-                activeOpacity={0.7}
-                className="bg-white rounded-2xl p-4 mb-3 border-l-4 border-green-500 flex-row items-center"
+                activeOpacity={0.85}
+                style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#059669", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
               >
-                <View className="flex-1">
-                  <Text className="font-black text-[#7C3AED] text-base">
-                    {e.name}
-                  </Text>
-                  <Text className="text-gray-500 text-xs mt-1">
-                    {e.date} · {e.start_time}—{e.end_time}
-                  </Text>
-                  <Text className="text-gray-500 text-xs mt-0.5">{e.venue}</Text>
-                  <View className="flex-row items-center mt-2">
-                    <View className="bg-green-100 px-2 py-0.5 rounded-full">
-                      <Text className="text-green-700 font-bold text-[10px]">
-                        ACTIVE
-                      </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 12 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Ionicons name="calendar-outline" size={13} color="#7C3AED" />
+                      <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 4 }}>{e.date}</Text>
                     </View>
-                    <Text className="text-gray-500 text-xs ml-2">
-                      0/{e.max_cars} cars
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Ionicons name="time-outline" size={13} color="#7C3AED" />
+                      <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 4 }}>{e.start_time}—{e.end_time}</Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                    <Ionicons name="location-outline" size={13} color="#7C3AED" />
+                    <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 4 }}>{e.venue}</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
+                    <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
+                      <Text style={{ color: "#059669", fontWeight: "800", fontSize: 10, letterSpacing: 1 }}>ACTIVE</Text>
+                    </View>
+                    <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 8 }}>Max {e.max_cars} cars</Text>
+                  </View>
+                  {/* progress bar */}
+                  <View style={{ height: 4, backgroundColor: "#F3F4F6", borderRadius: 99, marginTop: 10, overflow: "hidden" }}>
+                    <View style={{ height: 4, width: `${Math.min(100, ((e.total_cars || 0) / Math.max(1, e.max_cars)) * 100)}%`, backgroundColor: "#059669", borderRadius: 99 }} />
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             ))
           )}
         </View>
 
         {past.length > 0 && (
-          <View className="px-4 mt-6">
-            <Text className="text-lg font-black text-[#7C3AED] mb-3">
-              Past Events
-            </Text>
+          <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+            <Text style={labelStyle}>PAST EVENTS</Text>
+            <View style={{ height: 12 }} />
             {past.slice(0, 5).map((e) => (
               <TouchableOpacity
                 key={e.id}
                 onPress={() => openEvent(e)}
-                activeOpacity={0.7}
-                className="bg-white rounded-2xl p-4 mb-3 border-l-4 border-gray-300 flex-row items-center"
+                activeOpacity={0.85}
+                style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#D1D5DB", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
               >
-                <View className="flex-1">
-                  <Text className="font-black text-gray-700 text-base">
-                    {e.name}
-                  </Text>
-                  <Text className="text-gray-400 text-xs mt-1">
-                    {e.date} · {e.venue}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "900", color: "#374151", fontSize: 15 }}>{e.name}</Text>
+                  <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}>{e.date} · {e.venue}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </TouchableOpacity>
@@ -326,3 +331,25 @@ export default function Dashboard() {
     </View>
   );
 }
+
+const labelStyle = {
+  fontSize: 11,
+  fontWeight: "700",
+  color: "#6B7280",
+  letterSpacing: 3,
+  textTransform: "uppercase",
+  marginBottom: 8,
+};
+
+const cardBase = {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 24,
+  padding: 18,
+};
+
+const quickAction = {
+  flex: 1,
+  backgroundColor: "#FFFFFF",
+  borderRadius: 24,
+  padding: 16,
+};

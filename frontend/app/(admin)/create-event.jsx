@@ -83,119 +83,100 @@ export default function CreateEvent() {
   };
 
   return (
-    <View className="flex-1 bg-[#F9FAFB]" testID="create-event-screen">
-      <SafeAreaView edges={["top"]} className="bg-[#7C3AED]">
-        <View className="bg-[#7C3AED] px-5 py-4 rounded-b-[30px] flex-row items-center">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="bg-white/10 rounded-full p-2 mr-3"
-            testID="back-btn"
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text className="text-white text-xl font-black flex-1">
-            Create Event
-          </Text>
+    <View style={{ flex: 1, backgroundColor: "#F5F3FF" }} testID="create-event-screen">
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#7C3AED" }}>
+        <View style={headerWrap}>
+          <View style={headerOverlay} />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity onPress={() => router.back()} style={iconBtn} testID="back-btn">
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+              Create Event
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <ScrollView className="flex-1 px-5 pt-5" keyboardShouldPersistTaps="handled">
-          <Field label="EVENT NAME">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 20 }} keyboardShouldPersistTaps="handled">
+          <Label>EVENT NAME</Label>
+          <InputRow icon="calendar-outline">
             <TextInput
               testID="event-name-input"
               value={name}
               onChangeText={setName}
               placeholder="Wedding Reception"
-              className="text-base text-gray-900 py-3"
+              placeholderTextColor="#9CA3AF"
+              style={textInputStyle}
             />
-          </Field>
+          </InputRow>
 
-          <Field label="VENUE">
+          <Label>VENUE</Label>
+          <InputRow icon="location-outline">
             <TextInput
               testID="event-venue-input"
               value={venue}
               onChangeText={setVenue}
               placeholder="Grand Ballroom"
-              className="text-base text-gray-900 py-3"
+              placeholderTextColor="#9CA3AF"
+              style={textInputStyle}
             />
-          </Field>
+          </InputRow>
 
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Field label="START DATE">
-                <TouchableOpacity
-                  onPress={() => setShowDP(true)}
-                  className="flex-row items-center py-3"
-                  testID="start-date-btn"
-                >
-                  <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                  <Text className="ml-2 text-gray-900">
-                    {format(date, "MMM d, yyyy")}
-                  </Text>
-                </TouchableOpacity>
-              </Field>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Label>START DATE</Label>
+              <TouchableOpacity onPress={() => setShowDP(true)} style={inputBoxStyle} testID="start-date-btn">
+                <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
+                <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(date, "MMM d, yyyy")}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
             </View>
-            <View className="flex-1">
-              <Field label="END DATE">
-                <TouchableOpacity
-                  onPress={() => setShowEDP(true)}
-                  className="flex-row items-center py-3"
-                >
-                  <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                  <Text className="ml-2 text-gray-900">
-                    {format(endDate, "MMM d, yyyy")}
-                  </Text>
-                </TouchableOpacity>
-              </Field>
+            <View style={{ flex: 1 }}>
+              <Label>END DATE</Label>
+              <TouchableOpacity onPress={() => setShowEDP(true)} style={inputBoxStyle}>
+                <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
+                <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(endDate, "MMM d, yyyy")}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
             </View>
           </View>
 
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Field label="START TIME">
-                <TouchableOpacity
-                  onPress={() => setShowSTP(true)}
-                  className="flex-row items-center py-3"
-                >
-                  <Ionicons name="time-outline" size={18} color="#7C3AED" />
-                  <Text className="ml-2 text-gray-900">{startTime}</Text>
-                </TouchableOpacity>
-              </Field>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Label>START TIME</Label>
+              <TouchableOpacity onPress={() => setShowSTP(true)} style={inputBoxStyle}>
+                <Ionicons name="time-outline" size={18} color="#7C3AED" />
+                <Text style={{ marginLeft: 10, color: "#111827", flex: 1 }}>{startTime}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
             </View>
-            <View className="flex-1">
-              <Field label="END TIME">
-                <TouchableOpacity
-                  onPress={() => setShowETP(true)}
-                  className="flex-row items-center py-3"
-                >
-                  <Ionicons name="time-outline" size={18} color="#7C3AED" />
-                  <Text className="ml-2 text-gray-900">{endTime}</Text>
-                </TouchableOpacity>
-              </Field>
+            <View style={{ flex: 1 }}>
+              <Label>END TIME</Label>
+              <TouchableOpacity onPress={() => setShowETP(true)} style={inputBoxStyle}>
+                <Ionicons name="time-outline" size={18} color="#7C3AED" />
+                <Text style={{ marginLeft: 10, color: "#111827", flex: 1 }}>{endTime}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
             </View>
           </View>
 
-          <Field label="MAX CARS">
+          <Label>MAX CARS</Label>
+          <InputRow icon="car-outline">
             <TextInput
               value={maxCars}
               onChangeText={setMaxCars}
               keyboardType="numeric"
-              className="text-base text-gray-900 py-3"
+              placeholderTextColor="#9CA3AF"
+              style={textInputStyle}
             />
-          </Field>
+          </InputRow>
 
-          <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2 mt-3">
-            PARKING ZONES
-          </Text>
+          <Label>PARKING ZONES</Label>
           {zones.map((z, i) => (
-            <View
-              key={i}
-              className="bg-white rounded-2xl p-3 mb-2 flex-row items-center gap-2"
-            >
+            <View key={i} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+              <Ionicons name="location" size={18} color="#7C3AED" />
               <TextInput
                 value={z.name}
                 onChangeText={(v) => {
@@ -204,7 +185,8 @@ export default function CreateEvent() {
                   setZones(n);
                 }}
                 placeholder="Zone"
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2"
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}
               />
               <TextInput
                 value={String(z.slots)}
@@ -215,30 +197,26 @@ export default function CreateEvent() {
                 }}
                 keyboardType="numeric"
                 placeholder="Slots"
-                className="w-20 border border-gray-200 rounded-xl px-3 py-2"
+                placeholderTextColor="#9CA3AF"
+                style={{ width: 70, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, textAlign: "center" }}
               />
-              <TouchableOpacity
-                onPress={() => setZones(zones.filter((_, k) => k !== i))}
-              >
-                <Ionicons name="close-circle" size={24} color="#DC2626" />
+              <TouchableOpacity onPress={() => setZones(zones.filter((_, k) => k !== i))}>
+                <Ionicons name="close-circle" size={24} color="#F43F5E" />
               </TouchableOpacity>
             </View>
           ))}
           <TouchableOpacity
             onPress={() => setZones([...zones, { name: "", slots: 10 }])}
-            className="bg-white rounded-2xl py-3 items-center border border-dashed border-gray-300 mb-3"
+            style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 16, flexDirection: "row", justifyContent: "center" }}
           >
-            <Text className="text-[#7C3AED] font-bold">+ Add Zone</Text>
+            <Ionicons name="add" size={18} color="#7C3AED" />
+            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD ZONE</Text>
           </TouchableOpacity>
 
-          <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2 mt-3">
-            ENTRY GATES
-          </Text>
+          <Label>ENTRY GATES</Label>
           {gates.map((g, i) => (
-            <View
-              key={i}
-              className="bg-white rounded-2xl p-3 mb-2 flex-row items-center gap-2"
-            >
+            <View key={i} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+              <Ionicons name="enter-outline" size={18} color="#7C3AED" />
               <TextInput
                 value={g}
                 onChangeText={(v) => {
@@ -247,37 +225,36 @@ export default function CreateEvent() {
                   setGates(n);
                 }}
                 placeholder="Gate name"
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2"
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}
               />
-              <TouchableOpacity
-                onPress={() => setGates(gates.filter((_, k) => k !== i))}
-              >
-                <Ionicons name="close-circle" size={24} color="#DC2626" />
+              <TouchableOpacity onPress={() => setGates(gates.filter((_, k) => k !== i))}>
+                <Ionicons name="close-circle" size={24} color="#F43F5E" />
               </TouchableOpacity>
             </View>
           ))}
           <TouchableOpacity
             onPress={() => setGates([...gates, ""])}
-            className="bg-white rounded-2xl py-3 items-center border border-dashed border-gray-300 mb-6"
+            style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 24, flexDirection: "row", justifyContent: "center" }}
           >
-            <Text className="text-[#7C3AED] font-bold">+ Add Gate</Text>
+            <Ionicons name="add" size={18} color="#7C3AED" />
+            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD GATE</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             testID="save-event-btn"
             onPress={save}
             disabled={saving}
-            activeOpacity={0.7}
-            className="bg-[#7C3AED] rounded-2xl py-4 items-center mb-10"
+            activeOpacity={0.85}
+            style={primaryBtn}
           >
             {saving ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="text-white font-black tracking-widest">
-                CREATE EVENT
-              </Text>
+              <Text style={primaryBtnText}>CREATE EVENT</Text>
             )}
           </TouchableOpacity>
+          <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -329,15 +306,87 @@ export default function CreateEvent() {
   );
 }
 
-function Field({ label, children }) {
+function Label({ children }) {
   return (
-    <View className="mb-3">
-      <Text className="text-xs font-bold text-gray-500 tracking-widest mb-2">
-        {label}
-      </Text>
-      <View className="bg-white rounded-2xl px-4 border border-gray-200">
-        {children}
-      </View>
+    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 8, marginTop: 4 }}>
+      {children}
+    </Text>
+  );
+}
+
+function InputRow({ icon, children }) {
+  return (
+    <View style={inputRowStyle}>
+      <Ionicons name={icon} size={18} color="#7C3AED" />
+      <View style={{ flex: 1, marginLeft: 10 }}>{children}</View>
     </View>
   );
 }
+
+const headerWrap = {
+  backgroundColor: "#7C3AED",
+  borderBottomLeftRadius: 44,
+  borderBottomRightRadius: 44,
+  paddingHorizontal: 20,
+  paddingTop: 8,
+  paddingBottom: 24,
+};
+const headerOverlay = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(79,70,229,0.5)",
+  borderBottomLeftRadius: 44,
+  borderBottomRightRadius: 44,
+};
+const iconBtn = {
+  backgroundColor: "rgba(255,255,255,0.15)",
+  borderRadius: 99,
+  padding: 8,
+};
+const inputRowStyle = {
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 16,
+  marginBottom: 16,
+};
+const textInputStyle = {
+  paddingVertical: 14,
+  fontSize: 15,
+  color: "#111827",
+};
+const inputBoxStyle = {
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 14,
+  paddingVertical: 14,
+  marginBottom: 16,
+};
+const primaryBtn = {
+  backgroundColor: "#7C3AED",
+  borderRadius: 16,
+  paddingVertical: 16,
+  alignItems: "center",
+  marginBottom: 16,
+  shadowColor: "#7C3AED",
+  shadowOpacity: 0.3,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 6,
+};
+const primaryBtnText = {
+  color: "#fff",
+  fontWeight: "900",
+  fontSize: 15,
+  letterSpacing: 2,
+};
