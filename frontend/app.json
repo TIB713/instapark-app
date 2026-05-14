@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "instapark",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.instapark.app"
@@ -45,7 +44,7 @@
           "cameraPermission": "Allow InstaPark to use your camera."
         }
       ],
-      "@react-native-community/datetimepicker",
+      // "@react-native-community/datetimepicker",
       "expo-font",
       "expo-secure-store"
     ],
