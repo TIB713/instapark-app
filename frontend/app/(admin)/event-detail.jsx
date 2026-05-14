@@ -267,6 +267,7 @@ export default function EventDetail() {
       {tab === "cars" && (
         <ScrollView
           style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -390,7 +391,10 @@ export default function EventDetail() {
       )}
 
       {tab === "drivers" && (
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           {drivers.length === 0 && (
             <View style={{ alignItems: "center", marginTop: 40 }}>
               <Text style={{ fontSize: 48 }}>👥</Text>
@@ -498,7 +502,10 @@ export default function EventDetail() {
       )}
 
       {tab === "stats" && (
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: 16, paddingVertical: 10, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
             <Text style={{ color: "#7C3AED", fontWeight: "800", letterSpacing: 1 }}>↻ Refresh Stats</Text>
           </TouchableOpacity>

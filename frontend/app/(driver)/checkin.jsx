@@ -127,7 +127,18 @@ export default function CheckIn() {
         event_id: currentEventId,
         check_in_driver_id: resolvedDriverId,
       });
-      try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {}
+      if (car.warning) {
+        await new Promise((resolve) => {
+          Alert.alert(
+            "⚠️ Almost Full",
+            "This event is almost at capacity. The car has been checked in.",
+            [{ text: "OK", onPress: resolve }]
+          );
+        });
+      }
+      try {
+        await api.post(`/slots/event/${currentEventId}/initialize`);
+      } catch {}
       try { await AsyncStorage.removeItem("checkin_photos"); } catch {}
       router.replace({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } });
       uploadPhotosInBackground(car.id, photos);
@@ -179,7 +190,11 @@ export default function CheckIn() {
       </SafeAreaView>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 18 }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 20, paddingTop: 18 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           <Lbl>LICENSE PLATE *</Lbl>
           <View style={inputRow}>
             <Ionicons name="car-outline" size={20} color="#059669" />

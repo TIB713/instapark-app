@@ -109,7 +109,10 @@ export default function AllEvents() {
         ))}
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+      <ScrollView
+        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {loading && <ActivityIndicator color="#7C3AED" />}
         {filtered.map((e) => (
           <TouchableOpacity

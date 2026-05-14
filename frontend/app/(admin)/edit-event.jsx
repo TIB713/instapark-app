@@ -36,6 +36,9 @@ export default function EditEvent() {
   const [showSTP, setShowSTP] = useState(false);
   const [showETP, setShowETP] = useState(false);
 
+  const totalSlots = zones.reduce((sum, z) => sum + (parseInt(z.slots) || 0), 0);
+  const maxCarsInt = parseInt(maxCars) || 200;
+
   const fmtTime = (d) =>
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
@@ -69,6 +72,13 @@ export default function EditEvent() {
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (endDT <= startDT) {
       Alert.alert("Invalid", "End must be after start");
+      return;
+    }
+    if (totalSlots > maxCarsInt) {
+      Alert.alert(
+        "Invalid Zones",
+        `Total slots (${totalSlots}) cannot exceed max cars (${maxCarsInt}). Please reduce zone slots.`
+      );
       return;
     }
     setSaving(true);
@@ -173,6 +183,85 @@ export default function EditEvent() {
             <Ionicons name="car-outline" size={18} color="#7C3AED" />
             <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
           </View>
+
+          <Label>PARKING ZONES</Label>
+          {zones.map((z, i) => (
+            <View key={i} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+              <Ionicons name="location" size={18} color="#7C3AED" />
+              <TextInput
+                value={z.name}
+                onChangeText={(v) => {
+                  const n = [...zones];
+                  n[i].name = v;
+                  setZones(n);
+                }}
+                placeholder="Zone"
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}
+              />
+              <TextInput
+                value={String(z.slots)}
+                onChangeText={(v) => {
+                  const n = [...zones];
+                  n[i].slots = parseInt(v) || 0;
+                  setZones(n);
+                }}
+                keyboardType="numeric"
+                placeholder="Slots"
+                placeholderTextColor="#9CA3AF"
+                style={{ width: 70, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, textAlign: "center" }}
+              />
+              <TouchableOpacity onPress={() => setZones(zones.filter((_, k) => k !== i))}>
+                <Ionicons name="close-circle" size={24} color="#F43F5E" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <Text
+            style={{
+              color: totalSlots > maxCarsInt ? "#F43F5E" : "#059669",
+              fontWeight: "700",
+              fontSize: 13,
+              textAlign: "right",
+              marginBottom: 8,
+            }}
+          >
+            Total slots: {totalSlots} / {maxCarsInt}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setZones([...zones, { name: "", slots: 10 }])}
+            style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 16, flexDirection: "row", justifyContent: "center" }}
+          >
+            <Ionicons name="add" size={18} color="#7C3AED" />
+            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD ZONE</Text>
+          </TouchableOpacity>
+
+          <Label>ENTRY GATES</Label>
+          {gates.map((g, i) => (
+            <View key={i} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+              <Ionicons name="enter-outline" size={18} color="#7C3AED" />
+              <TextInput
+                value={g}
+                onChangeText={(v) => {
+                  const n = [...gates];
+                  n[i] = v;
+                  setGates(n);
+                }}
+                placeholder="Gate name"
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}
+              />
+              <TouchableOpacity onPress={() => setGates(gates.filter((_, k) => k !== i))}>
+                <Ionicons name="close-circle" size={24} color="#F43F5E" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity
+            onPress={() => setGates([...gates, ""])}
+            style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 24, flexDirection: "row", justifyContent: "center" }}
+          >
+            <Ionicons name="add" size={18} color="#7C3AED" />
+            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD GATE</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={save}

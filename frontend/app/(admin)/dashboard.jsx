@@ -180,7 +180,7 @@ export default function Dashboard() {
 
       <ScrollView
         style={{ flex: 1, marginTop: -20 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
         <ScrollView

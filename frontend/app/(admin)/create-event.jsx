@@ -37,6 +37,9 @@ export default function CreateEvent() {
   const [showETP, setShowETP] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const totalSlots = zones.reduce((sum, z) => sum + (parseInt(z.slots) || 0), 0);
+  const maxCarsInt = parseInt(maxCars) || 200;
+
   const fmtTime = (d) => {
     const h = String(d.getHours()).padStart(2, "0");
     const m = String(d.getMinutes()).padStart(2, "0");
@@ -56,6 +59,13 @@ export default function CreateEvent() {
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     if (endDT <= startDT) {
       Alert.alert("Invalid", "End must be after start");
+      return;
+    }
+    if (totalSlots > maxCarsInt) {
+      Alert.alert(
+        "Invalid Zones",
+        `Total slots (${totalSlots}) cannot exceed max cars (${maxCarsInt}). Please reduce zone slots.`
+      );
       return;
     }
     setSaving(true);
@@ -205,6 +215,17 @@ export default function CreateEvent() {
               </TouchableOpacity>
             </View>
           ))}
+          <Text
+            style={{
+              color: totalSlots > maxCarsInt ? "#F43F5E" : "#059669",
+              fontWeight: "700",
+              fontSize: 13,
+              textAlign: "right",
+              marginBottom: 8,
+            }}
+          >
+            Total slots: {totalSlots} / {maxCarsInt}
+          </Text>
           <TouchableOpacity
             onPress={() => setZones([...zones, { name: "", slots: 10 }])}
             style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 16, flexDirection: "row", justifyContent: "center" }}

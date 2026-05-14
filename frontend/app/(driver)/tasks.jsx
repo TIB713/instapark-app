@@ -7,6 +7,7 @@ import {
   Modal,
   FlatList,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +43,7 @@ export default function Tasks() {
   const [selectedZone, setSelectedZone] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -56,6 +58,12 @@ export default function Tasks() {
       setRetrievals(data || []);
     } catch {}
   }, [currentEventId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchMyCars(), fetchRetrievals()]);
+    setRefreshing(false);
+  }, [fetchMyCars, fetchRetrievals]);
 
   const refreshPending = async () => setPendingCount(await getQueueCount());
 
@@ -291,7 +299,13 @@ export default function Tasks() {
         </View>
       )}
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}>
+      <ScrollView
+        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" colors={["#059669"]} />
+        }
+      >
         {tab === "mycars" && cars.length === 0 && (
           <View style={{ alignItems: "center", marginTop: 60 }}>
             <Text style={{ fontSize: 64 }}>🚗</Text>

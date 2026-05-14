@@ -163,7 +163,10 @@ export default function DriverStats() {
       </View>
 
       {tab === "performance" ? (
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           {/* Lifetime stats */}
           <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
             <View style={{ flex: 1, backgroundColor: "#7C3AED", borderRadius: 24, padding: 18, shadowColor: "#7C3AED", shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 5 }}>
@@ -236,7 +239,10 @@ export default function DriverStats() {
           <View style={{ height: 40 }} />
         </ScrollView>
       ) : (
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           <ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>
             {["all", "active", "closed"].map((f) => (
               <TouchableOpacity

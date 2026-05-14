@@ -33,6 +33,13 @@ export default function ManageDrivers() {
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredDrivers = drivers.filter(
+    (d) =>
+      d.name?.toLowerCase().includes(search.toLowerCase()) ||
+      d.employee_id?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const fetchDrivers = async () => {
     try {
@@ -107,9 +114,38 @@ export default function ManageDrivers() {
         </View>
       </SafeAreaView>
 
+      <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 14,
+            paddingVertical: 2,
+          }}
+        >
+          <Ionicons name="search-outline" size={18} color="#7C3AED" />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search by name or employee ID"
+            placeholderTextColor="#9CA3AF"
+            style={{ flex: 1, marginLeft: 10, paddingVertical: 12, fontSize: 14, color: "#111827" }}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch("")}>
+              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
         {loading && <ActivityIndicator color="#7C3AED" />}
-        {drivers.map((d) => (
+        {filteredDrivers.map((d) => (
           <TouchableOpacity
             key={d.id}
             onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}
@@ -151,6 +187,13 @@ export default function ManageDrivers() {
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
         ))}
+        {filteredDrivers.length === 0 && search.length > 0 && (
+          <View style={{ alignItems: "center", marginTop: 40 }}>
+            <Text style={{ fontSize: 40 }}>🔍</Text>
+            <Text style={{ color: "#111827", fontWeight: "800", marginTop: 8 }}>No drivers found</Text>
+            <Text style={{ color: "#6B7280", marginTop: 4, fontSize: 13 }}>Try a different name or ID</Text>
+          </View>
+        )}
         {!loading && drivers.length === 0 && (
           <View style={{ alignItems: "center", marginTop: 80 }}>
             <Text style={{ fontSize: 64 }}>👥</Text>
