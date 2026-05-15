@@ -35,4 +35,4 @@ React Native (Expo SDK 54) mobile app for the InstaPark valet parking management
 - Camera-restart safety: drafts saved to AsyncStorage before launching camera
 
 ## Stack
-expo-router, nativewind, zustand, axios, expo-secure-store, @react-native-async-storage/async-storage, @react-native-community/netinfo, expo-image-picker, expo-file-system, expo-sqlite, react-native-qrcode-svg, react-native-svg, date-fns, @react-native-community/datetimepicker
+<!-- expo-router, nativewind, zustand, axios, expo-secure-store, @react-native-async-storage/async-storage, @react-native-community/netinfo, expo-image-picker, expo-file-system, expo-sqlite, react-native-qrcode-svg, react-native-svg, date-fns, @react-native-community/datetimepicker -->
