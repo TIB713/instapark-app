@@ -44,7 +44,7 @@
           "cameraPermission": "Allow InstaPark to use your camera."
         }
       ],
-      // "@react-native-community/datetimepicker",
+      "@react-native-community/datetimepicker",
       "expo-font",
       "expo-secure-store"
     ],
