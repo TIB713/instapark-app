@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +36,11 @@ export default function DriverStats() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
+  const [email, setEmail] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+  const [bankAccount, setBankAccount] = useState("");
+  const [bankIfsc, setBankIfsc] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
   const [events, setEvents] = useState([]);
   const [evtFilter, setEvtFilter] = useState("all");
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -50,6 +56,11 @@ export default function DriverStats() {
         setDriver(data);
         setName(data.name || "");
         setPhone(data.phone || "");
+        setEmail(data.email || "");
+        setPanNumber(data.pan_number || "");
+        setBankAccount(data.bank_account_number || "");
+        setBankIfsc(data.bank_ifsc || "");
+        setLicenseNumber(data.driving_license_number || "");
       } catch {}
     })();
   }, [driverId]);
@@ -87,8 +98,13 @@ export default function DriverStats() {
     try {
       const body = { name, phone };
       if (pin && pin.length === 4) body.pin = pin;
+      if (email.trim()) body.email = email.trim();
+      if (panNumber.trim()) body.pan_number = panNumber.trim();
+      if (bankAccount.trim()) body.bank_account_number = bankAccount.trim();
+      if (bankIfsc.trim()) body.bank_ifsc = bankIfsc.trim();
+      if (licenseNumber.trim()) body.driving_license_number = licenseNumber.trim();
       await api.patch(`/drivers/${driverId}`, body);
-      Alert.alert("Updated", "Driver updated");
+      Alert.alert("Updated", "Driver updated successfully");
       setPin("");
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Failed");
@@ -162,6 +178,88 @@ export default function DriverStats() {
         ))}
       </View>
 
+      {driver && (
+        <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: "#fff", borderRadius: 20, padding: 14, flexDirection: "row", alignItems: "center", gap: 14, ...cardShadow }}>
+          {driver.driver_photo ? (
+            <Image source={{ uri: driver.driver_photo }} style={{ width: 56, height: 56, borderRadius: 28 }} />
+          ) : (
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#F3F0FF", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="person" size={28} color="#7C3AED" />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: "900", fontSize: 16, color: "#111827" }}>{driver.name}</Text>
+            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 1 }}>{driver.employee_id}</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+              {driver.is_active ? (
+                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                  <Text style={{ color: "#059669", fontSize: 10, fontWeight: "800" }}>ACTIVE</Text>
+                </View>
+              ) : (
+                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                  <Text style={{ color: "#EF4444", fontSize: 10, fontWeight: "800" }}>INACTIVE</Text>
+                </View>
+              )}
+              {driver.phone ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                  <Ionicons name="call-outline" size={10} color="#6B7280" />
+                  <Text style={{ color: "#6B7280", fontSize: 10, fontWeight: "700" }}>{driver.phone}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Documents card — only show if any document field exists */}
+      {driver && (driver.email || driver.pan_number || driver.bank_account_number || driver.driving_license_number) && (
+        <View style={{ marginHorizontal: 16, marginTop: 10, backgroundColor: "#fff", borderRadius: 20, padding: 16, ...cardShadow }}>
+          <Text style={{ fontSize: 10, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>DOCUMENTS</Text>
+          {driver.email ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <Ionicons name="mail-outline" size={16} color="#7C3AED" />
+              <View>
+                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>EMAIL</Text>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>{driver.email}</Text>
+              </View>
+            </View>
+          ) : null}
+          {driver.pan_number ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <Ionicons name="card-outline" size={16} color="#7C3AED" />
+              <View>
+                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>PAN CARD</Text>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827", letterSpacing: 1 }}>{driver.pan_number}</Text>
+              </View>
+            </View>
+          ) : null}
+          {driver.bank_account_number ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <Ionicons name="business-outline" size={16} color="#7C3AED" />
+              <View>
+                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>BANK ACCOUNT</Text>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>{driver.bank_account_number}</Text>
+                {driver.bank_ifsc ? (
+                  <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 1 }}>IFSC: {driver.bank_ifsc}</Text>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+          {driver.driving_license_number ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: driver.driving_license_photo ? 10 : 0 }}>
+              <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+              <View>
+                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>DRIVING LICENSE</Text>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>{driver.driving_license_number}</Text>
+              </View>
+            </View>
+          ) : null}
+          {driver.driving_license_photo ? (
+            <Image source={{ uri: driver.driving_license_photo }} style={{ width: "100%", height: 120, borderRadius: 12, marginTop: 4, resizeMode: "cover" }} />
+          ) : null}
+        </View>
+      )}
+
       {tab === "performance" ? (
         <ScrollView
           style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
@@ -228,6 +326,31 @@ export default function DriverStats() {
             <View style={miniInput}>
               <Ionicons name="keypad-outline" size={16} color="#7C3AED" />
               <TextInput value={pin} onChangeText={setPin} keyboardType="numeric" maxLength={4} secureTextEntry style={miniInputText} />
+            </View>
+            <Text style={miniLabel}>EMAIL</Text>
+            <View style={miniInput}>
+              <Ionicons name="mail-outline" size={16} color="#7C3AED" />
+              <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="email@example.com" placeholderTextColor="#9CA3AF" style={miniInputText} />
+            </View>
+            <Text style={miniLabel}>PAN CARD NUMBER</Text>
+            <View style={miniInput}>
+              <Ionicons name="card-outline" size={16} color="#7C3AED" />
+              <TextInput value={panNumber} onChangeText={v => setPanNumber(v.toUpperCase())} autoCapitalize="characters" maxLength={10} placeholder="ABCDE1234F" placeholderTextColor="#9CA3AF" style={miniInputText} />
+            </View>
+            <Text style={miniLabel}>BANK ACCOUNT NUMBER</Text>
+            <View style={miniInput}>
+              <Ionicons name="business-outline" size={16} color="#7C3AED" />
+              <TextInput value={bankAccount} onChangeText={setBankAccount} keyboardType="numeric" placeholder="Account number" placeholderTextColor="#9CA3AF" style={miniInputText} />
+            </View>
+            <Text style={miniLabel}>BANK IFSC CODE</Text>
+            <View style={miniInput}>
+              <Ionicons name="business-outline" size={16} color="#7C3AED" />
+              <TextInput value={bankIfsc} onChangeText={v => setBankIfsc(v.toUpperCase())} autoCapitalize="characters" maxLength={11} placeholder="SBIN0001234" placeholderTextColor="#9CA3AF" style={miniInputText} />
+            </View>
+            <Text style={miniLabel}>DRIVING LICENSE NUMBER</Text>
+            <View style={miniInput}>
+              <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+              <TextInput value={licenseNumber} onChangeText={setLicenseNumber} autoCapitalize="characters" placeholder="DL number" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
             <TouchableOpacity
               onPress={saveDriver}

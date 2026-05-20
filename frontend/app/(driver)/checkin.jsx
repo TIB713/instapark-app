@@ -42,6 +42,7 @@ export default function CheckIn() {
   const [color, setColor] = useState("");
   const [make, setMake] = useState("");
   const [notes, setNotes] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
   const [photos, setPhotos] = useState([]);
@@ -63,6 +64,7 @@ export default function CheckIn() {
           setColor(d.color || "");
           setMake(d.make || "");
           setNotes(d.notes || "");
+          setGuestPhone(d.guestPhone || "");
           setSelectedGate(d.selectedGate || "");
         }
         if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
@@ -75,7 +77,7 @@ export default function CheckIn() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
     try {
-      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, selectedGate }));
+      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate }));
       await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
     } catch {}
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
@@ -115,6 +117,10 @@ export default function CheckIn() {
     }
     if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; }
     if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; }
+    if (guestPhone.trim() && !/^\d{10}$/.test(guestPhone.trim())) {
+      Alert.alert("Invalid Phone", "Guest mobile number must be exactly 10 digits.");
+      return;
+    }
     if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; }
     setSubmitting(true);
     try {
@@ -126,6 +132,7 @@ export default function CheckIn() {
         gate: selectedGate || "",
         event_id: currentEventId,
         check_in_driver_id: resolvedDriverId,
+        ...(guestPhone.trim() ? { guest_phone: guestPhone.trim() } : {}),
       });
       if (car.warning) {
         await new Promise((resolve) => {
@@ -140,7 +147,15 @@ export default function CheckIn() {
         await api.post(`/slots/event/${currentEventId}/initialize`);
       } catch {}
       try { await AsyncStorage.removeItem("checkin_photos"); } catch {}
-      router.replace({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } });
+      router.replace({
+        pathname: "/(driver)/qr-display",
+        params: {
+          token: car.qr_token,
+          plate: car.plate,
+          carId: car.id,
+          ...(guestPhone.trim() ? { guestPhone: guestPhone.trim() } : {}),
+        },
+      });
       uploadPhotosInBackground(car.id, photos);
     } catch (err) {
       const msg = err.response?.data?.detail || "Check-in failed";
@@ -229,6 +244,19 @@ export default function CheckIn() {
               placeholder="Existing damage, special notes..."
               placeholderTextColor="#9CA3AF"
               style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
+            />
+          </View>
+          <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
+          <View style={inputRow}>
+            <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
+            <TextInput
+              value={guestPhone}
+              onChangeText={setGuestPhone}
+              placeholder="10-digit mobile number"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="phone-pad"
+              maxLength={10}
+              style={textInput}
             />
           </View>
 
