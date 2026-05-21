@@ -1,0 +1,170 @@
+import { useState, useEffect, useRef } from "react"; 
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native"; 
+import { CameraView, useCameraPermissions } from "expo-camera"; 
+import { useRouter } from "expo-router"; 
+import { Ionicons } from "@expo/vector-icons"; 
+import { SafeAreaView } from "react-native-safe-area-context"; 
+import api from "../../lib/api"; 
+ 
+export default function Scanner() { 
+  const router = useRouter(); 
+  const [permission, requestPermission] = useCameraPermissions(); 
+  const [scanned, setScanned] = useState(false); 
+  const [loading, setLoading] = useState(false); 
+  const lastScan = useRef(""); 
+ 
+  useEffect(() => { 
+    if (permission && !permission.granted) { 
+      requestPermission(); 
+    } 
+  }, [permission]); 
+ 
+  const handleBarCodeScanned = async ({ data }) => { 
+    if (scanned || loading || data === lastScan.current) return; 
+    lastScan.current = data; 
+    setScanned(true); 
+    setLoading(true); 
+ 
+    try { 
+      // Extract pass token from URL 
+      // Handles: `https://domain.com/pass/{token}`  
+      let passToken = data; 
+      if (data.includes("/pass/")) { 
+        passToken = data.split("/pass/")[1].split("?")[0].trim(); 
+      } else if (data.includes("/v/")) { 
+        // Regular car QR — not a pre-registration pass 
+        Alert.alert( 
+          "Not a Pre-Registration Pass", 
+          "This QR is a retrieval code, not a pre-registration pass.", 
+          [{ text: "Scan Again", onPress: () => { setScanned(false); setLoading(false); lastScan.current = ""; } }] 
+        ); 
+        return; 
+      } 
+ 
+      const { data: pass } = await api.get(`/pass/${passToken}`); 
+ 
+      if (pass.status !== "PRE_REGISTERED") { 
+        Alert.alert( 
+          "Already Checked In", 
+          `This vehicle (${pass.plate}) has already been checked in.`, 
+          [{ text: "OK", onPress: () => router.back() }] 
+        ); 
+        return; 
+      } 
+ 
+      // Navigate to checkin with pre-filled details 
+      router.replace({ 
+        pathname: "/(driver)/checkin", 
+        params: { 
+          prefill_car_id: pass.car_id, 
+          prefill_pass_token: passToken, 
+          prefill_plate: pass.plate, 
+          prefill_make: pass.make, 
+          prefill_color: pass.color, 
+          prefill_phone: pass.guest_phone || "", 
+          prefill_name: pass.guest_name || "", 
+          prefill_event_id: pass.event_id, 
+        }, 
+      }); 
+    } catch (err) { 
+      const msg = err.response?.data?.detail || "Could not load pass details"; 
+      Alert.alert("Invalid QR", msg, [ 
+        { text: "Scan Again", onPress: () => { setScanned(false); setLoading(false); lastScan.current = ""; } }, 
+        { text: "Cancel", onPress: () => router.back() }, 
+      ]); 
+    } finally { 
+      setLoading(false); 
+    } 
+  }; 
+ 
+  if (!permission) return ( 
+    <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}> 
+      <ActivityIndicator color="#fff" size="large" /> 
+    </View> 
+  ); 
+ 
+  if (!permission.granted) return ( 
+    <View style={{ flex: 1, backgroundColor: "#0F2044", justifyContent: "center", alignItems: "center", padding: 24 }}> 
+      <Ionicons name="camera-outline" size={64} color="#fff" /> 
+      <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900", marginTop: 16, textAlign: "center" }}> 
+        Camera Permission Required 
+      </Text> 
+      <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginTop: 8, marginBottom: 24 }}> 
+        Camera access is needed to scan guest pre-registration QR codes. 
+      </Text> 
+      <TouchableOpacity onPress={requestPermission} 
+        style={{ backgroundColor: "#059669", borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32 }}> 
+        <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>GRANT PERMISSION</Text> 
+      </TouchableOpacity> 
+    </View> 
+  ); 
+ 
+  return ( 
+    <View style={{ flex: 1, backgroundColor: "#000" }}> 
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#000" }}> 
+        <View style={{ flexDirection: "row", alignItems: "center", padding: 16 }}> 
+          <TouchableOpacity onPress={() => router.back()} 
+            style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}> 
+            <Ionicons name="chevron-back" size={22} color="#fff" /> 
+          </TouchableOpacity> 
+          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900", marginLeft: 12 }}> 
+            Scan Guest Pass 
+          </Text> 
+        </View> 
+      </SafeAreaView> 
+ 
+      <CameraView 
+        style={{ flex: 1 }} 
+        facing="back" 
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned} 
+        barcodeScannerSettings={{ barcodeTypes: ["qr"] }} 
+      > 
+        {/* Scanning overlay */} 
+        <View style={styles.overlay}> 
+          <View style={styles.topOverlay} /> 
+          <View style={{ flexDirection: "row" }}> 
+            <View style={styles.sideOverlay} /> 
+            <View style={styles.scanBox}> 
+              {/* Corner markers */} 
+              <View style={[styles.corner, styles.topLeft]} /> 
+              <View style={[styles.corner, styles.topRight]} /> 
+              <View style={[styles.corner, styles.bottomLeft]} /> 
+              <View style={[styles.corner, styles.bottomRight]} /> 
+            </View> 
+            <View style={styles.sideOverlay} /> 
+          </View> 
+          <View style={styles.bottomOverlay}> 
+            {loading ? ( 
+              <ActivityIndicator color="#fff" size="large" /> 
+            ) : ( 
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14, textAlign: "center", paddingHorizontal: 24 }}> 
+                Point camera at guest's pre-registration QR code 
+              </Text> 
+            )} 
+            {scanned && !loading && ( 
+              <TouchableOpacity 
+                onPress={() => { setScanned(false); lastScan.current = ""; }} 
+                style={{ marginTop: 16, backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 }}> 
+                <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SCAN AGAIN</Text> 
+              </TouchableOpacity> 
+            )} 
+          </View> 
+        </View> 
+      </CameraView> 
+    </View> 
+  ); 
+} 
+ 
+const SCAN_BOX_SIZE = 240; 
+const styles = StyleSheet.create({ 
+  overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, 
+  topOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }, 
+  bottomOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center" }, 
+  sideOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }, 
+  scanBox: { width: SCAN_BOX_SIZE, height: SCAN_BOX_SIZE }, 
+  corner: { position: "absolute", width: 24, height: 24, borderColor: "#059669", borderWidth: 3 }, 
+  topLeft: { top: 0, left: 0, borderBottomWidth: 0, borderRightWidth: 0 }, 
+  topRight: { top: 0, right: 0, borderBottomWidth: 0, borderLeftWidth: 0 }, 
+  bottomLeft: { bottom: 0, left: 0, borderTopWidth: 0, borderRightWidth: 0 }, 
+  bottomRight: { bottom: 0, right: 0, borderTopWidth: 0, borderLeftWidth: 0 }, 
+}); 

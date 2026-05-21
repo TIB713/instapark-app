@@ -249,6 +249,19 @@ export default function Dashboard() {
               <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Drivers</Text>
               <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Manage your team</Text>
             </TouchableOpacity>
+            <TouchableOpacity 
+              testID="quick-pre-register-qr" 
+              onPress={() => router.push("/(admin)/pre-register-qr")} 
+              activeOpacity={0.85} 
+              style={[quickAction, cardShadow]} 
+            > 
+              <View style={{ backgroundColor: "#FEF3C7", borderRadius: 99, padding: 10 }}> 
+                <Ionicons name="qr-code" size={22} color="#D97706" /> 
+              </View> 
+              <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Guest QR</Text> 
+              <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Pre-registration QR code</Text> 
+            </TouchableOpacity> 
+
           </View>
         </View>
 

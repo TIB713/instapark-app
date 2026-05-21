@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -47,6 +47,24 @@ export default function CheckIn() {
   const [selectedGate, setSelectedGate] = useState("");
   const [photos, setPhotos] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [prefilledCarId, setPrefilledCarId] = useState(null); 
+  const [passToken, setPassToken] = useState(null); 
+  const [guestName, setGuestName] = useState(""); 
+  const [isPreRegistered, setIsPreRegistered] = useState(false); 
+  const params = useLocalSearchParams(); 
+
+  useEffect(() => { 
+    if (params.prefill_plate) { 
+      setPlate(params.prefill_plate || ""); 
+      setMake(params.prefill_make || ""); 
+      setColor(params.prefill_color || ""); 
+      setGuestPhone(params.prefill_phone || ""); 
+      setGuestName(params.prefill_name || ""); 
+      setPassToken(params.prefill_pass_token || null); 
+      setPrefilledCarId(params.prefill_car_id || null); 
+      setIsPreRegistered(true); 
+    } 
+  }, [params.prefill_plate]); 
 
   useEffect(() => {
     (async () => {
@@ -109,61 +127,71 @@ export default function CheckIn() {
     } catch {}
   };
 
-  const submit = async () => {
-    if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; }
-    if (!validatePlate(plate.trim())) {
-      Alert.alert("Invalid Plate", "Please enter a valid Indian vehicle number plate.\n\nExamples:\nGJ01AB1234\nMH12CD5678\n22BH1234AA");
-      return;
-    }
-    if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; }
-    if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; }
-    if (guestPhone.trim() && !/^\d{10}$/.test(guestPhone.trim())) {
-      Alert.alert("Invalid Phone", "Guest mobile number must be exactly 10 digits.");
-      return;
-    }
-    if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; }
-    setSubmitting(true);
-    try {
-      const { data: car } = await api.post("/cars", {
-        plate: plate.trim().toUpperCase(),
-        color: color.trim(),
-        make: make.trim(),
-        notes: notes.trim(),
-        gate: selectedGate || "",
-        event_id: currentEventId,
-        check_in_driver_id: resolvedDriverId,
-        ...(guestPhone.trim() ? { guest_phone: guestPhone.trim() } : {}),
-      });
-      if (car.warning) {
-        await new Promise((resolve) => {
-          Alert.alert(
-            "⚠️ Almost Full",
-            "This event is almost at capacity. The car has been checked in.",
-            [{ text: "OK", onPress: resolve }]
-          );
-        });
-      }
-      try {
-        await api.post(`/slots/event/${currentEventId}/initialize`);
-      } catch {}
-      try { await AsyncStorage.removeItem("checkin_photos"); } catch {}
-      router.replace({
-        pathname: "/(driver)/qr-display",
-        params: {
-          token: car.qr_token,
-          plate: car.plate,
-          carId: car.id,
-          ...(guestPhone.trim() ? { guestPhone: guestPhone.trim() } : {}),
-        },
-      });
-      uploadPhotosInBackground(car.id, photos);
-    } catch (err) {
-      const msg = err.response?.data?.detail || "Check-in failed";
-      if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in.");
-      else if (typeof msg === "string" && msg.includes("Duplicate")) Alert.alert("Duplicate", "Plate already checked in.");
-      else Alert.alert("Error", typeof msg === "string" ? msg : "Failed");
-    } finally { setSubmitting(false); }
-  };
+  const submit = async () => { 
+    if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; } 
+    if (!validatePlate(plate.trim())) { 
+      Alert.alert("Invalid Plate", "Please enter a valid Indian vehicle number plate."); 
+      return; 
+    } 
+    if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; } 
+    if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; } 
+    if (guestPhone.trim() && !/^\d{10}$/.test(guestPhone.trim())) { 
+      Alert.alert("Invalid Phone", "Guest mobile number must be exactly 10 digits."); 
+      return; 
+    } 
+    if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; } 
+    setSubmitting(true); 
+    try { 
+      let car; 
+      if (isPreRegistered && prefilledCarId) { 
+        // Complete check-in for PRE_REGISTERED car 
+        const { data } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, { 
+          check_in_driver_id: resolvedDriverId, 
+          gate: selectedGate || "", 
+          make: make.trim(), 
+          color: color.trim(), 
+          notes: notes.trim(), 
+        }); 
+        car = data; 
+      } else { 
+        // Normal check-in 
+        const { data } = await api.post("/cars", { 
+          plate: plate.trim().toUpperCase(), 
+          color: color.trim(), 
+          make: make.trim(), 
+          notes: notes.trim(), 
+          gate: selectedGate || "", 
+          event_id: currentEventId, 
+          check_in_driver_id: resolvedDriverId, 
+          ...(guestPhone.trim() ? { guest_phone: guestPhone.trim() } : {}), 
+        }); 
+        car = data; 
+        if (car.warning) { 
+          await new Promise((resolve) => { 
+            Alert.alert("⚠️ Almost Full", "This event is almost at capacity.", [{ text: "OK", onPress: resolve }]); 
+          }); 
+        } 
+      } 
+      try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {} 
+      try { await AsyncStorage.removeItem("checkin_photos"); } catch {} 
+      router.replace({ 
+        pathname: "/(driver)/qr-display", 
+        params: { 
+          token: car.qr_token, 
+          plate: car.plate, 
+          carId: car.id, 
+          ...(guestPhone.trim() ? { guestPhone: guestPhone.trim() } : {}), 
+        }, 
+      }); 
+      uploadPhotosInBackground(car.id, photos); 
+    } catch (err) { 
+      const msg = err.response?.data?.detail || "Check-in failed"; 
+      if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in."); 
+      else if (typeof msg === "string" && msg.includes("Duplicate")) Alert.alert("Duplicate", "Plate already checked in."); 
+      else Alert.alert("Error", typeof msg === "string" ? msg : "Failed"); 
+    } finally { setSubmitting(false); } 
+  }; 
+
 
   return (
     <View style={{ flex: 1, backgroundColor: "#ECFDF5" }} testID="checkin-screen">
@@ -200,6 +228,12 @@ export default function CheckIn() {
             <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
               Check In Vehicle
             </Text>
+            <TouchableOpacity 
+              onPress={() => router.push("/(driver)/scanner")} 
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8, marginLeft: "auto" }} 
+            > 
+              <Ionicons name="qr-code-outline" size={22} color="#fff" /> 
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
@@ -210,6 +244,25 @@ export default function CheckIn() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 100 }}
         >
+          {isPreRegistered && ( 
+            <View style={{ 
+              backgroundColor: "#ECFDF5", borderWidth: 1, borderColor: "#6EE7B7", 
+              borderRadius: 16, padding: 12, marginBottom: 16, 
+              flexDirection: "row", alignItems: "center", gap: 10 
+            }}> 
+              <Ionicons name="checkmark-circle" size={20} color="#059669" /> 
+              <View style={{ flex: 1 }}> 
+                <Text style={{ fontSize: 12, fontWeight: "900", color: "#059669" }}> 
+                  PRE-REGISTERED GUEST 
+                </Text> 
+                {guestName ? ( 
+                  <Text style={{ fontSize: 11, color: "#065F46", marginTop: 1 }}> 
+                    {guestName} — details pre-filled, please verify 
+                  </Text> 
+                ) : null} 
+              </View> 
+            </View> 
+          )} 
           <Lbl>LICENSE PLATE *</Lbl>
           <View style={inputRow}>
             <Ionicons name="car-outline" size={20} color="#059669" />
