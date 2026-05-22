@@ -52,11 +52,20 @@ export default function EventDetail() {
   const [showCarModal, setShowCarModal] = useState(false);
   const [carPhotos, setCarPhotos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [slots, setSlots] = useState([]);
+  const [selectedZone, setSelectedZone] = useState(null);
 
   const fetchEvent = useCallback(async () => {
     try {
       const { data } = await api.get(`/events/${currentEventId}`);
       setEvent(data);
+    } catch {}
+  }, [currentEventId]);
+
+  const fetchSlots = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/slots/event/${currentEventId}`);
+      setSlots(data || []);
     } catch {}
   }, [currentEventId]);
 
@@ -84,9 +93,10 @@ export default function EventDetail() {
   useEffect(() => {
     if (!currentEventId) return;
     // Run all fetches in parallel instead of sequentially
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats()]);
+    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
+      if (msg.type === "slot_update") fetchSlots();
     });
     return () => disconnectWS(`/event/${currentEventId}`);
   }, [currentEventId]);
@@ -270,7 +280,7 @@ export default function EventDetail() {
           ...cardShadow,
         }}
       >
-        {[["cars", "Cars"], ["drivers", "Drivers"], ["stats", "Stats"]].map(([k, l]) => (
+        {[["cars", "Cars"], ["drivers", "Drivers"], ["stats", "Stats"], ["slots", "Slots"]].map(([k, l]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
@@ -608,6 +618,137 @@ export default function EventDetail() {
             </View>
           ))}
           <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
+
+      {tab === "slots" && (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+          
+          {/* Capacity Summary */}
+          {(() => {
+            const total = slots.length;
+            const occupied = slots.filter(s => s.is_occupied).length;
+            const free = total - occupied;
+            const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
+            const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
+            return (
+              <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>
+                  CAPACITY OVERVIEW
+                </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 28, fontWeight: "900", color: "#111827" }}>{occupied}</Text>
+                    <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
+                  </View>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 28, fontWeight: "900", color: "#059669" }}>{free}</Text>
+                    <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>FREE</Text>
+                  </View>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 28, fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
+                    <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
+                  </View>
+                </View>
+                <View style={{ height: 10, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
+                  <View style={{ height: 10, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                </View>
+                <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 8, textAlign: "right" }}>
+                  {pct}% full
+                </Text>
+                {pct >= 80 && (
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
+                    style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: 14, padding: 12, marginTop: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Ionicons name="warning-outline" size={16} color={pct >= 90 ? "#EF4444" : "#D97706"} />
+                    <Text style={{ fontWeight: "800", fontSize: 12, color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: 6 }}>
+                      {pct >= 90 ? "ALMOST FULL — TAP TO ADD MORE SLOTS" : "FILLING UP — TAP TO ADD MORE SLOTS"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })()}
+
+          {/* Zone Selector */}
+          {(() => {
+            const zones = [...new Set(slots.map(s => s.zone_name))];
+            if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
+            return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                {zones.map(z => {
+                  const zSlots = slots.filter(s => s.zone_name === z);
+                  const zOcc = zSlots.filter(s => s.is_occupied).length;
+                  return (
+                    <TouchableOpacity
+                      key={z}
+                      onPress={() => setSelectedZone(z)}
+                      style={{
+                        backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
+                        borderRadius: 16,
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        marginRight: 10,
+                        ...cardShadow,
+                      }}
+                    >
+                      <Text style={{ fontWeight: "800", fontSize: 13, color: selectedZone === z ? "#fff" : "#111827" }}>
+                        Zone {z}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: 2 }}>
+                        {zOcc}/{zSlots.length} occupied
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            );
+          })()}
+
+          {/* Slot Grid */}
+          {(() => {
+            const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
+            return (
+              <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, ...cardShadow }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>
+                  ZONE {selectedZone} — SLOT MAP
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {zoneSlots.map(s => (
+                    <View
+                      key={s.id}
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 14,
+                        backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 1.5,
+                        borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
+                      }}
+                    >
+                      <Ionicons
+                        name={s.is_occupied ? "car" : "car-outline"}
+                        size={16}
+                        color={s.is_occupied ? "#EF4444" : "#059669"}
+                      />
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: 2 }}>
+                        {s.slot_number}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                {zoneSlots.length === 0 && (
+                  <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>
+                    No slots in this zone
+                  </Text>
+                )}
+              </View>
+            );
+          })()}
+
         </ScrollView>
       )}
 
