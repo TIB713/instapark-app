@@ -1280,6 +1280,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Modal,
   FlatList,
   Alert,
@@ -1324,6 +1325,7 @@ export default function Tasks() {
   const [openingParkModal, setOpeningParkModal] = useState(null); // stores car.id while loading
   const [confirmingPark, setConfirmingPark] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [keyTag, setKeyTag] = useState("");
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -1409,13 +1411,48 @@ export default function Tasks() {
   };
 
   const confirmPark = async () => {
+    if (!selectedSlot) return;
+
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Camera Required", "Camera permission is needed to take a parking photo.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.75,
+      allowsEditing: false,
+    });
+
+    if (result.canceled) return;
+
     setConfirmingPark(true);
     try {
-      await api.patch(`/cars/${selectedCar.id}/park`, { zone: selectedZone, slot: selectedSlot, parked_driver_id: resolvedDriverId });
+      const photoUri = result.assets[0].uri;
+      const photoUrl = await uploadParkingPhoto(selectedCar.id, photoUri);
+
+      await api.patch(`/cars/${selectedCar.id}/park`, {
+        zone: selectedZone,
+        slot: selectedSlot,
+        parked_driver_id: resolvedDriverId,
+        key_tag: keyTag.trim() || null,
+        parked_photo_url: photoUrl,
+      });
+
+      // Save as parked type in car_photos collection
+      if (photoUrl) {
+        api.post(`/cars/${selectedCar.id}/photos`, {
+          urls: [photoUrl],
+          type: "parked",
+        }).catch(() => {});
+      }
+
       setShowParkModal(false);
+      setKeyTag("");
       fetchMyCars();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed");
+      Alert.alert("Error", e.response?.data?.detail || "Failed to park");
     } finally {
       setConfirmingPark(false);
     }
@@ -1442,6 +1479,24 @@ export default function Tasks() {
         delivery_photo_url: up.data.url,
       });
     } catch {}
+  };
+
+  const uploadParkingPhoto = async (carId, uri) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri,
+        type: "image/jpeg",
+        name: "parked.jpg",
+      });
+      formData.append("folder", `parked/${carId}`);
+      const up = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return up.data.url;
+    } catch {
+      return null;
+    }
   };
 
   const handleHandover = async (car) => {
@@ -1770,6 +1825,14 @@ export default function Tasks() {
                       Zone {car.zone} · Slot {car.slot}
                     </Text>
                   </View>
+                  {car.key_tag && (
+                    <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, marginTop: 6, flexDirection: "row", alignItems: "center" }}>
+                      <Ionicons name="key" size={12} color="#D97706" />
+                      <Text style={{ color: "#D97706", fontSize: 12, fontWeight: "900", marginLeft: 5 }}>
+                        Key #{car.key_tag}
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <View
                   style={{
@@ -1892,6 +1955,21 @@ export default function Tasks() {
                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>No slots in this zone</Text>}
                   style={{ maxHeight: 280 }}
                 />
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>
+                  KEY TAG NUMBER
+                </Text>
+                <View style={{ backgroundColor: "#F9FAFB", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: 14, marginBottom: 14 }}>
+                  <Ionicons name="key-outline" size={18} color="#7C3AED" />
+                  <TextInput
+                    value={keyTag}
+                    onChangeText={setKeyTag}
+                    placeholder="e.g. 47"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    style={{ flex: 1, fontSize: 18, paddingVertical: 14, paddingLeft: 10, color: "#111827", fontWeight: "900" }}
+                  />
+                </View>
                 <TouchableOpacity
                   onPress={confirmPark}
                   disabled={!selectedSlot || confirmingPark}
