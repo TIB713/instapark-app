@@ -17,6 +17,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { formatDistanceToNow } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
@@ -65,6 +67,7 @@ export default function EventDetail() {
   const [submittingIncident, setSubmittingIncident] = useState(false);
   const [incidentCarSearch, setIncidentCarSearch] = useState("");
   const [incidents, setIncidents] = useState([]);
+  const [exportingCSV, setExportingCSV] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -194,6 +197,46 @@ export default function EventDetail() {
       setCarPhotos(data || []);
     } catch {
       setCarPhotos([]);
+    }
+  };
+
+  const exportCSV = async () => {
+    setExportingCSV(true);
+    try {
+      const { data } = await api.get(
+        `/events/${currentEventId}/report`
+      );
+      const headers = [
+        "Plate","Make","Color","Status","Zone","Slot",
+        "Key Tag","Check-in Driver","Retrieval Driver",
+        "Duration (min)","Retrieval Time (min)","Rating","Notes"
+      ].join(",");
+      const rows = data.cars.map(c =>
+        [
+          c.plate, c.make, c.color, c.status,
+          c.zone || "", c.slot || "", c.key_tag || "",
+          c.check_in_driver || "", c.retrieval_driver || "",
+          c.duration_minutes || "", c.retrieval_minutes || "",
+          c.rating || "",
+          `"${(c.notes || "").replace(/"/g, "'")}"`,
+        ].join(",")
+      );
+      const csv = [headers, ...rows].join("\n");
+      const filename = `${
+        data.event.name.replace(/\s+/g, "_")
+      }_report.csv`;
+      const path = `${FileSystem.documentDirectory}${filename}`;
+      await FileSystem.writeAsStringAsync(path, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      await Sharing.shareAsync(path, {
+        mimeType: "text/csv",
+        dialogTitle: `${data.event.name} — Event Report`,
+      });
+    } catch {
+      Alert.alert("Error", "Failed to generate CSV");
+    } finally {
+      setExportingCSV(false);
     }
   };
 
@@ -671,6 +714,40 @@ export default function EventDetail() {
         >
           <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: 16, paddingVertical: 10, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
             <Text style={{ color: "#7C3AED", fontWeight: "800", letterSpacing: 1 }}>↻ Refresh Stats</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={exportCSV}
+            disabled={exportingCSV}
+            style={{
+              backgroundColor: exportingCSV ? "#D1FAE5" : "#ECFDF5",
+              borderRadius: 14,
+              paddingVertical: 12,
+              alignItems: "center",
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "#6EE7B7",
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            {exportingCSV ? (
+              <ActivityIndicator size="small" color="#059669" />
+            ) : (
+              <Ionicons
+                name="document-text-outline"
+                size={16}
+                color="#059669"
+              />
+            )}
+            <Text style={{
+              color: "#059669",
+              fontWeight: "800",
+              fontSize: 13,
+              marginLeft: 6,
+            }}>
+              {exportingCSV ? "Generating..." : "Export CSV"}
+            </Text>
           </TouchableOpacity>
           {[
             { color: "#7C3AED", icon: "star", label: "AVG RATING", value: stats?.avg_rating || "—" },
