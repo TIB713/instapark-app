@@ -15,9 +15,12 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import { enqueueCheckinAction } from "../../lib/offline";
 
 const validatePlate = (plate) => {
   const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
@@ -142,6 +145,36 @@ export default function CheckIn() {
     if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; } 
     setSubmitting(true); 
     try { 
+      // 1. Copy photos to local storage first for safety
+      const photoLocalPaths = [];
+      for (let i = 0; i < photos.length; i++) {
+        const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${i}_${Date.now()}.jpg`;
+        await FileSystem.copyAsync({ from: photos[i], to: localPath });
+        photoLocalPaths.push(localPath);
+      }
+
+      const net = await NetInfo.fetch();
+      if (!net.isConnected) {
+        await enqueueCheckinAction({
+          eventId: currentEventId,
+          plate: plate.trim().toUpperCase(),
+          color: color.trim(),
+          make: make.trim(),
+          notes: notes.trim(),
+          gate: selectedGate,
+          guestPhone: guestPhone.trim(),
+          checkInDriverId: resolvedDriverId,
+          photoLocalPaths,
+          isPreRegistered,
+          prefilledCarId,
+        });
+        await AsyncStorage.removeItem("checkin_draft");
+        await AsyncStorage.removeItem("checkin_photos");
+        Alert.alert("Saved Offline", "Vehicle check-in queued. Will sync when connected.");
+        router.back();
+        return;
+      }
+
       let car; 
       if (isPreRegistered && prefilledCarId) { 
         // Complete check-in for PRE_REGISTERED car 
@@ -174,6 +207,7 @@ export default function CheckIn() {
       } 
       try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {} 
       try { await AsyncStorage.removeItem("checkin_photos"); } catch {} 
+      try { await AsyncStorage.removeItem("checkin_draft"); } catch {} 
       router.replace({ 
         pathname: "/(driver)/qr-display", 
         params: { 
@@ -183,7 +217,12 @@ export default function CheckIn() {
           ...(guestPhone.trim() ? { guestPhone: guestPhone.trim() } : {}), 
         }, 
       }); 
-      uploadPhotosInBackground(car.id, photos); 
+      // Use original photo URIs for online background upload
+      uploadPhotosInBackground(car.id, photos).finally(() => { 
+        photoLocalPaths.forEach(path => { 
+          FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {}); 
+        }); 
+      }); 
     } catch (err) { 
       const msg = err.response?.data?.detail || "Check-in failed"; 
       if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in."); 
