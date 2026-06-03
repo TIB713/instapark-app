@@ -55,6 +55,9 @@ export default function Tasks() {
   const [keyTag, setKeyTag] = useState("");
   const [parkPhotos, setParkPhotos] = useState([]);
   const [parkingPhotoStep, setParkingPhotoStep] = useState(false);
+  const [addingKeyTagCarId, setAddingKeyTagCarId] = useState(null);
+  const [keyTagInput, setKeyTagInput] = useState("");
+  const [savingKeyTag, setSavingKeyTag] = useState(false);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -169,13 +172,11 @@ export default function Tasks() {
           zone: selectedZone,
           slot: selectedSlot,
           parkedDriverId: resolvedDriverId,
-          keyTag: keyTag.trim() || null,
           photoLocalPaths,
         });
         setShowParkModal(false);
         setParkPhotos([]);
         setParkingPhotoStep(false);
-        setKeyTag("");
         refreshPending();
         Alert.alert("Saved Offline", "Parking recorded. Will sync when connected.");
         return;
@@ -185,14 +186,12 @@ export default function Tasks() {
         zone: selectedZone,
         slot: selectedSlot,
         parked_driver_id: resolvedDriverId,
-        key_tag: keyTag.trim() || null,
       });
 
       const carId = selectedCar.id;
       setShowParkModal(false);
       setParkPhotos([]);
       setParkingPhotoStep(false);
-      setKeyTag("");
       fetchMyCars();
 
       // Use the locally copied photos for background upload as well
@@ -270,6 +269,23 @@ export default function Tasks() {
         });
       }
     } catch {}
+  };
+
+  const saveKeyTag = async (carId) => {
+    if (!keyTagInput.trim()) return;
+    setSavingKeyTag(true);
+    try {
+      await api.patch(`/cars/${carId}/key-tag`, {
+        key_tag: keyTagInput.trim(),
+      });
+      setAddingKeyTagCarId(null);
+      setKeyTagInput("");
+      fetchMyCars();
+    } catch {
+      Alert.alert("Error", "Failed to save key tag");
+    } finally {
+      setSavingKeyTag(false);
+    }
   };
 
   const handleHandover = async (car) => {
@@ -508,6 +524,114 @@ export default function Tasks() {
                     SHOW QR CODE
                   </Text>
                 </TouchableOpacity>
+
+                {car.key_tag ? (
+                  <View style={{ backgroundColor: "#FEF3C7",
+                    paddingHorizontal: 10, paddingVertical: 4,
+                    borderRadius: 99, marginTop: 6,
+                    flexDirection: "row", alignItems: "center",
+                    alignSelf: "flex-start" }}>
+                    <Ionicons name="key" size={12} color="#D97706" />
+                    <Text style={{ color: "#D97706", fontSize: 12,
+                      fontWeight: "900", marginLeft: 5 }}>
+                      Key #{car.key_tag}
+                    </Text>
+                  </View>
+                ) : (
+                  car.status === "PARKED" && (
+                    addingKeyTagCarId === car.id ? (
+                      <View style={{ marginTop: 8 }}>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <View style={{ flex: 1, backgroundColor: "#F9FAFB",
+                            borderRadius: 12, borderWidth: 1,
+                            borderColor: "#E5E7EB", flexDirection: "row",
+                            alignItems: "center", paddingHorizontal: 10 }}>
+                            <Ionicons name="key-outline" size={14}
+                              color="#7C3AED" />
+                            <TextInput
+                              value={keyTagInput}
+                              onChangeText={setKeyTagInput}
+                              placeholder="Hook number"
+                              placeholderTextColor="#9CA3AF"
+                              keyboardType="number-pad"
+                              maxLength={4}
+                              autoFocus
+                              style={{ flex: 1, paddingVertical: 10,
+                                paddingLeft: 6, fontSize: 15,
+                                color: "#111827", fontWeight: "900" }}
+                            />
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => saveKeyTag(car.id)}
+                            disabled={savingKeyTag || !keyTagInput.trim()}
+                            style={{ backgroundColor:
+                              keyTagInput.trim() ? "#7C3AED" : "#D1D5DB",
+                              borderRadius: 12, paddingHorizontal: 14,
+                              justifyContent: "center" }}
+                          >
+                            {savingKeyTag ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                              <Ionicons name="checkmark" size={18}
+                                color="#fff" />
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setAddingKeyTagCarId(null);
+                              setKeyTagInput("");
+                            }}
+                            style={{ backgroundColor: "#F3F4F6",
+                              borderRadius: 12, paddingHorizontal: 12,
+                              justifyContent: "center" }}
+                          >
+                            <Ionicons name="close" size={16}
+                              color="#6B7280" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setAddingKeyTagCarId(car.id);
+                          setKeyTagInput("");
+                        }}
+                        style={{ flexDirection: "row", alignItems: "center",
+                          backgroundColor: "#FEF3C7", paddingHorizontal: 10,
+                          paddingVertical: 5, borderRadius: 99, marginTop: 6,
+                          alignSelf: "flex-start", borderWidth: 1,
+                          borderColor: "#FDE68A", borderStyle: "dashed" }}
+                      >
+                        <Ionicons name="key-outline" size={12}
+                          color="#D97706" />
+                        <Text style={{ color: "#D97706", fontSize: 11,
+                          fontWeight: "800", marginLeft: 4 }}>
+                          + Add Key Tag
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  )
+                )}
+                {car.notes ? (
+                  <View style={{
+                    backgroundColor: "#FEF3C7",
+                    borderRadius: 10,
+                    paddingHorizontal: 8,
+                    paddingVertical: 5,
+                    marginTop: 6,
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 5,
+                  }}>
+                    <Ionicons name="information-circle-outline"
+                      size={13} color="#D97706"
+                      style={{ marginTop: 1 }} />
+                    <Text style={{ color: "#92400E", fontSize: 11,
+                      flex: 1, lineHeight: 16 }}>
+                      {car.notes}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             ) : (
               <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
@@ -610,6 +734,26 @@ export default function Tasks() {
                       </Text>
                     </View>
                   )}
+                  {car.notes ? (
+                    <View style={{
+                      backgroundColor: "#FEF3C7",
+                      borderRadius: 10,
+                      paddingHorizontal: 8,
+                      paddingVertical: 5,
+                      marginTop: 6,
+                      flexDirection: "row",
+                      alignItems: "flex-start",
+                      gap: 5,
+                    }}>
+                      <Ionicons name="information-circle-outline"
+                        size={13} color="#D97706"
+                        style={{ marginTop: 1 }} />
+                      <Text style={{ color: "#92400E", fontSize: 11,
+                        flex: 1, lineHeight: 16 }}>
+                        {car.notes}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
                 <View
                   style={{
@@ -732,22 +876,6 @@ export default function Tasks() {
                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>No slots in this zone</Text>}
                   style={{ maxHeight: 280 }}
                 />
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>
-                  KEY TAG NUMBER
-                </Text>
-                <View style={{ backgroundColor: "#F9FAFB", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: 14, marginBottom: 14 }}>
-                  <Ionicons name="key-outline" size={18} color="#7C3AED" />
-                  <TextInput
-                    value={keyTag}
-                    onChangeText={setKeyTag}
-                    placeholder="e.g. 47"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    style={{ flex: 1, fontSize: 18, paddingVertical: 14, paddingLeft: 10, color: "#111827", fontWeight: "900" }}
-                  />
-                </View>
-
                 {/* Parking Photos */}
                 <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>
                   PARKING PHOTOS * (MIN 1, MAX 5)

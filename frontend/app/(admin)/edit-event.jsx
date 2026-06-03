@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+
+          
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -29,6 +31,7 @@ export default function EditEvent() {
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
   const [maxCars, setMaxCars] = useState("200");
+  const [keyHooks, setKeyHooks] = useState("50");
   const [zones, setZones] = useState([]);
   const [gates, setGates] = useState([]);
   const [showDP, setShowDP] = useState(false);
@@ -49,6 +52,7 @@ export default function EditEvent() {
         setName(data.name || "");
         setVenue(data.venue || "");
         setMaxCars(String(data.max_cars || 200));
+        setKeyHooks(String(data.key_hooks || 50));
         setStartTime(data.start_time || "18:00");
         setEndTime(data.end_time || "23:00");
         if (data.date) setDate(parse(data.date, "yyyy-MM-dd", new Date()));
@@ -91,6 +95,7 @@ export default function EditEvent() {
         end_time: endTime,
         venue: venue.trim(),
         max_cars: parseInt(maxCars) || 200,
+        key_hooks: parseInt(keyHooks) || 50,
         zones: zones.filter((z) => z.name?.trim()),
         gates: gates.filter((g) => g?.trim()),
       });
@@ -262,6 +267,20 @@ export default function EditEvent() {
             <Ionicons name="add" size={18} color="#7C3AED" />
             <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD GATE</Text>
           </TouchableOpacity>
+          
+          <Label>KEY HOOKS (Total hooks on key board)</Label>
+          <View style={inputRowStyle}>
+            <Ionicons name="key-outline" size={20} color="#7C3AED" />
+            <TextInput
+              value={keyHooks}
+              onChangeText={setKeyHooks}
+              placeholder="50"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              maxLength={4}
+              style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }}
+            />
+          </View>
 
           <TouchableOpacity
             onPress={save}

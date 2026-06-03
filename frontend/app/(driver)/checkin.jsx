@@ -45,6 +45,7 @@ export default function CheckIn() {
   const [color, setColor] = useState("");
   const [make, setMake] = useState("");
   const [notes, setNotes] = useState("");
+  const [guestNotes, setGuestNotes] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
@@ -66,6 +67,7 @@ export default function CheckIn() {
       setPassToken(params.prefill_pass_token || null); 
       setPrefilledCarId(params.prefill_car_id || null); 
       setIsPreRegistered(true); 
+      setGuestNotes(params.prefill_guest_notes || "");
     } 
   }, [params.prefill_plate]); 
 
@@ -302,6 +304,33 @@ export default function CheckIn() {
               </View> 
             </View> 
           )} 
+          {isPreRegistered && guestNotes ? (
+            <View style={{
+              backgroundColor: "#FEF3C7",
+              borderWidth: 1,
+              borderColor: "#FDE68A",
+              borderRadius: 16,
+              padding: 12,
+              marginBottom: 16,
+              flexDirection: "row",
+              alignItems: "flex-start",
+              gap: 10,
+            }}>
+              <Ionicons name="information-circle"
+                size={20} color="#D97706"
+                style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "900",
+                  color: "#92400E" }}>
+                  GUEST INSTRUCTIONS
+                </Text>
+                <Text style={{ fontSize: 13, color: "#78350F",
+                  marginTop: 4, lineHeight: 18 }}>
+                  {guestNotes}
+                </Text>
+              </View>
+            </View>
+          ) : null}
           <Lbl>LICENSE PLATE *</Lbl>
           <View style={inputRow}>
             <Ionicons name="car-outline" size={20} color="#059669" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,6 +21,7 @@ export default function AllEvents() {
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [cloningId, setCloningId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -40,6 +41,37 @@ export default function AllEvents() {
     setCurrentEventId(e.id);
     await AsyncStorage.setItem("current_event_id", e.id);
     router.push("/(admin)/event-detail");
+  };
+
+  const cloneEvent = async (e, evt) => {
+    e.stopPropagation();
+    Alert.alert(
+      "Clone Event",
+      `Create a copy of "${evt.name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clone",
+          onPress: async () => {
+            setCloningId(evt.id);
+            try {
+              const { data } = await api.post(
+                `/events/${evt.id}/clone`
+              );
+              setEvents(prev => [data, ...prev]);
+              Alert.alert(
+                "Cloned!",
+                `"${data.name}" created successfully.`
+              );
+            } catch {
+              Alert.alert("Error", "Failed to clone event");
+            } finally {
+              setCloningId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -168,7 +200,30 @@ export default function AllEvents() {
                 <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 8 }}>Max {e.max_cars}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <TouchableOpacity
+                onPress={(ev) => cloneEvent(ev, e)}
+                disabled={cloningId === e.id}
+                style={{
+                  backgroundColor: "#F5F3FF",
+                  borderRadius: 20,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderWidth: 1,
+                  borderColor: "#DDD6FE",
+                }}
+              >
+                {cloningId === e.id ? (
+                  <ActivityIndicator size={14} color="#7C3AED" />
+                ) : (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Ionicons name="copy-outline" size={14} color="#7C3AED" />
+                    <Text style={{ color: "#7C3AED", fontSize: 11, fontWeight: "800" }}>Clone</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </View>
           </TouchableOpacity>
         ))}
         {!loading && filtered.length === 0 && (

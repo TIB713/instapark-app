@@ -29,6 +29,7 @@ export default function CreateEvent() {
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
   const [maxCars, setMaxCars] = useState("200");
+  const [keyHooks, setKeyHooks] = useState("50");
   const [zones, setZones] = useState([{ name: "A", slots: 20 }]);
   const [gates, setGates] = useState(["Main Entrance"]);
   const [showDP, setShowDP] = useState(false);
@@ -78,6 +79,7 @@ export default function CreateEvent() {
         end_time: endTime,
         venue: venue.trim(),
         max_cars: parseInt(maxCars) || 200,
+        key_hooks: parseInt(keyHooks) || 50,
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
         is_template: false,
@@ -261,6 +263,19 @@ export default function CreateEvent() {
             <Ionicons name="add" size={18} color="#7C3AED" />
             <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD GATE</Text>
           </TouchableOpacity>
+
+          <Label>KEY HOOKS (Total hooks on key board)</Label>
+          <InputRow icon="key-outline">
+            <TextInput
+              value={keyHooks}
+              onChangeText={setKeyHooks}
+              placeholder="50"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              maxLength={4}
+              style={textInputStyle}
+            />
+          </InputRow>
 
           <TouchableOpacity
             testID="save-event-btn"

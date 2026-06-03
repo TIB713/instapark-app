@@ -26,6 +26,12 @@ export default function Index() {
               router.replace("/(admin)/dashboard");
               return;
             }
+            if (role === "supervisor") {
+              useAppStore.getState().setUser(data);
+              setChecking(false);
+              router.replace("/(supervisor)/dashboard");
+              return;
+            }
             if (role === "driver") {
               const driverData = {
                 id: data.user_id,

@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { formatDistanceToNow } from "date-fns";
 import api from "../../lib/api";
@@ -48,9 +49,12 @@ export default function EventDetail() {
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
   const [tab, setTab] = useState("cars");
+  const [slotTab, setSlotTab] = useState("parking");
   const [cars, setCars] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [stats, setStats] = useState(null);
+  const [keys, setKeys] = useState([]);
+  const [keyStats, setKeyStats] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedCar, setSelectedCar] = useState(null);
@@ -68,6 +72,18 @@ export default function EventDetail() {
   const [incidentCarSearch, setIncidentCarSearch] = useState("");
   const [incidents, setIncidents] = useState([]);
   const [exportingCSV, setExportingCSV] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
+
+  const [supervisors, setSupervisors] = useState([]);
+  const [assigningSupervisorId, setAssigningSupervisorId] = useState(null);
+  const [showAddSupervisorModal, setShowAddSupervisorModal] = useState(false);
+  const [supName, setSupName] = useState("");
+  const [supEmail, setSupEmail] = useState("");
+  const [supPhone, setSupPhone] = useState("");
+  const [supPassword, setSupPassword] = useState("");
+  const [savingSupervisor, setSavingSupervisor] = useState(false);
+
+  const [employeeTab, setEmployeeTab] = useState("supervisors");
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -97,6 +113,13 @@ export default function EventDetail() {
     } catch {}
   }, [currentEventId]);
 
+  const fetchSupervisors = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/events/${currentEventId}/supervisors`);
+      setSupervisors(data || []);
+    } catch {}
+  }, [currentEventId]);
+
   const fetchStats = useCallback(async () => {
     try {
       const { data } = await api.get(`/events/${currentEventId}/stats`);
@@ -108,6 +131,16 @@ export default function EventDetail() {
     try {
       const { data } = await api.get(`/incidents/event/${currentEventId}`);
       setIncidents(data || []);
+    } catch {}
+  }, [currentEventId]);
+
+  const fetchKeys = useCallback(async () => {
+    try {
+      const { data } = await api.get(
+        `/events/${currentEventId}/keys`
+      );
+      setKeys(data.keys || []);
+      setKeyStats(data);
     } catch {}
   }, [currentEventId]);
 
@@ -173,7 +206,7 @@ export default function EventDetail() {
   useEffect(() => {
     if (!currentEventId) return;
     // Run all fetches in parallel instead of sequentially
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents()]);
+    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchSlots(), fetchIncidents(), fetchKeys()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
@@ -240,6 +273,183 @@ export default function EventDetail() {
     }
   };
 
+  const exportPDF = async () => {
+    setExportingPDF(true);
+    try {
+      const { data } = await api.get(
+        `/events/${currentEventId}/report`
+      );
+      const e = data.event;
+      const s = data.summary;
+
+      const carRows = data.cars.map(c => `
+      <tr>
+        <td>${c.plate}</td>
+        <td>${c.color} ${c.make}</td>
+        <td>${c.status}</td>
+        <td>${c.check_in_driver || "—"}</td>
+        <td>${c.retrieval_driver || "—"}</td>
+        <td>${c.duration_minutes
+          ? c.duration_minutes + " min" : "—"}</td>
+        <td>${c.rating
+          ? "★".repeat(c.rating) : "—"}</td>
+        <td>${c.notes || "—"}</td>
+      </tr>`
+      ).join("");
+
+      const driverRows = data.drivers.map(d => `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.employee_id}</td>
+        <td>${d.checkins}</td>
+        <td>${d.parkings}</td>
+        <td>${d.retrievals}</td>
+        <td style="color:${
+          d.incidents > 0 ? "#EF4444" : "#6B7280"
+        }">${d.incidents}</td>
+      </tr>`
+      ).join("");
+
+      const incidentRows = data.incidents.length > 0
+        ? data.incidents.map(i => `
+        <tr>
+          <td>${i.plate}</td>
+          <td>${i.driver_name || "—"}</td>
+          <td>${i.description}</td>
+          <td>${new Date(i.created_at)
+            .toLocaleString("en-IN")}</td>
+        </tr>`
+        ).join("")
+        : `<tr><td colspan="4" style="text-align:center;
+          color:#9CA3AF;">No incidents</td></tr>`;
+
+      const html = `<!DOCTYPE html><html><head>
+      <meta charset="UTF-8">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:Arial,sans-serif;color:#111827;
+          font-size:12px;}
+        .header{background:#7C3AED;color:white;
+          padding:24px 28px;}
+        .header h1{font-size:22px;font-weight:900;}
+        .header p{opacity:0.8;margin-top:3px;font-size:12px;}
+        .section{padding:20px 28px;
+          border-bottom:1px solid #f3f4f6;}
+        .section h2{font-size:11px;font-weight:800;
+          color:#7C3AED;letter-spacing:3px;
+          margin-bottom:12px;text-transform:uppercase;}
+        .stats{display:flex;gap:12px;flex-wrap:wrap;}
+        .stat{background:#f9fafb;border-radius:10px;
+          padding:12px 16px;text-align:center;
+          min-width:100px;}
+        .stat-val{font-size:22px;font-weight:900;
+          color:#111827;}
+        .stat-lbl{font-size:9px;color:#6b7280;
+          text-transform:uppercase;letter-spacing:1px;
+          margin-top:3px;}
+        table{width:100%;border-collapse:collapse;
+          font-size:11px;}
+        th{padding:8px;text-align:left;background:#f9fafb;
+          font-size:10px;text-transform:uppercase;
+          letter-spacing:1px;color:#6b7280;font-weight:700;
+          border-bottom:1px solid #e5e7eb;}
+        td{padding:8px;border-bottom:1px solid #f3f4f6;}
+        .footer{padding:16px 28px;text-align:center;
+          color:#9ca3af;font-size:10px;}
+      </style></head><body>
+      <div class="header">
+        <h1>${e.name}</h1>
+        <p>${e.date || ""}
+          ${e.start_time
+            ? "· " + e.start_time + " to " + e.end_time
+            : ""}
+          ${e.venue ? "· " + e.venue : ""}</p>
+        <p style="margin-top:6px;font-size:10px;opacity:0.6;">
+          Generated ${new Date().toLocaleString("en-IN")}
+        </p>
+      </div>
+      <div class="section">
+        <h2>Summary</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-val">${s.total_cars}</div>
+            <div class="stat-lbl">Total Cars</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${s.delivered}</div>
+            <div class="stat-lbl">Delivered</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">
+              ${s.avg_retrieval_minutes}m
+            </div>
+            <div class="stat-lbl">Avg Retrieval</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">
+              ${s.avg_rating > 0
+                ? s.avg_rating + "★" : "—"}
+            </div>
+            <div class="stat-lbl">Avg Rating</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${s.total_incidents}</div>
+            <div class="stat-lbl">Incidents</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${s.total_drivers}</div>
+            <div class="stat-lbl">Drivers</div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Driver Performance</h2>
+        <table><thead><tr>
+          <th>Driver</th><th>Emp ID</th>
+          <th>Check-ins</th><th>Parkings</th>
+          <th>Retrievals</th><th>Incidents</th>
+        </tr></thead>
+        <tbody>${driverRows}</tbody></table>
+      </div>
+      <div class="section">
+        <h2>Incidents</h2>
+        <table><thead><tr>
+          <th>Plate</th><th>Driver</th>
+          <th>Description</th><th>Time</th>
+        </tr></thead>
+        <tbody>${incidentRows}</tbody></table>
+      </div>
+      <div class="section">
+        <h2>All Vehicles (${s.total_cars})</h2>
+        <table><thead><tr>
+          <th>Plate</th><th>Vehicle</th><th>Status</th>
+          <th>Check-in By</th><th>Retrieved By</th>
+          <th>Duration</th><th>Rating</th><th>Notes</th>
+        </tr></thead>
+        <tbody>${carRows}</tbody></table>
+      </div>
+      <div class="footer">
+        InstaPark — Smart Valet Operations · ${e.name}
+      </div>
+    </body></html>`;
+
+      const { uri } = await Print.printToFileAsync({ html });
+      const filename = `${
+        e.name.replace(/\s+/g, "_")
+      }_report.pdf`;
+      const dest = `${FileSystem.documentDirectory}${filename}`;
+      await FileSystem.moveAsync({ from: uri, to: dest });
+      await Sharing.shareAsync(dest, {
+        mimeType: "application/pdf",
+        dialogTitle: `${e.name} — Event Report`,
+      });
+    } catch {
+      Alert.alert("Error", "Failed to generate PDF");
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   const closeEvent = () => {
     Alert.alert("Close Event", "Are you sure? This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
@@ -296,6 +506,51 @@ export default function EventDetail() {
       Alert.alert("Error", e.response?.data?.detail || "Failed");
     } finally {
       setAssigningId(null);
+    }
+  };
+
+  const toggleAssignSupervisor = async (s) => {
+    setAssigningSupervisorId(s.id);
+    try {
+      if (s.assigned) {
+        await api.delete(`/events/${currentEventId}/supervisors/${s.id}`);
+      } else {
+        await api.post(`/events/${currentEventId}/supervisors/${s.id}`);
+      }
+      await fetchSupervisors();
+    } catch (e) {
+      const msg = e.response?.data?.detail || "Failed to update assignment";
+      Alert.alert("Cannot Assign", msg);
+    } finally {
+      setAssigningSupervisorId(null);
+    }
+  };
+
+  const resetSupForm = () => {
+    setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
+  };
+
+  const saveSupervisor = async () => {
+    if (!supName.trim() || !supEmail.trim() || !supPassword.trim()) {
+      Alert.alert("Required", "Name, email and password are required");
+      return;
+    }
+    setSavingSupervisor(true);
+    try {
+      await api.post("/supervisors", {
+        name: supName.trim(),
+        email: supEmail.trim().toLowerCase(),
+        phone: supPhone.trim() || undefined,
+        password: supPassword,
+      });
+      setShowAddSupervisorModal(false);
+      resetSupForm();
+      Alert.alert("Supervisor Added!", `${supName} has been added and will receive login credentials by email.`);
+      fetchSupervisors();
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Failed to add supervisor");
+    } finally {
+      setSavingSupervisor(false);
     }
   };
 
@@ -407,7 +662,7 @@ export default function EventDetail() {
           ...cardShadow,
         }}
       >
-        {[["cars", "Cars"], ["drivers", "Drivers"], ["stats", "Stats"], ["slots", "Slots"]].map(([k, l]) => (
+        {[["cars", "Cars"], ["employees", "Employees"], ["stats", "Stats"], ["slots", "Slots"]].map(([k, l]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
@@ -560,149 +815,333 @@ export default function EventDetail() {
         </ScrollView>
       )}
 
-      {tab === "drivers" && (
+      {tab === "employees" && (
         <ScrollView
           style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {drivers.length === 0 && (
-            <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Text style={{ fontSize: 48 }}>👥</Text>
-              <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No drivers</Text>
-            </View>
-          )}
-          {drivers.length > 0 && (
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <Text style={{ fontWeight: "800", color: "#6B7280", fontSize: 12 }}>
-                {drivers.filter(d => d.assigned).length} / {drivers.length} assigned
-              </Text>
-              <TouchableOpacity
-                onPress={assignAll}
-                disabled={assigningAll || drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0}
-                style={{
-                  backgroundColor: assigningAll ? "#EDE9FE" : "#7C3AED",
-                  borderRadius: 12,
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  opacity: drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0 ? 0.5 : 1,
-                }}
-              >
-                {assigningAll ? (
-                  <ActivityIndicator size="small" color="#7C3AED" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-done" size={14} color="#fff" />
-                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1 }}>ASSIGN ALL</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-          {drivers.map((d) => (
-            <View
-              key={d.id}
+          {/* Internal tab toggle bar */}
+          <View
+            style={{
+              backgroundColor: "#fff",
+              flexDirection: "row",
+              borderRadius: 20,
+              padding: 4,
+              marginBottom: 16,
+              ...cardShadow,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => setEmployeeTab("supervisors")}
               style={{
-                backgroundColor: "#fff",
-                borderRadius: 24,
-                padding: 16,
-                marginBottom: 12,
-                ...cardShadow,
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 16,
+                backgroundColor: employeeTab === "supervisors" ? "#0F2044" : "transparent",
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View
-                  style={{
-                    backgroundColor: "#7C3AED",
-                    borderRadius: 99,
-                    width: 48,
-                    height: 48,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 18 }}>
-                    {d.name?.[0]?.toUpperCase()}
-                  </Text>
-                </View>
+              <Text
+                style={{
+                  fontWeight: "800",
+                  fontSize: 13,
+                  color: employeeTab === "supervisors" ? "#fff" : "#6B7280",
+                  letterSpacing: 1,
+                }}
+              >
+                Supervisors
+              </Text>
+              <View style={{ backgroundColor: employeeTab === "supervisors" ? "rgba(255,255,255,0.2)" : "#EDE9FE", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 99 }}>
+                <Text style={{ color: employeeTab === "supervisors" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: 10 }}>{supervisors.length}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setEmployeeTab("drivers")}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 16,
+                backgroundColor: employeeTab === "drivers" ? "#0F2044" : "transparent",
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: "800",
+                  fontSize: 13,
+                  color: employeeTab === "drivers" ? "#fff" : "#6B7280",
+                  letterSpacing: 1,
+                }}
+              >
+                Drivers
+              </Text>
+              <View style={{ backgroundColor: employeeTab === "drivers" ? "rgba(255,255,255,0.2)" : "#F3F0FF", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 99 }}>
+                <Text style={{ color: employeeTab === "drivers" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: 10 }}>{drivers.filter(d => d.assigned).length}/{drivers.length}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {employeeTab === "supervisors" && (
+            <>
+              {/* SUPERVISORS CONTENT */}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 12 }}>
                 <TouchableOpacity
-                  style={{ flex: 1, marginLeft: 12 }}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(admin)/driver-stats",
-                      params: { driverId: d.id, driverName: d.name },
-                    })
-                  }
+                  onPress={() => setShowAddSupervisorModal(true)}
+                  style={{ backgroundColor: "#0F2044", borderRadius: 12, paddingVertical: 7, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{d.name}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 12 }}>{d.employee_id}</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 99,
-                        marginRight: 6,
-                        backgroundColor: d.available ? "#059669" : "#F43F5E",
-                      }}
-                    />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
-                      {d.available ? "Available" : `In ${d.conflict_event_name || "another event"}`}
-                    </Text>
-                  </View>
+                  <Ionicons name="add" size={14} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, letterSpacing: 1 }}>ADD SUPERVISOR</Text>
                 </TouchableOpacity>
               </View>
-              <View style={{ flexDirection: "row", marginTop: 10, gap: 10 }}>
-                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                  <Text style={{ color: "#059669", fontSize: 11, fontWeight: "700" }}>
-                    Checked in: {d.cars_checked_in || 0}
-                  </Text>
-                </View>
-                <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                  <Text style={{ color: "#0EA5E9", fontSize: 11, fontWeight: "700" }}>
-                    Retrieved: {d.cars_retrieved || 0}
-                  </Text>
-                </View>
-              </View>
-              {d.available || d.assigned ? (
-                <TouchableOpacity
-                  onPress={() => toggleAssign(d)}
-                  disabled={assigningId === d.id}
-                  activeOpacity={0.7}
-                  style={{
-                    marginTop: 12,
-                    borderRadius: 14,
-                    paddingVertical: 12,
-                    alignItems: "center",
-                    backgroundColor: d.assigned ? "transparent" : "#7C3AED",
-                    borderWidth: d.assigned ? 1.5 : 0,
-                    borderColor: "#F43F5E",
-                    opacity: assigningId === d.id ? 0.7 : 1,
-                  }}
-                >
-                  {assigningId === d.id ? (
-                    <ActivityIndicator size="small" color={d.assigned ? "#F43F5E" : "#fff"} />
-                  ) : (
-                    <Text
-                      style={{
-                        fontWeight: "900",
-                        letterSpacing: 1.5,
-                        color: d.assigned ? "#F43F5E" : "#fff",
-                        fontSize: 13,
-                      }}
-                    >
-                      {d.assigned ? "UNASSIGN" : "ASSIGN"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <View style={{ marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 12, alignItems: "center" }}>
-                  <Text style={{ color: "#9CA3AF", fontSize: 11 }}>In {d.conflict_event_name}</Text>
+
+              {supervisors.length === 0 && (
+                <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                  <Text style={{ fontSize: 48 }}>🛡️</Text>
+                  <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No supervisors</Text>
                 </View>
               )}
-            </View>
-          ))}
+
+              {supervisors.map((s) => (
+                <View
+                  key={s.id}
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 24,
+                    padding: 16,
+                    marginBottom: 12,
+                    ...cardShadow,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        backgroundColor: "#0F2044",
+                        borderRadius: 99,
+                        width: 48,
+                        height: 48,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 18 }}>
+                        {s.name?.[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{s.name}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: 12 }}>{s.email}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                        <View
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 99,
+                            marginRight: 6,
+                            backgroundColor: s.available ? "#059669" : "#F43F5E",
+                          }}
+                        />
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: s.available ? "#059669" : "#F43F5E" }}>
+                          {s.available ? "Available" : `In ${s.conflict_event_name || "another event"}`}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {s.available || s.assigned ? (
+                    <TouchableOpacity
+                      onPress={() => toggleAssignSupervisor(s)}
+                      disabled={assigningSupervisorId === s.id}
+                      activeOpacity={0.7}
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 14,
+                        paddingVertical: 12,
+                        alignItems: "center",
+                        backgroundColor: s.assigned ? "transparent" : "#0F2044",
+                        borderWidth: s.assigned ? 1.5 : 0,
+                        borderColor: "#F43F5E",
+                        opacity: assigningSupervisorId === s.id ? 0.7 : 1,
+                      }}
+                    >
+                      {assigningSupervisorId === s.id ? (
+                        <ActivityIndicator size="small" color={s.assigned ? "#F43F5E" : "#fff"} />
+                      ) : (
+                        <Text
+                          style={{
+                            fontWeight: "900",
+                            letterSpacing: 1.5,
+                            color: s.assigned ? "#F43F5E" : "#fff",
+                            fontSize: 13,
+                          }}
+                        >
+                          {s.assigned ? "UNASSIGN" : "ASSIGN"}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 12, alignItems: "center" }}>
+                      <Text style={{ color: "#9CA3AF", fontSize: 11 }}>In {s.conflict_event_name}</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </>
+          )}
+
+          {employeeTab === "drivers" && (
+            <>
+              {/* DRIVERS CONTENT */}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 16, gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => setShowModal(true)}
+                  style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 7, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
+                  <Ionicons name="add" size={14} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, letterSpacing: 1 }}>ADD DRIVER</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={assignAll}
+                  disabled={assigningAll || drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0}
+                  style={{
+                    backgroundColor: assigningAll ? "#EDE9FE" : "#7C3AED",
+                    borderRadius: 12,
+                    paddingVertical: 7,
+                    paddingHorizontal: 14,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    opacity: drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0 ? 0.5 : 1,
+                  }}
+                >
+                  {assigningAll ? (
+                    <ActivityIndicator size="small" color="#7C3AED" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-done" size={14} color="#fff" />
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1 }}>ASSIGN ALL</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {drivers.length === 0 && (
+                <View style={{ alignItems: "center", marginTop: 40 }}>
+                  <Text style={{ fontSize: 48 }}>👥</Text>
+                  <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No drivers</Text>
+                </View>
+              )}
+
+              {drivers.map((d) => (
+                <View
+                  key={d.id}
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 24,
+                    padding: 16,
+                    marginBottom: 12,
+                    ...cardShadow,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        backgroundColor: "#7C3AED",
+                        borderRadius: 99,
+                        width: 48,
+                        height: 48,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 18 }}>
+                        {d.name?.[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={{ flex: 1, marginLeft: 12 }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(admin)/driver-stats",
+                          params: { driverId: d.id, driverName: d.name },
+                        })
+                      }
+                    >
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{d.name}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: 12 }}>{d.employee_id}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                        <View
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 99,
+                            marginRight: 6,
+                            backgroundColor: d.available ? "#059669" : "#F43F5E",
+                          }}
+                        />
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
+                          {d.available ? "Available" : `In ${d.conflict_event_name || "another event"}`}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{ flexDirection: "row", marginTop: 10, gap: 10 }}>
+                    <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
+                      <Text style={{ color: "#059669", fontSize: 11, fontWeight: "700" }}>
+                        Checked in: {d.cars_checked_in || 0}
+                      </Text>
+                    </View>
+                    <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
+                      <Text style={{ color: "#0EA5E9", fontSize: 11, fontWeight: "700" }}>
+                        Retrieved: {d.cars_retrieved || 0}
+                      </Text>
+                    </View>
+                  </View>
+                  {d.available || d.assigned ? (
+                    <TouchableOpacity
+                      onPress={() => toggleAssign(d)}
+                      disabled={assigningId === d.id}
+                      activeOpacity={0.7}
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 14,
+                        paddingVertical: 12,
+                        alignItems: "center",
+                        backgroundColor: d.assigned ? "transparent" : "#7C3AED",
+                        borderWidth: d.assigned ? 1.5 : 0,
+                        borderColor: "#F43F5E",
+                        opacity: assigningId === d.id ? 0.7 : 1,
+                      }}
+                    >
+                      {assigningId === d.id ? (
+                        <ActivityIndicator size="small" color={d.assigned ? "#F43F5E" : "#fff"} />
+                      ) : (
+                        <Text
+                          style={{
+                            fontWeight: "900",
+                            letterSpacing: 1.5,
+                            color: d.assigned ? "#F43F5E" : "#fff",
+                            fontSize: 13,
+                          }}
+                        >
+                          {d.assigned ? "UNASSIGN" : "ASSIGN"}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 12, alignItems: "center" }}>
+                      <Text style={{ color: "#9CA3AF", fontSize: 11 }}>In {d.conflict_event_name}</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </>
+          )}
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
@@ -749,6 +1188,33 @@ export default function EventDetail() {
               {exportingCSV ? "Generating..." : "Export CSV"}
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={exportPDF}
+            disabled={exportingPDF}
+            style={{
+              backgroundColor: exportingPDF ? "#EDE9FE" : "#F5F3FF",
+              borderRadius: 14,
+              paddingVertical: 12,
+              alignItems: "center",
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "#DDD6FE",
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            {exportingPDF ? (
+              <ActivityIndicator size="small" color="#7C3AED" />
+            ) : (
+              <Ionicons name="document-outline" size={16}
+                color="#7C3AED" />
+            )}
+            <Text style={{ color: "#7C3AED", fontWeight: "800",
+              fontSize: 13, marginLeft: 6 }}>
+              {exportingPDF ? "Generating..." : "Export PDF Report"}
+            </Text>
+          </TouchableOpacity>
           {[
             { color: "#7C3AED", icon: "star", label: "AVG RATING", value: stats?.avg_rating || "—" },
             { color: "#059669", icon: "trophy", label: "TOP DRIVER", value: stats?.top_driver || "—" },
@@ -785,133 +1251,308 @@ export default function EventDetail() {
       {tab === "slots" && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
           
-          {/* Capacity Summary */}
-          {(() => {
-            const total = slots.length;
-            const occupied = slots.filter(s => s.is_occupied).length;
-            const free = total - occupied;
-            const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
-            const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
-            return (
-              <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>
-                  CAPACITY OVERVIEW
-                </Text>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-                  <View style={{ alignItems: "center" }}>
-                    <Text style={{ fontSize: 28, fontWeight: "900", color: "#111827" }}>{occupied}</Text>
-                    <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
-                  </View>
-                  <View style={{ alignItems: "center" }}>
-                    <Text style={{ fontSize: 28, fontWeight: "900", color: "#059669" }}>{free}</Text>
-                    <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>FREE</Text>
-                  </View>
-                  <View style={{ alignItems: "center" }}>
-                    <Text style={{ fontSize: 28, fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
-                    <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
-                  </View>
-                </View>
-                <View style={{ height: 10, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                  <View style={{ height: 10, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
-                </View>
-                <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 8, textAlign: "right" }}>
-                  {pct}% full
-                </Text>
-                {pct >= 80 && (
-                  <TouchableOpacity
-                    onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
-                    style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: 14, padding: 12, marginTop: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <Ionicons name="warning-outline" size={16} color={pct >= 90 ? "#EF4444" : "#D97706"} />
-                    <Text style={{ fontWeight: "800", fontSize: 12, color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: 6 }}>
-                      {pct >= 90 ? "ALMOST FULL — TAP TO ADD MORE SLOTS" : "FILLING UP — TAP TO ADD MORE SLOTS"}
+          {/* Internal sub-tab toggle */}
+          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: 18, padding: 4, marginBottom: 16, ...cardShadow }}>
+            <TouchableOpacity
+              onPress={() => setSlotTab("parking")}
+              style={{
+                flex: 1, paddingVertical: 10, borderRadius: 14,
+                backgroundColor: slotTab === "parking" ? "#7C3AED" : "transparent",
+                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6
+              }}
+            >
+              <Text style={{ fontWeight: "800", fontSize: 13, color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSlotTab("keys")}
+              style={{
+                flex: 1, paddingVertical: 10, borderRadius: 14,
+                backgroundColor: slotTab === "keys" ? "#7C3AED" : "transparent",
+                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6
+              }}
+            >
+              <Text style={{ fontWeight: "800", fontSize: 13, color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
+            </TouchableOpacity>
+          </View>
+
+          {slotTab === "parking" ? (
+            <>
+              {/* Capacity Summary */}
+              {(() => {
+                const total = slots.length;
+                const occupied = slots.filter(s => s.is_occupied).length;
+                const free = total - occupied;
+                const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
+                const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
+                return (
+                  <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
+                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>
+                      CAPACITY OVERVIEW
                     </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            );
-          })()}
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+                      <View style={{ alignItems: "center" }}>
+                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#111827" }}>{occupied}</Text>
+                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
+                      </View>
+                      <View style={{ alignItems: "center" }}>
+                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#059669" }}>{free}</Text>
+                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>FREE</Text>
+                      </View>
+                      <View style={{ alignItems: "center" }}>
+                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
+                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
+                      </View>
+                    </View>
+                    <View style={{ height: 10, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
+                      <View style={{ height: 10, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                    </View>
+                    <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 8, textAlign: "right" }}>
+                      {pct}% full
+                    </Text>
+                    {pct >= 80 && (
+                      <TouchableOpacity
+                        onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
+                        style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: 14, padding: 12, marginTop: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                      >
+                        <Ionicons name="warning-outline" size={16} color={pct >= 90 ? "#EF4444" : "#D97706"} />
+                        <Text style={{ fontWeight: "800", fontSize: 12, color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: 6 }}>
+                          {pct >= 90 ? "ALMOST FULL — TAP TO ADD MORE SLOTS" : "FILLING UP — TAP TO ADD MORE SLOTS"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })()}
 
-          {/* Zone Selector */}
-          {(() => {
-            const zones = [...new Set(slots.map(s => s.zone_name))];
-            if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
-            return (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                {zones.map(z => {
-                  const zSlots = slots.filter(s => s.zone_name === z);
-                  const zOcc = zSlots.filter(s => s.is_occupied).length;
-                  return (
-                    <TouchableOpacity
-                      key={z}
-                      onPress={() => setSelectedZone(z)}
-                      style={{
-                        backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
-                        borderRadius: 16,
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        marginRight: 10,
-                        ...cardShadow,
-                      }}
-                    >
-                      <Text style={{ fontWeight: "800", fontSize: 13, color: selectedZone === z ? "#fff" : "#111827" }}>
-                        Zone {z}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: 2 }}>
-                        {zOcc}/{zSlots.length} occupied
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            );
-          })()}
+              {/* Zone Selector */}
+              {(() => {
+                const zones = [...new Set(slots.map(s => s.zone_name))];
+                if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
+                return (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                    {zones.map(z => {
+                      const zSlots = slots.filter(s => s.zone_name === z);
+                      const zOcc = zSlots.filter(s => s.is_occupied).length;
+                      return (
+                        <TouchableOpacity
+                          key={z}
+                          onPress={() => setSelectedZone(z)}
+                          style={{
+                            backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
+                            borderRadius: 16,
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            marginRight: 10,
+                            ...cardShadow,
+                          }}
+                        >
+                          <Text style={{ fontWeight: "800", fontSize: 13, color: selectedZone === z ? "#fff" : "#111827" }}>
+                            Zone {z}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: 2 }}>
+                            {zOcc}/{zSlots.length} occupied
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                );
+              })()}
 
-          {/* Slot Grid */}
-          {(() => {
-            const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
-            return (
-              <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, ...cardShadow }}>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>
-                  ZONE {selectedZone} — SLOT MAP
-                </Text>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {zoneSlots.map(s => (
-                    <View
-                      key={s.id}
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 14,
-                        backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderWidth: 1.5,
-                        borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
-                      }}
-                    >
-                      <Ionicons
-                        name={s.is_occupied ? "car" : "car-outline"}
-                        size={16}
-                        color={s.is_occupied ? "#EF4444" : "#059669"}
-                      />
-                      <Text style={{ fontSize: 11, fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: 2 }}>
-                        {s.slot_number}
+              {/* Slot Grid */}
+              {(() => {
+                const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
+                return (
+                  <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, ...cardShadow }}>
+                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>
+                      ZONE {selectedZone} — SLOT MAP
+                    </Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {zoneSlots.map(s => (
+                        <View
+                          key={s.id}
+                          style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 14,
+                            backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderWidth: 1.5,
+                            borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
+                          }}
+                        >
+                          <Ionicons
+                            name={s.is_occupied ? "car" : "car-outline"}
+                            size={16}
+                            color={s.is_occupied ? "#EF4444" : "#059669"}
+                          />
+                          <Text style={{ fontSize: 11, fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: 2 }}>
+                            {s.slot_number}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                    {zoneSlots.length === 0 && (
+                      <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>
+                        No slots in this zone
+                      </Text>
+                    )}
+                  </View>
+                );
+              })()}
+            </>
+          ) : (
+            <>
+              {/* Summary card */}
+              {keyStats && (
+                <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 14 }}>
+                    KEY BOARD STATUS
+                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+                    {[
+                      { label: "IN BOOTH", value: keyStats.in_booth, color: "#7C3AED" },
+                      { label: "AVAILABLE", value: keyStats.hooks_available, color: "#059669" },
+                      { label: "RETURNED", value: keyStats.returned, color: "#9CA3AF" },
+                      { label: "TOTAL HOOKS", value: keyStats.total_hooks, color: "#0EA5E9" },
+                    ].map(s => (
+                      <View key={s.label} style={{ alignItems: "center" }}>
+                        <Text style={{ fontSize: 24, fontWeight: "900", color: s.color }}>{s.value}</Text>
+                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1.5, marginTop: 4, textAlign: "center" }}>
+                          {s.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Capacity bar */}
+                  {(() => {
+                    const pct = keyStats.total_hooks > 0 ? Math.round((keyStats.in_booth / keyStats.total_hooks) * 100) : 0;
+                    const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#7C3AED";
+                    return (
+                      <>
+                        <View style={{ height: 8, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
+                          <View style={{ height: 8, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                        </View>
+                        <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 6, textAlign: "right" }}>
+                          {pct}% full
+                        </Text>
+                      </>
+                    );
+                  })()}
+
+                  {/* Full board warning */}
+                  {keyStats.hooks_full && (
+                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: 14, padding: 12, marginTop: 8, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Ionicons name="warning" size={18} color="#EF4444" />
+                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: 13, flex: 1 }}>
+                        Key board is full — no hooks available
                       </Text>
                     </View>
-                  ))}
+                  )}
                 </View>
-                {zoneSlots.length === 0 && (
-                  <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>
-                    No slots in this zone
-                  </Text>
-                )}
-              </View>
-            );
-          })()}
+              )}
 
+              {/* Untagged warning */}
+              {keyStats?.untagged_count > 0 && (
+                <View style={{ backgroundColor: "#FEF3C7", borderRadius: 16, padding: 14, marginBottom: 16, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#FDE68A" }}>
+                  <Ionicons name="warning" size={20} color="#D97706" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: 13 }}>
+                      {keyStats.untagged_count} car(s) have no key tag
+                    </Text>
+                    <Text style={{ color: "#B45309", fontSize: 11, marginTop: 2 }}>
+                      Ask drivers to add key tag numbers for these cars
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Keys in booth */}
+              {keys.filter(k => k.in_booth).length > 0 && (
+                <>
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3, marginBottom: 10 }}>
+                    IN BOOTH ({keys.filter(k => k.in_booth).length})
+                  </Text>
+                  {keys.filter(k => k.in_booth).map(k => (
+                    <View key={k.car_id} style={{
+                      backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8,
+                      flexDirection: "row", alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#7C3AED",
+                      ...cardShadow }}>
+                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                        <Ionicons name="key" size={16} color="#7C3AED" />
+                        <Text style={{ fontSize: 10, fontWeight: "900", color: "#7C3AED", marginTop: 1 }}>
+                          #{k.key_tag}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: 14 }}>{k.plate}</Text>
+                        <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>
+                          {k.color} {k.make}{k.zone ? ` · Zone ${k.zone} Slot ${k.slot}` : ""}
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
+                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#7C3AED", letterSpacing: 1 }}>
+                          {k.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : k.status === "BEING_FETCHED" ? "FETCHING" : "PARKED"}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {/* Returned keys */}
+              {keys.filter(k => !k.in_booth).length > 0 && (
+                <>
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#059669", letterSpacing: 3, marginTop: 8, marginBottom: 10 }}>
+                    RETURNED ({keys.filter(k => !k.in_booth).length})
+                  </Text>
+                  {keys.filter(k => !k.in_booth).map(k => (
+                    <View key={k.car_id} style={{
+                      backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8,
+                      flexDirection: "row", alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#D1FAE5",
+                      opacity: 0.75, ...cardShadow }}>
+                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                        <Ionicons name="key-outline" size={16} color="#059669" />
+                        <Text style={{ fontSize: 10, fontWeight: "900", color: "#059669", marginTop: 1 }}>
+                          #{k.key_tag}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: 14 }}>{k.plate}</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 2 }}>
+                          {k.color} {k.make} · Delivered
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
+                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#059669", letterSpacing: 1 }}>
+                          RETURNED
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {/* Empty state */}
+              {keys.length === 0 && (
+                <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 40, alignItems: "center", ...cardShadow }}>
+                  <Ionicons name="key-outline" size={44} color="#D1D5DB" />
+                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: 12, fontSize: 15 }}>
+                    No key tags recorded yet
+                  </Text>
+                  <Text style={{ color: "#D1D5DB", fontSize: 12, marginTop: 6, textAlign: "center" }}>
+                    Drivers add key tags from their tasks screen after parking
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
         </ScrollView>
       )}
+
+
 
       <Modal visible={showCarModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
@@ -1001,6 +1642,49 @@ export default function EventDetail() {
               )}
             </ScrollView>
           </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showAddSupervisorModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20 }}>
+              <View style={{ alignItems: "center", marginBottom: 14 }}>
+                <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: "900", color: "#0F2044", marginBottom: 20 }}>Add Supervisor</Text>
+
+              <Text style={modalLabel}>NAME</Text>
+              <TextInput value={supName} onChangeText={setSupName} placeholder="Full Name" style={modalInput} />
+
+              <Text style={modalLabel}>EMAIL</Text>
+              <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={modalInput} />
+
+              <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+              <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+
+              <Text style={modalLabel}>PASSWORD</Text>
+              <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
+
+              <TouchableOpacity
+                onPress={saveSupervisor}
+                disabled={savingSupervisor}
+                style={{ backgroundColor: "#0F2044", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 10, shadowColor: "#0F2044", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
+              >
+                {savingSupervisor ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE SUPERVISOR</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  resetSupForm();
+                  setShowAddSupervisorModal(false);
+                }}
+                style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}
+              >
+                <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -1284,4 +1968,16 @@ const modalLabel = {
   color: "#6B7280",
   letterSpacing: 3,
   marginBottom: 8,
+};
+
+const modalInput = {
+  backgroundColor: "#F9FAFB",
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  padding: 14,
+  color: "#111827",
+  marginBottom: 16,
+  fontSize: 15,
+  fontWeight: "700",
 };

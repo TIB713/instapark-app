@@ -236,7 +236,8 @@ export default function CarLog() {
     steps.push({ type: "status", status: "DELIVERED",
       time: car.delivered_at,
       driver: drivers_map[car.retrieval_driver_id],
-      photos: photos_by_type["handover"] || [] });
+      photos: photos_by_type["handover"] || [],
+      rating_comment: log.rating_comment || null });
   }
 
   // Interleave incidents by timestamp alongside other steps
@@ -368,6 +369,43 @@ export default function CarLog() {
               ); 
             } 
             const scfg = STATUS_CONFIG[step.status]; 
+            if (step.status === "DELIVERED") {
+              return (
+                <View key={`step-wrap-${i}`}>
+                  <TimelineStep 
+                    color={scfg.color} 
+                    icon={scfg.icon} 
+                    label={scfg.label} 
+                    time={step.time} 
+                    driver={step.driver} 
+                    note={step.note} 
+                    photos={step.photos || []} 
+                    isLast={isLast} 
+                    onPhotoPress={setLightboxUrl} 
+                  />
+                  {step.rating_comment && (
+                    <View style={{
+                      backgroundColor: "#F0FDF4",
+                      borderRadius: 10,
+                      padding: 10,
+                      marginTop: 8,
+                      marginBottom: isLast ? 0 : 24,
+                      marginLeft: 54,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#059669",
+                    }}>
+                      <Text style={{
+                        color: "#065F46",
+                        fontSize: 12,
+                        fontStyle: "italic",
+                      }}>
+                        "{step.rating_comment}"
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            }
             return ( 
               <TimelineStep 
                 key={`step-${i}`} 
