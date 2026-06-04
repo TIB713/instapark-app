@@ -38,8 +38,12 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [supervisors, setSupervisors] = useState([]);
+  const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const isHotelOwner = user?.provider_type === "hotel_owner";
+  const isValetProvider = !isHotelOwner;
 
   const fetchAll = useCallback(async () => {
     try {
@@ -76,6 +80,12 @@ export default function Dashboard() {
         setSupervisors(sups || []);
       } catch {
         setSupervisors([]);
+      }
+      try {
+        const { data: hts } = await api.get("/hotels");
+        setHotels(hts || []);
+      } catch {
+        setHotels([]);
       }
     } catch (err) {}
     finally {
@@ -141,6 +151,7 @@ export default function Dashboard() {
     { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: active.length, label: "ACTIVE NOW", onPress: () => router.push("/(admin)/all-events") },
     { id: "supervisors", testID: "stat-supervisors", color: "#0F2044", icon: "shield-checkmark", value: supervisors.length, label: "SUPERVISORS", onPress: () => router.push("/(admin)/manage-supervisors") },
     { id: "drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-drivers") },
+    { id: "hotels", testID: "stat-hotels", color: "#1D4ED8", icon: "business-outline", value: hotels.length, label: "HOTELS", onPress: () => router.push("/(admin)/hotels") },
     { id: "rating", testID: "stat-rating", color: "#F59E0B", icon: "star", value: avgRating, label: "AVG RATING", onPress: () => router.push("/(admin)/all-events") },
     { id: "guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "GUEST QR", onPress: () => router.push("/(admin)/pre-register-qr") },
   ];
@@ -242,18 +253,64 @@ export default function Dashboard() {
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <Text style={labelStyle}>QUICK ACTIONS</Text>
           <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
-            <TouchableOpacity
-              testID="quick-new-event"
-              onPress={() => router.push("/(admin)/create-event")}
-              activeOpacity={0.85}
-              style={[quickAction, cardShadow]}
-            >
-              <View style={{ backgroundColor: "#EDE9FE", borderRadius: 99, padding: 10 }}>
-                <Ionicons name="add-circle" size={22} color="#7C3AED" />
-              </View>
-              <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>New Event</Text>
-              <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Create new valet event</Text>
-            </TouchableOpacity>
+            {isHotelOwner ? (
+              <TouchableOpacity
+                testID="quick-my-hotels"
+                onPress={() => router.push("/(admin)/hotels")}
+                activeOpacity={0.85}
+                style={[quickAction, cardShadow]}
+              >
+                <View style={{ backgroundColor: "#EBF5FF", borderRadius: 99, padding: 10 }}>
+                  <Ionicons name="business-outline" size={22} color="#1D4ED8" />
+                </View>
+                <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>My Hotels</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Manage daily operations</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                testID="quick-new-event"
+                onPress={() => router.push("/(admin)/create-event")}
+                activeOpacity={0.85}
+                style={[quickAction, cardShadow]}
+              >
+                <View style={{ backgroundColor: "#EDE9FE", borderRadius: 99, padding: 10 }}>
+                  <Ionicons name="add-circle" size={22} color="#7C3AED" />
+                </View>
+                <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>New Event</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Create new valet event</Text>
+              </TouchableOpacity>
+            )}
+
+            {isHotelOwner ? (
+              <TouchableOpacity
+                testID="quick-guest-qr"
+                onPress={() => router.push("/(admin)/pre-register-qr")}
+                activeOpacity={0.85}
+                style={[quickAction, cardShadow]}
+              >
+                <View style={{ backgroundColor: "#FEF3C7", borderRadius: 99, padding: 10 }}>
+                  <Ionicons name="qr-code-outline" size={22} color="#D97706" />
+                </View>
+                <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Guest QR</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Pre-registration code</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                testID="quick-hotels"
+                onPress={() => router.push("/(admin)/hotels")}
+                activeOpacity={0.85}
+                style={[quickAction, cardShadow]}
+              >
+                <View style={{ backgroundColor: "#EBF5FF", borderRadius: 99, padding: 10 }}>
+                  <Ionicons name="business-outline" size={22} color="#1D4ED8" />
+                </View>
+                <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Hotels</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Manage hotel contracts</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
             <TouchableOpacity
               testID="quick-manage-employees"
               onPress={() => router.push("/(admin)/manage-employees")}
@@ -266,6 +323,7 @@ export default function Dashboard() {
               <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Employees</Text>
               <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Manage your team</Text>
             </TouchableOpacity>
+            <View style={{ flex: 1 }} />
           </View>
         </View>
 
@@ -292,7 +350,19 @@ export default function Dashboard() {
                 style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#059669", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
+                    {e.event_type === "hotel_daily" && (
+                      <View style={{ backgroundColor: "#0284C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 AUTO</Text>
+                      </View>
+                    )}
+                    {e.event_type === "hotel_special" && (
+                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 SPECIAL</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 12 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Ionicons name="calendar-outline" size={13} color="#7C3AED" />
@@ -336,7 +406,19 @@ export default function Dashboard() {
                 style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#D1D5DB", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#374151", fontSize: 15 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={{ fontWeight: "900", color: "#374151", fontSize: 15 }}>{e.name}</Text>
+                    {e.event_type === "hotel_daily" && (
+                      <View style={{ backgroundColor: "#0284C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 AUTO</Text>
+                      </View>
+                    )}
+                    {e.event_type === "hotel_special" && (
+                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 SPECIAL</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}>{e.date} · {e.venue}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />

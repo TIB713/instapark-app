@@ -601,9 +601,21 @@ export default function EventDetail() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900" }} numberOfLines={1}>
-                {event?.name || "Event"}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900" }} numberOfLines={1}>
+                  {event?.name || "Event"}
+                </Text>
+                {event?.event_type === "hotel_daily" && (
+                  <View style={{ backgroundColor: "#0284C7", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
+                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>🏨 Auto Daily</Text>
+                  </View>
+                )}
+                {event?.event_type === "hotel_special" && (
+                  <View style={{ backgroundColor: "#1D4ED8", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
+                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>🏨 Special</Text>
+                  </View>
+                )}
+              </View>
               {event?.status && (
                 <View style={{ flexDirection: "row", marginTop: 4 }}>
                   <View

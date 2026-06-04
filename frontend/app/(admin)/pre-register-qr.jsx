@@ -58,13 +58,13 @@ export default function PreRegisterQR() {
             <> 
               <View style={{ backgroundColor: "#fff", borderRadius: 32, padding: 32, alignItems: "center", width: "100%", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 12 }}> 
                 <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}> 
-                  GUEST PRE-REGISTRATION 
+                  EVENT GUEST PRE-REGISTRATION 
                 </Text> 
                 <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827", marginTop: 6, textAlign: "center" }}> 
                   {providerName} 
                 </Text> 
                 <Text style={{ color: "#9CA3AF", marginTop: 4, marginBottom: 24, fontSize: 13, textAlign: "center" }}> 
-                  Show this QR to guests before the event 
+                  For event guests only — use Hotel QR for hotel valet 
                 </Text> 
                 <View style={{ padding: 14, backgroundColor: "#F5F3FF", borderRadius: 20 }}> 
                   {preRegisterUrl ? ( 

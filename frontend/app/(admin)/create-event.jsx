@@ -21,7 +21,14 @@ import { useAppStore } from "../../lib/store";
 
 export default function CreateEvent() {
   const router = useRouter();
-  const { setCurrentEventId } = useAppStore();
+  const { user, setCurrentEventId } = useAppStore();
+
+  if (user?.provider_type === "hotel_owner") {
+    Alert.alert("Not Available", "Hotel owners create events through the Hotels section.");
+    router.back();
+    return null;
+  }
+
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());

@@ -250,7 +250,19 @@ export default function SupervisorDashboard() {
                 style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#059669", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
+                    {e.event_type === "hotel_daily" && (
+                      <View style={{ backgroundColor: "#0284C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 AUTO</Text>
+                      </View>
+                    )}
+                    {e.event_type === "hotel_special" && (
+                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 SPECIAL</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 12 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Ionicons name="calendar-outline" size={13} color={ACCENT_COLOR} />
@@ -290,7 +302,19 @@ export default function SupervisorDashboard() {
                 style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#D1D5DB", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#374151", fontSize: 15 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={{ fontWeight: "900", color: "#374151", fontSize: 15 }}>{e.name}</Text>
+                    {e.event_type === "hotel_daily" && (
+                      <View style={{ backgroundColor: "#0284C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 AUTO</Text>
+                      </View>
+                    )}
+                    {e.event_type === "hotel_special" && (
+                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 SPECIAL</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}>{e.date} · {e.venue}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
