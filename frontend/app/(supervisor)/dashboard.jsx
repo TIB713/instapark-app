@@ -42,9 +42,12 @@ export default function SupervisorDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchAll = useCallback(async () => {
+    const supervisorId = user?.id || user?.user_id;
+    if (!supervisorId) return;
+
     try {
       setLoading(true);
-      const { data } = await api.get(`/supervisors/${user.id}/events`);
+      const { data } = await api.get(`/supervisors/${supervisorId}/events`);
       const sorted = (data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
       setEvents(sorted.slice(0, 5));
     } catch (e) {
@@ -54,12 +57,12 @@ export default function SupervisorDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
-      if (user?.id) fetchAll();
-    }, [user?.id, fetchAll])
+      fetchAll();
+    }, [fetchAll])
   );
 
   const onRefresh = () => {
@@ -235,10 +238,22 @@ export default function SupervisorDashboard() {
               <Text style={{ color: "#059669", fontWeight: "800", fontSize: 11 }}>{active.length}</Text>
             </View>
           </View>
-          {active.length === 0 ? (
+
+          {events.length === 0 ? (
+            <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: 32 }]}>
+              <Text style={{ fontSize: 40 }}>📋</Text>
+              <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12, fontSize: 15 }}>No events assigned yet</Text>
+              <Text style={{ color: "#6B7280", marginTop: 4, fontSize: 13, textAlign: "center", paddingHorizontal: 20 }}>
+                Your assigned events will appear here once the admin assigns you to one
+              </Text>
+            </View>
+          ) : active.length === 0 ? (
             <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: 28 }]}>
               <Text style={{ fontSize: 36 }}>📅</Text>
-              <Text style={{ color: "#6B7280", marginTop: 6, fontSize: 13 }}>No active events</Text>
+              <Text style={{ color: "#111827", fontWeight: "800", marginTop: 8 }}>No active events</Text>
+              <Text style={{ color: "#6B7280", marginTop: 4, fontSize: 13, textAlign: "center", paddingHorizontal: 20 }}>
+                Check the "Recent Events" section below for your past assignments
+              </Text>
             </View>
           ) : (
             active.map((e) => (

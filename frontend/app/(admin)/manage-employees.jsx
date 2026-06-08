@@ -31,6 +31,7 @@ export default function ManageEmployees() {
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [processingId, setProcessingId] = useState(null);
 
   // Supervisor Form State
   const [showSupModal, setShowSupModal] = useState(false);
@@ -43,7 +44,7 @@ export default function ManageEmployees() {
   // Driver Form State
   const [showDrvModal, setShowDrvModal] = useState(false);
   const [drvName, setDrvName] = useState("");
-  const [drvEmpId, setDrvEmpId] = useState("");
+  const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
   const [drvPassword, setDrvPassword] = useState("");
   const [savingDrv, setSavingDrv] = useState(false);
@@ -76,7 +77,7 @@ export default function ManageEmployees() {
   };
 
   const resetDrvForm = () => {
-    setDrvName(""); setDrvEmpId(""); setDrvPhone(""); setDrvPassword("");
+    setDrvName(""); setDrvEmail(""); setDrvPhone(""); setDrvPassword("");
   };
 
   const saveSupervisor = async () => {
@@ -103,17 +104,17 @@ export default function ManageEmployees() {
   };
 
   const saveDriver = async () => {
-    if (!drvName.trim() || !drvEmpId.trim() || !drvPassword.trim()) {
-      Alert.alert("Required", "Name, Employee ID and password are required");
+    if (!drvName.trim() || !drvEmail.trim() || !drvPassword.trim()) {
+      Alert.alert("Required", "Name, email and PIN are required");
       return;
     }
     setSavingDrv(true);
     try {
       await api.post("/drivers", {
         name: drvName.trim(),
-        employee_id: drvEmpId.trim(),
+        email: drvEmail.trim().toLowerCase(),
         phone: drvPhone.trim() || undefined,
-        password: drvPassword,
+        pin: drvPassword,
       });
       setShowDrvModal(false);
       resetDrvForm();
@@ -123,6 +124,50 @@ export default function ManageEmployees() {
     } finally {
       setSavingDrv(false);
     }
+  };
+
+  const handleSupervisorLongPress = (s) => {
+    Alert.alert("Supervisor Options", s.name, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Deactivate",
+        style: "destructive",
+        onPress: async () => {
+          setProcessingId(s.id);
+          try {
+            await api.delete(`/supervisors/${s.id}`);
+            Alert.alert("Success", "Deactivated successfully");
+            fetchAll();
+          } catch (e) {
+            Alert.alert("Error", e.response?.data?.detail || "Failed to deactivate");
+          } finally {
+            setProcessingId(null);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDriverLongPress = (d) => {
+    Alert.alert("Driver Options", d.name, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Deactivate",
+        style: "destructive",
+        onPress: async () => {
+          setProcessingId(d.id);
+          try {
+            await api.delete(`/drivers/${d.id}`);
+            Alert.alert("Success", "Deactivated successfully");
+            fetchAll();
+          } catch (e) {
+            Alert.alert("Error", e.response?.data?.detail || "Failed to deactivate");
+          } finally {
+            setProcessingId(null);
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -187,7 +232,8 @@ export default function ManageEmployees() {
               filteredSupervisors.map(s => (
                 <TouchableOpacity
                   key={s.id}
-                  onPress={() => router.push({ pathname: "/(admin)/manage-supervisors", params: { highlightId: s.id } })}
+                  onPress={() => {}}
+                  onLongPress={() => handleSupervisorLongPress(s)}
                   activeOpacity={0.85}
                   style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, marginBottom: 12, flexDirection: "row", alignItems: "center", ...cardShadow }}
                 >
@@ -198,7 +244,11 @@ export default function ManageEmployees() {
                     <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{s.name}</Text>
                     <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{s.email}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                  {processingId === s.id ? (
+                    <ActivityIndicator size="small" color="#0F2044" />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                  )}
                 </TouchableOpacity>
               ))
             ) : (
@@ -206,6 +256,7 @@ export default function ManageEmployees() {
                 <TouchableOpacity
                   key={d.id}
                   onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}
+                  onLongPress={() => handleDriverLongPress(d)}
                   activeOpacity={0.85}
                   style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, marginBottom: 12, flexDirection: "row", alignItems: "center", ...cardShadow }}
                 >
@@ -216,7 +267,11 @@ export default function ManageEmployees() {
                     <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{d.name}</Text>
                     <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>ID: {d.employee_id}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                  {processingId === d.id ? (
+                    <ActivityIndicator size="small" color="#7C3AED" />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                  )}
                 </TouchableOpacity>
               ))
             )}
@@ -275,12 +330,12 @@ export default function ManageEmployees() {
               <Text style={{ fontSize: 20, fontWeight: "900", color: "#0F2044", marginBottom: 16 }}>Add Driver</Text>
               <Text style={modalLabel}>NAME</Text>
               <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
-              <Text style={modalLabel}>EMPLOYEE ID</Text>
-              <TextInput value={drvEmpId} onChangeText={setDrvEmpId} placeholder="e.g. EMP001" style={modalInput} />
+              <Text style={modalLabel}>EMAIL</Text>
+              <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalInput} />
               <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
               <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
-              <Text style={modalLabel}>PASSWORD</Text>
-              <TextInput value={drvPassword} onChangeText={setDrvPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
+              <Text style={modalLabel}>4-DIGIT PIN</Text>
+              <TextInput value={drvPassword} onChangeText={setDrvPassword} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} style={modalInput} />
               <TouchableOpacity onPress={saveDriver} disabled={savingDrv} style={{ backgroundColor: "#0F2044", borderRadius: 16, paddingVertical: 16, alignItems: "center" }}>
                 {savingDrv ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE DRIVER</Text>}
               </TouchableOpacity>

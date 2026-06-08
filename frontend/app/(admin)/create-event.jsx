@@ -23,12 +23,8 @@ export default function CreateEvent() {
   const router = useRouter();
   const { user, setCurrentEventId } = useAppStore();
 
-  if (user?.provider_type === "hotel_owner") {
-    Alert.alert("Not Available", "Hotel owners create events through the Hotels section.");
-    router.back();
-    return null;
-  }
-
+  const isHotelOwner = user?.provider_type === "hotel_owner";
+  const [eventType, setEventType] = useState(isHotelOwner ? "hotel_special" : "");
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -90,6 +86,7 @@ export default function CreateEvent() {
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
         is_template: false,
+        ...(isHotelOwner ? { event_type: "hotel_special" } : {}),
       });
       setCurrentEventId(data.id);
       await AsyncStorage.setItem("current_event_id", data.id);
@@ -111,7 +108,7 @@ export default function CreateEvent() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
-              Create Event
+              {isHotelOwner ? "Create Special Event" : "Create Event"}
             </Text>
           </View>
         </View>

@@ -122,14 +122,19 @@ export default function Hotels() {
     }
   };
 
-  const filteredHotels = hotels
-    .filter(
-      (h) =>
-        h.name?.toLowerCase().includes(search.toLowerCase()) ||
-        h.city?.toLowerCase().includes(search.toLowerCase())
+  const today = new Date().toISOString().split("T")[0];
+
+  const hotelsWithStatus = hotels.map(h => ({
+    ...h,
+    is_active_today: allEvents.some(e => e.hotel_id === h.id && e.date === today && e.status === "active")
+  }));
+
+  const filteredHotels = hotelsWithStatus
+    .filter(h =>
+      h.name?.toLowerCase().includes(search.toLowerCase()) ||
+      h.city?.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => {
-      // Show "Active Today" at top
       if (a.is_active_today && !b.is_active_today) return -1;
       if (!a.is_active_today && b.is_active_today) return 1;
       return a.name.localeCompare(b.name);
@@ -273,102 +278,6 @@ export default function Hotels() {
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
-
-      {/* FAB */}
-      {isValetProvider && (
-        <TouchableOpacity
-          onPress={() => setShowModal(true)}
-          activeOpacity={0.85}
-          style={{
-            position: "absolute",
-            bottom: 28,
-            right: 24,
-            width: 60,
-            height: 60,
-            borderRadius: 99,
-            backgroundColor: ACCENT_COLOR,
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: ACCENT_COLOR,
-            shadowOpacity: 0.4,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 8 },
-            elevation: 10,
-          }}
-        >
-          <Ionicons name="add" size={30} color="#fff" />
-        </TouchableOpacity>
-      )}
-
-      {/* Add Hotel Modal */}
-      <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 24, maxHeight: "90%" }}>
-              <View style={{ alignItems: "center", marginBottom: 16 }}>
-                <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
-              </View>
-              
-              <Text style={{ fontSize: 22, fontWeight: "900", color: ACCENT_COLOR, marginBottom: 20 }}>Add New Hotel</Text>
-
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={modalLabel}>HOTEL NAME</Text>
-                <TextInput value={name} onChangeText={setName} placeholder="Hotel Grand" style={modalInput} />
-
-                <Text style={modalLabel}>ADDRESS</Text>
-                <TextInput value={address} onChangeText={setAddress} placeholder="123 Main St" style={modalInput} />
-
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={modalLabel}>CITY</Text>
-                    <TextInput value={city} onChangeText={setCity} placeholder="Mumbai" style={modalInput} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={modalLabel}>STATE</Text>
-                    <TextInput value={state} onChangeText={setState} placeholder="MH" style={modalInput} />
-                  </View>
-                </View>
-
-                <Text style={modalLabel}>CONTACT PERSON NAME</Text>
-                <TextInput value={contactName} onChangeText={setContactName} placeholder="John Doe" style={modalInput} />
-
-                <Text style={modalLabel}>CONTACT PHONE</Text>
-                <TextInput value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" placeholder="+91..." style={modalInput} />
-
-                <Text style={modalLabel}>CONTACT EMAIL (OPTIONAL)</Text>
-                <TextInput value={contactEmail} onChangeText={setContactEmail} keyboardType="email-address" autoCapitalize="none" placeholder="john@hotel.com" style={modalInput} />
-
-                <Text style={modalLabel}>TOTAL VALET SLOTS</Text>
-                <TextInput value={totalSlots} onChangeText={setTotalSlots} keyboardType="numeric" placeholder="50" style={modalInput} />
-
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={modalLabel}>OPERATING START</Text>
-                    <TextInput value={startTime} onChangeText={setStartTime} placeholder="09:00" style={modalInput} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={modalLabel}>OPERATING END</Text>
-                    <TextInput value={endTime} onChangeText={setEndTime} placeholder="18:00" style={modalInput} />
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  onPress={saveHotel}
-                  disabled={saving}
-                  style={{ backgroundColor: ACCENT_COLOR, borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 12, marginBottom: 8 }}
-                >
-                  {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE HOTEL</Text>}
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => setShowModal(false)} style={{ paddingVertical: 12, alignItems: "center" }}>
-                  <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
-                </TouchableOpacity>
-                <View style={{ height: 40 }} />
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }

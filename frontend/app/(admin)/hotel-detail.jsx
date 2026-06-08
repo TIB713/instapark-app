@@ -51,6 +51,12 @@ export default function HotelDetail() {
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
 
+  // Event QR state
+  const [showEventQRModal, setShowEventQRModal] = useState(false);
+  const [selectedEventForQR, setSelectedEventForQR] = useState(null);
+  const [eventQRToken, setEventQRToken] = useState(null);
+  const [loadingEventQR, setLoadingEventQR] = useState(false);
+
   // New event state
   const [newEventName, setNewEventName] = useState("");
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split("T")[0]);
@@ -206,6 +212,22 @@ export default function HotelDetail() {
     setShowAddEventModal(true);
   };
 
+  const handleShowEventQR = async (event) => {
+    setSelectedEventForQR(event);
+    setShowEventQRModal(true);
+    setLoadingEventQR(true);
+    setEventQRToken(null);
+    try {
+      const { data } = await api.get(`/hotels/${hid}/events/${event.id}/qr-token`);
+      setEventQRToken(data.event_qr_token);
+    } catch (e) {
+      console.error("Error fetching event QR:", e);
+      Alert.alert("Error", "Failed to load event QR");
+    } finally {
+      setLoadingEventQR(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center" }}>
@@ -321,6 +343,14 @@ export default function HotelDetail() {
                             {e.event_type === "hotel_daily" ? "AUTO DAILY" : "SPECIAL"}
                           </Text>
                         </View>
+                        {e.event_type === "hotel_special" && (
+                          <TouchableOpacity
+                            onPress={() => handleShowEventQR(e)}
+                            style={{ backgroundColor: "#F5F3FF", padding: 6, borderRadius: 8 }}
+                          >
+                            <Ionicons name="qr-code" size={16} color={ACCENT_COLOR} />
+                          </TouchableOpacity>
+                        )}
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 12 }}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -380,12 +410,20 @@ export default function HotelDetail() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
                     <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{e.date}</Text>
-                    <View style={{ flexDirection: "row", marginTop: 8, gap: 8 }}>
+                    <View style={{ flexDirection: "row", marginTop: 8, gap: 8, alignItems: "center" }}>
                       <View style={{ backgroundColor: e.event_type === "hotel_daily" ? "#E0F2FE" : "#EBF5FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
                         <Text style={{ color: e.event_type === "hotel_daily" ? "#0369A1" : ACCENT_COLOR, fontWeight: "800", fontSize: 9 }}>
                           {e.event_type === "hotel_daily" ? "AUTO DAILY" : "SPECIAL"}
                         </Text>
                       </View>
+                      {e.event_type === "hotel_special" && (
+                        <TouchableOpacity
+                          onPress={() => handleShowEventQR(e)}
+                          style={{ backgroundColor: "#F5F3FF", padding: 4, borderRadius: 6 }}
+                        >
+                          <Ionicons name="qr-code" size={14} color={ACCENT_COLOR} />
+                        </TouchableOpacity>
+                      )}
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <Ionicons name="location-outline" size={12} color="#9CA3AF" />
                         <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 4 }} numberOfLines={1}>{e.venue}</Text>
@@ -713,6 +751,66 @@ export default function HotelDetail() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Special Event QR Modal */}
+      <Modal
+        visible={showEventQRModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEventQRModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 24 }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: 32, padding: 32, alignItems: "center", width: "100%", ...cardShadow }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 20 }}>
+              <Text style={{ fontSize: 11, fontWeight: "800", color: ACCENT_COLOR, letterSpacing: 3 }}>SPECIAL EVENT GUEST QR</Text>
+              <TouchableOpacity onPress={() => setShowEventQRModal(false)}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 22, fontWeight: "900", color: "#111827", textAlign: "center" }}>{selectedEventForQR?.name}</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: "#6B7280", textAlign: "center", marginTop: 4, marginBottom: 24 }}>{hotel?.name}</Text>
+
+            <View style={{ padding: 14, backgroundColor: "#F5F3FF", borderRadius: 20, marginBottom: 20 }}>
+              {loadingEventQR ? (
+                <View style={{ width: 220, height: 220, justifyContent: "center", alignItems: "center" }}>
+                  <ActivityIndicator color={ACCENT_COLOR} size="large" />
+                </View>
+              ) : eventQRToken ? (
+                <QRCode
+                  value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${eventQRToken}`}
+                  size={220}
+                  color={ACCENT_COLOR}
+                />
+              ) : (
+                <View style={{ width: 220, height: 220, justifyContent: "center", alignItems: "center" }}>
+                  <Text style={{ color: "#9CA3AF" }}>QR Unavailable</Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={{ color: "#9CA3AF", fontSize: 11, marginBottom: 24, textAlign: "center" }}>Guest scans this to pre-register their vehicle</Text>
+
+            <TouchableOpacity
+              onPress={() => {
+                const url = `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${eventQRToken}`;
+                Share.share({
+                  message: `Pre-register for ${selectedEventForQR?.name} at ${hotel?.name}: ${url}`,
+                });
+              }}
+              disabled={!eventQRToken}
+              style={{ backgroundColor: ACCENT_COLOR, borderRadius: 16, paddingVertical: 14, width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, opacity: eventQRToken ? 1 : 0.6 }}
+            >
+              <Ionicons name="share-outline" size={20} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SHARE LINK</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setShowEventQRModal(false)} style={{ paddingVertical: 12, marginTop: 8, alignItems: "center", width: "100%" }}>
+              <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );

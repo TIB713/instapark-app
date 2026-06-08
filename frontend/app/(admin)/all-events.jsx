@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,11 +17,17 @@ const cardShadow = {
 
 export default function AllEvents() {
   const router = useRouter();
-  const { setCurrentEventId } = useAppStore();
+  const { filter: incomingFilter } = useLocalSearchParams();
+  const { setCurrentEventId, user } = useAppStore();
   const [events, setEvents] = useState([]);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(incomingFilter || "all");
   const [loading, setLoading] = useState(true);
   const [cloningId, setCloningId] = useState(null);
+
+  const isHotelOwner = user?.provider_type === "hotel_owner";
+  const ACCENT = isHotelOwner ? "#1D4ED8" : "#7C3AED";
+  const ACCENT_LIGHT = isHotelOwner ? "rgba(29,78,216,0.5)" : "rgba(79,70,229,0.5)";
+  const BG_LIGHT = isHotelOwner ? "#EFF6FF" : "#F5F3FF";
 
   useEffect(() => {
     (async () => {
@@ -34,7 +40,18 @@ export default function AllEvents() {
   }, []);
 
   const filtered = events
-    .filter((e) => filter === "all" || e.status === filter)
+    .filter((e) => {
+      // 1. Status Filter
+      if (filter !== "all" && filter !== "special" && filter !== "daily") {
+        if (e.status !== filter) return false;
+      }
+
+      // 2. Event Type Filter (from dashboard params)
+      if (filter === "special" && e.event_type !== "hotel_special") return false;
+      if (filter === "daily" && e.event_type !== "hotel_daily") return false;
+
+      return true;
+    })
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   const open = async (e) => {
@@ -75,11 +92,11 @@ export default function AllEvents() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5F3FF" }} testID="all-events-screen">
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#7C3AED" }}>
+    <View style={{ flex: 1, backgroundColor: BG_LIGHT }} testID="all-events-screen">
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: ACCENT }}>
         <View
           style={{
-            backgroundColor: "#7C3AED",
+            backgroundColor: ACCENT,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
             paddingHorizontal: 20,
@@ -94,7 +111,7 @@ export default function AllEvents() {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: "rgba(79,70,229,0.5)",
+              backgroundColor: ACCENT_LIGHT,
               borderBottomLeftRadius: 44,
               borderBottomRightRadius: 44,
             }}
@@ -114,7 +131,7 @@ export default function AllEvents() {
       </SafeAreaView>
 
       <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 16 }}>
-        {["all", "active", "closed"].map((f) => (
+        {["all", "active", "closed", ...(isHotelOwner ? ["special", "daily"] : [])].map((f) => (
           <TouchableOpacity
             key={f}
             onPress={() => setFilter(f)}
@@ -122,9 +139,9 @@ export default function AllEvents() {
               paddingHorizontal: 16,
               paddingVertical: 8,
               borderRadius: 99,
-              backgroundColor: filter === f ? "#7C3AED" : "#fff",
+              backgroundColor: filter === f ? ACCENT : "#fff",
               borderWidth: 1,
-              borderColor: filter === f ? "#7C3AED" : "#E5E7EB",
+              borderColor: filter === f ? ACCENT : "#E5E7EB",
             }}
           >
             <Text
@@ -145,7 +162,7 @@ export default function AllEvents() {
         style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {loading && <ActivityIndicator color="#7C3AED" />}
+        {loading && <ActivityIndicator color={ACCENT} />}
         {filtered.map((e) => (
           <TouchableOpacity
             key={e.id}
@@ -161,6 +178,7 @@ export default function AllEvents() {
               borderLeftWidth: 4,
               borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF",
               ...cardShadow,
+              shadowColor: ACCENT,
             }}
           >
             <View style={{ flex: 1 }}>
@@ -205,20 +223,20 @@ export default function AllEvents() {
                 onPress={(ev) => cloneEvent(ev, e)}
                 disabled={cloningId === e.id}
                 style={{
-                  backgroundColor: "#F5F3FF",
+                  backgroundColor: BG_LIGHT,
                   borderRadius: 20,
                   paddingHorizontal: 10,
                   paddingVertical: 6,
                   borderWidth: 1,
-                  borderColor: "#DDD6FE",
+                  borderColor: isHotelOwner ? "#BFDBFE" : "#DDD6FE",
                 }}
               >
                 {cloningId === e.id ? (
-                  <ActivityIndicator size={14} color="#7C3AED" />
+                  <ActivityIndicator size={14} color={ACCENT} />
                 ) : (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                    <Ionicons name="copy-outline" size={14} color="#7C3AED" />
-                    <Text style={{ color: "#7C3AED", fontSize: 11, fontWeight: "800" }}>Clone</Text>
+                    <Ionicons name="copy-outline" size={14} color={ACCENT} />
+                    <Text style={{ color: ACCENT, fontSize: 11, fontWeight: "800" }}>Clone</Text>
                   </View>
                 )}
               </TouchableOpacity>

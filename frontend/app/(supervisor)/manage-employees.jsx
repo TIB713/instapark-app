@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import api from "../../lib/api";
+import { useAppStore } from "../../lib/store";
 
 const ACCENT_COLOR = "#0F2044";
 
@@ -24,6 +25,7 @@ const cardShadow = {
 
 export default function SupervisorManageEmployees() {
   const router = useRouter();
+  const { user } = useAppStore();
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -63,8 +65,8 @@ export default function SupervisorManageEmployees() {
           </View>
 
           <View style={{ backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 12 }}>
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Driver Roster</Text>
-            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 2 }}>Read-only view of all registered drivers</Text>
+            <Text style={{ color: "#fff", fontWeight: "900", fontSize: 16 }}>{user?.name || "Supervisor"}</Text>
+            <Text style={{ color: "rgba(255,255,255,0.8)", fontWeight: "700", fontSize: 13, marginTop: 2 }}>Your Team</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -120,6 +122,12 @@ export default function SupervisorManageEmployees() {
                 <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No drivers found</Text>
               </View>
             )}
+
+            <View style={{ marginTop: 24, paddingBottom: 20, alignItems: "center" }}>
+              <Text style={{ color: "#9CA3AF", fontSize: 12, textAlign: "center", fontStyle: "italic" }}>
+                Drivers are managed by your admin. You can view but cannot add or remove drivers.
+              </Text>
+            </View>
           </>
         )}
         <View style={{ height: 100 }} />

@@ -12,17 +12,20 @@ import {
 } from "react-native";
 
           
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format, parse } from "date-fns";
 import api from "../../lib/api";
+import { useAppStore } from "../../lib/store";
 
 export default function EditEvent() {
   const router = useRouter();
+  const { user } = useAppStore();
   const { eventId } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
+  const [eventData, setEventData] = useState(null);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date());
@@ -39,6 +42,18 @@ export default function EditEvent() {
   const [showSTP, setShowSTP] = useState(false);
   const [showETP, setShowETP] = useState(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.provider_type === "hotel_owner" && eventData?.event_type === "hotel_daily") {
+        Alert.alert(
+          "Access Restricted",
+          "Daily operations are automatically managed and cannot be edited manually.",
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+      }
+    }, [user, eventData, router])
+  );
+
   const totalSlots = zones.reduce((sum, z) => sum + (parseInt(z.slots) || 0), 0);
   const maxCarsInt = parseInt(maxCars) || 200;
 
@@ -49,6 +64,7 @@ export default function EditEvent() {
     (async () => {
       try {
         const { data } = await api.get(`/events/${eventId}`);
+        setEventData(data);
         setName(data.name || "");
         setVenue(data.venue || "");
         setMaxCars(String(data.max_cars || 200));

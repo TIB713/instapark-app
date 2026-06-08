@@ -20,6 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import QRCode from "react-native-qrcode-svg";
 import { formatDistanceToNow } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
@@ -73,6 +74,9 @@ export default function EventDetail() {
   const [incidents, setIncidents] = useState([]);
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [specialEventHotel, setSpecialEventHotel] = useState(null);
+  const [specialEventQRToken, setSpecialEventQRToken] = useState(null);
+  const [showSpecialEventQRModal, setShowSpecialEventQRModal] = useState(false);
 
   const [supervisors, setSupervisors] = useState([]);
   const [assigningSupervisorId, setAssigningSupervisorId] = useState(null);
@@ -89,6 +93,18 @@ export default function EventDetail() {
     try {
       const { data } = await api.get(`/events/${currentEventId}`);
       setEvent(data);
+      if (data.event_type === "hotel_special" && data.hotel_id) {
+        try {
+          const [hotelRes, qrRes] = await Promise.all([
+            api.get(`/hotels/${data.hotel_id}`),
+            api.get(`/hotels/${data.hotel_id}/events/${data.id}/qr-token`)
+          ]);
+          setSpecialEventHotel(hotelRes.data);
+          setSpecialEventQRToken(qrRes.data.event_qr_token);
+        } catch (err) {
+          console.error("Error fetching hotel info/QR for special event:", err);
+        }
+      }
     } catch {}
   }, [currentEventId]);
 
@@ -639,12 +655,18 @@ export default function EventDetail() {
             >
               <Ionicons name="create-outline" size={20} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => router.push("/(admin)/pre-register-qr")} 
-              style={[iconBtn, { marginRight: 8 }]} 
-              testID="pre-register-qr-btn" 
-            > 
-              <Ionicons name="qr-code-outline" size={20} color="#fff" /> 
+            <TouchableOpacity
+              onPress={() => {
+                if (event?.event_type === "hotel_special") {
+                  setShowSpecialEventQRModal(true);
+                } else {
+                  router.push("/(admin)/pre-register-qr");
+                }
+              }}
+              style={[iconBtn, { marginRight: 8 }]}
+              testID="pre-register-qr-btn"
+            >
+              <Ionicons name="qr-code-outline" size={20} color="#fff" />
             </TouchableOpacity> 
             <TouchableOpacity 
               onPress={() => setShowIncidentModal(true)} 
@@ -1012,7 +1034,7 @@ export default function EventDetail() {
               {/* DRIVERS CONTENT */}
               <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 16, gap: 8 }}>
                 <TouchableOpacity
-                  onPress={() => setShowModal(true)}
+                  onPress={() => router.push("/(admin)/manage-employees")}
                   style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 7, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
                   <Ionicons name="add" size={14} color="#fff" />
@@ -1565,6 +1587,148 @@ export default function EventDetail() {
       )}
 
 
+
+      <Modal
+        visible={showSpecialEventQRModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSpecialEventQRModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 32,
+              padding: 32,
+              alignItems: "center",
+              width: "100%",
+              shadowColor: "#000",
+              shadowOpacity: 0.2,
+              shadowRadius: 24,
+              shadowOffset: { width: 0, height: 12 },
+              elevation: 12,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                marginBottom: 20,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#1D4ED8", letterSpacing: 3 }}>
+                SPECIAL EVENT GUEST QR
+              </Text>
+              <TouchableOpacity onPress={() => setShowSpecialEventQRModal(false)}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "900",
+                color: "#111827",
+                textAlign: "center",
+              }}
+            >
+              {event?.name}
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "700",
+                color: "#6B7280",
+                textAlign: "center",
+                marginTop: 4,
+                marginBottom: 24,
+              }}
+            >
+              {specialEventHotel?.name}
+            </Text>
+
+            <View
+              style={{
+                padding: 14,
+                backgroundColor: "#F5F3FF",
+                borderRadius: 20,
+                marginBottom: 20,
+              }}
+            >
+              {specialEventQRToken ? (
+                <QRCode
+                  value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${specialEventQRToken}`}
+                  size={220}
+                  color="#1D4ED8"
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 220,
+                    height: 220,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <ActivityIndicator color="#1D4ED8" size="large" />
+                </View>
+              )}
+            </View>
+
+            <Text
+              style={{
+                color: "#9CA3AF",
+                fontSize: 11,
+                marginTop: 0,
+                marginBottom: 24,
+                textAlign: "center",
+              }}
+            >
+              Guest scans this to pre-register their vehicle
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => {
+                const url = `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${specialEventQRToken}`;
+                Sharing.shareAsync(null, {
+                  dialogTitle: `Guest QR for ${event?.name}`,
+                  UTI: "public.plain-text",
+                  message: `Pre-register for ${event?.name} at ${specialEventHotel?.name}: ${url}`,
+                });
+              }}
+              style={{
+                backgroundColor: "#1D4ED8",
+                borderRadius: 16,
+                paddingVertical: 14,
+                width: "100%",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <Ionicons name="share-outline" size={20} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SHARE LINK</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowSpecialEventQRModal(false)}
+              style={{ paddingVertical: 12, marginTop: 8, alignItems: "center", width: "100%" }}
+            >
+              <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={showCarModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>

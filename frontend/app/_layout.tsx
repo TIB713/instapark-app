@@ -13,9 +13,13 @@ export default function RootLayout() {
         <Stack.Screen name="(admin)/edit-event" />
         <Stack.Screen name="(admin)/event-detail" />
         <Stack.Screen name="(admin)/all-events" />
-        <Stack.Screen name="(admin)/manage-drivers" />
         <Stack.Screen name="(admin)/driver-stats" />
         <Stack.Screen name="(admin)/qr-display" />
+        <Stack.Screen name="(admin)/hotels" />
+        <Stack.Screen name="(admin)/hotel-detail" />
+        <Stack.Screen name="(admin)/manage-employees" />
+        <Stack.Screen name="(admin)/pre-register-qr" />
+        <Stack.Screen name="(driver)/scanner" />
         <Stack.Screen name="(supervisor)/dashboard" />
         <Stack.Screen name="(supervisor)/event-detail" />
         <Stack.Screen name="(supervisor)/manage-employees" />

@@ -7,37 +7,58 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import QRCode from "react-native-qrcode-svg"; 
 import api from "../../lib/api"; 
+import { useAppStore } from "../../lib/store";
  
 export default function PreRegisterQR() { 
   const router = useRouter(); 
+  const { user } = useAppStore();
+  const isHotelOwner = user?.provider_type === "hotel_owner";
+  const themeColor = isHotelOwner ? "#1D4ED8" : "#7C3AED";
+  const overlayColor = isHotelOwner ? "rgba(29,78,216,0.5)" : "rgba(79,70,229,0.5)";
+  const qrColor = isHotelOwner ? "#1D4ED8" : "#4F46E5";
+
   const [loading, setLoading] = useState(true); 
-  const [providerQrToken, setProviderQrToken] = useState(null); 
-  const [providerName, setProviderName] = useState(""); 
+  const [qrToken, setQrToken] = useState(null); 
+  const [name, setName] = useState(""); 
  
   useEffect(() => { 
-    api.get("/providers/me/qr-token") 
-      .then(({ data }) => { 
-        setProviderQrToken(data.provider_qr_token); 
-        setProviderName(data.name); 
-      }) 
-      .catch(() => Alert.alert("Error", "Failed to load QR code")) 
-      .finally(() => setLoading(false)); 
-  }, []); 
+    if (isHotelOwner) {
+      api.get("/hotels")
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setQrToken(data[0].hotel_qr_token);
+            setName(data[0].name);
+          }
+        })
+        .catch(() => Alert.alert("Error", "Failed to load hotel QR code"))
+        .finally(() => setLoading(false));
+    } else {
+      api.get("/providers/me/qr-token") 
+        .then(({ data }) => { 
+          setQrToken(data.provider_qr_token); 
+          setName(data.name); 
+        }) 
+        .catch(() => Alert.alert("Error", "Failed to load QR code")) 
+        .finally(() => setLoading(false)); 
+    }
+  }, [isHotelOwner]); 
  
-  const preRegisterUrl = providerQrToken 
-    ? `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${providerQrToken}` 
+  const preRegisterUrl = qrToken 
+    ? (isHotelOwner 
+        ? `${process.env.EXPO_PUBLIC_GUEST_URL}/hotel-register/${qrToken}`
+        : `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${qrToken}`) 
     : ""; 
  
   const handleShare = () => { 
     if (!preRegisterUrl) return; 
     Share.share({ 
-      message: `Pre-register your vehicle for ${providerName}. Visit: ${preRegisterUrl}`, 
+      message: `Pre-register your vehicle for ${name}. Visit: ${preRegisterUrl}`, 
     }); 
   }; 
  
   return ( 
-    <View style={{ flex: 1, backgroundColor: "#7C3AED" }}> 
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(79,70,229,0.5)" }} /> 
+    <View style={{ flex: 1, backgroundColor: themeColor }}> 
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: overlayColor }} /> 
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}> 
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 8 }}> 
           <TouchableOpacity 
@@ -47,7 +68,7 @@ export default function PreRegisterQR() {
             <Ionicons name="chevron-back" size={22} color="#fff" /> 
           </TouchableOpacity> 
           <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 14, flex: 1, letterSpacing: 0.5 }}> 
-            Pre-Registration QR 
+            {isHotelOwner ? "Hotel Registration QR" : "Pre-Registration QR"}
           </Text> 
         </View> 
  
@@ -57,18 +78,18 @@ export default function PreRegisterQR() {
           ) : ( 
             <> 
               <View style={{ backgroundColor: "#fff", borderRadius: 32, padding: 32, alignItems: "center", width: "100%", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 12 }}> 
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}> 
-                  EVENT GUEST PRE-REGISTRATION 
+                <Text style={{ fontSize: 11, fontWeight: "800", color: themeColor, letterSpacing: 3 }}> 
+                  {isHotelOwner ? "HOTEL GUEST REGISTRATION" : "EVENT GUEST PRE-REGISTRATION"}
                 </Text> 
                 <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827", marginTop: 6, textAlign: "center" }}> 
-                  {providerName} 
+                  {name} 
                 </Text> 
                 <Text style={{ color: "#9CA3AF", marginTop: 4, marginBottom: 24, fontSize: 13, textAlign: "center" }}> 
-                  For event guests only — use Hotel QR for hotel valet 
+                  {isHotelOwner ? "Guests scan this to register their vehicle" : "For event guests only — use Hotel QR for hotel valet"}
                 </Text> 
-                <View style={{ padding: 14, backgroundColor: "#F5F3FF", borderRadius: 20 }}> 
-                  {preRegisterUrl ? ( 
-                    <QRCode value={preRegisterUrl} size={220} color="#4F46E5" /> 
+                <View style={{ padding: 14, backgroundColor: isHotelOwner ? "#EFF6FF" : "#F5F3FF", borderRadius: 20 }}> 
+                  {qrToken ? ( 
+                    <QRCode value={preRegisterUrl} size={220} color={qrColor} /> 
                   ) : ( 
                     <View style={{ width: 220, height: 220, justifyContent: "center", alignItems: "center" }}> 
                       <Text style={{ color: "#9CA3AF" }}>QR unavailable</Text> 

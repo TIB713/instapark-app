@@ -28,6 +28,9 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+  const [supEmail, setSupEmail] = useState("");
+  const [supPassword, setSupPassword] = useState("");
+  const [showSupPwd, setShowSupPwd] = useState(false);
   const [empId, setEmpId] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,39 +55,30 @@ export default function Login() {
           setLoading(false);
           return;
         }
-        let data;
-        let role;
-        try {
-          const res = await api.post("/auth/admin/login", {
-            email: email.trim(),
-            password,
-          });
-          data = res.data;
-          role = data.user?.role;
-        } catch {
-          try {
-            const res = await api.post("/auth/supervisor/login", {
-              email: email.trim(),
-              password,
-            });
-            data = res.data;
-            role = "supervisor";
-          } catch (e2) {
-            const msg =
-              e2.response?.data?.detail || "Invalid email or password";
-            setError(typeof msg === "string" ? msg : "Login failed");
-            setLoading(false);
-            return;
-          }
+        const { data } = await api.post("/auth/admin/login", {
+          email: email.trim(),
+          password,
+        });
+        await setItem("auth_token", data.token);
+        const { data: meData } = await api.get("/auth/me");
+        setUser(meData);
+        setToken(data.token);
+        router.replace("/(admin)/dashboard");
+        return;
+      } else if (tab === "supervisor") {
+        if (!supEmail.trim() || !supPassword) {
+          setError("Email and password are required");
+          setLoading(false);
+          return;
         }
+        const { data } = await api.post("/auth/supervisor/login", {
+          email: supEmail.trim(),
+          password: supPassword,
+        });
         await setItem("auth_token", data.token);
         setToken(data.token);
         setUser(data.user);
-        if (role === "supervisor") {
-          router.replace("/(supervisor)/dashboard");
-        } else {
-          router.replace("/(admin)/dashboard");
-        }
+        router.replace("/(supervisor)/dashboard");
         return;
       } else {
         if (!empId.trim() || pin.length !== 4) {
@@ -117,7 +111,7 @@ export default function Login() {
     setForgotError("");
     setForgotLoading(true);
     try {
-      if (tab === "admin") {
+      if (tab === "admin" || tab === "supervisor") {
         if (!forgotEmail.trim()) {
           setForgotError("Email is required");
           return;
@@ -151,13 +145,13 @@ export default function Login() {
     setForgotError("");
     if (!forgotOtp.trim() || !forgotNewSecret.trim()) {
       setForgotError("OTP and new " +
-        (tab === "admin" ? "password" : "PIN") +
+        (tab === "driver" ? "PIN" : "password") +
         " are required");
       return;
     }
     setForgotLoading(true);
     try {
-      if (tab === "admin") {
+      if (tab === "admin" || tab === "supervisor") {
         await api.post("/auth/admin/reset-password", {
           email: forgotEmail.trim(),
           otp: forgotOtp.trim(),
@@ -171,9 +165,9 @@ export default function Login() {
         });
       }
       setForgotSuccess(
-        tab === "admin"
-          ? "Password reset successfully! Please login."
-          : "PIN reset successfully! Please login."
+        tab === "driver"
+          ? "PIN reset successfully! Please login."
+          : "Password reset successfully! Please login."
       );
       setForgotStep(3);
     } catch (e) {
@@ -196,10 +190,10 @@ export default function Login() {
     setForgotSuccess("");
   };
 
-  const accent = tab === "admin" ? "#7C3AED" : "#059669";
+  const accent = tab === "admin" ? "#7C3AED" : tab === "supervisor" ? "#0F2044" : "#059669";
 
   return (
-    <View testID="login-screen" style={{ flex: 1, backgroundColor: "#7C3AED" }}>
+    <View testID="login-screen" style={{ flex: 1, backgroundColor: accent }}>
       {/* Gradient overlay */}
       <View
         style={{
@@ -208,7 +202,7 @@ export default function Login() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(79,70,229,0.5)",
+          backgroundColor: "rgba(0,0,0,0.15)",
         }}
       />
       <SafeAreaView style={{ flex: 1 }}>
@@ -317,6 +311,37 @@ export default function Login() {
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="tab-supervisor"
+                  style={{ flex: 1, paddingBottom: 12, alignItems: "center" }}
+                  onPress={() => {
+                    setTab("supervisor");
+                    setError("");
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={{
+                      fontWeight: "800",
+                      fontSize: 15,
+                      letterSpacing: 2,
+                      color: tab === "supervisor" ? "#0F2044" : "#9CA3AF",
+                    }}
+                  >
+                    SUPERVISOR
+                  </Text>
+                  {tab === "supervisor" && (
+                    <View
+                      style={{
+                        height: 3,
+                        width: 56,
+                        backgroundColor: "#0F2044",
+                        borderRadius: 99,
+                        marginTop: 8,
+                      }}
+                    />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
                   testID="tab-driver"
                   style={{ flex: 1, paddingBottom: 12, alignItems: "center" }}
                   onPress={() => {
@@ -411,6 +436,47 @@ export default function Login() {
                     </TouchableOpacity>
                   </View>
                 </View>
+              ) : tab === "supervisor" ? (
+                <View>
+                  <Text style={styles.label}>EMAIL</Text>
+                  <View style={styles.input}>
+                    <Ionicons name="mail-outline" size={20} color={accent} />
+                    <TextInput
+                      testID="sup-email-input"
+                      value={supEmail}
+                      onChangeText={setSupEmail}
+                      placeholder="supervisor@example.com"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      style={styles.textInput}
+                    />
+                  </View>
+
+                  <Text style={styles.label}>PASSWORD</Text>
+                  <View style={styles.input}>
+                    <Ionicons name="lock-closed-outline" size={20} color={accent} />
+                    <TextInput
+                      testID="sup-password-input"
+                      value={supPassword}
+                      onChangeText={setSupPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry={!showSupPwd}
+                      style={styles.textInput}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowSupPwd((s) => !s)}
+                      testID="toggle-sup-password"
+                    >
+                      <Ionicons
+                        name={showSupPwd ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ) : (
                 <View>
                   <Text style={styles.label}>EMPLOYEE ID</Text>
@@ -487,11 +553,11 @@ export default function Login() {
                 }}
                 style={{ alignItems: "center", marginTop: 12 }}
               >
-                <Text style={{ color: "#7C3AED", fontSize: 13,
+                <Text style={{ color: accent, fontSize: 13,
                   fontWeight: "700" }}>
-                  {tab === "admin"
-                    ? "Forgot Password?"
-                    : "Forgot PIN?"}
+                  {tab === "driver"
+                    ? "Forgot PIN?"
+                    : "Forgot Password?"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -528,8 +594,8 @@ export default function Login() {
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 20, fontWeight: "900",
                     color: "#111827" }}>
-                    {tab === "admin"
-                      ? "Reset Password" : "Reset PIN"}
+                    {tab === "driver"
+                      ? "Reset PIN" : "Reset Password"}
                   </Text>
                   <Text style={{ color: "#9CA3AF", fontSize: 13,
                     marginTop: 4 }}>
@@ -549,7 +615,7 @@ export default function Login() {
               {/* Step 1 — Enter email/employee ID */}
               {forgotStep === 1 && (
                 <>
-                  {tab === "admin" ? (
+                  {tab === "admin" || tab === "supervisor" ? (
                     <>
                       <Text style={{ fontSize: 11,
                         fontWeight: "800", color: "#6B7280",
@@ -563,7 +629,7 @@ export default function Login() {
                         alignItems: "center",
                         paddingHorizontal: 14, marginBottom: 16 }}>
                         <Ionicons name="mail-outline" size={18}
-                          color="#7C3AED" />
+                          color={accent} />
                         <TextInput
                           value={forgotEmail}
                           onChangeText={setForgotEmail}
@@ -612,8 +678,7 @@ export default function Login() {
                   <TouchableOpacity
                     onPress={sendForgotOtp}
                     disabled={forgotLoading}
-                    style={{ backgroundColor:
-                      tab === "admin" ? "#7C3AED" : "#059669",
+                    style={{ backgroundColor: accent,
                       borderRadius: 16, paddingVertical: 16,
                       alignItems: "center" }}
                   >
@@ -633,10 +698,10 @@ export default function Login() {
               {forgotStep === 2 && (
                 <>
                   {forgotSuccess ? (
-                    <View style={{ backgroundColor: "#ECFDF5",
+                    <View style={{ backgroundColor: accent + "1A",
                       borderRadius: 12, padding: 12,
                       marginBottom: 16 }}>
-                      <Text style={{ color: "#059669",
+                      <Text style={{ color: accent,
                         fontWeight: "700", fontSize: 13 }}>
                         {forgotSuccess}
                       </Text>
@@ -654,8 +719,7 @@ export default function Login() {
                     marginBottom: 16 }}>
                     <Ionicons name="shield-checkmark-outline"
                       size={18}
-                      color={tab === "admin"
-                        ? "#7C3AED" : "#059669"} />
+                      color={accent} />
                     <TextInput
                       value={forgotOtp}
                       onChangeText={setForgotOtp}
@@ -672,8 +736,8 @@ export default function Login() {
                   <Text style={{ fontSize: 11, fontWeight: "800",
                     color: "#6B7280", letterSpacing: 2,
                     marginBottom: 8 }}>
-                    {tab === "admin"
-                      ? "NEW PASSWORD" : "NEW 4-DIGIT PIN"}
+                    {tab === "driver"
+                      ? "NEW 4-DIGIT PIN" : "NEW PASSWORD"}
                   </Text>
                   <View style={{ backgroundColor: "#F9FAFB",
                     borderRadius: 14, borderWidth: 1,
@@ -682,13 +746,12 @@ export default function Login() {
                     marginBottom: 16 }}>
                     <Ionicons name="lock-closed-outline"
                       size={18}
-                      color={tab === "admin"
-                        ? "#7C3AED" : "#059669"} />
+                      color={accent} />
                     <TextInput
                       value={forgotNewSecret}
                       onChangeText={setForgotNewSecret}
-                      placeholder={tab === "admin"
-                        ? "Min 6 characters" : "4 digits"}
+                      placeholder={tab === "driver"
+                        ? "4 digits" : "Min 6 characters"}
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry
                       keyboardType={tab === "driver"
@@ -706,8 +769,7 @@ export default function Login() {
                   <TouchableOpacity
                     onPress={verifyForgotOtp}
                     disabled={forgotLoading}
-                    style={{ backgroundColor:
-                      tab === "admin" ? "#7C3AED" : "#059669",
+                    style={{ backgroundColor: accent,
                       borderRadius: 16, paddingVertical: 16,
                       alignItems: "center" }}
                   >
@@ -716,8 +778,8 @@ export default function Login() {
                     ) : (
                       <Text style={{ color: "#fff",
                         fontWeight: "900", letterSpacing: 2 }}>
-                        RESET {tab === "admin"
-                          ? "PASSWORD" : "PIN"}
+                        RESET {tab === "driver"
+                          ? "PIN" : "PASSWORD"}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -731,24 +793,22 @@ export default function Login() {
                     paddingVertical: 20 }}>
                     <Ionicons name="checkmark-circle"
                       size={64}
-                      color={tab === "admin"
-                        ? "#7C3AED" : "#059669"} />
+                      color={accent} />
                     <Text style={{ fontSize: 18,
                       fontWeight: "900", color: "#111827",
                       marginTop: 16, textAlign: "center" }}>
-                      {tab === "admin"
-                        ? "Password Reset!" : "PIN Reset!"}
+                      {tab === "driver"
+                        ? "PIN Reset!" : "Password Reset!"}
                     </Text>
                     <Text style={{ color: "#6B7280", fontSize: 14,
                       marginTop: 8, textAlign: "center" }}>
                       You can now login with your new
-                      {tab === "admin" ? " password" : " PIN"}
+                      {tab === "driver" ? " PIN" : " password"}
                     </Text>
                   </View>
                   <TouchableOpacity
                     onPress={resetForgotFlow}
-                    style={{ backgroundColor:
-                      tab === "admin" ? "#7C3AED" : "#059669",
+                    style={{ backgroundColor: accent,
                       borderRadius: 16, paddingVertical: 16,
                       alignItems: "center", marginTop: 8 }}
                   >
