@@ -16,8 +16,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setItem } from "../../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+
+const requestPushPermissions = async (role) => {
+  if (role !== "driver" && role !== "supervisor") return;
+  try {
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status === "granted") {
+      const token = await Notifications.getExpoPushTokenAsync();
+      await AsyncStorage.setItem("push_token", token.data);
+      api.post("/drivers/push-token", { push_token: token.data }).catch(() => {});
+    }
+  } catch {}
+};
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -33,6 +46,7 @@ export default function Login() {
   const [showSupPwd, setShowSupPwd] = useState(false);
   const [empId, setEmpId] = useState("");
   const [pin, setPin] = useState("");
+  const [showDriverPin, setShowDriverPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [forgotMode, setForgotMode] = useState(false);
@@ -59,10 +73,12 @@ export default function Login() {
           email: email.trim(),
           password,
         });
+        api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
         await setItem("auth_token", data.token);
         const { data: meData } = await api.get("/auth/me");
         setUser(meData);
         setToken(data.token);
+        await setItem("last_known_role", meData.role);
         router.replace("/(admin)/dashboard");
         return;
       } else if (tab === "supervisor") {
@@ -78,6 +94,8 @@ export default function Login() {
         await setItem("auth_token", data.token);
         setToken(data.token);
         setUser(data.user);
+        await setItem("last_known_role", "supervisor");
+        await requestPushPermissions("supervisor");
         router.replace("/(supervisor)/dashboard");
         return;
       } else {
@@ -97,11 +115,16 @@ export default function Login() {
         );
         setToken(data.token);
         setDriver(data.driver);
+        await setItem("last_known_role", "driver");
+        await requestPushPermissions("driver");
         router.replace("/(driver)");
       }
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || "Login failed";
       setError(typeof msg === "string" ? msg : "Login failed");
+      setToken(null);
+      await setItem("last_known_role", "");
+      delete api.defaults.headers.common["Authorization"];
     } finally {
       setLoading(false);
     }
@@ -374,27 +397,6 @@ export default function Login() {
                 </TouchableOpacity>
               </View>
 
-              {error ? (
-                <View
-                  testID="login-error"
-                  style={{
-                    backgroundColor: "rgba(244,63,94,0.08)",
-                    borderWidth: 1,
-                    borderColor: "rgba(244,63,94,0.5)",
-                    borderRadius: 14,
-                    padding: 12,
-                    marginBottom: 16,
-                    flexDirection: "row",
-                    alignItems: "center",
-                  }}
-                >
-                  <Ionicons name="alert-circle" size={20} color="#F43F5E" />
-                  <Text style={{ color: "#9F1239", marginLeft: 8, flex: 1, fontSize: 13 }}>
-                    {error}
-                  </Text>
-                </View>
-              ) : null}
-
               {tab === "admin" ? (
                 <View>
                   <Text style={styles.label}>EMAIL</Text>
@@ -404,7 +406,7 @@ export default function Login() {
                       testID="admin-email-input"
                       value={email}
                       onChangeText={setEmail}
-                      placeholder="you@example.com"
+                      placeholder="your@email.com"
                       placeholderTextColor="#9CA3AF"
                       autoCapitalize="none"
                       keyboardType="email-address"
@@ -445,7 +447,7 @@ export default function Login() {
                       testID="sup-email-input"
                       value={supEmail}
                       onChangeText={setSupEmail}
-                      placeholder="supervisor@example.com"
+                      placeholder="your@email.com"
                       placeholderTextColor="#9CA3AF"
                       autoCapitalize="none"
                       keyboardType="email-address"
@@ -486,7 +488,7 @@ export default function Login() {
                       testID="driver-empid-input"
                       value={empId}
                       onChangeText={(v) => setEmpId(v.toUpperCase())}
-                      placeholder="EMP-1234"
+                      placeholder="DRV12345"
                       placeholderTextColor="#9CA3AF"
                       autoCapitalize="characters"
                       style={styles.textInput}
@@ -502,14 +504,45 @@ export default function Login() {
                       onChangeText={setPin}
                       placeholder="••••"
                       placeholderTextColor="#9CA3AF"
-                      secureTextEntry
+                      secureTextEntry={!showDriverPin}
                       maxLength={4}
                       keyboardType="numeric"
                       style={styles.textInput}
                     />
+                    <TouchableOpacity
+                      onPress={() => setShowDriverPin((s) => !s)}
+                      testID="toggle-driver-pin"
+                    >
+                      <Ionicons
+                        name={showDriverPin ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color="#059669"
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
               )}
+
+              {error ? (
+                <View
+                  testID="login-error"
+                  style={{
+                    backgroundColor: "rgba(244,63,94,0.08)",
+                    borderWidth: 1,
+                    borderColor: "rgba(244,63,94,0.5)",
+                    borderRadius: 14,
+                    padding: 12,
+                    marginBottom: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Ionicons name="alert-circle" size={20} color="#F43F5E" />
+                  <Text style={{ color: "#9F1239", marginLeft: 8, flex: 1, fontSize: 13 }}>
+                    {error}
+                  </Text>
+                </View>
+              ) : null}
 
               <TouchableOpacity
                 testID="login-submit"

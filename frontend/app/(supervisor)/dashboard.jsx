@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteItem as secureDelete } from "../../lib/secure";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import { connectWS, disconnectWS } from "../../lib/websocket";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -38,8 +39,10 @@ export default function SupervisorDashboard() {
   const router = useRouter();
   const { user, setCurrentEventId, signOut } = useAppStore();
   const [events, setEvents] = useState([]);
+  const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [wsStatus, setWsStatus] = useState("connecting");
 
   const fetchAll = useCallback(async () => {
     const supervisorId = user?.id || user?.user_id;
@@ -47,12 +50,16 @@ export default function SupervisorDashboard() {
 
     try {
       setLoading(true);
-      const { data } = await api.get(`/supervisors/${supervisorId}/events`);
-      const sorted = (data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
-      setEvents(sorted.slice(0, 5));
+      const [eventsRes, hotelRes] = await Promise.all([
+        api.get(`/supervisors/${supervisorId}/events`),
+        user?.hotel_id ? api.get(`/hotels/${user.hotel_id}`) : Promise.resolve({ data: null })
+      ]);
+      
+      const sorted = (eventsRes.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+      setEvents(sorted);
+      if (hotelRes.data) setHotel(hotelRes.data);
     } catch (e) {
-      console.log("Error fetching supervisor events:", e?.response?.status, e?.message);
-      setEvents([]);
+      console.log("Error fetching supervisor dashboard data:", e?.response?.status, e?.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,6 +71,29 @@ export default function SupervisorDashboard() {
       fetchAll();
     }, [fetchAll])
   );
+
+  useEffect(() => {
+    const activeEvent = events.find((e) => e.status === "active");
+    if (!activeEvent) {
+      setWsStatus("disconnected");
+      return;
+    }
+    setWsStatus("connecting");
+    let connected = false;
+    const disconnectTimer = setTimeout(() => {
+      if (!connected) setWsStatus("disconnected");
+    }, 8000);
+
+    connectWS(`/event/${activeEvent.id}`, () => {
+      connected = true;
+      setWsStatus("connected");
+    });
+
+    return () => {
+      clearTimeout(disconnectTimer);
+      disconnectWS(`/event/${activeEvent.id}`);
+    };
+  }, [events]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -93,8 +123,11 @@ export default function SupervisorDashboard() {
     router.push("/(supervisor)/event-detail");
   };
 
-  const active = events.filter((e) => e.status === "active");
-  const past = events.filter((e) => e.status !== "active");
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayDaily = events.find(e => e.hotel_id === user?.hotel_id && e.date === todayStr && e.event_type === "hotel_daily");
+  
+  const active = events.filter((e) => e.status === "active").slice(0, 5);
+  const past = events.filter((e) => e.status !== "active").slice(0, 5);
 
   if (loading) {
     return (
@@ -106,8 +139,19 @@ export default function SupervisorDashboard() {
 
   const statCards = [
     { id: "total", testID: "stat-total-events", color: ACCENT_COLOR, icon: "calendar", value: events.length, label: "TOTAL EVENTS" },
-    { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: active.length, label: "ACTIVE NOW" },
-    { id: "guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "GUEST QR", onPress: () => router.push("/(admin)/pre-register-qr") },
+    { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: events.filter(e => e.status === "active").length, label: "ACTIVE NOW" },
+    { 
+      id: "guest_qr", 
+      testID: "stat-guest-qr", 
+      color: "#D97706", 
+      icon: "qr-code-outline", 
+      value: null, 
+      label: "GUEST QR", 
+      onPress: () => router.push({ 
+        pathname: "/(admin)/pre-register-qr", 
+        params: user?.hotel_id ? { hotelId: user.hotel_id } : {} 
+      }) 
+    },
   ];
 
   return (
@@ -146,6 +190,13 @@ export default function SupervisorDashboard() {
           </View>
         </View>
       </SafeAreaView>
+
+      {wsStatus === "disconnected" && (
+        <View style={{ backgroundColor: "#FEF3C7", padding: 8, margin: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Ionicons name="cloud-offline-outline" size={16} color="#92400E" />
+          <Text style={{ color: "#92400E", fontSize: 12 }}>Live updates paused — reconnecting...</Text>
+        </View>
+      )}
 
       <ScrollView
         style={{ flex: 1, marginTop: -20 }}
@@ -198,6 +249,42 @@ export default function SupervisorDashboard() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Hotel section */}
+        {user?.hotel_id && hotel && (
+          <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+            <Text style={labelStyle}>MY HOTEL</Text>
+            <View style={[cardBase, cardShadow, { flexDirection: "row", alignItems: "center", padding: 16 }]}>
+              <View style={{ backgroundColor: "#EFF6FF", padding: 10, borderRadius: 12, marginRight: 14 }}>
+                <Ionicons name="business" size={24} color="#1D4ED8" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: "900", color: "#111827" }}>{hotel.name}</Text>
+                <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>Primary Assigned Location</Text>
+              </View>
+            </View>
+
+            {todayDaily && (
+              <TouchableOpacity
+                onPress={() => openEvent(todayDaily)}
+                style={[cardBase, cardShadow, { marginTop: 12, borderLeftWidth: 4, borderLeftColor: "#1D4ED8", padding: 16 }]}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "800", color: "#1D4ED8" }}>TODAY'S DAILY EVENT</Text>
+                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+                        <Text style={{ color: "#059669", fontSize: 9, fontWeight: "800" }}>ACTIVE</Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: "900", color: "#111827", marginTop: 4 }}>{todayDaily.name}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Quick Actions */}
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
@@ -337,6 +424,12 @@ export default function SupervisorDashboard() {
             ))}
           </View>
         )}
+
+        <View style={{ marginTop: 24, paddingBottom: 20, alignItems: "center" }}>
+          <Text style={{ color: "#9CA3AF", fontSize: 12, textAlign: "center", fontStyle: "italic" }}>
+            Drivers are managed by your admin. You can view but cannot add or remove drivers.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );

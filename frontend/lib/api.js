@@ -1,9 +1,10 @@
 import axios from "axios";
+import { router } from "expo-router";
 import { getItem, deleteItem } from "./secure";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL || "https://instapark.docusafe.ai/api/v1",
-  timeout: 30000,
+  timeout: 10000,
 });
 
 api.interceptors.request.use(async (config) => {
@@ -17,8 +18,16 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
-    if (err.response?.status === 401) {
-      try { await deleteItem("auth_token"); } catch {}
+    const url = err.config?.url || "";
+    const isAuthEndpoint = url.includes("/auth/");
+
+    if (err.response?.status === 401 && !isAuthEndpoint) {
+      try {
+        await deleteItem("auth_token");
+        const { useAppStore } = require("./store");
+        useAppStore.getState().signOut?.();
+      } catch {}
+      router.replace("/(auth)/login");
     }
     return Promise.reject(err);
   }

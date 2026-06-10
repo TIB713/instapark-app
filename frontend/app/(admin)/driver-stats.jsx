@@ -12,6 +12,9 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as FileSystem from "expo-file-system";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -42,8 +45,9 @@ export default function DriverStats() {
   const [bankIfsc, setBankIfsc] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [events, setEvents] = useState([]);
-  const [evtFilter, setEvtFilter] = useState("all");
+  const [evtFilter, setEvtFilter] = useState("active");
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -117,6 +121,99 @@ export default function DriverStats() {
     router.push("/(admin)/event-detail");
   };
 
+  const exportPDF = async () => {
+    if (!driver) return;
+    setExportingPDF(true);
+    try {
+      const { data: incidents } = await api.get(`/incidents/driver/${driverId}`);
+      
+      const eventRows = events.map(e => `
+        <tr>
+          <td>${e.name}</td>
+          <td>${e.venue || "—"}</td>
+          <td>${e.date}</td>
+          <td>${(e.cars_checked_in || 0) + (e.cars_retrieved || 0)}</td>
+          <td>${e.status?.toUpperCase()}</td>
+        </tr>
+      `).join("");
+
+      const incidentRows = incidents.length > 0 
+        ? incidents.map(i => `
+          <tr>
+            <td>${new Date(i.created_at).toLocaleDateString("en-IN", { timeZone: 'Asia/Kolkata' })}</td>
+            <td>${i.plate}</td>
+            <td>${i.description}</td>
+          </tr>
+        `).join("")
+        : '<tr><td colspan="3" style="text-align:center;color:#9CA3AF;">No incidents recorded</td></tr>';
+
+      const html = `<!DOCTYPE html><html><head>
+      <meta charset="UTF-8">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:Arial,sans-serif;color:#111827;font-size:12px;line-height:1.5;}
+        .header{background:#7C3AED;color:white;padding:24px 28px;}
+        .header h1{font-size:22px;font-weight:900;}
+        .header p{opacity:0.8;margin-top:3px;font-size:12px;}
+        .section{padding:20px 28px;border-bottom:1px solid #f3f4f6;}
+        .section h2{font-size:11px;font-weight:800;color:#7C3AED;letter-spacing:3px;margin-bottom:12px;text-transform:uppercase;}
+        .stats{display:flex;gap:12px;flex-wrap:wrap;}
+        .stat{background:#f9fafb;border-radius:10px;padding:12px 16px;text-align:center;min-width:110px;}
+        .stat-val{font-size:22px;font-weight:900;color:#111827;}
+        .stat-lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+        table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}
+        th{padding:8px;text-align:left;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb;}
+        td{padding:8px;border-bottom:1px solid #f3f4f6;}
+        .footer{padding:16px 28px;text-align:center;color:#9ca3af;font-size:10px;}
+      </style></head><body>
+      <div class="header">
+        <h1>Driver Performance Report</h1>
+        <p>${driver.name} · ${driver.employee_id || "ID: —"}</p>
+        <p style="margin-top:6px;font-size:10px;opacity:0.6;">Generated ${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</p>
+      </div>
+      <div class="section">
+        <h2>Driver Information</h2>
+        <p><strong>Name:</strong> ${driver.name}</p>
+        <p><strong>Employee ID:</strong> ${driver.employee_id || "—"}</p>
+        <p><strong>Phone:</strong> ${driver.phone || "—"}</p>
+        <p><strong>Email:</strong> ${driver.email || "—"}</p>
+      </div>
+      <div class="section">
+        <h2>Lifetime Stats Summary</h2>
+        <div class="stats">
+          <div class="stat"><div class="stat-val">${events.length}</div><div class="stat-lbl">Total Events</div></div>
+          <div class="stat"><div class="stat-val">${stats.cars_checked_in}</div><div class="stat-lbl">Total Check-ins</div></div>
+          <div class="stat"><div class="stat-val">${stats.cars_retrieved}</div><div class="stat-lbl">Total Retrievals</div></div>
+          <div class="stat"><div class="stat-val">${stats.avg_rating || "—"}</div><div class="stat-lbl">Avg Rating</div></div>
+          <div class="stat"><div class="stat-val" style="color:${stats.total_incidents > 0 ? "#EF4444" : "#111827"}">${stats.total_incidents || 0}</div><div class="stat-lbl">Incidents</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Events History</h2>
+        <table><thead><tr><th>Event</th><th>Venue</th><th>Date</th><th>Cars</th><th>Status</th></tr></thead>
+        <tbody>${eventRows}</tbody></table>
+      </div>
+      <div class="section">
+        <h2>Incidents List</h2>
+        <table><thead><tr><th>Date</th><th>Plate</th><th>Description</th></tr></thead>
+        <tbody>${incidentRows}</tbody></table>
+      </div>
+      <div class="footer">InstaPark — Driver Performance Report · ${driver.name}</div>
+      </body></html>`;
+
+      const { uri } = await Print.printToFileAsync({ html });
+      const filename = `${driver.name.replace(/\s+/g, "_")}_stats.pdf`;
+      const dest = `${FileSystem.documentDirectory}${filename}`;
+      await FileSystem.moveAsync({ from: uri, to: dest });
+      await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: `${driver.name} — Performance Report` });
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to generate PDF report");
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   const filteredEvts = events.filter((e) => evtFilter === "all" || e.status === evtFilter);
 
   return (
@@ -150,6 +247,17 @@ export default function DriverStats() {
               style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={exportPDF}
+              disabled={exportingPDF}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8, marginLeft: 10 }}
+            >
+              {exportingPDF ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="download-outline" size={22} color="#fff" />
+              )}
             </TouchableOpacity>
             <View style={{ marginLeft: 14, flex: 1 }}>
               <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, letterSpacing: 1.5 }}>DRIVER</Text>
@@ -211,74 +319,11 @@ export default function DriverStats() {
         </View>
       )}
 
-      {/* Documents card — only show if any document field exists */}
-      {driver && (driver.email || driver.pan_number || driver.bank_account_number || driver.driving_license_number) && (
-        <View style={{ marginHorizontal: 16, marginTop: 10, backgroundColor: "#fff", borderRadius: 20, padding: 16, ...cardShadow }}>
-          <Text style={{ fontSize: 10, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>DOCUMENTS</Text>
-          {driver.email ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <Ionicons name="mail-outline" size={16} color="#7C3AED" />
-              <View>
-                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>EMAIL</Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>{driver.email}</Text>
-              </View>
-            </View>
-          ) : null}
-          {driver.pan_number ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <Ionicons name="card-outline" size={16} color="#7C3AED" />
-              <View>
-                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>PAN CARD</Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827", letterSpacing: 1 }}>{driver.pan_number}</Text>
-              </View>
-            </View>
-          ) : null}
-          {driver.bank_account_number ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <Ionicons name="business-outline" size={16} color="#7C3AED" />
-              <View>
-                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>BANK ACCOUNT</Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>{driver.bank_account_number}</Text>
-                {driver.bank_ifsc ? (
-                  <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 1 }}>IFSC: {driver.bank_ifsc}</Text>
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-          {driver.driving_license_number ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: driver.driving_license_photo ? 10 : 0 }}>
-              <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
-              <View>
-                <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 }}>DRIVING LICENSE</Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>{driver.driving_license_number}</Text>
-              </View>
-            </View>
-          ) : null}
-          {driver.driving_license_photo ? (
-            <Image source={{ uri: driver.driving_license_photo }} style={{ width: "100%", height: 120, borderRadius: 12, marginTop: 4, resizeMode: "cover" }} />
-          ) : null}
-        </View>
-      )}
-
       {tab === "performance" ? (
         <ScrollView
           style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Lifetime stats */}
-          <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
-            <View style={{ flex: 1, backgroundColor: "#7C3AED", borderRadius: 24, padding: 18, shadowColor: "#7C3AED", shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 5 }}>
-              <Ionicons name="checkmark-circle" size={22} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 8 }}>{stats.cars_checked_in}</Text>
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, fontWeight: "800", letterSpacing: 2, marginTop: 2 }}>CHECKED IN</Text>
-            </View>
-            <View style={{ flex: 1, backgroundColor: "#059669", borderRadius: 24, padding: 18, shadowColor: "#059669", shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 5 }}>
-              <Ionicons name="flag" size={22} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 8 }}>{stats.cars_retrieved}</Text>
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, fontWeight: "800", letterSpacing: 2, marginTop: 2 }}>RETRIEVED</Text>
-            </View>
-          </View>
-
           <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 10 }}>TIME RANGE</Text>
           <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingBottom: 4 }} showsHorizontalScrollIndicator={false}>
             {[["week", "This Week"], ["month", "This Month"], ["quarter", "Last 3 Months"], ["all", "All Time"]].map(([f, l]) => (
@@ -392,39 +437,32 @@ export default function DriverStats() {
             </View>
           )}
           {filteredEvts.map((e) => (
-            <TouchableOpacity
-              key={e.id}
-              onPress={() => openEvent(e)}
-              activeOpacity={0.85}
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 24,
-                padding: 16,
-                marginTop: 12,
-                flexDirection: "row",
-                alignItems: "center",
-                borderLeftWidth: 4,
-                borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF",
-                ...cardShadow,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{e.name}</Text>
-                <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-                  <View style={pillGray}><Ionicons name="calendar-outline" size={10} color="#6B7280" /><Text style={pillGrayText}>{e.date}</Text></View>
-                  <View style={pillGray}><Ionicons name="location-outline" size={10} color="#6B7280" /><Text style={pillGrayText}>{e.venue}</Text></View>
-                </View>
-                <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
-                  <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                    <Text style={{ color: "#059669", fontSize: 10, fontWeight: "800" }}>Check-ins {e.cars_checked_in || 0}</Text>
-                  </View>
-                  <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                    <Text style={{ color: "#0EA5E9", fontSize: 10, fontWeight: "800" }}>Retrieved {e.cars_retrieved || 0}</Text>
+            <View key={e.id}>
+              <TouchableOpacity
+                onPress={() => openEvent(e)}
+                activeOpacity={0.85}
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 24,
+                  padding: 16,
+                  marginTop: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  borderLeftWidth: 4,
+                  borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF",
+                  ...cardShadow,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                    <View style={pillGray}><Ionicons name="calendar-outline" size={10} color="#6B7280" /><Text style={pillGrayText}>{e.date}</Text></View>
+                    <View style={pillGray}><Ionicons name="location-outline" size={10} color="#6B7280" /><Text style={pillGrayText}>{e.venue}</Text></View>
                   </View>
                 </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
           ))}
           <View style={{ height: 40 }} />
         </ScrollView>

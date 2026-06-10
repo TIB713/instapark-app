@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; 
+import { useState, useEffect, useRef, useCallback } from "react"; 
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native"; 
 import { CameraView, useCameraPermissions } from "expo-camera"; 
 import { useRouter } from "expo-router"; 
@@ -9,9 +9,10 @@ import api from "../../lib/api";
 export default function Scanner() { 
   const router = useRouter(); 
   const [permission, requestPermission] = useCameraPermissions(); 
-  const [scanned, setScanned] = useState(false); 
-  const [loading, setLoading] = useState(false); 
-  const lastScan = useRef(""); 
+  const [scanComplete, setScanComplete] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const scanned = useRef(false);
+  const lastScannedValue = useRef(null);
  
   useEffect(() => { 
     if (permission && !permission.granted) { 
@@ -19,63 +20,67 @@ export default function Scanner() {
     } 
   }, [permission]); 
  
-  const handleBarCodeScanned = async ({ data }) => { 
-    if (scanned || loading || data === lastScan.current) return; 
-    lastScan.current = data; 
-    setScanned(true); 
-    setLoading(true); 
- 
-    try { 
-      // Extract pass token from URL 
-      // Handles: `https://domain.com/pass/{token}`  
-      let passToken = data; 
-      if (data.includes("/pass/")) { 
-        passToken = data.split("/pass/")[1].split("?")[0].trim(); 
-      } else if (data.includes("/v/")) { 
-        // Regular car QR — not a pre-registration pass 
-        Alert.alert( 
-          "Not a Pre-Registration Pass", 
-          "This QR is a retrieval code, not a pre-registration pass.", 
-          [{ text: "Scan Again", onPress: () => { setScanned(false); setLoading(false); lastScan.current = ""; } }] 
-        ); 
-        return; 
-      } 
- 
-      const { data: pass } = await api.get(`/pass/${passToken}`); 
- 
-      if (pass.status !== "PRE_REGISTERED") { 
-        Alert.alert( 
-          "Already Checked In", 
-          `This vehicle (${pass.plate}) has already been checked in.`, 
-          [{ text: "OK", onPress: () => router.back() }] 
-        ); 
-        return; 
-      } 
- 
-      // Navigate to checkin with pre-filled details 
-      router.replace({ 
-        pathname: "/(driver)/checkin", 
-        params: { 
-          prefill_car_id: pass.car_id, 
-          prefill_pass_token: passToken, 
-          prefill_plate: pass.plate, 
-          prefill_make: pass.make, 
-          prefill_color: pass.color, 
-          prefill_phone: pass.guest_phone || "", 
-          prefill_name: pass.guest_name || "", 
-          prefill_event_id: pass.event_id, 
-        }, 
-      }); 
-    } catch (err) { 
-      const msg = err.response?.data?.detail || "Could not load pass details"; 
-      Alert.alert("Invalid QR", msg, [ 
-        { text: "Scan Again", onPress: () => { setScanned(false); setLoading(false); lastScan.current = ""; } }, 
-        { text: "Cancel", onPress: () => router.back() }, 
-      ]); 
-    } finally { 
-      setLoading(false); 
-    } 
-  }; 
+  const handleScan = useCallback(async (result) => {
+    if (scanned.current) return;
+    if (result.data === lastScannedValue.current) return;
+
+    scanned.current = true;
+    lastScannedValue.current = result.data;
+    setScanComplete(true);
+    setLoading(true);
+
+    try {
+      const { data } = result;
+      let passToken = data;
+      if (data.includes("/pass/")) {
+        passToken = data.split("/pass/")[1].split("?")[0].trim();
+      } else if (data.includes("/v/")) {
+        Alert.alert(
+          "Not a Pre-Registration Pass",
+          "This QR is a retrieval code, not a pre-registration pass.",
+          [{ text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } }]
+        );
+        return;
+      }
+
+      const { data: pass } = await api.get(`/pass/${passToken}`);
+
+      if (pass.status !== "PRE_REGISTERED") {
+        Alert.alert(
+          "Already Checked In",
+          `This vehicle (${pass.plate}) has already been checked in.`,
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+        return;
+      }
+
+      router.replace({
+        pathname: "/(driver)/checkin",
+        params: {
+          prefill_car_id: pass.car_id,
+          prefill_pass_token: passToken,
+          prefill_plate: pass.plate,
+          prefill_make: pass.make,
+          prefill_color: pass.color,
+          prefill_phone: pass.guest_phone || "",
+          prefill_name: pass.guest_name || "",
+          prefill_event_id: pass.event_id,
+        },
+      });
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Could not load pass details";
+      Alert.alert("Invalid QR", msg, [
+        { text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } },
+        { text: "Cancel", onPress: () => router.back() },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+
+    setTimeout(() => {
+      scanned.current = false;
+    }, 2000);
+  }, [router]);
  
   if (!permission) return ( 
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}> 
@@ -116,7 +121,7 @@ export default function Scanner() {
       <CameraView 
         style={{ flex: 1 }} 
         facing="back" 
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned} 
+        onBarcodeScanned={scanComplete ? undefined : handleScan} 
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }} 
       > 
         {/* Scanning overlay */} 
@@ -141,9 +146,9 @@ export default function Scanner() {
                 Point camera at guest's pre-registration QR code 
               </Text> 
             )} 
-            {scanned && !loading && ( 
-              <TouchableOpacity 
-                onPress={() => { setScanned(false); lastScan.current = ""; }} 
+            {scanComplete && !loading && (
+              <TouchableOpacity
+                onPress={() => { setScanComplete(false); scanned.current = false; lastScannedValue.current = null; }}
                 style={{ marginTop: 16, backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 }}> 
                 <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SCAN AGAIN</Text> 
               </TouchableOpacity> 

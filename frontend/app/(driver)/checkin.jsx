@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -105,7 +106,14 @@ export default function CheckIn() {
     } catch {}
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
-      const np = [...photos, result.assets[0].uri];
+      const asset = result.assets[0];
+      const compressed = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 1280 } }],
+        { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      const finalUri = compressed.uri;
+      const np = [...photos, finalUri];
       setPhotos(np);
       try { await AsyncStorage.setItem("checkin_photos", JSON.stringify(np)); } catch {}
     }
@@ -140,10 +148,18 @@ export default function CheckIn() {
     } 
     if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; } 
     if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; } 
-    if (guestPhone.trim() && !/^\d{10}$/.test(guestPhone.trim())) { 
-      Alert.alert("Invalid Phone", "Guest mobile number must be exactly 10 digits."); 
-      return; 
-    } 
+    let phoneToSave = "";
+    if (guestPhone.trim()) {
+      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
+      const normalized = normalizeIndianPhone(guestPhone.trim());
+      const isValidIndian = /^\d{10}$/.test(normalized);
+      const isValidIntl = /^\+\d{10,15}$/.test(guestPhone.trim());
+      if (!isValidIndian && !isValidIntl) {
+        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
+        return;
+      }
+      phoneToSave = isValidIndian ? normalized : guestPhone.trim();
+    }
     if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; } 
     setSubmitting(true); 
     try { 
@@ -164,7 +180,7 @@ export default function CheckIn() {
           make: make.trim(),
           notes: notes.trim(),
           gate: selectedGate,
-          guestPhone: guestPhone.trim(),
+          guestPhone: phoneToSave,
           checkInDriverId: resolvedDriverId,
           photoLocalPaths,
           isPreRegistered,
@@ -198,7 +214,7 @@ export default function CheckIn() {
           gate: selectedGate || "", 
           event_id: currentEventId, 
           check_in_driver_id: resolvedDriverId, 
-          ...(guestPhone.trim() ? { guest_phone: guestPhone.trim() } : {}), 
+          ...(phoneToSave ? { guest_phone: phoneToSave } : {}), 
         }); 
         car = data; 
         if (car.warning) { 
@@ -216,7 +232,7 @@ export default function CheckIn() {
           token: car.qr_token, 
           plate: car.plate, 
           carId: car.id, 
-          ...(guestPhone.trim() ? { guestPhone: guestPhone.trim() } : {}), 
+          ...(phoneToSave ? { guestPhone: phoneToSave } : {}), 
         }, 
       }); 
       // Use original photo URIs for online background upload

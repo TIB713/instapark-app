@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
           
-import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -42,17 +42,8 @@ export default function EditEvent() {
   const [showSTP, setShowSTP] = useState(false);
   const [showETP, setShowETP] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (user?.provider_type === "hotel_owner" && eventData?.event_type === "hotel_daily") {
-        Alert.alert(
-          "Access Restricted",
-          "Daily operations are automatically managed and cannot be edited manually.",
-          [{ text: "OK", onPress: () => router.back() }]
-        );
-      }
-    }, [user, eventData, router])
-  );
+  const isHotelDailyEdit =
+    user?.provider_type === "hotel_owner" && eventData?.event_type === "hotel_daily";
 
   const totalSlots = zones.reduce((sum, z) => sum + (parseInt(z.slots) || 0), 0);
   const maxCarsInt = parseInt(maxCars) || 200;
@@ -84,7 +75,7 @@ export default function EditEvent() {
   }, [eventId]);
 
   const save = async () => {
-    if (!name.trim() || !venue.trim()) {
+    if (!isHotelDailyEdit && (!name.trim() || !venue.trim())) {
       Alert.alert("Required", "Name and venue required");
       return;
     }
@@ -141,7 +132,7 @@ export default function EditEvent() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
-              Edit Event
+              {isHotelDailyEdit ? "Edit Today's Parking" : "Edit Event"}
             </Text>
           </View>
         </View>
@@ -149,36 +140,40 @@ export default function EditEvent() {
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 20 }} keyboardShouldPersistTaps="handled">
-          <Label>EVENT NAME</Label>
-          <View style={inputRowStyle}>
-            <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-            <TextInput value={name} onChangeText={setName} style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
-          </View>
-
-          <Label>VENUE</Label>
-          <View style={inputRowStyle}>
-            <Ionicons name="location-outline" size={18} color="#7C3AED" />
-            <TextInput value={venue} onChangeText={setVenue} style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
-          </View>
-
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <Label>START DATE</Label>
-              <TouchableOpacity onPress={() => setShowDP(true)} style={inputBoxStyle}>
+          {!isHotelDailyEdit && (
+            <>
+              <Label>EVENT NAME</Label>
+              <View style={inputRowStyle}>
                 <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(date, "MMM d, yyyy")}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Label>END DATE</Label>
-              <TouchableOpacity onPress={() => setShowEDP(true)} style={inputBoxStyle}>
-                <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(endDate, "MMM d, yyyy")}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-          </View>
+                <TextInput value={name} onChangeText={setName} style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
+              </View>
+
+              <Label>VENUE</Label>
+              <View style={inputRowStyle}>
+                <Ionicons name="location-outline" size={18} color="#7C3AED" />
+                <TextInput value={venue} onChangeText={setVenue} style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Label>START DATE</Label>
+                  <TouchableOpacity onPress={() => setShowDP(true)} style={inputBoxStyle}>
+                    <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
+                    <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(date, "MMM d, yyyy")}</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Label>END DATE</Label>
+                  <TouchableOpacity onPress={() => setShowEDP(true)} style={inputBoxStyle}>
+                    <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
+                    <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(endDate, "MMM d, yyyy")}</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
 
           <View style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ flex: 1 }}>

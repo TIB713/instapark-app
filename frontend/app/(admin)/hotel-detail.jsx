@@ -195,7 +195,7 @@ export default function HotelDetail() {
         end_time: newEventEndTime,
         max_cars: parseInt(newEventMaxCars),
         event_type: "hotel_special",
-        venue: hotel?.address,
+        venue: hotel?.name,
       });
       setShowAddEventModal(false);
       setNewEventName("");

@@ -33,25 +33,20 @@ export default function DriverHome() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchEvents = useCallback(async () => {
-    if (!driver?.id) {
+    const driverId = driver?.id || driver?.user_id;
+    if (!driverId) {
       setLoading(false);
       return;
     }
     try {
-      const { data: evs } = await api.get("/events");
-      const active = (evs || []).filter((e) => e.status === "active");
-      const assigned = [];
-      for (const e of active) {
-        try {
-          const { data: drs } = await api.get(`/events/${e.id}/drivers`);
-          if ((drs || []).some((d) => d.id === driver.id && d.assigned)) assigned.push(e);
-        } catch {}
-      }
-      setEvents(assigned);
-    } catch {}
+      const { data } = await api.get(`/drivers/${driverId}/events`);
+      setEvents(data || []);
+    } catch (e) {
+      console.error("Failed to fetch driver events", e);
+    }
     setLoading(false);
     setRefreshing(false);
-  }, [driver?.id]);
+  }, [driver]);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 

@@ -49,6 +49,7 @@ export default function EventDetail() {
   const router = useRouter();
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
+  const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
   const [slotTab, setSlotTab] = useState("parking");
   const [cars, setCars] = useState([]);
@@ -77,6 +78,7 @@ export default function EventDetail() {
   const [specialEventHotel, setSpecialEventHotel] = useState(null);
   const [specialEventQRToken, setSpecialEventQRToken] = useState(null);
   const [showSpecialEventQRModal, setShowSpecialEventQRModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const [supervisors, setSupervisors] = useState([]);
   const [assigningSupervisorId, setAssigningSupervisorId] = useState(null);
@@ -86,6 +88,21 @@ export default function EventDetail() {
   const [supPhone, setSupPhone] = useState("");
   const [supPassword, setSupPassword] = useState("");
   const [savingSupervisor, setSavingSupervisor] = useState(false);
+
+  const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [drvName, setDrvName] = useState("");
+  const [drvEmail, setDrvEmail] = useState("");
+  const [drvPhone, setDrvPhone] = useState("");
+  const [drvPin, setDrvPin] = useState("");
+  const [drvPhoto, setDrvPhoto] = useState(null);
+  const [drvPhotoUri, setDrvPhotoUri] = useState(null);
+  const [drvLicenseNumber, setDrvLicenseNumber] = useState("");
+  const [drvLicensePhoto, setDrvLicensePhoto] = useState(null);
+  const [drvLicensePhotoUri, setDrvLicensePhotoUri] = useState(null);
+  const [drvPan, setDrvPan] = useState("");
+  const [drvBankAccount, setDrvBankAccount] = useState("");
+  const [drvBankIfsc, setDrvBankIfsc] = useState("");
+  const [savingDriver, setSavingDriver] = useState(false);
 
   const [employeeTab, setEmployeeTab] = useState("supervisors");
 
@@ -159,6 +176,12 @@ export default function EventDetail() {
       setKeyStats(data);
     } catch {}
   }, [currentEventId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchEvent(), fetchCars(), fetchStats(), fetchSlots()]);
+    setRefreshing(false);
+  }, [fetchEvent, fetchCars, fetchStats, fetchSlots]);
 
   const submitIncident = async () => {
     if (!incidentCar) {
@@ -258,7 +281,8 @@ export default function EventDetail() {
       const headers = [
         "Plate","Make","Color","Status","Zone","Slot",
         "Key Tag","Check-in Driver","Retrieval Driver",
-        "Duration (min)","Retrieval Time (min)","Rating","Notes"
+        "Duration (min)","Retrieval Time (min)","Rating","Notes",
+        "Pre-registered","Walk-in","Peak Hour","Incidents","Delivered","Still Parked"
       ].join(",");
       const rows = data.cars.map(c =>
         [
@@ -268,6 +292,12 @@ export default function EventDetail() {
           c.duration_minutes || "", c.retrieval_minutes || "",
           c.rating || "",
           `"${(c.notes || "").replace(/"/g, "'")}"`,
+          data.summary.pre_registered || 0,
+          data.summary.walk_in || 0,
+          data.summary.peak_hour || "—",
+          data.summary.total_incidents || 0,
+          data.summary.delivered || 0,
+          data.summary.still_parked || 0,
         ].join(",")
       );
       const csv = [headers, ...rows].join("\n");
@@ -333,7 +363,7 @@ export default function EventDetail() {
           <td>${i.driver_name || "—"}</td>
           <td>${i.description}</td>
           <td>${new Date(i.created_at)
-            .toLocaleString("en-IN")}</td>
+            .toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</td>
         </tr>`
         ).join("")
         : `<tr><td colspan="4" style="text-align:center;
@@ -381,7 +411,7 @@ export default function EventDetail() {
             : ""}
           ${e.venue ? "· " + e.venue : ""}</p>
         <p style="margin-top:6px;font-size:10px;opacity:0.6;">
-          Generated ${new Date().toLocaleString("en-IN")}
+          Generated ${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}
         </p>
       </div>
       <div class="section">
@@ -392,8 +422,20 @@ export default function EventDetail() {
             <div class="stat-lbl">Total Cars</div>
           </div>
           <div class="stat">
+            <div class="stat-val">${s.pre_registered || 0}</div>
+            <div class="stat-lbl">Pre-Registered</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${s.walk_in || 0}</div>
+            <div class="stat-lbl">Walk-in</div>
+          </div>
+          <div class="stat">
             <div class="stat-val">${s.delivered}</div>
             <div class="stat-lbl">Delivered</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${s.still_parked || 0}</div>
+            <div class="stat-lbl">Still Parked</div>
           </div>
           <div class="stat">
             <div class="stat-val">
@@ -409,8 +451,12 @@ export default function EventDetail() {
             <div class="stat-lbl">Avg Rating</div>
           </div>
           <div class="stat">
-            <div class="stat-val">${s.total_incidents}</div>
+            <div class="stat-val" style="color:${s.total_incidents > 0 ? "#EF4444" : "#059669"}">${s.total_incidents}</div>
             <div class="stat-lbl">Incidents</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${s.peak_hour || "—"}</div>
+            <div class="stat-lbl">Peak Hour</div>
           </div>
           <div class="stat">
             <div class="stat-val">${s.total_drivers}</div>
@@ -551,12 +597,24 @@ export default function EventDetail() {
       Alert.alert("Required", "Name, email and password are required");
       return;
     }
+    let phoneToSave;
+    if (supPhone.trim()) {
+      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
+      const normalized = normalizeIndianPhone(supPhone.trim());
+      const isValidIndian = /^\d{10}$/.test(normalized);
+      const isValidIntl = /^\+\d{10,15}$/.test(supPhone.trim());
+      if (!isValidIndian && !isValidIntl) {
+        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
+        return;
+      }
+      phoneToSave = isValidIndian ? normalized : supPhone.trim();
+    }
     setSavingSupervisor(true);
     try {
       await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
-        phone: supPhone.trim() || undefined,
+        phone: phoneToSave || undefined,
         password: supPassword,
       });
       setShowAddSupervisorModal(false);
@@ -567,6 +625,117 @@ export default function EventDetail() {
       Alert.alert("Error", e.response?.data?.detail || "Failed to add supervisor");
     } finally {
       setSavingSupervisor(false);
+    }
+  };
+
+  const resetDrvForm = () => {
+    setDrvName("");
+    setDrvEmail("");
+    setDrvPhone("");
+    setDrvPin("");
+    setDrvPhoto(null);
+    setDrvPhotoUri(null);
+    setDrvLicenseNumber("");
+    setDrvLicensePhoto(null);
+    setDrvLicensePhotoUri(null);
+    setDrvPan("");
+    setDrvBankAccount("");
+    setDrvBankIfsc("");
+  };
+
+  const pickDriverPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setDrvPhotoUri(result.assets[0].uri);
+      setDrvPhoto(result.assets[0].uri);
+    }
+  };
+
+  const pickLicensePhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setDrvLicensePhotoUri(result.assets[0].uri);
+      setDrvLicensePhoto(result.assets[0].uri);
+    }
+  };
+
+  const uploadDriverImage = async (uri, folder) => {
+    const formData = new FormData();
+    formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+    formData.append("folder", folder);
+    const up = await api.post("/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return up.data.url;
+  };
+
+  const saveDriver = async () => {
+    if (!drvName.trim() || !drvEmail.trim() || !drvPin.trim()) {
+      Alert.alert("Required", "Name, email and PIN are required");
+      return;
+    }
+    if (drvPin.length !== 4) {
+      Alert.alert("Invalid PIN", "PIN must be a 4-digit number");
+      return;
+    }
+    let phoneToSave;
+    if (drvPhone.trim()) {
+      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
+      const normalized = normalizeIndianPhone(drvPhone.trim());
+      const isValidIndian = /^\d{10}$/.test(normalized);
+      const isValidIntl = /^\+\d{10,15}$/.test(drvPhone.trim());
+      if (!isValidIndian && !isValidIntl) {
+        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
+        return;
+      }
+      phoneToSave = isValidIndian ? normalized : drvPhone.trim();
+    }
+    setSavingDriver(true);
+    try {
+      let photoUrl;
+      if (drvPhotoUri) {
+        photoUrl = await uploadDriverImage(drvPhotoUri, "drivers");
+      }
+      let licensePhotoUrl;
+      if (drvLicensePhotoUri) {
+        licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
+      }
+      await api.post("/drivers", {
+        name: drvName.trim(),
+        email: drvEmail.trim().toLowerCase(),
+        phone: phoneToSave || undefined,
+        pin: drvPin,
+        photo_url: photoUrl || undefined,
+        pan_number: drvPan.trim() || undefined,
+        bank_account_number: drvBankAccount.trim() || undefined,
+        bank_ifsc: drvBankIfsc.trim() || undefined,
+        driving_license_number: drvLicenseNumber.trim() || undefined,
+        driving_license_photo: licensePhotoUrl || undefined,
+      });
+      setShowAddDriverModal(false);
+      resetDrvForm();
+      Alert.alert("Driver Added!", `${drvName} has been added successfully.`);
+      fetchDrivers();
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Failed to add driver");
+    } finally {
+      setSavingDriver(false);
     }
   };
 
@@ -643,38 +812,18 @@ export default function EventDetail() {
                     }}
                   >
                     <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>
-                      {event.status.toUpperCase()}
+                      {event.status === "closed" ? "CLOSED" : event.status.toUpperCase()}
                     </Text>
                   </View>
                 </View>
               )}
             </View>
             <TouchableOpacity
-              onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
+              onPress={() => setShowMenu(!showMenu)}
               style={[iconBtn, { marginRight: 8 }]}
             >
-              <Ionicons name="create-outline" size={20} color="#fff" />
+              <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                if (event?.event_type === "hotel_special") {
-                  setShowSpecialEventQRModal(true);
-                } else {
-                  router.push("/(admin)/pre-register-qr");
-                }
-              }}
-              style={[iconBtn, { marginRight: 8 }]}
-              testID="pre-register-qr-btn"
-            >
-              <Ionicons name="qr-code-outline" size={20} color="#fff" />
-            </TouchableOpacity> 
-            <TouchableOpacity 
-              onPress={() => setShowIncidentModal(true)} 
-              style={[iconBtn, { marginRight: 8 }]} 
-              testID="report-incident-btn" 
-            > 
-              <Ionicons name="warning-outline" size={20} color="#FCD34D" /> 
-            </TouchableOpacity> 
             {event?.status === "active" && (
               <TouchableOpacity onPress={closeEvent} style={[iconBtn, { backgroundColor: "rgba(244,63,94,0.7)" }]}>
                 <Ionicons name="close" size={20} color="#fff" />
@@ -683,6 +832,100 @@ export default function EventDetail() {
           </View>
         </View>
       </SafeAreaView>
+
+      {/* Dropdown Menu */}
+      {showMenu && (
+        <>
+          <TouchableOpacity 
+            style={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              zIndex: 999 
+            }} 
+            onPress={() => setShowMenu(false)} 
+          />
+          <View 
+            style={{ 
+              position: 'absolute', 
+              top: 130, 
+              right: 20, 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              paddingVertical: 8, 
+              zIndex: 1000, 
+              ...cardShadow 
+            }}
+          >
+            {/* Menu Items for Active Event */}
+            {!isClosed && (
+              <>
+                <TouchableOpacity 
+                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => {
+                    setShowMenu(false);
+                    router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } });
+                  }}
+                >
+                  <Ionicons name="create-outline" size={20} color="#7C3AED" />
+                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Edit Event</Text>
+                </TouchableOpacity>
+                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <TouchableOpacity 
+                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => {
+                    setShowMenu(false);
+                    if (event?.event_type === "hotel_special") {
+                      setShowSpecialEventQRModal(true);
+                    } else {
+                      router.push("/(admin)/pre-register-qr");
+                    }
+                  }}
+                >
+                  <Ionicons name="qr-code-outline" size={20} color="#7C3AED" />
+                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
+                </TouchableOpacity>
+                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <TouchableOpacity 
+                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => {
+                    setShowMenu(false);
+                    setShowIncidentModal(true);
+                  }}
+                >
+                  <Ionicons name="warning-outline" size={20} color="#7C3AED" />
+                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Report Incident</Text>
+                </TouchableOpacity>
+                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+              </>
+            )}
+            {/* Shared Menu Items */}
+            <TouchableOpacity 
+              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => {
+                setShowMenu(false);
+                exportCSV();
+              }}
+            >
+              <Ionicons name="document-text-outline" size={20} color="#7C3AED" />
+              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export CSV</Text>
+            </TouchableOpacity>
+            <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+            <TouchableOpacity 
+              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => {
+                setShowMenu(false);
+                exportPDF();
+              }}
+            >
+              <Ionicons name="document-outline" size={20} color="#7C3AED" />
+              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export PDF</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {/* Tab bar */}
       <View
@@ -696,7 +939,20 @@ export default function EventDetail() {
           ...cardShadow,
         }}
       >
-        {[["cars", "Cars"], ["employees", "Employees"], ["stats", "Stats"], ["slots", "Slots"]].map(([k, l]) => (
+        {(isClosed
+          ? [
+              ["cars", "Cars"],
+              ["stats", "Stats"],
+              ["incidents", "Incidents"],
+            ]
+          : [
+              ["cars", "Cars"],
+              ["employees", "Employees"],
+              ["stats", "Stats"],
+              ["slots", "Slots"],
+              ["incidents", "Incidents"],
+            ]
+        ).map(([k, l]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
@@ -712,7 +968,7 @@ export default function EventDetail() {
             <Text
               style={{
                 fontWeight: "800",
-                fontSize: 13,
+                fontSize: isClosed ? 13 : 11,
                 color: tab === k ? "#fff" : "#6B7280",
                 letterSpacing: 1,
               }}
@@ -730,12 +986,9 @@ export default function EventDetail() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await fetchCars();
-                setRefreshing(false);
-              }}
+              onRefresh={onRefresh}
               tintColor="#7C3AED"
+              colors={["#7C3AED"]}
             />
           }
         >
@@ -826,7 +1079,7 @@ export default function EventDetail() {
                       </View>
                     )}
                     <Text style={{ color: "#9CA3AF", fontSize: 11 }}>
-                      {car.check_in_time ? formatDistanceToNow(new Date(car.check_in_time), { addSuffix: true }) : "Just now"}
+                      {car.check_in_time ? new Date(car.check_in_time).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : "Just now"}
                     </Text>
                   </View>
                 </View>
@@ -849,7 +1102,59 @@ export default function EventDetail() {
         </ScrollView>
       )}
 
-      {tab === "employees" && (
+      {tab === "incidents" && (
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+          }
+        >
+          {incidents.length === 0 ? (
+            <View style={{ alignItems: "center", marginTop: 60 }}>
+              <View style={{ backgroundColor: "#D1FAE5", width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <Ionicons name="checkmark" size={40} color="#059669" />
+              </View>
+              <Text style={{ color: "#111827", fontWeight: "900", fontSize: 18 }}>No incidents reported</Text>
+              <Text style={{ color: "#6B7280", marginTop: 4 }}>Everything is running smoothly</Text>
+            </View>
+          ) : (
+            incidents.map((i) => (
+              <View key={i.id} style={{ backgroundColor: "#fff", borderRadius: 24, padding: 18, marginBottom: 12, ...cardShadow }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <View style={{ backgroundColor: "#111827", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: 14 }}>{i.plate}</Text>
+                  </View>
+                  <Text style={{ color: "#9CA3AF", fontSize: 11 }}>
+                    {new Date(i.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: 'Asia/Kolkata' })}
+                  </Text>
+                </View>
+                
+                <View style={{ marginTop: 12 }}>
+                  <Text style={{ color: "#374151", fontSize: 14, lineHeight: 20 }}>{i.description}</Text>
+                </View>
+
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+                  <Ionicons name="person-circle-outline" size={16} color="#6B7280" />
+                  <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 6 }}>
+                    Reported by: <Text style={{ fontWeight: "700" }}>{i.driver_name || "Unknown Driver"}</Text>
+                  </Text>
+                </View>
+
+                {i.photo_url && (
+                  <Image
+                    source={{ uri: i.photo_url }}
+                    style={{ width: "100%", height: 200, borderRadius: 16, marginTop: 12 }}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            ))
+          )}
+        </ScrollView>
+      )}
+
+      {tab === "employees" && !isClosed && (
         <ScrollView
           style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -889,7 +1194,7 @@ export default function EventDetail() {
                 Supervisors
               </Text>
               <View style={{ backgroundColor: employeeTab === "supervisors" ? "rgba(255,255,255,0.2)" : "#EDE9FE", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 99 }}>
-                <Text style={{ color: employeeTab === "supervisors" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: 10 }}>{supervisors.length}</Text>
+                <Text style={{ color: employeeTab === "supervisors" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: 10 }}>{supervisors.filter(s => s.assigned).length}/{supervisors.length}</Text>
               </View>
             </TouchableOpacity>
 
@@ -968,7 +1273,15 @@ export default function EventDetail() {
                         {s.name?.[0]?.toUpperCase()}
                       </Text>
                     </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
+                    <TouchableOpacity
+                      style={{ flex: 1, marginLeft: 12 }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(admin)/supervisor-detail",
+                          params: { supervisorId: s.id, supervisorName: s.name },
+                        })
+                      }
+                    >
                       <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{s.name}</Text>
                       <Text style={{ color: "#6B7280", fontSize: 12 }}>{s.email}</Text>
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
@@ -985,7 +1298,7 @@ export default function EventDetail() {
                           {s.available ? "Available" : `In ${s.conflict_event_name || "another event"}`}
                         </Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   </View>
 
                   {s.available || s.assigned ? (
@@ -1034,7 +1347,7 @@ export default function EventDetail() {
               {/* DRIVERS CONTENT */}
               <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 16, gap: 8 }}>
                 <TouchableOpacity
-                  onPress={() => router.push("/(admin)/manage-employees")}
+                  onPress={() => setShowAddDriverModal(true)}
                   style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 7, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
                   <Ionicons name="add" size={14} color="#fff" />
@@ -1188,6 +1501,43 @@ export default function EventDetail() {
           <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: 16, paddingVertical: 10, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
             <Text style={{ color: "#7C3AED", fontWeight: "800", letterSpacing: 1 }}>↻ Refresh Stats</Text>
           </TouchableOpacity>
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 16 }}>
+            {[
+              { label: "TOTAL CARS", value: stats?.total_cars ?? 0, color: "#1D4ED8", icon: "car" },
+              { label: "PRE-REGISTERED", value: stats?.pre_registered ?? 0, color: "#7C3AED", icon: "bookmark", sub: "arrived with pass" },
+              { label: "WALK-IN", value: stats?.walk_in ?? 0, color: "#059669", icon: "walk", sub: "direct check-in" },
+              { label: "DELIVERED", value: stats?.total_delivered ?? 0, color: "#6B7280", icon: "checkmark-circle" },
+              { label: "STILL PARKED", value: stats?.still_parked ?? 0, color: "#F59E0B", icon: "time" },
+              { label: "INCIDENTS", value: stats?.total_incidents ?? 0, color: (stats?.total_incidents > 0 ? "#EF4444" : "#059669"), icon: "warning" },
+              { label: "PEAK HOUR", value: stats?.peak_hour ?? "—", color: "#4F46E5", icon: "trending-up" },
+              { label: "AVG RATING", value: stats?.avg_rating ?? 0, color: "#F59E0B", icon: "star" },
+              { label: "AVG RETRIEVAL", value: stats?.avg_retrieval_minutes ? `${stats.avg_retrieval_minutes} min` : "0 min", color: "#0891B2", icon: "timer" },
+              { label: "TOP DRIVER", value: stats?.top_driver ?? "—", color: "#0F2044", icon: "trophy" },
+            ].map((s, idx) => (
+              <View
+                key={idx}
+                style={{
+                  width: "48%",
+                  backgroundColor: "#fff",
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 12,
+                  borderLeftWidth: 4,
+                  borderLeftColor: s.color,
+                  ...cardShadow,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Ionicons name={s.icon} size={16} color={s.color} />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>{s.value}</Text>
+                <Text style={{ fontSize: 10, color: "#6B7280", fontWeight: "800", marginTop: 2 }}>{s.label}</Text>
+                {s.sub && <Text style={{ fontSize: 9, color: "#9CA3AF", marginTop: 1 }}>{s.sub}</Text>}
+              </View>
+            ))}
+          </View>
+
           <TouchableOpacity
             onPress={exportCSV}
             disabled={exportingCSV}
@@ -1249,40 +1599,36 @@ export default function EventDetail() {
               {exportingPDF ? "Generating..." : "Export PDF Report"}
             </Text>
           </TouchableOpacity>
-          {[
-            { color: "#7C3AED", icon: "star", label: "AVG RATING", value: stats?.avg_rating || "—" },
-            { color: "#059669", icon: "trophy", label: "TOP DRIVER", value: stats?.top_driver || "—" },
-            { color: "#F59E0B", icon: "timer", label: "AVG RETRIEVAL", value: stats?.avg_retrieval_minutes ? `${stats.avg_retrieval_minutes} min` : "—" },
-            { color: "#0EA5E9", icon: "car", label: "TOTAL CARS", value: stats?.total_cars || 0 },
-          ].map((s) => (
-            <View
-              key={s.label}
-              style={{
-                backgroundColor: s.color,
-                borderRadius: 24,
-                padding: 20,
-                marginBottom: 12,
-                shadowColor: s.color,
-                shadowOpacity: 0.25,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 5,
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "800", letterSpacing: 2 }}>
-                  {s.label}
-                </Text>
-                <Ionicons name={s.icon} size={22} color="#fff" />
+
+          <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3, marginBottom: 12, marginTop: 8 }}>
+            PARKING SUMMARY
+          </Text>
+          <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
+              <View style={{ width: "45%" }}>
+                <Text style={{ fontSize: 24, fontWeight: "900", color: "#7C3AED" }}>{slots.length}</Text>
+                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL SLOTS</Text>
               </View>
-              <Text style={{ color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 8 }}>{s.value}</Text>
+              <View style={{ width: "45%" }}>
+                <Text style={{ fontSize: 24, fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
+                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
+              </View>
+              <View style={{ width: "45%" }}>
+                <Text style={{ fontSize: 24, fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
+                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
+              </View>
+              <View style={{ width: "45%" }}>
+                <Text style={{ fontSize: 24, fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
+                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
+              </View>
             </View>
-          ))}
+          </View>
+
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
 
-      {tab === "slots" && (
+      {tab === "slots" && !isClosed && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
           
           {/* Internal sub-tab toggle */}
@@ -1859,6 +2205,78 @@ export default function EventDetail() {
               >
                 <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
               </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Driver Modal */}
+      <Modal visible={showAddDriverModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
+              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+                <View style={{ alignItems: "center", marginBottom: 14 }}>
+                  <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: "900", color: "#059669", marginBottom: 20 }}>Add Driver</Text>
+
+                <TouchableOpacity onPress={pickDriverPhoto} style={{ alignItems: "center", marginBottom: 16 }}>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Driver Photo (optional)</Text>
+                  {drvPhotoUri ? (
+                    <Image source={{ uri: drvPhotoUri }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: "#059669" }} />
+                  ) : (
+                    <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                      <Ionicons name="person" size={32} color="#9CA3AF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={modalLabel}>NAME</Text>
+                <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
+                <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+                <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <Text style={modalLabel}>4-DIGIT PIN</Text>
+                <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={modalInput} />
+                <Text style={modalLabel}>EMAIL</Text>
+                <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalInput} />
+                <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
+                <TextInput value={drvPan} onChangeText={(v) => setDrvPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
+                <Text style={modalLabel}>BANK ACCOUNT NUMBER (OPTIONAL)</Text>
+                <TextInput value={drvBankAccount} onChangeText={setDrvBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
+                <Text style={modalLabel}>BANK IFSC CODE (OPTIONAL)</Text>
+                <TextInput value={drvBankIfsc} onChangeText={(v) => setDrvBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+                <Text style={modalLabel}>DRIVING LICENCE NUMBER (OPTIONAL)</Text>
+                <TextInput value={drvLicenseNumber} onChangeText={(v) => setDrvLicenseNumber(v.toUpperCase())} placeholder="DL number" autoCapitalize="characters" style={modalInput} />
+
+                <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: 16 }}>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo (optional)</Text>
+                  {drvLicensePhotoUri ? (
+                    <Image source={{ uri: drvLicensePhotoUri }} style={{ width: 120, height: 80, borderRadius: 12, borderWidth: 2, borderColor: "#059669" }} />
+                  ) : (
+                    <View style={{ width: 120, height: 80, borderRadius: 12, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                      <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={saveDriver}
+                  disabled={savingDriver}
+                  style={{ backgroundColor: "#059669", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 10, shadowColor: "#059669", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
+                >
+                  {savingDriver ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE DRIVER</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    resetDrvForm();
+                    setShowAddDriverModal(false);
+                  }}
+                  style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}
+                >
+                  <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
           </KeyboardAvoidingView>
         </View>

@@ -50,9 +50,11 @@ export default function SupervisorEventDetail() {
   const router = useRouter();
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
+  const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
   const [slotTab, setSlotTab] = useState("parking");
   const [cars, setCars] = useState([]);
+  const [carStats, setCarStats] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [stats, setStats] = useState(null);
   const [keys, setKeys] = useState([]);
@@ -75,6 +77,7 @@ export default function SupervisorEventDetail() {
   const [incidents, setIncidents] = useState([]);
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -94,6 +97,15 @@ export default function SupervisorEventDetail() {
     try {
       const { data } = await api.get(`/cars/event/${currentEventId}`);
       setCars(data || []);
+      
+      if (data && data.length > 0) {
+        const total = data.length;
+        const delivered = data.filter(c => c.status === "DELIVERED").length;
+        const parked = data.filter(c => c.status === "PARKED").length;
+        const retrieving = data.filter(c => c.status === "RETRIEVAL_REQUESTED" || c.status === "BEING_FETCHED").length;
+        const checkedIn = data.filter(c => c.status === "CHECKED_IN").length;
+        setCarStats({ total, delivered, parked, retrieving, checkedIn });
+      }
     } catch {}
   }, [currentEventId]);
 
@@ -243,9 +255,9 @@ export default function SupervisorEventDetail() {
 
       const carRows = data.cars.map(c => `<tr><td>${c.plate}</td><td>${c.color} ${c.make}</td><td>${c.status}</td><td>${c.check_in_driver || "—"}</td><td>${c.retrieval_driver || "—"}</td><td>${c.duration_minutes ? c.duration_minutes + " min" : "—"}</td><td>${c.rating ? "★".repeat(c.rating) : "—"}</td><td>${c.notes || "—"}</td></tr>`).join("");
       const driverRows = data.drivers.map(d => `<tr><td>${d.name}</td><td>${d.employee_id}</td><td>${d.checkins}</td><td>${d.parkings}</td><td>${d.retrievals}</td><td style="color:${d.incidents > 0 ? "#EF4444" : "#6B7280"}">${d.incidents}</td></tr>`).join("");
-      const incidentRows = data.incidents.length > 0 ? data.incidents.map(i => `<tr><td>${i.plate}</td><td>${i.driver_name || "—"}</td><td>${i.description}</td><td>${new Date(i.created_at).toLocaleString("en-IN")}</td></tr>`).join("") : `<tr><td colspan="4" style="text-align:center; color:#9CA3AF;">No incidents</td></tr>`;
+      const incidentRows = data.incidents.length > 0 ? data.incidents.map(i => `<tr><td>${i.plate}</td><td>${i.driver_name || "—"}</td><td>${i.description}</td><td>${new Date(i.created_at).toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</td></tr>`).join("") : `<tr><td colspan="4" style="text-align:center; color:#9CA3AF;">No incidents</td></tr>`;
 
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;font-size:12px;}.header{background:${ACCENT_COLOR};color:white;padding:24px 28px;}.header h1{font-size:22px;font-weight:900;}.header p{opacity:0.8;margin-top:3px;font-size:12px;}.section{padding:20px 28px;border-bottom:1px solid #f3f4f6;}.section h2{font-size:11px;font-weight:800;color:${ACCENT_COLOR};letter-spacing:3px;margin-bottom:12px;text-transform:uppercase;}.stats{display:flex;gap:12px;flex-wrap:wrap;}.stat{background:#f9fafb;border-radius:10px;padding:12px 16px;text-align:center;min-width:100px;}.stat-val{font-size:22px;font-weight:900;color:#111827;}.stat-lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}table{width:100%;border-collapse:collapse;font-size:11px;}th{padding:8px;text-align:left;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb;}td{padding:8px;border-bottom:1px solid #f3f4f6;}.footer{padding:16px 28px;text-align:center;color:#9ca3af;font-size:10px;}</style></head><body><div class="header"><h1>${e.name}</h1><p>${e.date || ""} ${e.start_time ? "· " + e.start_time + " to " + e.end_time : ""} ${e.venue ? "· " + e.venue : ""}</p><p style="margin-top:6px;font-size:10px;opacity:0.6;">Generated ${new Date().toLocaleString("en-IN")}</p></div><div class="section"><h2>Summary</h2><div class="stats"><div class="stat"><div class="stat-val">${s.total_cars}</div><div class="stat-lbl">Total Cars</div></div><div class="stat"><div class="stat-val">${s.delivered}</div><div class="stat-lbl">Delivered</div></div><div class="stat"><div class="stat-val">${s.avg_retrieval_minutes}m</div><div class="stat-lbl">Avg Retrieval</div></div><div class="stat"><div class="stat-val">${s.avg_rating > 0 ? s.avg_rating + "★" : "—"}</div><div class="stat-lbl">Avg Rating</div></div><div class="stat"><div class="stat-val">${s.total_incidents}</div><div class="stat-lbl">Incidents</div></div><div class="stat"><div class="stat-val">${s.total_drivers}</div><div class="stat-lbl">Drivers</div></div></div></div><div class="section"><h2>Driver Performance</h2><table><thead><tr><th>Driver</th><th>Emp ID</th><th>Check-ins</th><th>Parkings</th><th>Retrievals</th><th>Incidents</th></tr></thead><tbody>${driverRows}</tbody></table></div><div class="section"><h2>Incidents</h2><table><thead><tr><th>Plate</th><th>Driver</th><th>Description</th><th>Time</th></tr></thead><tbody>${incidentRows}</tbody></table></div><div class="section"><h2>All Vehicles (${s.total_cars})</h2><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Status</th><th>Check-in By</th><th>Retrieved By</th><th>Duration</th><th>Rating</th><th>Notes</th></tr></thead><tbody>${carRows}</tbody></table></div><div class="footer">InstaPark — Smart Valet Operations · ${e.name}</div></body></html>`;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;font-size:12px;}.header{background:${ACCENT_COLOR};color:white;padding:24px 28px;}.header h1{font-size:22px;font-weight:900;}.header p{opacity:0.8;margin-top:3px;font-size:12px;}.section{padding:20px 28px;border-bottom:1px solid #f3f4f6;}.section h2{font-size:11px;font-weight:800;color:${ACCENT_COLOR};letter-spacing:3px;margin-bottom:12px;text-transform:uppercase;}.stats{display:flex;gap:12px;flex-wrap:wrap;}.stat{background:#f9fafb;border-radius:10px;padding:12px 16px;text-align:center;min-width:100px;}.stat-val{font-size:22px;font-weight:900;color:#111827;}.stat-lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}table{width:100%;border-collapse:collapse;font-size:11px;}th{padding:8px;text-align:left;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb;}td{padding:8px;border-bottom:1px solid #f3f4f6;}.footer{padding:16px 28px;text-align:center;color:#9ca3af;font-size:10px;}</style></head><body><div class="header"><h1>${e.name}</h1><p>${e.date || ""} ${e.start_time ? "· " + e.start_time + " to " + e.end_time : ""} ${e.venue ? "· " + e.venue : ""}</p><p style="margin-top:6px;font-size:10px;opacity:0.6;">Generated ${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</p></div><div class="section"><h2>Summary</h2><div class="stats"><div class="stat"><div class="stat-val">${s.total_cars}</div><div class="stat-lbl">Total Cars</div></div><div class="stat"><div class="stat-val">${s.delivered}</div><div class="stat-lbl">Delivered</div></div><div class="stat"><div class="stat-val">${s.avg_retrieval_minutes}m</div><div class="stat-lbl">Avg Retrieval</div></div><div class="stat"><div class="stat-val">${s.avg_rating > 0 ? s.avg_rating + "★" : "—"}</div><div class="stat-lbl">Avg Rating</div></div><div class="stat"><div class="stat-val">${s.total_incidents}</div><div class="stat-lbl">Incidents</div></div><div class="stat"><div class="stat-val">${s.total_drivers}</div><div class="stat-lbl">Drivers</div></div></div></div><div class="section"><h2>Driver Performance</h2><table><thead><tr><th>Driver</th><th>Emp ID</th><th>Check-ins</th><th>Parkings</th><th>Retrievals</th><th>Incidents</th></tr></thead><tbody>${driverRows}</tbody></table></div><div class="section"><h2>Incidents</h2><table><thead><tr><th>Plate</th><th>Driver</th><th>Description</th><th>Time</th></tr></thead><tbody>${incidentRows}</tbody></table></div><div class="section"><h2>All Vehicles (${s.total_cars})</h2><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Status</th><th>Check-in By</th><th>Retrieved By</th><th>Duration</th><th>Rating</th><th>Notes</th></tr></thead><tbody>${carRows}</tbody></table></div><div class="footer">InstaPark — Smart Valet Operations · ${e.name}</div></body></html>`;
 
       const { uri } = await Print.printToFileAsync({ html });
       const filename = `${e.name.replace(/\s+/g, "_")}_report.pdf`;
@@ -350,31 +362,82 @@ export default function SupervisorEventDetail() {
                 <View style={{ flexDirection: "row", marginTop: 4 }}>
                   <View style={{ backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
                     <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>
-                      {event.status.toUpperCase()}
+                      {event.status === "closed" ? "CLOSED" : event.status.toUpperCase()}
                     </Text>
                   </View>
                 </View>
               )}
             </View>
-            <TouchableOpacity 
-              onPress={() => router.push("/(admin)/pre-register-qr")} 
-              style={[iconBtn, { marginRight: 8 }]} 
-            > 
-              <Ionicons name="qr-code-outline" size={20} color="#fff" /> 
-            </TouchableOpacity> 
-            <TouchableOpacity 
-              onPress={() => setShowIncidentModal(true)} 
-              style={[iconBtn, { marginRight: 8 }]} 
-            > 
-              <Ionicons name="warning-outline" size={20} color="#FCD34D" /> 
-            </TouchableOpacity> 
+            <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={[iconBtn, { marginRight: 8 }]}>
+              <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
 
+      {/* Dropdown Menu */}
+      {showMenu && (
+        <>
+          <TouchableOpacity 
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
+            onPress={() => setShowMenu(false)} 
+          />
+          <View style={{ position: 'absolute', top: 130, right: 20, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 8, zIndex: 1000, ...cardShadow }}>
+            {!isClosed && (
+              <>
+                <TouchableOpacity 
+                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => { setShowMenu(false); router.push("/(admin)/pre-register-qr"); }}
+                >
+                  <Ionicons name="qr-code-outline" size={20} color={ACCENT_COLOR} />
+                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
+                </TouchableOpacity>
+                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <TouchableOpacity 
+                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => { setShowMenu(false); setShowIncidentModal(true); }}
+                >
+                  <Ionicons name="warning-outline" size={20} color={ACCENT_COLOR} />
+                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Report Incident</Text>
+                </TouchableOpacity>
+                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+              </>
+            )}
+            <TouchableOpacity 
+              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => { setShowMenu(false); exportCSV(); }}
+            >
+              <Ionicons name="document-text-outline" size={20} color={ACCENT_COLOR} />
+              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export CSV</Text>
+            </TouchableOpacity>
+            <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+            <TouchableOpacity 
+              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => { setShowMenu(false); exportPDF(); }}
+            >
+              <Ionicons name="document-outline" size={20} color={ACCENT_COLOR} />
+              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export PDF Report</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
       {/* Tab bar */}
       <View style={{ backgroundColor: "#fff", flexDirection: "row", marginHorizontal: 16, marginTop: -22, borderRadius: 20, padding: 4, ...cardShadow }}>
-        {[["cars", "Cars"], ["employees", "Employees"], ["stats", "Stats"], ["slots", "Slots"]].map(([k, l]) => (
+        {(isClosed
+          ? [
+              ["cars", "Cars"],
+              ["stats", "Stats"],
+              ["incidents", "Incidents"],
+            ]
+          : [
+              ["cars", "Cars"],
+              ["employees", "Employees"],
+              ["stats", "Stats"],
+              ["slots", "Slots"],
+              ["incidents", "Incidents"],
+            ]
+        ).map(([k, l]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
@@ -386,7 +449,7 @@ export default function SupervisorEventDetail() {
               alignItems: "center",
             }}
           >
-            <Text style={{ fontWeight: "800", fontSize: 13, color: tab === k ? "#fff" : "#6B7280", letterSpacing: 1 }}>
+            <Text style={{ fontWeight: "800", fontSize: isClosed ? 13 : 11, color: tab === k ? "#fff" : "#6B7280", letterSpacing: 1 }}>
               {l}
             </Text>
           </TouchableOpacity>
@@ -473,7 +536,7 @@ export default function SupervisorEventDetail() {
                       </View>
                     )}
                     <Text style={{ color: "#9CA3AF", fontSize: 11 }}>
-                      {car.check_in_time ? formatDistanceToNow(new Date(car.check_in_time), { addSuffix: true }) : "Just now"}
+                      {car.check_in_time ? new Date(car.check_in_time).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : "Just now"}
                     </Text>
                   </View>
                 </View>
@@ -592,34 +655,230 @@ export default function SupervisorEventDetail() {
       )}
 
       {tab === "stats" && (
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: 16, paddingVertical: 10, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
             <Text style={{ color: ACCENT_COLOR, fontWeight: "800", letterSpacing: 1 }}>↻ Refresh Stats</Text>
           </TouchableOpacity>
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-            <TouchableOpacity onPress={exportCSV} disabled={exportingCSV} style={[exportBtn, { backgroundColor: "#ECFDF5", borderColor: "#6EE7B7" }]}>
-              {exportingCSV ? <ActivityIndicator size="small" color="#059669" /> : <Ionicons name="document-text-outline" size={16} color="#059669" />}
-              <Text style={{ color: "#059669", fontWeight: "800", fontSize: 12, marginLeft: 4 }}>CSV</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={exportPDF} disabled={exportingPDF} style={[exportBtn, { backgroundColor: "#F5F3FF", borderColor: "#DDD6FE" }]}>
-              {exportingPDF ? <ActivityIndicator size="small" color={ACCENT_COLOR} /> : <Ionicons name="document-outline" size={16} color={ACCENT_COLOR} />}
-              <Text style={{ color: ACCENT_COLOR, fontWeight: "800", fontSize: 12, marginLeft: 4 }}>PDF Report</Text>
-            </TouchableOpacity>
-          </View>
-          {[
-            { color: ACCENT_COLOR, icon: "star", label: "AVG RATING", value: stats?.avg_rating || "—" },
-            { color: "#059669", icon: "trophy", label: "TOP DRIVER", value: stats?.top_driver || "—" },
-            { color: "#F59E0B", icon: "timer", label: "AVG RETRIEVAL", value: stats?.avg_retrieval_minutes ? `${stats.avg_retrieval_minutes} min` : "—" },
-            { color: "#0EA5E9", icon: "car", label: "TOTAL CARS", value: stats?.total_cars || 0 },
-          ].map((s) => (
-            <View key={s.label} style={{ backgroundColor: s.color, borderRadius: 24, padding: 20, marginBottom: 12, shadowColor: s.color, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 5 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "800", letterSpacing: 2 }}>{s.label}</Text>
-                <Ionicons name={s.icon} size={22} color="#fff" />
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 16 }}>
+            {[
+              { label: "TOTAL CARS", value: stats?.total_cars ?? 0, color: "#1D4ED8", icon: "car" },
+              { label: "PRE-REGISTERED", value: stats?.pre_registered ?? 0, color: "#7C3AED", icon: "bookmark", sub: "arrived with pass" },
+              { label: "WALK-IN", value: stats?.walk_in ?? 0, color: "#059669", icon: "walk", sub: "direct check-in" },
+              { label: "DELIVERED", value: stats?.total_delivered ?? 0, color: "#6B7280", icon: "checkmark-circle" },
+              { label: "STILL PARKED", value: stats?.still_parked ?? 0, color: "#F59E0B", icon: "time" },
+              { label: "INCIDENTS", value: stats?.total_incidents ?? 0, color: (stats?.total_incidents > 0 ? "#EF4444" : "#059669"), icon: "warning" },
+              { label: "PEAK HOUR", value: stats?.peak_hour ?? "—", color: "#4F46E5", icon: "trending-up" },
+              { label: "AVG RATING", value: stats?.avg_rating ?? 0, color: "#F59E0B", icon: "star" },
+              { label: "AVG RETRIEVAL", value: stats?.avg_retrieval_minutes ? `${stats.avg_retrieval_minutes} min` : "0 min", color: "#0891B2", icon: "timer" },
+              { label: "TOP DRIVER", value: stats?.top_driver ?? "—", color: "#0F2044", icon: "trophy" },
+            ].map((s, idx) => (
+              <View
+                key={idx}
+                style={{
+                  width: "48%",
+                  backgroundColor: "#fff",
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 12,
+                  borderLeftWidth: 4,
+                  borderLeftColor: s.color,
+                  ...cardShadow,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Ionicons name={s.icon} size={16} color={s.color} />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>{s.value}</Text>
+                <Text style={{ fontSize: 10, color: "#6B7280", fontWeight: "800", marginTop: 2 }}>{s.label}</Text>
+                {s.sub && <Text style={{ fontSize: 9, color: "#9CA3AF", marginTop: 1 }}>{s.sub}</Text>}
               </View>
-              <Text style={{ color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 8 }}>{s.value}</Text>
+            ))}
+          </View>
+
+          {isClosed && (
+            <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>
+                PARKING SUMMARY
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
+                <View style={{ width: "45%" }}>
+                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#7C3AED" }}>{slots.length}</Text>
+                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL SLOTS</Text>
+                </View>
+                <View style={{ width: "45%" }}>
+                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
+                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
+                </View>
+                <View style={{ width: "45%" }}>
+                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
+                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
+                </View>
+                <View style={{ width: "45%" }}>
+                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
+                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
+                </View>
+              </View>
             </View>
-          ))}
+          )}
+
+          <TouchableOpacity
+            onPress={exportCSV}
+            disabled={exportingCSV}
+            style={{
+              backgroundColor: exportingCSV ? "#D1FAE5" : "#ECFDF5",
+              borderRadius: 14,
+              paddingVertical: 12,
+              alignItems: "center",
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "#6EE7B7",
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            {exportingCSV ? (
+              <ActivityIndicator size="small" color="#059669" />
+            ) : (
+              <Ionicons
+                name="document-text-outline"
+                size={16}
+                color="#059669"
+              />
+            )}
+            <Text style={{
+              color: "#059669",
+              fontWeight: "800",
+              fontSize: 13,
+              marginLeft: 6,
+            }}>
+              {exportingCSV ? "Generating..." : "Export CSV"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={exportPDF}
+            disabled={exportingPDF}
+            style={{
+              backgroundColor: exportingPDF ? "#EDE9FE" : "#F5F3FF",
+              borderRadius: 14,
+              paddingVertical: 12,
+              alignItems: "center",
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "#DDD6FE",
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            {exportingPDF ? (
+              <ActivityIndicator size="small" color={ACCENT_COLOR} />
+            ) : (
+              <Ionicons name="document-outline" size={16}
+                color={ACCENT_COLOR} />
+            )}
+            <Text style={{ color: ACCENT_COLOR, fontWeight: "800",
+              fontSize: 13, marginLeft: 6 }}>
+              {exportingPDF ? "Generating..." : "Export PDF Report"}
+            </Text>
+          </TouchableOpacity>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
+
+      {tab === "incidents" && (
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {incidents.length === 0 ? (
+            <View style={{ alignItems: "center", marginTop: 60 }}>
+              <View
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 40,
+                  backgroundColor: "#D1FAE5",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Ionicons name="checkmark-circle" size={40} color="#059669" />
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: "900", color: "#111827" }}>
+                All Good!
+              </Text>
+              <Text style={{ color: "#6B7280", marginTop: 4, fontWeight: "600" }}>
+                No incidents reported for this event
+              </Text>
+            </View>
+          ) : (
+            incidents.map((i) => (
+              <View
+                key={i.id}
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 24,
+                  padding: 16,
+                  marginBottom: 12,
+                  ...cardShadow,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: "#111827",
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: 13 }}>
+                      {i.plate}
+                    </Text>
+                  </View>
+                  <Text style={{ color: "#9CA3AF", fontSize: 11, fontWeight: "700" }}>
+                    {new Date(i.created_at).toLocaleString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: 'Asia/Kolkata'
+                    })}
+                  </Text>
+                </View>
+                <Text style={{ color: "#374151", fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
+                  {i.description}
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    borderTopWidth: 1,
+                    borderTopColor: "#F3F4F6",
+                    paddingTop: 12,
+                  }}
+                >
+                  <Ionicons name="person-outline" size={14} color="#6B7280" />
+                  <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 6, fontWeight: "600" }}>
+                    Driver: {i.driver_name || "—"}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
         </ScrollView>
       )}
 

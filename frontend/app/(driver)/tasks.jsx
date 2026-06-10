@@ -18,13 +18,14 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
-import { enqueueHandover, getQueueCount, processPendingQueue, enqueueParkAction, getQueueSummary } from "../../lib/offline";
+import { enqueueHandover, getQueueCount, processPendingQueue, enqueueParkAction, getQueueSummary, getFailedQueue } from "../../lib/offline";
 
 const cardShadow = {
   shadowColor: "#059669",
@@ -48,6 +49,8 @@ export default function Tasks() {
   const [selectedZone, setSelectedZone] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+  const [handoverUploading, setHandoverUploading] = useState(false);
   const [queueSummary, setQueueSummary] = useState({ checkin: 0, park: 0, handover: 0, total: 0 });
   const [openingParkModal, setOpeningParkModal] = useState(null); // stores car.id while loading
   const [confirmingPark, setConfirmingPark] = useState(false);
@@ -61,8 +64,18 @@ export default function Tasks() {
 
   const fetchMyCars = useCallback(async () => {
     try {
-      const { data } = await api.get(`/cars/event/${currentEventId}`);
-      setCars((data || []).filter((c) => c.check_in_driver_id === resolvedDriverId && ["CHECKED_IN", "PARKED"].includes(c.status)));
+      const { data } = await api.get(`/cars/event/${currentEventId}`, {
+        params: {
+          driver_id: resolvedDriverId,
+          status: "CHECKED_IN,PARKED",
+        },
+      });
+      // TODO: remove client-side filter once backend supports driver_id + status query params
+      setCars(
+        (data || []).filter(
+          (c) => c.check_in_driver_id === resolvedDriverId && ["CHECKED_IN", "PARKED"].includes(c.status)
+        )
+      );
     } catch {}
   }, [currentEventId, resolvedDriverId]);
 
@@ -83,10 +96,13 @@ export default function Tasks() {
     const summary = await getQueueSummary();
     setQueueSummary(summary);
     setPendingCount(summary.total);
+    const failed = await getFailedQueue();
+    setFailedCount(failed.length);
   };
 
   useEffect(() => {
     if (!currentEventId) return;
+    api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {});
     fetchMyCars();
     fetchRetrievals();
     refreshPending();
@@ -133,17 +149,15 @@ export default function Tasks() {
     setOpeningParkModal(car.id);
     setSelectedCar(car);
     setSelectedSlot(null);
+    setSlots([]);
+    setShowParkModal(true);
     try {
-      const [evRes] = await Promise.all([
-        api.get(`/events/${currentEventId}`),
-        api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {}),
-      ]);
+      const evRes = await api.get(`/events/${currentEventId}`);
       setEventZones(evRes.data.zones || []);
       if (evRes.data.zones?.[0]) setSelectedZone(evRes.data.zones[0].name);
     } catch {}
     await fetchSlots();
     setOpeningParkModal(null);
-    setShowParkModal(true);
   };
 
   const confirmPark = async () => {
@@ -242,7 +256,14 @@ export default function Tasks() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
     if (!result.canceled) {
-      setParkPhotos((prev) => [...prev, result.assets[0].uri]);
+      const asset = result.assets[0];
+      const compressed = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 1280 } }],
+        { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      const finalUri = compressed.uri;
+      setParkPhotos((prev) => [...prev, finalUri]);
     }
   };
 
@@ -295,23 +316,38 @@ export default function Tasks() {
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true });
     try { await AsyncStorage.removeItem("pending_handover"); } catch {}
     if (result.canceled) return;
+    const asset = result.assets[0];
+    const compressed = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 1280 } }],
+      { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    const finalUri = compressed.uri;
     const net = await NetInfo.fetch();
     if (!net.isConnected) {
       const localPath = `${FileSystem.documentDirectory}handover_${car.id}_${Date.now()}.jpg`;
       try {
-        await FileSystem.copyAsync({ from: result.assets[0].uri, to: localPath });
+        await FileSystem.copyAsync({ from: finalUri, to: localPath });
         await enqueueHandover(car.id, localPath);
         await refreshPending();
         Alert.alert("Saved Offline", "Photo saved. Will upload when connected.");
       } catch (e) { Alert.alert("Error", "Failed to save offline"); }
       return;
     }
+    setHandoverUploading(true);
     try {
-      await api.patch(`/cars/${car.id}/deliver`, { delivery_photo_url: "" });
+      const formData = new FormData();
+      formData.append("file", { uri: finalUri, type: "image/jpeg", name: "handover.jpg" });
+      formData.append("folder", `handover/${car.id}`);
+      const up = await api.post("/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const photoUrl = up.data.url;
+
+      await api.patch(`/cars/${car.id}/deliver`, { delivery_photo_url: photoUrl });
       fetchRetrievals();
-      uploadHandoverInBackground(car.id, result.assets[0].uri);
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Handover failed");
+      Alert.alert("Handover Failed", e.response?.data?.detail || "Could not complete handover. Try again.");
+    } finally {
+      setHandoverUploading(false);
     }
   };
 
@@ -407,6 +443,29 @@ export default function Tasks() {
           )}
         </TouchableOpacity>
       </View>
+
+      {failedCount > 0 && (
+        <TouchableOpacity onPress={() => router.push("/(driver)/failed-syncs")}>
+          <View
+            style={{
+              backgroundColor: "#FEE2E2",
+              padding: 12,
+              marginHorizontal: 16,
+              marginTop: 8,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: "#FCA5A5",
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="warning" size={16} color="#B91C1C" />
+            <Text style={{ color: "#B91C1C", fontSize: 12, fontWeight: "700", marginLeft: 8, flex: 1 }}>
+              {failedCount} sync failure(s) — these check-ins could not be uploaded. Tell your supervisor.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {pendingCount > 0 && (
         <View
@@ -780,10 +839,17 @@ export default function Tasks() {
               {car.status === "BEING_FETCHED" && isMine && (
                 <TouchableOpacity
                   onPress={() => handleHandover(car)}
-                  style={{ backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+                  disabled={handoverUploading}
+                  style={{ backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
                 >
-                  <Ionicons name="camera" size={14} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>HANDED TO GUEST</Text>
+                  {handoverUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="camera" size={14} color="#fff" />
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>HANDED TO GUEST</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               )}
               {car.status === "BEING_FETCHED" && !isMine && (
@@ -810,6 +876,11 @@ export default function Tasks() {
                 <Ionicons name="map-outline" size={64} color="#9CA3AF" />
                 <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12 }}>No Parking Zones Configured</Text>
                 <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 4 }}>Please ask your admin to set up zones</Text>
+              </View>
+            ) : !slots.length ? (
+              <View style={{ alignItems: "center", padding: 32 }}>
+                <ActivityIndicator size="large" color="#059669" />
+                <Text style={{ color: "#6B7280", marginTop: 8 }}>Loading parking slots...</Text>
               </View>
             ) : (
               <>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { getItem, deleteItem as secureDelete } from "../lib/secure";
+import { getItem, setItem, deleteItem as secureDelete } from "../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useAppStore } from "../lib/store";
@@ -51,6 +51,10 @@ export default function Index() {
             await secureDelete("auth_token");
           } catch {
             await secureDelete("auth_token");
+            await setItem("last_known_role", "");
+            setChecking(false);
+            router.replace("/(auth)/login");
+            return;
           }
         }
         const ds = await AsyncStorage.getItem("driver_session");

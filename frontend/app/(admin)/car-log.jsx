@@ -28,7 +28,8 @@ function fmt(iso) {
   const d = new Date(iso); 
   return d.toLocaleString("en-IN", { 
     day: "numeric", month: "short", 
-    hour: "2-digit", minute: "2-digit" 
+    hour: "2-digit", minute: "2-digit",
+    timeZone: 'Asia/Kolkata'
   }); 
 } 
  

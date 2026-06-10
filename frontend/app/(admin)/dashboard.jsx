@@ -36,6 +36,12 @@ export default function Dashboard() {
   const router = useRouter();
   const { user, setCurrentEventId, signOut } = useAppStore();
   const [events, setEvents] = useState([]);
+  const [allFetchedEvents, setAllFetchedEvents] = useState([]);
+  const [totalEventsCount, setTotalEventsCount] = useState(0);
+  const [totalSpecialEventsCount, setTotalSpecialEventsCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [activeTodayCount, setActiveTodayCount] = useState(0);
+  const [avgRating, setAvgRating] = useState("—");
   const [drivers, setDrivers] = useState([]);
   const [supervisors, setSupervisors] = useState([]);
   const [hotels, setHotels] = useState([]);
@@ -55,6 +61,18 @@ export default function Dashboard() {
         return true;
       });
       const sorted = unique.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setTotalEventsCount(unique.length);
+      setTotalSpecialEventsCount(unique.filter(e => e.event_type === "hotel_special").length);
+      setActiveCount(unique.filter(e => e.status === "active").length);
+      const today = new Date().toISOString().split("T")[0];
+      setActiveTodayCount(unique.filter(e => e.date === today && e.status === "active").length);
+      
+      const ratedEvents = unique.filter((e) => (e.avg_rating || 0) > 0);
+      const avg = ratedEvents.length > 0
+        ? (ratedEvents.reduce((s, e) => s + (e.avg_rating || 0), 0) / ratedEvents.length).toFixed(1)
+        : "—";
+      setAvgRating(avg);
+      setAllFetchedEvents(sorted);
       const recent = sorted.slice(0, 5);
       setEvents(recent);
       try {
@@ -116,20 +134,13 @@ export default function Dashboard() {
     router.push("/(admin)/event-detail");
   };
 
-  const specialEvents = events.filter(e => e.event_type === "hotel_special");
-  const dailyEvents = events.filter(e => e.event_type === "hotel_daily");
+  const specialEvents = allFetchedEvents.filter(e => e.event_type === "hotel_special");
+  const dailyEvents = allFetchedEvents.filter(e => e.event_type === "hotel_daily");
   const todayStr = new Date().toISOString().split("T")[0];
   const todaySpecial = specialEvents.filter(e => e.date === todayStr);
   const todayDaily = dailyEvents.find(e => e.date === todayStr);
   const active = events.filter((e) => e.status === "active");
   const past = events.filter((e) => e.status !== "active");
-  const avgRating =
-    events.filter((e) => e.avg_rating).length > 0
-      ? (
-          events.reduce((s, e) => s + (e.avg_rating || 0), 0) /
-          events.filter((e) => e.avg_rating).length
-        ).toFixed(1)
-      : "—";
 
   if (loading) {
     return (
@@ -140,14 +151,14 @@ export default function Dashboard() {
   }
 
   const statCards = isHotelOwner ? [
-    { id: "hotel_special", testID: "stat-special-events", color: "#1D4ED8", icon: "star", value: specialEvents.length, label: "TOTAL SPECIAL EVENTS", onPress: () => router.push({ pathname: "/(admin)/all-events", params: { filter: "special" } }) },
-    { id: "hotel_active_today", testID: "stat-active-today", color: "#059669", icon: "pulse", value: events.filter(e => e.date === todayStr && e.status === "active").length, label: "ACTIVE TODAY", onPress: () => router.push("/(admin)/hotels") },
+    { id: "hotel_special", testID: "stat-special-events", color: "#1D4ED8", icon: "star", value: totalSpecialEventsCount, label: "TOTAL SPECIAL EVENTS", onPress: () => router.push({ pathname: "/(admin)/all-events", params: { filter: "special" } }) },
+    { id: "hotel_active_today", testID: "stat-active-today", color: "#059669", icon: "pulse", value: activeTodayCount, label: "ACTIVE TODAY", onPress: () => router.push("/(admin)/hotels") },
     { id: "hotel_drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-employees") },
     { id: "hotel_supervisors", testID: "stat-supervisors", color: "#0F2044", icon: "shield-checkmark", value: supervisors.length, label: "SUPERVISORS", onPress: () => router.push("/(admin)/manage-employees") },
     { id: "hotel_guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "GUEST QR", onPress: () => router.push("/(admin)/pre-register-qr") },
   ] : [
-    { id: "total", testID: "stat-total-events", color: "#7C3AED", icon: "calendar", value: events.length, label: "TOTAL EVENTS", onPress: () => router.push("/(admin)/all-events") },
-    { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: active.length, label: "ACTIVE NOW", onPress: () => router.push("/(admin)/all-events") },
+    { id: "total", testID: "stat-total-events", color: "#7C3AED", icon: "calendar", value: totalEventsCount, label: "TOTAL EVENTS", onPress: () => router.push("/(admin)/all-events") },
+    { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: activeCount, label: "ACTIVE NOW", onPress: () => router.push("/(admin)/all-events") },
     { id: "supervisors", testID: "stat-supervisors", color: "#0F2044", icon: "shield-checkmark", value: supervisors.length, label: "SUPERVISORS", onPress: () => router.push("/(admin)/manage-employees") },
     { id: "drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-employees") },
     { id: "hotels", testID: "stat-hotels", color: "#1D4ED8", icon: "business-outline", value: hotels.length, label: "HOTELS", onPress: () => router.push("/(admin)/hotels") },

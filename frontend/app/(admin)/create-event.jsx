@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -40,6 +40,22 @@ export default function CreateEvent() {
   const [showSTP, setShowSTP] = useState(false);
   const [showETP, setShowETP] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [myHotel, setMyHotel] = useState(null);
+
+  useEffect(() => {
+    if (isHotelOwner) {
+      api.get("/hotels")
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setMyHotel(data[0]);
+            setVenue(data[0].name || "");
+          }
+        })
+        .catch((e) => {
+          console.log("Error fetching hotel for hotel owner:", e);
+        });
+    }
+  }, [isHotelOwner]);
 
   const totalSlots = zones.reduce((sum, z) => sum + (parseInt(z.slots) || 0), 0);
   const maxCarsInt = parseInt(maxCars) || 200;
@@ -74,7 +90,7 @@ export default function CreateEvent() {
     }
     setSaving(true);
     try {
-      const { data } = await api.post("/events", {
+      const payload = {
         name: name.trim(),
         date: format(date, "yyyy-MM-dd"),
         end_date: format(endDate, "yyyy-MM-dd"),
@@ -86,8 +102,25 @@ export default function CreateEvent() {
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
         is_template: false,
-        ...(isHotelOwner ? { event_type: "hotel_special" } : {}),
-      });
+      };
+
+      let res;
+      if (isHotelOwner) {
+        if (!myHotel) {
+          Alert.alert("No hotel found", "Please contact support.");
+          setSaving(false);
+          return;
+        }
+        res = await api.post(`/hotels/${myHotel.id}/events`, payload);
+      } else {
+        // Normal valet provider
+        res = await api.post("/events", {
+          ...payload,
+          event_type: "event", // default for valet provider
+        });
+      }
+
+      const { data } = res;
       setCurrentEventId(data.id);
       await AsyncStorage.setItem("current_event_id", data.id);
       router.replace("/(admin)/event-detail");
@@ -129,16 +162,37 @@ export default function CreateEvent() {
           </InputRow>
 
           <Label>VENUE</Label>
-          <InputRow icon="location-outline">
-            <TextInput
-              testID="event-venue-input"
-              value={venue}
-              onChangeText={setVenue}
-              placeholder="Grand Ballroom"
-              placeholderTextColor="#9CA3AF"
-              style={textInputStyle}
-            />
-          </InputRow>
+          {isHotelOwner ? (
+            <View style={[inputRowStyle, { backgroundColor: "#F3F4F6", marginBottom: 4 }]}>
+              <Ionicons name="location-outline" size={18} color="#9CA3AF" />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <TextInput
+                  testID="event-venue-input"
+                  value={venue}
+                  editable={false}
+                  placeholder="Grand Ballroom"
+                  placeholderTextColor="#9CA3AF"
+                  style={[textInputStyle, { color: "#6B7280" }]}
+                />
+              </View>
+            </View>
+          ) : (
+            <InputRow icon="location-outline">
+              <TextInput
+                testID="event-venue-input"
+                value={venue}
+                onChangeText={setVenue}
+                placeholder="Grand Ballroom"
+                placeholderTextColor="#9CA3AF"
+                style={textInputStyle}
+              />
+            </InputRow>
+          )}
+          {isHotelOwner && (
+            <Text style={{ color: "#9CA3AF", fontSize: 12, marginBottom: 16 }}>
+              Auto-filled from your hotel
+            </Text>
+          )}
 
           <View style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ flex: 1 }}>
