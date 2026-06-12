@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -41,8 +42,8 @@ const FILTERS = ["ALL", "PRE_REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQ
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -329,46 +330,46 @@ export default function SupervisorEventDetail() {
     <View style={{ flex: 1, backgroundColor: "#F5F3FF" }} testID="supervisor-event-detail">
       <SafeAreaView edges={["top"]} style={{ backgroundColor: ACCENT_COLOR }}>
         <View
-          style={{
-            backgroundColor: ACCENT_COLOR,
-            borderBottomLeftRadius: 44,
-            borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 16,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 14 }}>
+              style={{
+                backgroundColor: ACCENT_COLOR,
+                borderBottomLeftRadius: rp(44),
+                borderBottomRightRadius: rp(44),
+                paddingHorizontal: rp(20),
+                paddingTop: rp(8),
+                paddingBottom: rp(16),
+              }}
+            >
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(14) }}>
             <TouchableOpacity onPress={() => router.push("/(supervisor)/dashboard")} style={iconBtn}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flex: 1, marginLeft: rp(12) }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900" }} numberOfLines={1}>
+                <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900" }} numberOfLines={1}>
                   {event?.name || "Event"}
                 </Text>
                 {event?.event_type === "hotel_daily" && (
-                  <View style={{ backgroundColor: "#0284C7", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
-                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>🏨 Auto Daily</Text>
+                  <View style={{ backgroundColor: "#0284C7", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6), marginLeft: rp(8) }}>
+                    <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "900" }}>🏨 Auto Daily</Text>
                   </View>
                 )}
                 {event?.event_type === "hotel_special" && (
-                  <View style={{ backgroundColor: "#1D4ED8", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
-                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>🏨 Special</Text>
+                  <View style={{ backgroundColor: "#1D4ED8", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6), marginLeft: rp(8) }}>
+                    <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "900" }}>🏨 Special</Text>
                   </View>
                 )}
               </View>
               {event?.status && (
-                <View style={{ flexDirection: "row", marginTop: 4 }}>
-                  <View style={{ backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>
+                <View style={{ flexDirection: "row", marginTop: rp(4) }}>
+                  <View style={{ backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
+                    <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1.5) }}>
                       {event.status === "closed" ? "CLOSED" : event.status.toUpperCase()}
                     </Text>
                   </View>
                 </View>
               )}
             </View>
-            <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={[iconBtn, { marginRight: 8 }]}>
+            <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={[iconBtn, { marginRight: rp(8) }]}>
               <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -382,48 +383,48 @@ export default function SupervisorEventDetail() {
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
             onPress={() => setShowMenu(false)} 
           />
-          <View style={{ position: 'absolute', top: 130, right: 20, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 8, zIndex: 1000, ...cardShadow }}>
+          <View style={{ position: 'absolute', top: rp(130), right: rp(20), backgroundColor: '#fff', borderRadius: rp(16), paddingVertical: rp(8), zIndex: 1000, ...cardShadow }}>
             {!isClosed && (
               <>
                 <TouchableOpacity 
-                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => { setShowMenu(false); router.push("/(admin)/pre-register-qr"); }}
                 >
                   <Ionicons name="qr-code-outline" size={20} color={ACCENT_COLOR} />
-                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
+                  <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
                 </TouchableOpacity>
-                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity 
-                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => { setShowMenu(false); setShowIncidentModal(true); }}
                 >
                   <Ionicons name="warning-outline" size={20} color={ACCENT_COLOR} />
-                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Report Incident</Text>
+                  <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Report Incident</Text>
                 </TouchableOpacity>
-                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
               </>
             )}
             <TouchableOpacity 
-              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
               onPress={() => { setShowMenu(false); exportCSV(); }}
             >
               <Ionicons name="document-text-outline" size={20} color={ACCENT_COLOR} />
-              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export CSV</Text>
+              <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Export CSV</Text>
             </TouchableOpacity>
-            <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+            <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
             <TouchableOpacity 
-              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
               onPress={() => { setShowMenu(false); exportPDF(); }}
             >
               <Ionicons name="document-outline" size={20} color={ACCENT_COLOR} />
-              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export PDF Report</Text>
+              <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Export PDF Report</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
 
       {/* Tab bar */}
-      <View style={{ backgroundColor: "#fff", flexDirection: "row", marginHorizontal: 16, marginTop: -22, borderRadius: 20, padding: 4, ...cardShadow }}>
+      <View style={{ backgroundColor: "#fff", flexDirection: "row", marginHorizontal: rp(16), marginTop: -rp(22), borderRadius: rp(20), padding: rp(4), ...cardShadow }}>
         {(isClosed
           ? [
               ["cars", "Cars"],
@@ -443,13 +444,13 @@ export default function SupervisorEventDetail() {
             onPress={() => setTab(k)}
             style={{
               flex: 1,
-              paddingVertical: 10,
-              borderRadius: 16,
+              paddingVertical: rp(10),
+              borderRadius: rp(16),
               backgroundColor: tab === k ? ACCENT_COLOR : "transparent",
               alignItems: "center",
             }}
           >
-            <Text style={{ fontWeight: "800", fontSize: isClosed ? 13 : 11, color: tab === k ? "#fff" : "#6B7280", letterSpacing: 1 }}>
+            <Text style={{ fontWeight: "800", fontSize: isClosed ? 13 : 11, color: tab === k ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>
               {l}
             </Text>
           </TouchableOpacity>
@@ -458,8 +459,8 @@ export default function SupervisorEventDetail() {
 
       {tab === "cars" && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -472,37 +473,37 @@ export default function SupervisorEventDetail() {
             />
           }
         >
-          <View style={{ backgroundColor: "#fff", borderRadius: 16, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", marginBottom: 12, borderWidth: 1, borderColor: "#E5E7EB" }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: rp(16), paddingHorizontal: rp(14), flexDirection: "row", alignItems: "center", marginBottom: rp(12), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
             <Ionicons name="search" size={18} color={ACCENT_COLOR} />
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Search plate..."
               placeholderTextColor="#9CA3AF"
-              style={{ flex: 1, paddingVertical: 12, marginLeft: 8, color: "#111827" }}
+              style={{ flex: 1, paddingVertical: rp(12), marginLeft: rp(8), color: "#111827" }}
             />
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 8 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(8) }}>
             {FILTERS.map((f) => (
               <TouchableOpacity
                 key={f}
                 onPress={() => setStatusFilter(f)}
                 style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 99,
+                  paddingHorizontal: rp(14),
+                  paddingVertical: rp(8),
+                  borderRadius: rp(99),
                   backgroundColor: statusFilter === f ? ACCENT_COLOR : "#fff",
-                  borderWidth: 1,
+                  borderWidth: rp(1),
                   borderColor: statusFilter === f ? ACCENT_COLOR : "#E5E7EB",
                 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: "800", color: statusFilter === f ? "#fff" : "#6B7280", letterSpacing: 1 }}>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: statusFilter === f ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>
                   {f === "ALL" ? "All" : STATUS_CONFIG[f]?.label || f}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <Text style={{ color: "#6B7280", fontSize: 11, marginVertical: 8, fontWeight: "600" }}>
+          <Text style={{ color: "#6B7280", fontSize: rs(11), marginVertical: rp(8), fontWeight: "600" }}>
             {filteredCars.length} cars found
           </Text>
           {filteredCars.map((car) => {
@@ -514,61 +515,61 @@ export default function SupervisorEventDetail() {
                 activeOpacity={0.85}
                 style={{
                   backgroundColor: "#fff",
-                  borderRadius: 24,
-                  padding: 16,
-                  marginBottom: 12,
+                  borderRadius: rp(24),
+                  padding: rp(16),
+                  marginBottom: rp(12),
                   flexDirection: "row",
                   alignItems: "center",
-                  borderLeftWidth: 4,
+                  borderLeftWidth: rp(4),
                   borderLeftColor: cfg.color,
                   ...cardShadow,
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 6 }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6), flexWrap: "wrap", gap: rp(6) }}>
                     {car.zone && car.slot && (
-                      <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                        <Text style={{ color: "#374151", fontSize: 10, fontWeight: "700" }}>
+                      <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ color: "#374151", fontSize: rs(10), fontWeight: "700" }}>
                           {car.zone}-{car.slot}
                         </Text>
                       </View>
                     )}
-                    <Text style={{ color: "#9CA3AF", fontSize: 11 }}>
+                    <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>
                       {car.check_in_time ? new Date(car.check_in_time).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : "Just now"}
                     </Text>
                   </View>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
-                  <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, backgroundColor: cfg.color }}>
-                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: 10, letterSpacing: 0.5 }}>{cfg.label}</Text>
+                  <View style={{ paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: cfg.color }}>
+                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(0.5) }}>{cfg.label}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginTop: 8 }} />
+                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginTop: rp(8) }} />
                 </View>
               </TouchableOpacity>
             );
           })}
           {filteredCars.length === 0 && (
-            <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Text style={{ fontSize: 48 }}>🚗</Text>
-              <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No cars yet</Text>
+            <View style={{ alignItems: "center", marginTop: rp(40) }}>
+              <Text style={{ fontSize: rs(48) }}>🚗</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(8), fontWeight: "700" }}>No cars yet</Text>
             </View>
           )}
         </ScrollView>
       )}
 
       {tab === "employees" && (
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 100 }}>
-          <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 16, gap: 8 }}>
+        <ScrollView style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }} contentContainerStyle={{ paddingBottom: rp(100) }}>
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: rp(16), gap: rp(8) }}>
             <TouchableOpacity
               onPress={assignAll}
               disabled={assigningAll || drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0}
               style={{
                 backgroundColor: assigningAll ? "#F3F4F6" : ACCENT_COLOR,
-                borderRadius: 12,
-                paddingVertical: 7,
-                paddingHorizontal: 14,
+                borderRadius: rp(12),
+                paddingVertical: rp(7),
+                paddingHorizontal: rp(14),
                 flexDirection: "row",
                 alignItems: "center",
                 opacity: drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0 ? 0.5 : 1,
@@ -579,45 +580,45 @@ export default function SupervisorEventDetail() {
               ) : (
                 <>
                   <Ionicons name="checkmark-done" size={14} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1 }}>ASSIGN ALL</Text>
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1) }}>ASSIGN ALL</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
 
           {drivers.length === 0 && (
-            <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Text style={{ fontSize: 48 }}>👥</Text>
-              <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No drivers</Text>
+            <View style={{ alignItems: "center", marginTop: rp(40) }}>
+              <Text style={{ fontSize: rs(48) }}>👥</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(8), fontWeight: "700" }}>No drivers</Text>
             </View>
           )}
 
           {drivers.map((d) => (
-            <View key={d.id} style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, marginBottom: 12, ...cardShadow }}>
+            <View key={d.id} style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), marginBottom: rp(12), ...cardShadow }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View style={{ backgroundColor: ACCENT_COLOR, borderRadius: 99, width: 48, height: 48, alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 18 }}>{d.name?.[0]?.toUpperCase()}</Text>
+                <View style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(99), width: rp(48), height: rp(48), alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(18) }}>{d.name?.[0]?.toUpperCase()}</Text>
                 </View>
                 <TouchableOpacity
-                  style={{ flex: 1, marginLeft: 12 }}
+                  style={{ flex: 1, marginLeft: rp(12) }}
                   onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}
                 >
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{d.name}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 12 }}>{d.employee_id}</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 99, marginRight: 6, backgroundColor: d.available ? "#059669" : "#F43F5E" }} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{d.name}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12) }}>{d.employee_id}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(4) }}>
+                    <View style={{ width: rp(8), height: rp(8), borderRadius: rp(99), marginRight: rp(6), backgroundColor: d.available ? "#059669" : "#F43F5E" }} />
+                    <Text style={{ fontSize: rs(11), fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
                       {d.available ? "Available" : `In ${d.conflict_event_name || "another event"}`}
                     </Text>
                   </View>
                 </TouchableOpacity>
               </View>
-              <View style={{ flexDirection: "row", marginTop: 10, gap: 10 }}>
-                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                  <Text style={{ color: "#059669", fontSize: 11, fontWeight: "700" }}>Checked in: {d.cars_checked_in || 0}</Text>
+              <View style={{ flexDirection: "row", marginTop: rp(10), gap: rp(10) }}>
+                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                  <Text style={{ color: "#059669", fontSize: rs(11), fontWeight: "700" }}>Checked in: {d.cars_checked_in || 0}</Text>
                 </View>
-                <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                  <Text style={{ color: "#0EA5E9", fontSize: 11, fontWeight: "700" }}>Retrieved: {d.cars_retrieved || 0}</Text>
+                <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                  <Text style={{ color: "#0EA5E9", fontSize: rs(11), fontWeight: "700" }}>Retrieved: {d.cars_retrieved || 0}</Text>
                 </View>
               </View>
               {d.available || d.assigned ? (
@@ -626,9 +627,9 @@ export default function SupervisorEventDetail() {
                   disabled={assigningId === d.id}
                   activeOpacity={0.7}
                   style={{
-                    marginTop: 12,
-                    borderRadius: 14,
-                    paddingVertical: 12,
+                    marginTop: rp(12),
+                    borderRadius: rp(14),
+                    paddingVertical: rp(12),
                     alignItems: "center",
                     backgroundColor: d.assigned ? "transparent" : ACCENT_COLOR,
                     borderWidth: d.assigned ? 1.5 : 0,
@@ -639,14 +640,14 @@ export default function SupervisorEventDetail() {
                   {assigningId === d.id ? (
                     <ActivityIndicator size="small" color={d.assigned ? "#F43F5E" : "#fff"} />
                   ) : (
-                    <Text style={{ fontWeight: "900", letterSpacing: 1.5, color: d.assigned ? "#F43F5E" : "#fff", fontSize: 13 }}>
+                    <Text style={{ fontWeight: "900", letterSpacing: rs(1.5), color: d.assigned ? "#F43F5E" : "#fff", fontSize: rs(13) }}>
                       {d.assigned ? "UNASSIGN" : "ASSIGN"}
                     </Text>
                   )}
                 </TouchableOpacity>
               ) : (
-                <View style={{ marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 12, alignItems: "center" }}>
-                  <Text style={{ color: "#9CA3AF", fontSize: 11 }}>In {d.conflict_event_name}</Text>
+                <View style={{ marginTop: rp(12), backgroundColor: "#F3F4F6", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center" }}>
+                  <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>In {d.conflict_event_name}</Text>
                 </View>
               )}
             </View>
@@ -656,14 +657,14 @@ export default function SupervisorEventDetail() {
 
       {tab === "stats" && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
-          <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: 16, paddingVertical: 10, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
-            <Text style={{ color: ACCENT_COLOR, fontWeight: "800", letterSpacing: 1 }}>↻ Refresh Stats</Text>
+          <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: rp(16), paddingVertical: rp(10), alignItems: "center", marginBottom: rp(16), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
+            <Text style={{ color: ACCENT_COLOR, fontWeight: "800", letterSpacing: rs(1) }}>↻ Refresh Stats</Text>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: rp(16) }}>
             {[
               { label: "TOTAL CARS", value: stats?.total_cars ?? 0, color: "#1D4ED8", icon: "car" },
               { label: "PRE-REGISTERED", value: stats?.pre_registered ?? 0, color: "#7C3AED", icon: "bookmark", sub: "arrived with pass" },
@@ -681,45 +682,45 @@ export default function SupervisorEventDetail() {
                 style={{
                   width: "48%",
                   backgroundColor: "#fff",
-                  borderRadius: 16,
-                  padding: 16,
-                  marginBottom: 12,
-                  borderLeftWidth: 4,
+                  borderRadius: rp(16),
+                  padding: rp(16),
+                  marginBottom: rp(12),
+                  borderLeftWidth: rp(4),
                   borderLeftColor: s.color,
                   ...cardShadow,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: rp(4) }}>
                   <Ionicons name={s.icon} size={16} color={s.color} />
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>{s.value}</Text>
-                <Text style={{ fontSize: 10, color: "#6B7280", fontWeight: "800", marginTop: 2 }}>{s.label}</Text>
-                {s.sub && <Text style={{ fontSize: 9, color: "#9CA3AF", marginTop: 1 }}>{s.sub}</Text>}
+                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#111827" }}>{s.value}</Text>
+                <Text style={{ fontSize: rs(10), color: "#6B7280", fontWeight: "800", marginTop: rp(2) }}>{s.label}</Text>
+                {s.sub && <Text style={{ fontSize: rs(9), color: "#9CA3AF", marginTop: rp(1) }}>{s.sub}</Text>}
               </View>
             ))}
           </View>
 
           {isClosed && (
-            <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-              <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>
+            <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+              <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(16) }}>
                 PARKING SUMMARY
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: rp(16) }}>
                 <View style={{ width: "45%" }}>
-                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#7C3AED" }}>{slots.length}</Text>
-                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL SLOTS</Text>
+                  <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#7C3AED" }}>{slots.length}</Text>
+                  <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>TOTAL SLOTS</Text>
                 </View>
                 <View style={{ width: "45%" }}>
-                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
-                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
+                  <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
+                  <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
                 </View>
                 <View style={{ width: "45%" }}>
-                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
-                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
+                  <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
+                  <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
                 </View>
                 <View style={{ width: "45%" }}>
-                  <Text style={{ fontSize: 24, fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
-                  <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
+                  <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
+                  <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
                 </View>
               </View>
             </View>
@@ -730,15 +731,15 @@ export default function SupervisorEventDetail() {
             disabled={exportingCSV}
             style={{
               backgroundColor: exportingCSV ? "#D1FAE5" : "#ECFDF5",
-              borderRadius: 14,
-              paddingVertical: 12,
+              borderRadius: rp(14),
+              paddingVertical: rp(12),
               alignItems: "center",
-              marginBottom: 16,
-              borderWidth: 1,
+              marginBottom: rp(16),
+              borderWidth: rp(1),
               borderColor: "#6EE7B7",
               flexDirection: "row",
               justifyContent: "center",
-              gap: 6,
+              gap: rp(6),
             }}
           >
             {exportingCSV ? (
@@ -753,8 +754,8 @@ export default function SupervisorEventDetail() {
             <Text style={{
               color: "#059669",
               fontWeight: "800",
-              fontSize: 13,
-              marginLeft: 6,
+              fontSize: rs(13),
+              marginLeft: rp(6),
             }}>
               {exportingCSV ? "Generating..." : "Export CSV"}
             </Text>
@@ -764,15 +765,15 @@ export default function SupervisorEventDetail() {
             disabled={exportingPDF}
             style={{
               backgroundColor: exportingPDF ? "#EDE9FE" : "#F5F3FF",
-              borderRadius: 14,
-              paddingVertical: 12,
+              borderRadius: rp(14),
+              paddingVertical: rp(12),
               alignItems: "center",
-              marginBottom: 16,
-              borderWidth: 1,
+              marginBottom: rp(16),
+              borderWidth: rp(1),
               borderColor: "#DDD6FE",
               flexDirection: "row",
               justifyContent: "center",
-              gap: 6,
+              gap: rp(6),
             }}
           >
             {exportingPDF ? (
@@ -782,38 +783,38 @@ export default function SupervisorEventDetail() {
                 color={ACCENT_COLOR} />
             )}
             <Text style={{ color: ACCENT_COLOR, fontWeight: "800",
-              fontSize: 13, marginLeft: 6 }}>
+              fontSize: rs(13), marginLeft: rp(6) }}>
               {exportingPDF ? "Generating..." : "Export PDF Report"}
             </Text>
           </TouchableOpacity>
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       )}
 
       {tab === "incidents" && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
           {incidents.length === 0 ? (
-            <View style={{ alignItems: "center", marginTop: 60 }}>
+            <View style={{ alignItems: "center", marginTop: rp(60) }}>
               <View
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
+                  width: rp(80),
+                  height: rp(80),
+                  borderRadius: rp(40),
                   backgroundColor: "#D1FAE5",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: 16,
+                  marginBottom: rp(16),
                 }}
               >
                 <Ionicons name="checkmark-circle" size={40} color="#059669" />
               </View>
-              <Text style={{ fontSize: 18, fontWeight: "900", color: "#111827" }}>
+              <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827" }}>
                 All Good!
               </Text>
-              <Text style={{ color: "#6B7280", marginTop: 4, fontWeight: "600" }}>
+              <Text style={{ color: "#6B7280", marginTop: rp(4), fontWeight: "600" }}>
                 No incidents reported for this event
               </Text>
             </View>
@@ -823,9 +824,9 @@ export default function SupervisorEventDetail() {
                 key={i.id}
                 style={{
                   backgroundColor: "#fff",
-                  borderRadius: 24,
-                  padding: 16,
-                  marginBottom: 12,
+                  borderRadius: rp(24),
+                  padding: rp(16),
+                  marginBottom: rp(12),
                   ...cardShadow,
                 }}
               >
@@ -834,22 +835,22 @@ export default function SupervisorEventDetail() {
                     flexDirection: "row",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: 12,
+                    marginBottom: rp(12),
                   }}
                 >
                   <View
                     style={{
                       backgroundColor: "#111827",
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      borderRadius: 8,
+                      paddingHorizontal: rp(10),
+                      paddingVertical: rp(4),
+                      borderRadius: rp(8),
                     }}
                   >
-                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: 13 }}>
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(13) }}>
                       {i.plate}
                     </Text>
                   </View>
-                  <Text style={{ color: "#9CA3AF", fontSize: 11, fontWeight: "700" }}>
+                  <Text style={{ color: "#9CA3AF", fontSize: rs(11), fontWeight: "700" }}>
                     {new Date(i.created_at).toLocaleString("en-IN", {
                       day: "2-digit",
                       month: "short",
@@ -859,20 +860,20 @@ export default function SupervisorEventDetail() {
                     })}
                   </Text>
                 </View>
-                <Text style={{ color: "#374151", fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
+                <Text style={{ color: "#374151", fontSize: rs(14), lineHeight: rp(20), marginBottom: rp(12) }}>
                   {i.description}
                 </Text>
                 <View
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    borderTopWidth: 1,
+                    borderTopWidth: rp(1),
                     borderTopColor: "#F3F4F6",
-                    paddingTop: 12,
+                    paddingTop: rp(12),
                   }}
                 >
                   <Ionicons name="person-outline" size={14} color="#6B7280" />
-                  <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 6, fontWeight: "600" }}>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(6), fontWeight: "600" }}>
                     Driver: {i.driver_name || "—"}
                   </Text>
                 </View>
@@ -883,29 +884,29 @@ export default function SupervisorEventDetail() {
       )}
 
       {tab === "slots" && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
           
           {/* Internal sub-tab toggle */}
-          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: 18, padding: 4, marginBottom: 16, ...cardShadow }}>
+          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: rp(18), padding: rp(4), marginBottom: rp(16), ...cardShadow }}>
             <TouchableOpacity
               onPress={() => setSlotTab("parking")}
               style={{
-                flex: 1, paddingVertical: 10, borderRadius: 14,
+                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
                 backgroundColor: slotTab === "parking" ? ACCENT_COLOR : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6
+                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
               }}
             >
-              <Text style={{ fontWeight: "800", fontSize: 13, color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
+              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setSlotTab("keys")}
               style={{
-                flex: 1, paddingVertical: 10, borderRadius: 14,
+                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
                 backgroundColor: slotTab === "keys" ? ACCENT_COLOR : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6
+                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
               }}
             >
-              <Text style={{ fontWeight: "800", fontSize: 13, color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
+              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
             </TouchableOpacity>
           </View>
 
@@ -919,26 +920,26 @@ export default function SupervisorEventDetail() {
                 const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
                 const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
                 return (
-                  <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>CAPACITY OVERVIEW</Text>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+                  <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(12) }}>CAPACITY OVERVIEW</Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(12) }}>
                       <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#111827" }}>{occupied}</Text>
-                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827" }}>{occupied}</Text>
+                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
                       </View>
                       <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#059669" }}>{free}</Text>
-                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>FREE</Text>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#059669" }}>{free}</Text>
+                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>FREE</Text>
                       </View>
                       <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 28, fontWeight: "900", color: ACCENT_COLOR }}>{total}</Text>
-                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: ACCENT_COLOR }}>{total}</Text>
+                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
                       </View>
                     </View>
-                    <View style={{ height: 10, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                      <View style={{ height: 10, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                    <View style={{ height: rp(10), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
+                      <View style={{ height: rp(10), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
                     </View>
-                    <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 8, textAlign: "right" }}>{pct}% full</Text>
+                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(8), textAlign: "right" }}>{pct}% full</Text>
                   </View>
                 );
               })()}
@@ -948,7 +949,7 @@ export default function SupervisorEventDetail() {
                 const zones = [...new Set(slots.map(s => s.zone_name))];
                 if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
                 return (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
                     {zones.map(z => {
                       const zSlots = slots.filter(s => s.zone_name === z);
                       const zOcc = zSlots.filter(s => s.is_occupied).length;
@@ -958,15 +959,15 @@ export default function SupervisorEventDetail() {
                           onPress={() => setSelectedZone(z)}
                           style={{
                             backgroundColor: selectedZone === z ? ACCENT_COLOR : "#fff",
-                            borderRadius: 16,
-                            paddingHorizontal: 16,
-                            paddingVertical: 10,
-                            marginRight: 10,
+                            borderRadius: rp(16),
+                            paddingHorizontal: rp(16),
+                            paddingVertical: rp(10),
+                            marginRight: rp(10),
                             ...cardShadow,
                           }}
                         >
-                          <Text style={{ fontWeight: "800", fontSize: 13, color: selectedZone === z ? "#fff" : "#111827" }}>Zone {z}</Text>
-                          <Text style={{ fontSize: 11, color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: 2 }}>{zOcc}/{zSlots.length} occupied</Text>
+                          <Text style={{ fontWeight: "800", fontSize: rs(13), color: selectedZone === z ? "#fff" : "#111827" }}>Zone {z}</Text>
+                          <Text style={{ fontSize: rs(11), color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: rp(2) }}>{zOcc}/{zSlots.length} occupied</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -978,25 +979,25 @@ export default function SupervisorEventDetail() {
               {(() => {
                 const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
                 return (
-                  <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, ...cardShadow }}>
-                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>ZONE {selectedZone} — SLOT MAP</Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), ...cardShadow }}>
+                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(16) }}>ZONE {selectedZone} — SLOT MAP</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8) }}>
                       {zoneSlots.map(s => (
                         <View
                           key={s.id}
                           style={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 14,
+                            width: rp(56),
+                            height: rp(56),
+                            borderRadius: rp(14),
                             backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
                             alignItems: "center",
                             justifyContent: "center",
-                            borderWidth: 1.5,
+                            borderWidth: rp(1.5),
                             borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
                           }}
                         >
                           <Ionicons name={s.is_occupied ? "car" : "car-outline"} size={16} color={s.is_occupied ? "#EF4444" : "#059669"} />
-                          <Text style={{ fontSize: 11, fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: 2 }}>{s.slot_number}</Text>
+                          <Text style={{ fontSize: rs(11), fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: rp(2) }}>{s.slot_number}</Text>
                         </View>
                       ))}
                     </View>
@@ -1008,9 +1009,9 @@ export default function SupervisorEventDetail() {
             <>
               {/* Summary card */}
               {keyStats && (
-                <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 14 }}>KEY BOARD STATUS</Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+                <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(14) }}>KEY BOARD STATUS</Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(16) }}>
                     {[
                       { label: "IN BOOTH", value: keyStats.in_booth, color: ACCENT_COLOR },
                       { label: "AVAILABLE", value: keyStats.hooks_available, color: "#059669" },
@@ -1018,8 +1019,8 @@ export default function SupervisorEventDetail() {
                       { label: "TOTAL HOOKS", value: keyStats.total_hooks, color: "#0EA5E9" },
                     ].map(s => (
                       <View key={s.label} style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 24, fontWeight: "900", color: s.color }}>{s.value}</Text>
-                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1.5, marginTop: 4, textAlign: "center" }}>{s.label}</Text>
+                        <Text style={{ fontSize: rs(24), fontWeight: "900", color: s.color }}>{s.value}</Text>
+                        <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5), marginTop: rp(4), textAlign: "center" }}>{s.label}</Text>
                       </View>
                     ))}
                   </View>
@@ -1030,19 +1031,19 @@ export default function SupervisorEventDetail() {
                     const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : ACCENT_COLOR;
                     return (
                       <>
-                        <View style={{ height: 8, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                          <View style={{ height: 8, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                        <View style={{ height: rp(8), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
+                          <View style={{ height: rp(8), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
                         </View>
-                        <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 6, textAlign: "right" }}>{pct}% full</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(6), textAlign: "right" }}>{pct}% full</Text>
                       </>
                     );
                   })()}
 
                   {/* Full board warning */}
                   {keyStats.hooks_full && (
-                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: 14, padding: 12, marginTop: 8, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: rp(14), padding: rp(12), marginTop: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
                       <Ionicons name="warning" size={18} color="#EF4444" />
-                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: 13, flex: 1 }}>Key board is full — no hooks available</Text>
+                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: rs(13), flex: 1 }}>Key board is full — no hooks available</Text>
                     </View>
                   )}
                 </View>
@@ -1050,11 +1051,11 @@ export default function SupervisorEventDetail() {
 
               {/* Untagged warning */}
               {keyStats?.untagged_count > 0 && (
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: 16, padding: 14, marginBottom: 16, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#FDE68A" }}>
+                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(16), padding: rp(14), marginBottom: rp(16), flexDirection: "row", alignItems: "center", gap: rp(10), borderWidth: rp(1), borderColor: "#FDE68A" }}>
                   <Ionicons name="warning" size={20} color="#D97706" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: 13 }}>{keyStats.untagged_count} car(s) have no key tag</Text>
-                    <Text style={{ color: "#B45309", fontSize: 11, marginTop: 2 }}>Ask drivers to add key tag numbers for these cars</Text>
+                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: rs(13) }}>{keyStats.untagged_count} car(s) have no key tag</Text>
+                    <Text style={{ color: "#B45309", fontSize: rs(11), marginTop: rp(2) }}>Ask drivers to add key tag numbers for these cars</Text>
                   </View>
                 </View>
               )}
@@ -1062,19 +1063,19 @@ export default function SupervisorEventDetail() {
               {/* Keys in booth */}
               {keys.filter(k => k.in_booth).length > 0 && (
                 <>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: ACCENT_COLOR, letterSpacing: 3, marginBottom: 10 }}>IN BOOTH ({keys.filter(k => k.in_booth).length})</Text>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(3), marginBottom: rp(10) }}>IN BOOTH ({keys.filter(k => k.in_booth).length})</Text>
                   {keys.filter(k => k.in_booth).map(k => (
-                    <View key={k.car_id} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8, flexDirection: "row", alignItems: "center", borderLeftWidth: 4, borderLeftColor: ACCENT_COLOR, ...cardShadow }}>
-                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                    <View key={k.car_id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8), flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: ACCENT_COLOR, ...cardShadow }}>
+                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
                         <Ionicons name="key" size={16} color={ACCENT_COLOR} />
-                        <Text style={{ fontSize: 10, fontWeight: "900", color: ACCENT_COLOR, marginTop: 1 }}>#{k.key_tag}</Text>
+                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: ACCENT_COLOR, marginTop: rp(1) }}>#{k.key_tag}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: 14 }}>{k.plate}</Text>
-                        <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{k.color} {k.make}{k.zone ? ` · Zone ${k.zone} Slot ${k.slot}` : ""}</Text>
+                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(14) }}>{k.plate}</Text>
+                        <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{k.color} {k.make}{k.zone ? ` · Zone ${k.zone} Slot ${k.slot}` : ""}</Text>
                       </View>
-                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                        <Text style={{ fontSize: 10, fontWeight: "800", color: ACCENT_COLOR, letterSpacing: 1 }}>{k.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : k.status === "BEING_FETCHED" ? "FETCHING" : "PARKED"}</Text>
+                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(1) }}>{k.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : k.status === "BEING_FETCHED" ? "FETCHING" : "PARKED"}</Text>
                       </View>
                     </View>
                   ))}
@@ -1084,19 +1085,19 @@ export default function SupervisorEventDetail() {
               {/* Returned keys */}
               {keys.filter(k => !k.in_booth).length > 0 && (
                 <>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#059669", letterSpacing: 3, marginTop: 8, marginBottom: 10 }}>RETURNED ({keys.filter(k => !k.in_booth).length})</Text>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#059669", letterSpacing: rs(3), marginTop: rp(8), marginBottom: rp(10) }}>RETURNED ({keys.filter(k => !k.in_booth).length})</Text>
                   {keys.filter(k => !k.in_booth).map(k => (
-                    <View key={k.car_id} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8, flexDirection: "row", alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#D1FAE5", opacity: 0.75, ...cardShadow }}>
-                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                    <View key={k.car_id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8), flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: "#D1FAE5", opacity: 0.75, ...cardShadow }}>
+                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
                         <Ionicons name="key-outline" size={16} color="#059669" />
-                        <Text style={{ fontSize: 10, fontWeight: "900", color: "#059669", marginTop: 1 }}>#{k.key_tag}</Text>
+                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: "#059669", marginTop: rp(1) }}>#{k.key_tag}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: 14 }}>{k.plate}</Text>
-                        <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 2 }}>{k.color} {k.make} · Delivered</Text>
+                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: rs(14) }}>{k.plate}</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(2) }}>{k.color} {k.make} · Delivered</Text>
                       </View>
-                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#059669", letterSpacing: 1 }}>RETURNED</Text>
+                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#059669", letterSpacing: rs(1) }}>RETURNED</Text>
                       </View>
                     </View>
                   ))}
@@ -1105,10 +1106,10 @@ export default function SupervisorEventDetail() {
 
               {/* Empty state */}
               {keys.length === 0 && (
-                <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 40, alignItems: "center", ...cardShadow }}>
+                <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(40), alignItems: "center", ...cardShadow }}>
                   <Ionicons name="key-outline" size={44} color="#D1D5DB" />
-                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: 12, fontSize: 15 }}>No key tags recorded yet</Text>
-                  <Text style={{ color: "#D1D5DB", fontSize: 12, marginTop: 6, textAlign: "center" }}>Drivers add key tags from their tasks screen after parking</Text>
+                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>No key tags recorded yet</Text>
+                  <Text style={{ color: "#D1D5DB", fontSize: rs(12), marginTop: rp(6), textAlign: "center" }}>Drivers add key tags from their tasks screen after parking</Text>
                 </View>
               )}
             </>
@@ -1119,28 +1120,28 @@ export default function SupervisorEventDetail() {
       {/* Modals same as admin but with ACCENT_COLOR */}
       <Modal visible={showCarModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "85%" }}>
-            <View style={{ alignItems: "center", marginBottom: 12 }}><View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} /></View>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
+            <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
             <ScrollView>
               {selectedCar && (
                 <>
                   <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 28, fontWeight: "900", color: ACCENT_COLOR }}>{selectedCar.plate}</Text>
-                      <Text style={{ color: "#6B7280", marginTop: 4 }}>{selectedCar.color} {selectedCar.make}</Text>
+                      <Text style={{ fontSize: rs(28), fontWeight: "900", color: ACCENT_COLOR }}>{selectedCar.plate}</Text>
+                      <Text style={{ color: "#6B7280", marginTop: rp(4) }}>{selectedCar.color} {selectedCar.make}</Text>
                     </View>
-                    <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
-                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>{STATUS_CONFIG[selectedCar.status]?.label}</Text>
+                    <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
+                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(11) }}>{STATUS_CONFIG[selectedCar.status]?.label}</Text>
                     </View>
                   </View>
                   <TouchableOpacity 
                     onPress={() => { setShowCarModal(false); router.push({ pathname: "/(admin)/car-log", params: { car_id: selectedCar.id } }); }} 
-                    style={{ backgroundColor: "#111827", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginTop: 20, flexDirection: "row", justifyContent: "center" }} 
+                    style={{ backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20), flexDirection: "row", justifyContent: "center" }} 
                   > 
                     <Ionicons name="time-outline" size={18} color="#fff" /> 
-                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2, marginLeft: 8 }}>VIEW FULL LOG</Text> 
+                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text> 
                   </TouchableOpacity> 
-                  <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: 10, alignItems: "center", marginBottom: 12 }}>
+                  <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
                     <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
                   </TouchableOpacity>
                 </>
@@ -1153,35 +1154,35 @@ export default function SupervisorEventDetail() {
       <Modal visible={showIncidentModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "92%" }}>
-              <View style={{ alignItems: "center", marginBottom: 14 }}><View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} /></View>
-              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: 99, padding: 8, marginRight: 10 }}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
-                <Text style={{ fontSize: 18, fontWeight: "900", color: "#111827", flex: 1 }}>Report Incident</Text>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "92%" }}>
+              <View style={{ alignItems: "center", marginBottom: rp(14) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(16) }}>
+                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
+                <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827", flex: 1 }}>Report Incident</Text>
                 <TouchableOpacity onPress={() => setShowIncidentModal(false)}><Ionicons name="close-circle" size={26} color="#D1D5DB" /></TouchableOpacity>
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={modalLabel}>SELECT CAR *</Text>
-                <View style={{ backgroundColor: "#F9FAFB", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, marginBottom: 6 }}>
+                <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: rp(6) }}>
                   <Ionicons name="search" size={16} color={ACCENT_COLOR} />
-                  <TextInput value={incidentCarSearch} onChangeText={setIncidentCarSearch} placeholder="Search plate..." style={{ flex: 1, paddingVertical: 13, paddingLeft: 8, color: "#111827", fontWeight: "700" }} />
+                  <TextInput value={incidentCarSearch} onChangeText={setIncidentCarSearch} placeholder="Search plate..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
                 </View>
                 {incidentCarSearch.length > 1 && !incidentCar && (
-                  <View style={{ backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 12, overflow: "hidden" }}>
+                  <View style={{ backgroundColor: "#fff", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", marginBottom: rp(12), overflow: "hidden" }}>
                     {cars.filter(c => c.plate.toLowerCase().includes(incidentCarSearch.toLowerCase())).slice(0, 5).map(c => (
-                      <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); }} style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
+                      <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); }} style={{ padding: rp(14), borderBottomWidth: rp(1), borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
                         <Text style={{ fontWeight: "900", color: "#111827" }}>{c.plate}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 )}
-                {incidentCar && <View style={{ backgroundColor: "#D1FAE5", borderRadius: 12, padding: 12, marginBottom: 16 }}><Text style={{ color: "#059669", fontWeight: "800" }}>{incidentCar.plate} selected</Text></View>}
+                {incidentCar && <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), padding: rp(12), marginBottom: rp(16) }}><Text style={{ color: "#059669", fontWeight: "800" }}>{incidentCar.plate} selected</Text></View>}
                 <Text style={modalLabel}>DESCRIPTION *</Text>
-                <TextInput value={incidentDesc} onChangeText={setIncidentDesc} placeholder="Describe what happened..." multiline numberOfLines={4} style={[modalInput, { height: 100, textAlignVertical: "top" }]} />
-                <TouchableOpacity onPress={pickIncidentPhoto} style={{ borderWidth: 1.5, borderColor: incidentPhoto ? "#059669" : "#E5E7EB", borderStyle: "dashed", borderRadius: 14, padding: 16, alignItems: "center", marginBottom: 20 }}>
+                <TextInput value={incidentDesc} onChangeText={setIncidentDesc} placeholder="Describe what happened..." multiline numberOfLines={4} style={[modalInput, { height: rp(100), textAlignVertical: "top" }]} />
+                <TouchableOpacity onPress={pickIncidentPhoto} style={{ borderWidth: rp(1.5), borderColor: incidentPhoto ? "#059669" : "#E5E7EB", borderStyle: "dashed", borderRadius: rp(14), padding: rp(16), alignItems: "center", marginBottom: rp(20) }}>
                   <Text style={{ color: incidentPhoto ? "#059669" : "#9CA3AF", fontWeight: "700" }}>{incidentPhoto ? "Photo Added ✓" : "Add Photo (Optional)"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: 18, paddingVertical: 18, alignItems: "center", marginBottom: 24 }}>
+                <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: rp(18), paddingVertical: rp(18), alignItems: "center", marginBottom: rp(24) }}>
                   {submittingIncident ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SUBMIT INCIDENT</Text>}
                 </TouchableOpacity>
               </ScrollView>
@@ -1193,7 +1194,7 @@ export default function SupervisorEventDetail() {
   );
 }
 
-const iconBtn = { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 10 };
-const modalLabel = { fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginBottom: 8 };
-const modalInput = { backgroundColor: "#F9FAFB", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", padding: 14, color: "#111827", marginBottom: 16, fontSize: 14 };
-const exportBtn = { flex: 1, borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1, flexDirection: "row", justifyContent: "center" };
+const iconBtn = { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(10) };
+const modalLabel = { fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) };
+const modalInput = { backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", padding: rp(14), color: "#111827", marginBottom: rp(16), fontSize: rs(14) };
+const exportBtn = { flex: 1, borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", borderWidth: rp(1), flexDirection: "row", justifyContent: "center" };

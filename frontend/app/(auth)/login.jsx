@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import { rs, rp } from "../../utils/responsive";
 
 const requestPushPermissions = async (role) => {
   if (role !== "driver" && role !== "supervisor") return;
@@ -156,9 +157,13 @@ export default function Login() {
         "OTP sent to your registered email address"
       );
     } catch (e) {
-      setForgotError(
-        e.response?.data?.detail || "Failed to send OTP"
-      );
+      const detail = e.response?.data?.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map(d => d.msg || JSON.stringify(d)).join(", ")
+        : typeof detail === "string"
+        ? detail
+        : "Failed to send OTP. Please try again.";
+      setForgotError(msg);
     } finally {
       setForgotLoading(false);
     }
@@ -194,9 +199,13 @@ export default function Login() {
       );
       setForgotStep(3);
     } catch (e) {
-      setForgotError(
-        e.response?.data?.detail || "Invalid or expired OTP"
-      );
+      const detail = e.response?.data?.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map(d => d.msg || JSON.stringify(d)).join(", ")
+        : typeof detail === "string"
+        ? detail
+        : "Failed to reset. Please try again.";
+      setForgotError(msg);
     } finally {
       setForgotLoading(false);
     }
@@ -242,9 +251,9 @@ export default function Login() {
             <View
               style={{
                 minHeight: SCREEN_H * 0.36,
-                paddingHorizontal: 32,
-                paddingTop: 24,
-                paddingBottom: 24,
+                paddingHorizontal: rp(32),
+                paddingTop: rp(24),
+                paddingBottom: rp(24),
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -252,19 +261,19 @@ export default function Login() {
               <View
                 style={{
                   backgroundColor: "rgba(255,255,255,0.18)",
-                  borderRadius: 100,
-                  padding: 22,
-                  marginBottom: 18,
+                  borderRadius: rp(100),
+                  padding: rp(22),
+                  marginBottom: rp(18),
                 }}
               >
-                <Ionicons name="car-sport" size={52} color="#fff" />
+                <Ionicons name="car-sport" size={rs(52)} color="#fff" />
               </View>
               <Text
                 style={{
                   color: "#fff",
-                  fontSize: 36,
+                  fontSize: rs(36),
                   fontWeight: "900",
-                  letterSpacing: 4,
+                  letterSpacing: rs(4),
                 }}
               >
                 INSTAPARK
@@ -272,9 +281,9 @@ export default function Login() {
               <Text
                 style={{
                   color: "rgba(255,255,255,0.75)",
-                  marginTop: 8,
-                  fontSize: 14,
-                  letterSpacing: 1,
+                  marginTop: rp(8),
+                  fontSize: rs(14),
+                  letterSpacing: rs(1),
                 }}
               >
                 Valet Management System
@@ -286,11 +295,11 @@ export default function Login() {
               style={{
                 flex: 1,
                 backgroundColor: "#fff",
-                borderTopLeftRadius: 44,
-                borderTopRightRadius: 44,
-                paddingHorizontal: 24,
-                paddingTop: 32,
-                paddingBottom: 40,
+                borderTopLeftRadius: rp(44),
+                borderTopRightRadius: rp(44),
+                paddingHorizontal: rp(24),
+                paddingTop: rp(32),
+                paddingBottom: rp(40),
               }}
             >
               {/* Tabs */}
@@ -299,23 +308,27 @@ export default function Login() {
                   flexDirection: "row",
                   borderBottomWidth: 1,
                   borderBottomColor: "#E5E7EB",
-                  marginBottom: 24,
+                  marginBottom: rp(24),
                 }}
               >
                 <TouchableOpacity
                   testID="tab-admin"
-                  style={{ flex: 1, paddingBottom: 12, alignItems: "center" }}
+                  style={{ flex: 1, paddingBottom: rp(12), alignItems: "center" }}
                   onPress={() => {
                     setTab("admin");
                     setError("");
+                    setSupEmail("");
+                    setSupPassword("");
+                    setEmpId("");
+                    setPin("");
                   }}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={{
                       fontWeight: "800",
-                      fontSize: 15,
-                      letterSpacing: 2,
+                      fontSize: rs(15),
+                      letterSpacing: rs(2),
                       color: tab === "admin" ? "#7C3AED" : "#9CA3AF",
                     }}
                   >
@@ -324,29 +337,33 @@ export default function Login() {
                   {tab === "admin" && (
                     <View
                       style={{
-                        height: 3,
-                        width: 56,
+                        height: rp(3),
+                        width: rp(56),
                         backgroundColor: "#7C3AED",
-                        borderRadius: 99,
-                        marginTop: 8,
+                        borderRadius: rp(99),
+                        marginTop: rp(8),
                       }}
                     />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   testID="tab-supervisor"
-                  style={{ flex: 1, paddingBottom: 12, alignItems: "center" }}
+                  style={{ flex: 1, paddingBottom: rp(12), alignItems: "center" }}
                   onPress={() => {
                     setTab("supervisor");
                     setError("");
+                    setEmail("");
+                    setPassword("");
+                    setEmpId("");
+                    setPin("");
                   }}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={{
                       fontWeight: "800",
-                      fontSize: 15,
-                      letterSpacing: 2,
+                      fontSize: rs(15),
+                      letterSpacing: rs(2),
                       color: tab === "supervisor" ? "#0F2044" : "#9CA3AF",
                     }}
                   >
@@ -355,29 +372,33 @@ export default function Login() {
                   {tab === "supervisor" && (
                     <View
                       style={{
-                        height: 3,
-                        width: 56,
+                        height: rp(3),
+                        width: rp(56),
                         backgroundColor: "#0F2044",
-                        borderRadius: 99,
-                        marginTop: 8,
+                        borderRadius: rp(99),
+                        marginTop: rp(8),
                       }}
                     />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   testID="tab-driver"
-                  style={{ flex: 1, paddingBottom: 12, alignItems: "center" }}
+                  style={{ flex: 1, paddingBottom: rp(12), alignItems: "center" }}
                   onPress={() => {
                     setTab("driver");
                     setError("");
+                    setEmail("");
+                    setPassword("");
+                    setSupEmail("");
+                    setSupPassword("");
                   }}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={{
                       fontWeight: "800",
-                      fontSize: 15,
-                      letterSpacing: 2,
+                      fontSize: rs(15),
+                      letterSpacing: rs(2),
                       color: tab === "driver" ? "#059669" : "#9CA3AF",
                     }}
                   >
@@ -386,11 +407,11 @@ export default function Login() {
                   {tab === "driver" && (
                     <View
                       style={{
-                        height: 3,
-                        width: 56,
+                        height: rp(3),
+                        width: rp(56),
                         backgroundColor: "#059669",
-                        borderRadius: 99,
-                        marginTop: 8,
+                        borderRadius: rp(99),
+                        marginTop: rp(8),
                       }}
                     />
                   )}
@@ -530,15 +551,15 @@ export default function Login() {
                     backgroundColor: "rgba(244,63,94,0.08)",
                     borderWidth: 1,
                     borderColor: "rgba(244,63,94,0.5)",
-                    borderRadius: 14,
-                    padding: 12,
-                    marginBottom: 16,
+                    borderRadius: rp(14),
+                    padding: rp(12),
+                    marginBottom: rp(16),
                     flexDirection: "row",
                     alignItems: "center",
                   }}
                 >
-                  <Ionicons name="alert-circle" size={20} color="#F43F5E" />
-                  <Text style={{ color: "#9F1239", marginLeft: 8, flex: 1, fontSize: 13 }}>
+                  <Ionicons name="alert-circle" size={rs(20)} color="#F43F5E" />
+                  <Text style={{ color: "#9F1239", marginLeft: rp(8), flex: 1, fontSize: rs(13) }}>
                     {error}
                   </Text>
                 </View>
@@ -551,14 +572,14 @@ export default function Login() {
                 activeOpacity={0.85}
                 style={{
                   backgroundColor: accent,
-                  borderRadius: 16,
-                  paddingVertical: 16,
+                  borderRadius: rp(16),
+                  paddingVertical: rp(16),
                   alignItems: "center",
-                  marginTop: 8,
+                  marginTop: rp(8),
                   shadowColor: accent,
                   shadowOpacity: 0.3,
-                  shadowRadius: 16,
-                  shadowOffset: { width: 0, height: 6 },
+                  shadowRadius: rp(16),
+                  shadowOffset: { width: 0, height: rp(6) },
                   elevation: 6,
                 }}
               >
@@ -569,8 +590,8 @@ export default function Login() {
                     style={{
                       color: "#fff",
                       fontWeight: "900",
-                      fontSize: 15,
-                      letterSpacing: 2,
+                      fontSize: rs(15),
+                      letterSpacing: rs(2),
                     }}
                   >
                     SIGN IN
@@ -584,9 +605,9 @@ export default function Login() {
                   setForgotError("");
                   setForgotSuccess("");
                 }}
-                style={{ alignItems: "center", marginTop: 12 }}
+                style={{ alignItems: "center", marginTop: rp(12) }}
               >
-                <Text style={{ color: accent, fontSize: 13,
+                <Text style={{ color: accent, fontSize: rs(13),
                   fontWeight: "700" }}>
                   {tab === "driver"
                     ? "Forgot PIN?"
@@ -610,28 +631,28 @@ export default function Login() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
             <View style={{ backgroundColor: "#fff",
-              borderTopLeftRadius: 36,
-              borderTopRightRadius: 36,
-              padding: 24 }}>
+              borderTopLeftRadius: rp(36),
+              borderTopRightRadius: rp(36),
+              padding: rp(24) }}>
 
               {/* Handle */}
               <View style={{ alignItems: "center",
-                marginBottom: 16 }}>
+                marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#D1D5DB",
-                  width: 48, height: 4, borderRadius: 99 }} />
+                  width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
 
               {/* Header */}
               <View style={{ flexDirection: "row",
-                alignItems: "center", marginBottom: 20 }}>
+                alignItems: "center", marginBottom: rp(20) }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 20, fontWeight: "900",
+                  <Text style={{ fontSize: rs(20), fontWeight: "900",
                     color: "#111827" }}>
                     {tab === "driver"
                       ? "Reset PIN" : "Reset Password"}
                   </Text>
-                  <Text style={{ color: "#9CA3AF", fontSize: 13,
-                    marginTop: 4 }}>
+                  <Text style={{ color: "#9CA3AF", fontSize: rs(13),
+                    marginTop: rp(4) }}>
                     {forgotStep === 1
                       ? "We will send an OTP to your email"
                       : forgotStep === 2
@@ -640,7 +661,7 @@ export default function Login() {
                   </Text>
                 </View>
                 <TouchableOpacity onPress={resetForgotFlow}>
-                  <Ionicons name="close-circle" size={28}
+                  <Ionicons name="close-circle" size={rs(28)}
                     color="#D1D5DB" />
                 </TouchableOpacity>
               </View>
@@ -650,76 +671,82 @@ export default function Login() {
                 <>
                   {tab === "admin" || tab === "supervisor" ? (
                     <>
-                      <Text style={{ fontSize: 11,
+                      <Text style={{ fontSize: rs(11),
                         fontWeight: "800", color: "#6B7280",
-                        letterSpacing: 2, marginBottom: 8 }}>
+                        letterSpacing: rs(2), marginBottom: rp(8) }}>
                         YOUR EMAIL ADDRESS
                       </Text>
                       <View style={{ backgroundColor: "#F9FAFB",
-                        borderRadius: 14, borderWidth: 1,
+                        borderRadius: rp(14), borderWidth: 1,
                         borderColor: "#E5E7EB",
                         flexDirection: "row",
                         alignItems: "center",
-                        paddingHorizontal: 14, marginBottom: 16 }}>
-                        <Ionicons name="mail-outline" size={18}
+                        paddingHorizontal: rp(14), marginBottom: rp(16) }}>
+                        <Ionicons name="mail-outline" size={rs(18)}
                           color={accent} />
                         <TextInput
                           value={forgotEmail}
-                          onChangeText={setForgotEmail}
+                          onChangeText={(v) => {
+                            setForgotEmail(v);
+                            setForgotError("");
+                          }}
                           placeholder="your@email.com"
                           placeholderTextColor="#9CA3AF"
                           keyboardType="email-address"
                           autoCapitalize="none"
-                          style={{ flex: 1, paddingVertical: 14,
-                            paddingLeft: 10, fontSize: 15,
+                          style={{ flex: 1, paddingVertical: rp(14),
+                            paddingLeft: rp(10), fontSize: rs(15),
                             color: "#111827" }}
                         />
                       </View>
                     </>
                   ) : (
                     <>
-                      <Text style={{ fontSize: 11,
+                      <Text style={{ fontSize: rs(11),
                         fontWeight: "800", color: "#6B7280",
-                        letterSpacing: 2, marginBottom: 8 }}>
+                        letterSpacing: rs(2), marginBottom: rp(8) }}>
                         YOUR EMPLOYEE ID
                       </Text>
                       <View style={{ backgroundColor: "#F9FAFB",
-                        borderRadius: 14, borderWidth: 1,
+                        borderRadius: rp(14), borderWidth: 1,
                         borderColor: "#E5E7EB",
                         flexDirection: "row",
                         alignItems: "center",
-                        paddingHorizontal: 14, marginBottom: 16 }}>
-                        <Ionicons name="id-card-outline" size={18}
+                        paddingHorizontal: rp(14), marginBottom: rp(16) }}>
+                        <Ionicons name="id-card-outline" size={rs(18)}
                           color="#059669" />
                         <TextInput
                           value={forgotEmpId}
-                          onChangeText={setForgotEmpId}
+                          onChangeText={(v) => {
+                            setForgotEmpId(v);
+                            setForgotError("");
+                          }}
                           placeholder="DRV12345"
                           placeholderTextColor="#9CA3AF"
                           autoCapitalize="characters"
-                          style={{ flex: 1, paddingVertical: 14,
-                            paddingLeft: 10, fontSize: 15,
+                          style={{ flex: 1, paddingVertical: rp(14),
+                            paddingLeft: rp(10), fontSize: rs(15),
                             color: "#111827" }}
                         />
                       </View>
                     </>
                   )}
                   {forgotError ? (
-                    <Text style={{ color: "#EF4444", fontSize: 13,
-                      marginBottom: 12 }}>{forgotError}</Text>
+                    <Text style={{ color: "#EF4444", fontSize: rs(13),
+                      marginBottom: rp(12) }}>{forgotError}</Text>
                   ) : null}
                   <TouchableOpacity
                     onPress={sendForgotOtp}
                     disabled={forgotLoading}
                     style={{ backgroundColor: accent,
-                      borderRadius: 16, paddingVertical: 16,
+                      borderRadius: rp(16), paddingVertical: rp(16),
                       alignItems: "center" }}
                   >
                     {forgotLoading ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
                       <Text style={{ color: "#fff",
-                        fontWeight: "900", letterSpacing: 2 }}>
+                        fontWeight: "900", letterSpacing: rs(2) }}>
                         SEND OTP
                       </Text>
                     )}
@@ -732,26 +759,26 @@ export default function Login() {
                 <>
                   {forgotSuccess ? (
                     <View style={{ backgroundColor: accent + "1A",
-                      borderRadius: 12, padding: 12,
-                      marginBottom: 16 }}>
+                      borderRadius: rp(12), padding: rp(12),
+                      marginBottom: rp(16) }}>
                       <Text style={{ color: accent,
-                        fontWeight: "700", fontSize: 13 }}>
+                        fontWeight: "700", fontSize: rs(13) }}>
                         {forgotSuccess}
                       </Text>
                     </View>
                   ) : null}
-                  <Text style={{ fontSize: 11, fontWeight: "800",
-                    color: "#6B7280", letterSpacing: 2,
-                    marginBottom: 8 }}>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800",
+                    color: "#6B7280", letterSpacing: rs(2),
+                    marginBottom: rp(8) }}>
                     6-DIGIT OTP
                   </Text>
                   <View style={{ backgroundColor: "#F9FAFB",
-                    borderRadius: 14, borderWidth: 1,
+                    borderRadius: rp(14), borderWidth: 1,
                     borderColor: "#E5E7EB", flexDirection: "row",
-                    alignItems: "center", paddingHorizontal: 14,
-                    marginBottom: 16 }}>
+                    alignItems: "center", paddingHorizontal: rp(14),
+                    marginBottom: rp(16) }}>
                     <Ionicons name="shield-checkmark-outline"
-                      size={18}
+                      size={rs(18)}
                       color={accent} />
                     <TextInput
                       value={forgotOtp}
@@ -760,25 +787,25 @@ export default function Login() {
                       placeholderTextColor="#9CA3AF"
                       keyboardType="number-pad"
                       maxLength={6}
-                      style={{ flex: 1, paddingVertical: 14,
-                        paddingLeft: 10, fontSize: 18,
+                      style={{ flex: 1, paddingVertical: rp(14),
+                        paddingLeft: rp(10), fontSize: rs(18),
                         color: "#111827", fontWeight: "900",
-                        letterSpacing: 6 }}
+                        letterSpacing: rs(6) }}
                     />
                   </View>
-                  <Text style={{ fontSize: 11, fontWeight: "800",
-                    color: "#6B7280", letterSpacing: 2,
-                    marginBottom: 8 }}>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800",
+                    color: "#6B7280", letterSpacing: rs(2),
+                    marginBottom: rp(8) }}>
                     {tab === "driver"
                       ? "NEW 4-DIGIT PIN" : "NEW PASSWORD"}
                   </Text>
                   <View style={{ backgroundColor: "#F9FAFB",
-                    borderRadius: 14, borderWidth: 1,
+                    borderRadius: rp(14), borderWidth: 1,
                     borderColor: "#E5E7EB", flexDirection: "row",
-                    alignItems: "center", paddingHorizontal: 14,
-                    marginBottom: 16 }}>
+                    alignItems: "center", paddingHorizontal: rp(14),
+                    marginBottom: rp(16) }}>
                     <Ionicons name="lock-closed-outline"
-                      size={18}
+                      size={rs(18)}
                       color={accent} />
                     <TextInput
                       value={forgotNewSecret}
@@ -790,27 +817,27 @@ export default function Login() {
                       keyboardType={tab === "driver"
                         ? "number-pad" : "default"}
                       maxLength={tab === "driver" ? 4 : 50}
-                      style={{ flex: 1, paddingVertical: 14,
-                        paddingLeft: 10, fontSize: 15,
+                      style={{ flex: 1, paddingVertical: rp(14),
+                        paddingLeft: rp(10), fontSize: rs(15),
                         color: "#111827" }}
                     />
                   </View>
                   {forgotError ? (
-                    <Text style={{ color: "#EF4444", fontSize: 13,
-                      marginBottom: 12 }}>{forgotError}</Text>
+                    <Text style={{ color: "#EF4444", fontSize: rs(13),
+                      marginBottom: rp(12) }}>{forgotError}</Text>
                   ) : null}
                   <TouchableOpacity
                     onPress={verifyForgotOtp}
                     disabled={forgotLoading}
                     style={{ backgroundColor: accent,
-                      borderRadius: 16, paddingVertical: 16,
+                      borderRadius: rp(16), paddingVertical: rp(16),
                       alignItems: "center" }}
                   >
                     {forgotLoading ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
                       <Text style={{ color: "#fff",
-                        fontWeight: "900", letterSpacing: 2 }}>
+                        fontWeight: "900", letterSpacing: rs(2) }}>
                         RESET {tab === "driver"
                           ? "PIN" : "PASSWORD"}
                       </Text>
@@ -823,18 +850,18 @@ export default function Login() {
               {forgotStep === 3 && (
                 <>
                   <View style={{ alignItems: "center",
-                    paddingVertical: 20 }}>
+                    paddingVertical: rp(20) }}>
                     <Ionicons name="checkmark-circle"
-                      size={64}
+                      size={rs(64)}
                       color={accent} />
-                    <Text style={{ fontSize: 18,
+                    <Text style={{ fontSize: rs(18),
                       fontWeight: "900", color: "#111827",
-                      marginTop: 16, textAlign: "center" }}>
+                      marginTop: rp(16), textAlign: "center" }}>
                       {tab === "driver"
                         ? "PIN Reset!" : "Password Reset!"}
                     </Text>
-                    <Text style={{ color: "#6B7280", fontSize: 14,
-                      marginTop: 8, textAlign: "center" }}>
+                    <Text style={{ color: "#6B7280", fontSize: rs(14),
+                      marginTop: rp(8), textAlign: "center" }}>
                       You can now login with your new
                       {tab === "driver" ? " PIN" : " password"}
                     </Text>
@@ -842,18 +869,18 @@ export default function Login() {
                   <TouchableOpacity
                     onPress={resetForgotFlow}
                     style={{ backgroundColor: accent,
-                      borderRadius: 16, paddingVertical: 16,
-                      alignItems: "center", marginTop: 8 }}
+                      borderRadius: rp(16), paddingVertical: rp(16),
+                      alignItems: "center", marginTop: rp(8) }}
                   >
                     <Text style={{ color: "#fff",
-                      fontWeight: "900", letterSpacing: 2 }}>
+                      fontWeight: "900", letterSpacing: rs(2) }}>
                       BACK TO LOGIN
                     </Text>
                   </TouchableOpacity>
                 </>
               )}
 
-              <View style={{ height: 20 }} />
+              <View style={{ height: rp(20) }} />
             </View>
           </KeyboardAvoidingView>
         </View>
@@ -864,28 +891,28 @@ export default function Login() {
 
 const styles = {
   label: {
-    fontSize: 11,
+    fontSize: rs(11),
     fontWeight: "700",
     color: "#6B7280",
-    letterSpacing: 3,
+    letterSpacing: rs(3),
     textTransform: "uppercase",
-    marginBottom: 8,
+    marginBottom: rp(8),
   },
   input: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: rp(16),
     borderWidth: 1,
     borderColor: "#E5E7EB",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingHorizontal: rp(16),
+    marginBottom: rp(16),
   },
   textInput: {
     flex: 1,
-    paddingVertical: 16,
-    marginLeft: 12,
-    fontSize: 15,
+    paddingVertical: rp(16),
+    marginLeft: rp(12),
+    fontSize: rs(15),
     color: "#111827",
   },
 };

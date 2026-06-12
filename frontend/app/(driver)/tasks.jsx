@@ -1,5 +1,6 @@
 // version 3
 import { useEffect, useState, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -30,8 +31,8 @@ import { enqueueHandover, getQueueCount, processPendingQueue, enqueueParkAction,
 const cardShadow = {
   shadowColor: "#059669",
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -259,7 +260,7 @@ export default function Tasks() {
       const asset = result.assets[0];
       const compressed = await ImageManipulator.manipulateAsync(
         asset.uri,
-        [{ resize: { width: 1280 } }],
+        [{ resize: { width: rp(1280) } }],
         { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
       );
       const finalUri = compressed.uri;
@@ -319,7 +320,7 @@ export default function Tasks() {
     const asset = result.assets[0];
     const compressed = await ImageManipulator.manipulateAsync(
       asset.uri,
-      [{ resize: { width: 1280 } }],
+      [{ resize: { width: rp(1280) } }],
       { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
     );
     const finalUri = compressed.uri;
@@ -361,9 +362,9 @@ export default function Tasks() {
             backgroundColor: "#059669",
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 18,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(18),
           }}
         >
           <View
@@ -381,17 +382,17 @@ export default function Tasks() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", flex: 1, textAlign: "center", marginRight: 40 }}>
+            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", flex: 1, textAlign: "center", marginRight: rp(40) }}>
               My Tasks
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(driver)/checkin")}
               testID="add-checkin-btn"
-              style={{ backgroundColor: "#fff", borderRadius: 99, width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+              style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
             >
               <Ionicons name="add" size={24} color="#059669" />
             </TouchableOpacity>
@@ -404,10 +405,10 @@ export default function Tasks() {
         style={{
           flexDirection: "row",
           backgroundColor: "#fff",
-          marginHorizontal: 16,
+          marginHorizontal: rp(16),
           marginTop: -18,
-          borderRadius: 20,
-          padding: 4,
+          borderRadius: rp(20),
+          padding: rp(4),
           ...cardShadow,
         }}
       >
@@ -415,30 +416,30 @@ export default function Tasks() {
           onPress={() => setTab("mycars")}
           style={{
             flex: 1,
-            paddingVertical: 10,
-            borderRadius: 16,
+            paddingVertical: rp(10),
+            borderRadius: rp(16),
             backgroundColor: tab === "mycars" ? "#059669" : "transparent",
             alignItems: "center",
           }}
         >
-          <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: 1 }}>My Cars</Text>
+          <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>My Cars</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setTab("retrievals")}
           style={{
             flex: 1,
-            paddingVertical: 10,
-            borderRadius: 16,
+            paddingVertical: rp(10),
+            borderRadius: rp(16),
             backgroundColor: tab === "retrievals" ? "#059669" : "transparent",
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
-          <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: 1 }}>Retrievals</Text>
+          <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>Retrievals</Text>
           {retrievalRequested > 0 && (
-            <View style={{ backgroundColor: "#F43F5E", borderRadius: 99, paddingHorizontal: 7, marginLeft: 6 }}>
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900" }}>{retrievalRequested}</Text>
+            <View style={{ backgroundColor: "#F43F5E", borderRadius: rp(99), paddingHorizontal: rp(7), marginLeft: rp(6) }}>
+              <Text style={{ color: "#fff", fontSize: rs(11), fontWeight: "900" }}>{retrievalRequested}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -449,18 +450,18 @@ export default function Tasks() {
           <View
             style={{
               backgroundColor: "#FEE2E2",
-              padding: 12,
-              marginHorizontal: 16,
-              marginTop: 8,
-              borderRadius: 14,
-              borderWidth: 1,
+              padding: rp(12),
+              marginHorizontal: rp(16),
+              marginTop: rp(8),
+              borderRadius: rp(14),
+              borderWidth: rp(1),
               borderColor: "#FCA5A5",
               flexDirection: "row",
               alignItems: "center",
             }}
           >
             <Ionicons name="warning" size={16} color="#B91C1C" />
-            <Text style={{ color: "#B91C1C", fontSize: 12, fontWeight: "700", marginLeft: 8, flex: 1 }}>
+            <Text style={{ color: "#B91C1C", fontSize: rs(12), fontWeight: "700", marginLeft: rp(8), flex: 1 }}>
               {failedCount} sync failure(s) — these check-ins could not be uploaded. Tell your supervisor.
             </Text>
           </View>
@@ -471,19 +472,19 @@ export default function Tasks() {
         <View
           style={{
             backgroundColor: "#FEF3C7",
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            marginHorizontal: 16,
-            marginTop: 12,
-            borderRadius: 14,
-            borderWidth: 1,
+            paddingHorizontal: rp(14),
+            paddingVertical: rp(10),
+            marginHorizontal: rp(16),
+            marginTop: rp(12),
+            borderRadius: rp(14),
+            borderWidth: rp(1),
             borderColor: "#F59E0B",
             flexDirection: "row",
             alignItems: "center",
           }}
         >
           <Ionicons name="cloud-offline" size={16} color="#92400E" />
-          <Text style={{ color: "#92400E", fontSize: 12, fontWeight: "700", marginLeft: 8 }}>
+          <Text style={{ color: "#92400E", fontSize: rs(12), fontWeight: "700", marginLeft: rp(8) }}>
             {[
               queueSummary.checkin ? `${queueSummary.checkin} check-in(s)` : null,
               queueSummary.park ? `${queueSummary.park} parking` : null,
@@ -494,17 +495,17 @@ export default function Tasks() {
       )}
 
       <ScrollView
-        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(14) }}
+        contentContainerStyle={{ paddingBottom: rp(100) }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" colors={["#059669"]} />
         }
       >
         {tab === "mycars" && cars.length === 0 && (
-          <View style={{ alignItems: "center", marginTop: 60 }}>
-            <Text style={{ fontSize: 64 }}>🚗</Text>
-            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No cars yet</Text>
-            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>Tap + to check in a vehicle</Text>
+          <View style={{ alignItems: "center", marginTop: rp(60) }}>
+            <Text style={{ fontSize: rs(64) }}>🚗</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No cars yet</Text>
+            <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>Tap + to check in a vehicle</Text>
           </View>
         )}
         {tab === "mycars" && cars.map((car) => (
@@ -512,32 +513,32 @@ export default function Tasks() {
             key={car.id}
             style={{
               backgroundColor: "#fff",
-              borderRadius: 24,
-              padding: 18,
-              marginBottom: 12,
-              borderLeftWidth: 4,
+              borderRadius: rp(24),
+              padding: rp(18),
+              marginBottom: rp(12),
+              borderLeftWidth: rp(4),
               borderLeftColor: car.status === "PARKED" ? "#059669" : "#0EA5E9",
               ...cardShadow,
             }}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-                <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+                <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+                <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
               </View>
               <View
                 style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                  borderRadius: 99,
+                  paddingHorizontal: rp(10),
+                  paddingVertical: rp(3),
+                  borderRadius: rp(99),
                   backgroundColor: car.status === "PARKED" ? "#D1FAE5" : "#E0F2FE",
                 }}
               >
                 <Text
                   style={{
-                    fontSize: 10,
+                    fontSize: rs(10),
                     fontWeight: "800",
-                    letterSpacing: 1,
+                    letterSpacing: rs(1),
                     color: car.status === "PARKED" ? "#059669" : "#0284C7",
                   }}
                 >
@@ -554,57 +555,57 @@ export default function Tasks() {
                     flexDirection: "row",
                     alignItems: "center",
                     backgroundColor: "#ECFDF5",
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 99,
-                    marginTop: 10,
+                    paddingHorizontal: rp(10),
+                    paddingVertical: rp(6),
+                    borderRadius: rp(99),
+                    marginTop: rp(10),
                   }}
                 >
                   <Ionicons name="location" size={13} color="#059669" />
-                  <Text style={{ color: "#059669", fontWeight: "800", fontSize: 12, marginLeft: 4 }}>
+                  <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(12), marginLeft: rp(4) }}>
                     Zone {car.zone} · Slot {car.slot}
                   </Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
                   style={{
-                    borderWidth: 1.5,
+                    borderWidth: rp(1.5),
                     borderColor: "#059669",
-                    borderRadius: 14,
-                    paddingVertical: 12,
+                    borderRadius: rp(14),
+                    paddingVertical: rp(12),
                     alignItems: "center",
-                    marginTop: 12,
+                    marginTop: rp(12),
                     flexDirection: "row",
                     justifyContent: "center",
                   }}
                 >
                   <Ionicons name="qr-code-outline" size={16} color="#059669" />
-                  <Text style={{ color: "#059669", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>
+                  <Text style={{ color: "#059669", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>
                     SHOW QR CODE
                   </Text>
                 </TouchableOpacity>
 
                 {car.key_tag ? (
                   <View style={{ backgroundColor: "#FEF3C7",
-                    paddingHorizontal: 10, paddingVertical: 4,
-                    borderRadius: 99, marginTop: 6,
+                    paddingHorizontal: rp(10), paddingVertical: rp(4),
+                    borderRadius: rp(99), marginTop: rp(6),
                     flexDirection: "row", alignItems: "center",
                     alignSelf: "flex-start" }}>
                     <Ionicons name="key" size={12} color="#D97706" />
-                    <Text style={{ color: "#D97706", fontSize: 12,
-                      fontWeight: "900", marginLeft: 5 }}>
+                    <Text style={{ color: "#D97706", fontSize: rs(12),
+                      fontWeight: "900", marginLeft: rp(5) }}>
                       Key #{car.key_tag}
                     </Text>
                   </View>
                 ) : (
                   car.status === "PARKED" && (
                     addingKeyTagCarId === car.id ? (
-                      <View style={{ marginTop: 8 }}>
-                        <View style={{ flexDirection: "row", gap: 8 }}>
+                      <View style={{ marginTop: rp(8) }}>
+                        <View style={{ flexDirection: "row", gap: rp(8) }}>
                           <View style={{ flex: 1, backgroundColor: "#F9FAFB",
-                            borderRadius: 12, borderWidth: 1,
+                            borderRadius: rp(12), borderWidth: rp(1),
                             borderColor: "#E5E7EB", flexDirection: "row",
-                            alignItems: "center", paddingHorizontal: 10 }}>
+                            alignItems: "center", paddingHorizontal: rp(10) }}>
                             <Ionicons name="key-outline" size={14}
                               color="#7C3AED" />
                             <TextInput
@@ -615,8 +616,8 @@ export default function Tasks() {
                               keyboardType="number-pad"
                               maxLength={4}
                               autoFocus
-                              style={{ flex: 1, paddingVertical: 10,
-                                paddingLeft: 6, fontSize: 15,
+                              style={{ flex: 1, paddingVertical: rp(10),
+                                paddingLeft: rp(6), fontSize: rs(15),
                                 color: "#111827", fontWeight: "900" }}
                             />
                           </View>
@@ -625,7 +626,7 @@ export default function Tasks() {
                             disabled={savingKeyTag || !keyTagInput.trim()}
                             style={{ backgroundColor:
                               keyTagInput.trim() ? "#7C3AED" : "#D1D5DB",
-                              borderRadius: 12, paddingHorizontal: 14,
+                              borderRadius: rp(12), paddingHorizontal: rp(14),
                               justifyContent: "center" }}
                           >
                             {savingKeyTag ? (
@@ -641,7 +642,7 @@ export default function Tasks() {
                               setKeyTagInput("");
                             }}
                             style={{ backgroundColor: "#F3F4F6",
-                              borderRadius: 12, paddingHorizontal: 12,
+                              borderRadius: rp(12), paddingHorizontal: rp(12),
                               justifyContent: "center" }}
                           >
                             <Ionicons name="close" size={16}
@@ -656,15 +657,15 @@ export default function Tasks() {
                           setKeyTagInput("");
                         }}
                         style={{ flexDirection: "row", alignItems: "center",
-                          backgroundColor: "#FEF3C7", paddingHorizontal: 10,
-                          paddingVertical: 5, borderRadius: 99, marginTop: 6,
-                          alignSelf: "flex-start", borderWidth: 1,
+                          backgroundColor: "#FEF3C7", paddingHorizontal: rp(10),
+                          paddingVertical: rp(5), borderRadius: rp(99), marginTop: rp(6),
+                          alignSelf: "flex-start", borderWidth: rp(1),
                           borderColor: "#FDE68A", borderStyle: "dashed" }}
                       >
                         <Ionicons name="key-outline" size={12}
                           color="#D97706" />
-                        <Text style={{ color: "#D97706", fontSize: 11,
-                          fontWeight: "800", marginLeft: 4 }}>
+                        <Text style={{ color: "#D97706", fontSize: rs(11),
+                          fontWeight: "800", marginLeft: rp(4) }}>
                           + Add Key Tag
                         </Text>
                       </TouchableOpacity>
@@ -674,18 +675,18 @@ export default function Tasks() {
                 {car.notes ? (
                   <View style={{
                     backgroundColor: "#FEF3C7",
-                    borderRadius: 10,
-                    paddingHorizontal: 8,
-                    paddingVertical: 5,
-                    marginTop: 6,
+                    borderRadius: rp(10),
+                    paddingHorizontal: rp(8),
+                    paddingVertical: rp(5),
+                    marginTop: rp(6),
                     flexDirection: "row",
                     alignItems: "flex-start",
-                    gap: 5,
+                    gap: rp(5),
                   }}>
                     <Ionicons name="information-circle-outline"
                       size={13} color="#D97706"
-                      style={{ marginTop: 1 }} />
-                    <Text style={{ color: "#92400E", fontSize: 11,
+                      style={{ marginTop: rp(1) }} />
+                    <Text style={{ color: "#92400E", fontSize: rs(11),
                       flex: 1, lineHeight: 16 }}>
                       {car.notes}
                     </Text>
@@ -693,22 +694,22 @@ export default function Tasks() {
                 ) : null}
               </View>
             ) : (
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+              <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(12) }}>
                 <TouchableOpacity
                   onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
                   style={{
                     flex: 1,
-                    borderWidth: 1.5,
+                    borderWidth: rp(1.5),
                     borderColor: "#059669",
-                    borderRadius: 14,
-                    paddingVertical: 12,
+                    borderRadius: rp(14),
+                    paddingVertical: rp(12),
                     alignItems: "center",
                     flexDirection: "row",
                     justifyContent: "center",
                   }}
                 >
                   <Ionicons name="qr-code-outline" size={14} color="#059669" />
-                  <Text style={{ color: "#059669", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>QR CODE</Text>
+                  <Text style={{ color: "#059669", fontWeight: "900", fontSize: rs(11), marginLeft: rp(4), letterSpacing: rs(1) }}>QR CODE</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => openParkModal(car)}
@@ -717,8 +718,8 @@ export default function Tasks() {
                   style={{
                     flex: 1,
                     backgroundColor: openingParkModal === car.id ? "#047857" : "#059669",
-                    borderRadius: 14,
-                    paddingVertical: 12,
+                    borderRadius: rp(14),
+                    paddingVertical: rp(12),
                     alignItems: "center",
                     flexDirection: "row",
                     justifyContent: "center",
@@ -730,7 +731,7 @@ export default function Tasks() {
                   ) : (
                     <>
                       <Ionicons name="location" size={14} color="#fff" />
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>MARK PARKED</Text>
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11), marginLeft: rp(4), letterSpacing: rs(1) }}>MARK PARKED</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -740,10 +741,10 @@ export default function Tasks() {
         ))}
 
         {tab === "retrievals" && retrievals.length === 0 && (
-          <View style={{ alignItems: "center", marginTop: 60 }}>
-            <Text style={{ fontSize: 64 }}>🔔</Text>
-            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No retrieval requests</Text>
-            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>You're all caught up!</Text>
+          <View style={{ alignItems: "center", marginTop: rp(60) }}>
+            <Text style={{ fontSize: rs(64) }}>🔔</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No retrieval requests</Text>
+            <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>You're all caught up!</Text>
           </View>
         )}
         {tab === "retrievals" && retrievals.map((car) => {
@@ -756,39 +757,39 @@ export default function Tasks() {
               key={car.id}
               style={{
                 backgroundColor: "#fff",
-                borderRadius: 24,
-                padding: 18,
-                marginBottom: 12,
-                borderLeftWidth: 4,
+                borderRadius: rp(24),
+                padding: rp(18),
+                marginBottom: rp(12),
+                borderLeftWidth: rp(4),
                 borderLeftColor: borderColor,
                 ...cardShadow,
               }}
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
                   <View
                     style={{
                       alignSelf: "flex-start",
                       flexDirection: "row",
                       alignItems: "center",
                       backgroundColor: "#F3F4F6",
-                      paddingHorizontal: 8,
-                      paddingVertical: 3,
-                      borderRadius: 99,
-                      marginTop: 6,
+                      paddingHorizontal: rp(8),
+                      paddingVertical: rp(3),
+                      borderRadius: rp(99),
+                      marginTop: rp(6),
                     }}
                   >
                     <Ionicons name="location-outline" size={11} color="#6B7280" />
-                    <Text style={{ color: "#6B7280", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>
+                    <Text style={{ color: "#6B7280", fontSize: rs(11), fontWeight: "700", marginLeft: rp(4) }}>
                       Zone {car.zone} · Slot {car.slot}
                     </Text>
                   </View>
                   {car.key_tag && (
-                    <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, marginTop: 6, flexDirection: "row", alignItems: "center" }}>
+                    <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), marginTop: rp(6), flexDirection: "row", alignItems: "center" }}>
                       <Ionicons name="key" size={12} color="#D97706" />
-                      <Text style={{ color: "#D97706", fontSize: 12, fontWeight: "900", marginLeft: 5 }}>
+                      <Text style={{ color: "#D97706", fontSize: rs(12), fontWeight: "900", marginLeft: rp(5) }}>
                         Key #{car.key_tag}
                       </Text>
                     </View>
@@ -796,18 +797,18 @@ export default function Tasks() {
                   {car.notes ? (
                     <View style={{
                       backgroundColor: "#FEF3C7",
-                      borderRadius: 10,
-                      paddingHorizontal: 8,
-                      paddingVertical: 5,
-                      marginTop: 6,
+                      borderRadius: rp(10),
+                      paddingHorizontal: rp(8),
+                      paddingVertical: rp(5),
+                      marginTop: rp(6),
                       flexDirection: "row",
                       alignItems: "flex-start",
-                      gap: 5,
+                      gap: rp(5),
                     }}>
                       <Ionicons name="information-circle-outline"
                         size={13} color="#D97706"
-                        style={{ marginTop: 1 }} />
-                      <Text style={{ color: "#92400E", fontSize: 11,
+                        style={{ marginTop: rp(1) }} />
+                      <Text style={{ color: "#92400E", fontSize: rs(11),
                         flex: 1, lineHeight: 16 }}>
                         {car.notes}
                       </Text>
@@ -816,13 +817,13 @@ export default function Tasks() {
                 </View>
                 <View
                   style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 3,
-                    borderRadius: 99,
+                    paddingHorizontal: rp(10),
+                    paddingVertical: rp(3),
+                    borderRadius: rp(99),
                     backgroundColor: borderColor,
                   }}
                 >
-                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>
+                  <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>
                     {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : isMine ? "YOURS" : "OTHER"}
                   </Text>
                 </View>
@@ -830,62 +831,62 @@ export default function Tasks() {
               {car.status === "RETRIEVAL_REQUESTED" && (
                 <TouchableOpacity
                   onPress={() => pickup(car)}
-                  style={{ backgroundColor: "#F59E0B", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+                  style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
                 >
                   <Ionicons name="hand-right" size={14} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>PICK UP</Text>
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
                 </TouchableOpacity>
               )}
               {car.status === "BEING_FETCHED" && isMine && (
                 <TouchableOpacity
                   onPress={() => handleHandover(car)}
                   disabled={handoverUploading}
-                  style={{ backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
+                  style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
                 >
                   {handoverUploading ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <>
                       <Ionicons name="camera" size={14} color="#fff" />
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>HANDED TO GUEST</Text>
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>HANDED TO GUEST</Text>
                     </>
                   )}
                 </TouchableOpacity>
               )}
               {car.status === "BEING_FETCHED" && !isMine && (
-                <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
+                <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(10), fontStyle: "italic" }}>
                   Being fetched by another driver
                 </Text>
               )}
             </View>
           );
         })}
-        <View style={{ height: 40 }} />
+        <View style={{ height: rp(40) }} />
       </ScrollView>
 
       <Modal visible={showParkModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "85%" }}>
-            <View style={{ alignItems: "center", marginBottom: 12 }}>
-              <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+            <View style={{ alignItems: "center", marginBottom: rp(12) }}>
+              <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
             </View>
-            <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}>PARK VEHICLE</Text>
-            <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", marginTop: 2 }}>{selectedCar?.plate}</Text>
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}>PARK VEHICLE</Text>
+            <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(2) }}>{selectedCar?.plate}</Text>
             {eventZones.length === 0 ? (
-              <View style={{ alignItems: "center", paddingVertical: 40 }}>
+              <View style={{ alignItems: "center", paddingVertical: rp(40) }}>
                 <Ionicons name="map-outline" size={64} color="#9CA3AF" />
-                <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12 }}>No Parking Zones Configured</Text>
-                <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 4 }}>Please ask your admin to set up zones</Text>
+                <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(12) }}>No Parking Zones Configured</Text>
+                <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>Please ask your admin to set up zones</Text>
               </View>
             ) : !slots.length ? (
-              <View style={{ alignItems: "center", padding: 32 }}>
+              <View style={{ alignItems: "center", padding: rp(32) }}>
                 <ActivityIndicator size="large" color="#059669" />
-                <Text style={{ color: "#6B7280", marginTop: 8 }}>Loading parking slots...</Text>
+                <Text style={{ color: "#6B7280", marginTop: rp(8) }}>Loading parking slots...</Text>
               </View>
             ) : (
               <>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 18, marginBottom: 8 }}>SELECT ZONE</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(18), marginBottom: rp(8) }}>SELECT ZONE</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }}>
                   {eventZones.map((z) => {
                     const zoneSlots = slots.filter((s) => s.zone_name === z.name);
                     const free = zoneSlots.filter((s) => !s.is_occupied).length;
@@ -895,27 +896,27 @@ export default function Tasks() {
                         key={z.name}
                         onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
                         style={{
-                          paddingHorizontal: 14,
-                          paddingVertical: 10,
-                          borderRadius: 99,
+                          paddingHorizontal: rp(14),
+                          paddingVertical: rp(10),
+                          borderRadius: rp(99),
                           backgroundColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#fff",
-                          borderWidth: 1,
+                          borderWidth: rp(1),
                           borderColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#E5E7EB",
                         }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: 0.5 }}>
+                        <Text style={{ fontSize: rs(12), fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: rs(0.5) }}>
                           {z.name} — {isFull ? "FULL" : `${free} free`}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>SELECT SLOT</Text>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>SELECT SLOT</Text>
                 <FlatList
                   data={slots.filter((s) => s.zone_name === selectedZone)}
                   numColumns={5}
                   keyExtractor={(item, idx) => `${item.zone_name}-${item.slot_number}-${idx}`}
-                  columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
+                  columnWrapperStyle={{ gap: rp(6), marginBottom: rp(6) }}
                   renderItem={({ item }) => {
                     const isSel = selectedSlot === item.slot_number;
                     let bg = "#D1FAE5";
@@ -926,9 +927,9 @@ export default function Tasks() {
                         disabled={item.is_occupied}
                         onPress={() => setSelectedSlot(item.slot_number)}
                         style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 14,
+                          width: rp(56),
+                          height: rp(56),
+                          borderRadius: rp(14),
                           backgroundColor: bg,
                           alignItems: "center",
                           justifyContent: "center",
@@ -944,21 +945,21 @@ export default function Tasks() {
                       </TouchableOpacity>
                     );
                   }}
-                  ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>No slots in this zone</Text>}
+                  ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
                   style={{ maxHeight: 280 }}
                 />
                 {/* Parking Photos */}
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>
                   PARKING PHOTOS * (MIN 1, MAX 5)
                 </Text>
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginBottom: 14 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(10), marginBottom: rp(14) }}>
                   {parkPhotos.map((uri, i) => (
                     <View key={i} style={{ position: "relative" }}>
-                      <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 14, borderWidth: 1.5, borderColor: "#E5E7EB" }} />
+                      <Image source={{ uri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderColor: "#E5E7EB" }} />
                       <TouchableOpacity
                         onPress={() => setParkPhotos(parkPhotos.filter((_, k) => k !== i))}
-                        style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: 99, width: 22, height: 22, alignItems: "center", justifyContent: "center" }}
+                        style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: rp(99), width: rp(22), height: rp(22), alignItems: "center", justifyContent: "center" }}
                       >
                         <Ionicons name="close" size={13} color="#fff" />
                       </TouchableOpacity>
@@ -968,10 +969,10 @@ export default function Tasks() {
                   {parkPhotos.length < 5 && (
                     <TouchableOpacity
                       onPress={takeParkPhoto}
-                      style={{ width: 80, height: 80, borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed", borderColor: "#7C3AED", backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}
+                      style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderStyle: "dashed", borderColor: "#7C3AED", backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}
                     >
                       <Ionicons name="camera-outline" size={26} color="#7C3AED" />
-                      <Text style={{ color: "#7C3AED", fontSize: 10, fontWeight: "800", marginTop: 4 }}>{parkPhotos.length === 0 ? "ADD" : "MORE"}</Text>
+                      <Text style={{ color: "#7C3AED", fontSize: rs(10), fontWeight: "800", marginTop: rp(4) }}>{parkPhotos.length === 0 ? "ADD" : "MORE"}</Text>
                     </TouchableOpacity>
                   )}
                 </ScrollView>
@@ -981,17 +982,17 @@ export default function Tasks() {
                   disabled={!selectedSlot || confirmingPark}
                   activeOpacity={0.7}
                   style={{
-                    borderRadius: 16,
-                    paddingVertical: 16,
+                    borderRadius: rp(16),
+                    paddingVertical: rp(16),
                     alignItems: "center",
-                    marginTop: 14,
+                    marginTop: rp(14),
                     backgroundColor: selectedSlot && !confirmingPark ? "#7C3AED" : "#D1D5DB",
                   }}
                 >
                   {confirmingPark ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>CONFIRM PARKING</Text>
+                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>CONFIRM PARKING</Text>
                   )}
                 </TouchableOpacity>
               </>
@@ -1003,7 +1004,7 @@ export default function Tasks() {
                 setParkingPhotoStep(false);
                 setKeyTag("");
               }}
-              style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}
+              style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}
             >
               <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
             </TouchableOpacity>
@@ -1053,8 +1054,8 @@ export default function Tasks() {
 // const cardShadow = {
 //   shadowColor: "#059669",
 //   shadowOpacity: 0.08,
-//   shadowRadius: 16,
-//   shadowOffset: { width: 0, height: 4 },
+//   shadowRadius: rp(16),
+//   shadowOffset: { width: 0, height: rp(4) },
 //   elevation: 4,
 // };
 
@@ -1223,9 +1224,9 @@ export default function Tasks() {
 //             backgroundColor: "#059669",
 //             borderBottomLeftRadius: 44,
 //             borderBottomRightRadius: 44,
-//             paddingHorizontal: 20,
-//             paddingTop: 8,
-//             paddingBottom: 18,
+//             paddingHorizontal: rp(20),
+//             paddingTop: rp(8),
+//             paddingBottom: rp(18),
 //           }}
 //         >
 //           <View
@@ -1243,17 +1244,17 @@ export default function Tasks() {
 //           <View style={{ flexDirection: "row", alignItems: "center" }}>
 //             <TouchableOpacity
 //               onPress={() => router.back()}
-//               style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+//               style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
 //             >
 //               <Ionicons name="chevron-back" size={22} color="#fff" />
 //             </TouchableOpacity>
-//             <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", flex: 1, textAlign: "center", marginRight: 40 }}>
+//             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", flex: 1, textAlign: "center", marginRight: rp(40) }}>
 //               My Tasks
 //             </Text>
 //             <TouchableOpacity
 //               onPress={() => router.push("/(driver)/checkin")}
 //               testID="add-checkin-btn"
-//               style={{ backgroundColor: "#fff", borderRadius: 99, width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+//               style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
 //             >
 //               <Ionicons name="add" size={24} color="#059669" />
 //             </TouchableOpacity>
@@ -1266,10 +1267,10 @@ export default function Tasks() {
 //         style={{
 //           flexDirection: "row",
 //           backgroundColor: "#fff",
-//           marginHorizontal: 16,
+//           marginHorizontal: rp(16),
 //           marginTop: -18,
-//           borderRadius: 20,
-//           padding: 4,
+//           borderRadius: rp(20),
+//           padding: rp(4),
 //           ...cardShadow,
 //         }}
 //       >
@@ -1277,30 +1278,30 @@ export default function Tasks() {
 //           onPress={() => setTab("mycars")}
 //           style={{
 //             flex: 1,
-//             paddingVertical: 10,
-//             borderRadius: 16,
+//             paddingVertical: rp(10),
+//             borderRadius: rp(16),
 //             backgroundColor: tab === "mycars" ? "#059669" : "transparent",
 //             alignItems: "center",
 //           }}
 //         >
-//           <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: 1 }}>My Cars</Text>
+//           <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>My Cars</Text>
 //         </TouchableOpacity>
 //         <TouchableOpacity
 //           onPress={() => setTab("retrievals")}
 //           style={{
 //             flex: 1,
-//             paddingVertical: 10,
-//             borderRadius: 16,
+//             paddingVertical: rp(10),
+//             borderRadius: rp(16),
 //             backgroundColor: tab === "retrievals" ? "#059669" : "transparent",
 //             flexDirection: "row",
 //             justifyContent: "center",
 //             alignItems: "center",
 //           }}
 //         >
-//           <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: 1 }}>Retrievals</Text>
+//           <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>Retrievals</Text>
 //           {retrievalRequested > 0 && (
-//             <View style={{ backgroundColor: "#F43F5E", borderRadius: 99, paddingHorizontal: 7, marginLeft: 6 }}>
-//               <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900" }}>{retrievalRequested}</Text>
+//             <View style={{ backgroundColor: "#F43F5E", borderRadius: rp(99), paddingHorizontal: rp(7), marginLeft: rp(6) }}>
+//               <Text style={{ color: "#fff", fontSize: rs(11), fontWeight: "900" }}>{retrievalRequested}</Text>
 //             </View>
 //           )}
 //         </TouchableOpacity>
@@ -1310,36 +1311,36 @@ export default function Tasks() {
 //         <View
 //           style={{
 //             backgroundColor: "#FEF3C7",
-//             paddingHorizontal: 14,
-//             paddingVertical: 10,
-//             marginHorizontal: 16,
-//             marginTop: 12,
-//             borderRadius: 14,
-//             borderWidth: 1,
+//             paddingHorizontal: rp(14),
+//             paddingVertical: rp(10),
+//             marginHorizontal: rp(16),
+//             marginTop: rp(12),
+//             borderRadius: rp(14),
+//             borderWidth: rp(1),
 //             borderColor: "#F59E0B",
 //             flexDirection: "row",
 //             alignItems: "center",
 //           }}
 //         >
 //           <Ionicons name="cloud-offline" size={16} color="#92400E" />
-//           <Text style={{ color: "#92400E", fontSize: 12, fontWeight: "700", marginLeft: 8 }}>
+//           <Text style={{ color: "#92400E", fontSize: rs(12), fontWeight: "700", marginLeft: rp(8) }}>
 //             {pendingCount} photo(s) pending upload — will sync when online
 //           </Text>
 //         </View>
 //       )}
 
 //       <ScrollView
-//         style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}
-//         contentContainerStyle={{ paddingBottom: 100 }}
+//         style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(14) }}
+//         contentContainerStyle={{ paddingBottom: rp(100) }}
 //         refreshControl={
 //           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" colors={["#059669"]} />
 //         }
 //       >
 //         {tab === "mycars" && cars.length === 0 && (
-//           <View style={{ alignItems: "center", marginTop: 60 }}>
-//             <Text style={{ fontSize: 64 }}>🚗</Text>
-//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No cars yet</Text>
-//             <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>Tap + to check in a vehicle</Text>
+//           <View style={{ alignItems: "center", marginTop: rp(60) }}>
+//             <Text style={{ fontSize: rs(64) }}>🚗</Text>
+//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No cars yet</Text>
+//             <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>Tap + to check in a vehicle</Text>
 //           </View>
 //         )}
 //         {tab === "mycars" && cars.map((car) => (
@@ -1347,32 +1348,32 @@ export default function Tasks() {
 //             key={car.id}
 //             style={{
 //               backgroundColor: "#fff",
-//               borderRadius: 24,
-//               padding: 18,
-//               marginBottom: 12,
-//               borderLeftWidth: 4,
+//               borderRadius: rp(24),
+//               padding: rp(18),
+//               marginBottom: rp(12),
+//               borderLeftWidth: rp(4),
 //               borderLeftColor: car.status === "PARKED" ? "#059669" : "#0EA5E9",
 //               ...cardShadow,
 //             }}
 //           >
 //             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
 //               <View style={{ flex: 1 }}>
-//                 <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-//                 <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+//                 <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+//                 <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
 //               </View>
 //               <View
 //                 style={{
-//                   paddingHorizontal: 10,
-//                   paddingVertical: 3,
-//                   borderRadius: 99,
+//                   paddingHorizontal: rp(10),
+//                   paddingVertical: rp(3),
+//                   borderRadius: rp(99),
 //                   backgroundColor: car.status === "PARKED" ? "#D1FAE5" : "#E0F2FE",
 //                 }}
 //               >
 //                 <Text
 //                   style={{
-//                     fontSize: 10,
+//                     fontSize: rs(10),
 //                     fontWeight: "800",
-//                     letterSpacing: 1,
+//                     letterSpacing: rs(1),
 //                     color: car.status === "PARKED" ? "#059669" : "#0284C7",
 //                   }}
 //                 >
@@ -1389,68 +1390,68 @@ export default function Tasks() {
 //                     flexDirection: "row",
 //                     alignItems: "center",
 //                     backgroundColor: "#ECFDF5",
-//                     paddingHorizontal: 10,
-//                     paddingVertical: 6,
-//                     borderRadius: 99,
-//                     marginTop: 10,
+//                     paddingHorizontal: rp(10),
+//                     paddingVertical: rp(6),
+//                     borderRadius: rp(99),
+//                     marginTop: rp(10),
 //                   }}
 //                 >
 //                   <Ionicons name="location" size={13} color="#059669" />
-//                   <Text style={{ color: "#059669", fontWeight: "800", fontSize: 12, marginLeft: 4 }}>
+//                   <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(12), marginLeft: rp(4) }}>
 //                     Zone {car.zone} · Slot {car.slot}
 //                   </Text>
 //                 </View>
 //                 <TouchableOpacity
 //                   onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
 //                   style={{
-//                     borderWidth: 1.5,
+//                     borderWidth: rp(1.5),
 //                     borderColor: "#059669",
-//                     borderRadius: 14,
-//                     paddingVertical: 12,
+//                     borderRadius: rp(14),
+//                     paddingVertical: rp(12),
 //                     alignItems: "center",
-//                     marginTop: 12,
+//                     marginTop: rp(12),
 //                     flexDirection: "row",
 //                     justifyContent: "center",
 //                   }}
 //                 >
 //                   <Ionicons name="qr-code-outline" size={16} color="#059669" />
-//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>
+//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>
 //                     SHOW QR CODE
 //                   </Text>
 //                 </TouchableOpacity>
 //               </View>
 //             ) : (
-//               <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+//               <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(12) }}>
 //                 <TouchableOpacity
 //                   onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
 //                   style={{
 //                     flex: 1,
-//                     borderWidth: 1.5,
+//                     borderWidth: rp(1.5),
 //                     borderColor: "#059669",
-//                     borderRadius: 14,
-//                     paddingVertical: 12,
+//                     borderRadius: rp(14),
+//                     paddingVertical: rp(12),
 //                     alignItems: "center",
 //                     flexDirection: "row",
 //                     justifyContent: "center",
 //                   }}
 //                 >
 //                   <Ionicons name="qr-code-outline" size={14} color="#059669" />
-//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>QR CODE</Text>
+//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: rs(11), marginLeft: rp(4), letterSpacing: rs(1) }}>QR CODE</Text>
 //                 </TouchableOpacity>
 //                 <TouchableOpacity
 //                   onPress={() => openParkModal(car)}
 //                   style={{
 //                     flex: 1,
 //                     backgroundColor: "#059669",
-//                     borderRadius: 14,
-//                     paddingVertical: 12,
+//                     borderRadius: rp(14),
+//                     paddingVertical: rp(12),
 //                     alignItems: "center",
 //                     flexDirection: "row",
 //                     justifyContent: "center",
 //                   }}
 //                 >
 //                   <Ionicons name="location" size={14} color="#fff" />
-//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>MARK PARKED</Text>
+//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11), marginLeft: rp(4), letterSpacing: rs(1) }}>MARK PARKED</Text>
 //                 </TouchableOpacity>
 //               </View>
 //             )}
@@ -1458,10 +1459,10 @@ export default function Tasks() {
 //         ))}
 
 //         {tab === "retrievals" && retrievals.length === 0 && (
-//           <View style={{ alignItems: "center", marginTop: 60 }}>
-//             <Text style={{ fontSize: 64 }}>🔔</Text>
-//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No retrieval requests</Text>
-//             <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>You're all caught up!</Text>
+//           <View style={{ alignItems: "center", marginTop: rp(60) }}>
+//             <Text style={{ fontSize: rs(64) }}>🔔</Text>
+//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No retrieval requests</Text>
+//             <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>You're all caught up!</Text>
 //           </View>
 //         )}
 //         {tab === "retrievals" && retrievals.map((car) => {
@@ -1474,45 +1475,45 @@ export default function Tasks() {
 //               key={car.id}
 //               style={{
 //                 backgroundColor: "#fff",
-//                 borderRadius: 24,
-//                 padding: 18,
-//                 marginBottom: 12,
-//                 borderLeftWidth: 4,
+//                 borderRadius: rp(24),
+//                 padding: rp(18),
+//                 marginBottom: rp(12),
+//                 borderLeftWidth: rp(4),
 //                 borderLeftColor: borderColor,
 //                 ...cardShadow,
 //               }}
 //             >
 //               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
 //                 <View style={{ flex: 1 }}>
-//                   <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-//                   <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+//                   <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+//                   <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
 //                   <View
 //                     style={{
 //                       alignSelf: "flex-start",
 //                       flexDirection: "row",
 //                       alignItems: "center",
 //                       backgroundColor: "#F3F4F6",
-//                       paddingHorizontal: 8,
-//                       paddingVertical: 3,
-//                       borderRadius: 99,
-//                       marginTop: 6,
+//                       paddingHorizontal: rp(8),
+//                       paddingVertical: rp(3),
+//                       borderRadius: rp(99),
+//                       marginTop: rp(6),
 //                     }}
 //                   >
 //                     <Ionicons name="location-outline" size={11} color="#6B7280" />
-//                     <Text style={{ color: "#6B7280", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>
+//                     <Text style={{ color: "#6B7280", fontSize: rs(11), fontWeight: "700", marginLeft: rp(4) }}>
 //                       Zone {car.zone} · Slot {car.slot}
 //                     </Text>
 //                   </View>
 //                 </View>
 //                 <View
 //                   style={{
-//                     paddingHorizontal: 10,
-//                     paddingVertical: 3,
-//                     borderRadius: 99,
+//                     paddingHorizontal: rp(10),
+//                     paddingVertical: rp(3),
+//                     borderRadius: rp(99),
 //                     backgroundColor: borderColor,
 //                   }}
 //                 >
-//                   <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>
+//                   <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>
 //                     {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : isMine ? "YOURS" : "OTHER"}
 //                   </Text>
 //                 </View>
@@ -1520,50 +1521,50 @@ export default function Tasks() {
 //               {car.status === "RETRIEVAL_REQUESTED" && (
 //                 <TouchableOpacity
 //                   onPress={() => pickup(car)}
-//                   style={{ backgroundColor: "#F59E0B", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+//                   style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
 //                 >
 //                   <Ionicons name="hand-right" size={14} color="#fff" />
-//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>PICK UP</Text>
+//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
 //                 </TouchableOpacity>
 //               )}
 //               {car.status === "BEING_FETCHED" && isMine && (
 //                 <TouchableOpacity
 //                   onPress={() => handleHandover(car)}
-//                   style={{ backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+//                   style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
 //                 >
 //                   <Ionicons name="camera" size={14} color="#fff" />
-//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>HANDED TO GUEST</Text>
+//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>HANDED TO GUEST</Text>
 //                 </TouchableOpacity>
 //               )}
 //               {car.status === "BEING_FETCHED" && !isMine && (
-//                 <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
+//                 <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(10), fontStyle: "italic" }}>
 //                   Being fetched by another driver
 //                 </Text>
 //               )}
 //             </View>
 //           );
 //         })}
-//         <View style={{ height: 40 }} />
+//         <View style={{ height: rp(40) }} />
 //       </ScrollView>
 
 //       <Modal visible={showParkModal} transparent animationType="slide">
 //         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "85%" }}>
-//             <View style={{ alignItems: "center", marginBottom: 12 }}>
-//               <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+//             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
+//               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
 //             </View>
-//             <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}>PARK VEHICLE</Text>
-//             <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", marginTop: 2 }}>{selectedCar?.plate}</Text>
+//             <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}>PARK VEHICLE</Text>
+//             <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(2) }}>{selectedCar?.plate}</Text>
 //             {eventZones.length === 0 ? (
-//               <View style={{ alignItems: "center", paddingVertical: 40 }}>
+//               <View style={{ alignItems: "center", paddingVertical: rp(40) }}>
 //                 <Ionicons name="map-outline" size={64} color="#9CA3AF" />
-//                 <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12 }}>No Parking Zones Configured</Text>
-//                 <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 4 }}>Please ask your admin to set up zones</Text>
+//                 <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(12) }}>No Parking Zones Configured</Text>
+//                 <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>Please ask your admin to set up zones</Text>
 //               </View>
 //             ) : (
 //               <>
-//                 <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 18, marginBottom: 8 }}>SELECT ZONE</Text>
-//                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+//                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(18), marginBottom: rp(8) }}>SELECT ZONE</Text>
+//                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }}>
 //                   {eventZones.map((z) => {
 //                     const zoneSlots = slots.filter((s) => s.zone_name === z.name);
 //                     const free = zoneSlots.filter((s) => !s.is_occupied).length;
@@ -1573,27 +1574,27 @@ export default function Tasks() {
 //                         key={z.name}
 //                         onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
 //                         style={{
-//                           paddingHorizontal: 14,
-//                           paddingVertical: 10,
-//                           borderRadius: 99,
+//                           paddingHorizontal: rp(14),
+//                           paddingVertical: rp(10),
+//                           borderRadius: rp(99),
 //                           backgroundColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#fff",
-//                           borderWidth: 1,
+//                           borderWidth: rp(1),
 //                           borderColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#E5E7EB",
 //                         }}
 //                       >
-//                         <Text style={{ fontSize: 12, fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: 0.5 }}>
+//                         <Text style={{ fontSize: rs(12), fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: rs(0.5) }}>
 //                           {z.name} — {isFull ? "FULL" : `${free} free`}
 //                         </Text>
 //                       </TouchableOpacity>
 //                     );
 //                   })}
 //                 </ScrollView>
-//                 <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>SELECT SLOT</Text>
+//                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>SELECT SLOT</Text>
 //                 <FlatList
 //                   data={slots.filter((s) => s.zone_name === selectedZone)}
 //                   numColumns={5}
 //                   keyExtractor={(item, idx) => `${item.zone_name}-${item.slot_number}-${idx}`}
-//                   columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
+//                   columnWrapperStyle={{ gap: rp(6), marginBottom: rp(6) }}
 //                   renderItem={({ item }) => {
 //                     const isSel = selectedSlot === item.slot_number;
 //                     let bg = "#D1FAE5";
@@ -1604,9 +1605,9 @@ export default function Tasks() {
 //                         disabled={item.is_occupied}
 //                         onPress={() => setSelectedSlot(item.slot_number)}
 //                         style={{
-//                           width: 56,
-//                           height: 56,
-//                           borderRadius: 14,
+//                           width: rp(56),
+//                           height: rp(56),
+//                           borderRadius: rp(14),
 //                           backgroundColor: bg,
 //                           alignItems: "center",
 //                           justifyContent: "center",
@@ -1622,25 +1623,25 @@ export default function Tasks() {
 //                       </TouchableOpacity>
 //                     );
 //                   }}
-//                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>No slots in this zone</Text>}
+//                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
 //                   style={{ maxHeight: 280 }}
 //                 />
 //                 <TouchableOpacity
 //                   onPress={confirmPark}
 //                   disabled={!selectedSlot}
 //                   style={{
-//                     borderRadius: 16,
-//                     paddingVertical: 16,
+//                     borderRadius: rp(16),
+//                     paddingVertical: rp(16),
 //                     alignItems: "center",
-//                     marginTop: 14,
+//                     marginTop: rp(14),
 //                     backgroundColor: selectedSlot ? "#7C3AED" : "#D1D5DB",
 //                   }}
 //                 >
-//                   <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>CONFIRM PARKING</Text>
+//                   <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>CONFIRM PARKING</Text>
 //                 </TouchableOpacity>
 //               </>
 //             )}
-//             <TouchableOpacity onPress={() => setShowParkModal(false)} style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}>
+//             <TouchableOpacity onPress={() => setShowParkModal(false)} style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}>
 //               <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
 //             </TouchableOpacity>
 //           </View>
@@ -1680,8 +1681,8 @@ export default function Tasks() {
 // const cardShadow = {
 //   shadowColor: "#059669",
 //   shadowOpacity: 0.08,
-//   shadowRadius: 16,
-//   shadowOffset: { width: 0, height: 4 },
+//   shadowRadius: rp(16),
+//   shadowOffset: { width: 0, height: rp(4) },
 //   elevation: 4,
 // };
 
@@ -1857,9 +1858,9 @@ export default function Tasks() {
 //             backgroundColor: "#059669",
 //             borderBottomLeftRadius: 44,
 //             borderBottomRightRadius: 44,
-//             paddingHorizontal: 20,
-//             paddingTop: 8,
-//             paddingBottom: 18,
+//             paddingHorizontal: rp(20),
+//             paddingTop: rp(8),
+//             paddingBottom: rp(18),
 //           }}
 //         >
 //           <View
@@ -1877,17 +1878,17 @@ export default function Tasks() {
 //           <View style={{ flexDirection: "row", alignItems: "center" }}>
 //             <TouchableOpacity
 //               onPress={() => router.back()}
-//               style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+//               style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
 //             >
 //               <Ionicons name="chevron-back" size={22} color="#fff" />
 //             </TouchableOpacity>
-//             <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", flex: 1, textAlign: "center", marginRight: 40 }}>
+//             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", flex: 1, textAlign: "center", marginRight: rp(40) }}>
 //               My Tasks
 //             </Text>
 //             <TouchableOpacity
 //               onPress={() => router.push("/(driver)/checkin")}
 //               testID="add-checkin-btn"
-//               style={{ backgroundColor: "#fff", borderRadius: 99, width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+//               style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
 //             >
 //               <Ionicons name="add" size={24} color="#059669" />
 //             </TouchableOpacity>
@@ -1900,10 +1901,10 @@ export default function Tasks() {
 //         style={{
 //           flexDirection: "row",
 //           backgroundColor: "#fff",
-//           marginHorizontal: 16,
+//           marginHorizontal: rp(16),
 //           marginTop: -18,
-//           borderRadius: 20,
-//           padding: 4,
+//           borderRadius: rp(20),
+//           padding: rp(4),
 //           ...cardShadow,
 //         }}
 //       >
@@ -1911,30 +1912,30 @@ export default function Tasks() {
 //           onPress={() => setTab("mycars")}
 //           style={{
 //             flex: 1,
-//             paddingVertical: 10,
-//             borderRadius: 16,
+//             paddingVertical: rp(10),
+//             borderRadius: rp(16),
 //             backgroundColor: tab === "mycars" ? "#059669" : "transparent",
 //             alignItems: "center",
 //           }}
 //         >
-//           <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: 1 }}>My Cars</Text>
+//           <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === "mycars" ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>My Cars</Text>
 //         </TouchableOpacity>
 //         <TouchableOpacity
 //           onPress={() => setTab("retrievals")}
 //           style={{
 //             flex: 1,
-//             paddingVertical: 10,
-//             borderRadius: 16,
+//             paddingVertical: rp(10),
+//             borderRadius: rp(16),
 //             backgroundColor: tab === "retrievals" ? "#059669" : "transparent",
 //             flexDirection: "row",
 //             justifyContent: "center",
 //             alignItems: "center",
 //           }}
 //         >
-//           <Text style={{ fontWeight: "800", fontSize: 13, color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: 1 }}>Retrievals</Text>
+//           <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === "retrievals" ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>Retrievals</Text>
 //           {retrievalRequested > 0 && (
-//             <View style={{ backgroundColor: "#F43F5E", borderRadius: 99, paddingHorizontal: 7, marginLeft: 6 }}>
-//               <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900" }}>{retrievalRequested}</Text>
+//             <View style={{ backgroundColor: "#F43F5E", borderRadius: rp(99), paddingHorizontal: rp(7), marginLeft: rp(6) }}>
+//               <Text style={{ color: "#fff", fontSize: rs(11), fontWeight: "900" }}>{retrievalRequested}</Text>
 //             </View>
 //           )}
 //         </TouchableOpacity>
@@ -1944,36 +1945,36 @@ export default function Tasks() {
 //         <View
 //           style={{
 //             backgroundColor: "#FEF3C7",
-//             paddingHorizontal: 14,
-//             paddingVertical: 10,
-//             marginHorizontal: 16,
-//             marginTop: 12,
-//             borderRadius: 14,
-//             borderWidth: 1,
+//             paddingHorizontal: rp(14),
+//             paddingVertical: rp(10),
+//             marginHorizontal: rp(16),
+//             marginTop: rp(12),
+//             borderRadius: rp(14),
+//             borderWidth: rp(1),
 //             borderColor: "#F59E0B",
 //             flexDirection: "row",
 //             alignItems: "center",
 //           }}
 //         >
 //           <Ionicons name="cloud-offline" size={16} color="#92400E" />
-//           <Text style={{ color: "#92400E", fontSize: 12, fontWeight: "700", marginLeft: 8 }}>
+//           <Text style={{ color: "#92400E", fontSize: rs(12), fontWeight: "700", marginLeft: rp(8) }}>
 //             {pendingCount} photo(s) pending upload — will sync when online
 //           </Text>
 //         </View>
 //       )}
 
 //       <ScrollView
-//         style={{ flex: 1, paddingHorizontal: 16, paddingTop: 14 }}
-//         contentContainerStyle={{ paddingBottom: 100 }}
+//         style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(14) }}
+//         contentContainerStyle={{ paddingBottom: rp(100) }}
 //         refreshControl={
 //           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" colors={["#059669"]} />
 //         }
 //       >
 //         {tab === "mycars" && cars.length === 0 && (
-//           <View style={{ alignItems: "center", marginTop: 60 }}>
-//             <Text style={{ fontSize: 64 }}>🚗</Text>
-//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No cars yet</Text>
-//             <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>Tap + to check in a vehicle</Text>
+//           <View style={{ alignItems: "center", marginTop: rp(60) }}>
+//             <Text style={{ fontSize: rs(64) }}>🚗</Text>
+//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No cars yet</Text>
+//             <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>Tap + to check in a vehicle</Text>
 //           </View>
 //         )}
 //         {tab === "mycars" && cars.map((car) => (
@@ -1981,32 +1982,32 @@ export default function Tasks() {
 //             key={car.id}
 //             style={{
 //               backgroundColor: "#fff",
-//               borderRadius: 24,
-//               padding: 18,
-//               marginBottom: 12,
-//               borderLeftWidth: 4,
+//               borderRadius: rp(24),
+//               padding: rp(18),
+//               marginBottom: rp(12),
+//               borderLeftWidth: rp(4),
 //               borderLeftColor: car.status === "PARKED" ? "#059669" : "#0EA5E9",
 //               ...cardShadow,
 //             }}
 //           >
 //             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
 //               <View style={{ flex: 1 }}>
-//                 <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-//                 <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+//                 <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+//                 <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
 //               </View>
 //               <View
 //                 style={{
-//                   paddingHorizontal: 10,
-//                   paddingVertical: 3,
-//                   borderRadius: 99,
+//                   paddingHorizontal: rp(10),
+//                   paddingVertical: rp(3),
+//                   borderRadius: rp(99),
 //                   backgroundColor: car.status === "PARKED" ? "#D1FAE5" : "#E0F2FE",
 //                 }}
 //               >
 //                 <Text
 //                   style={{
-//                     fontSize: 10,
+//                     fontSize: rs(10),
 //                     fontWeight: "800",
-//                     letterSpacing: 1,
+//                     letterSpacing: rs(1),
 //                     color: car.status === "PARKED" ? "#059669" : "#0284C7",
 //                   }}
 //                 >
@@ -2023,53 +2024,53 @@ export default function Tasks() {
 //                     flexDirection: "row",
 //                     alignItems: "center",
 //                     backgroundColor: "#ECFDF5",
-//                     paddingHorizontal: 10,
-//                     paddingVertical: 6,
-//                     borderRadius: 99,
-//                     marginTop: 10,
+//                     paddingHorizontal: rp(10),
+//                     paddingVertical: rp(6),
+//                     borderRadius: rp(99),
+//                     marginTop: rp(10),
 //                   }}
 //                 >
 //                   <Ionicons name="location" size={13} color="#059669" />
-//                   <Text style={{ color: "#059669", fontWeight: "800", fontSize: 12, marginLeft: 4 }}>
+//                   <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(12), marginLeft: rp(4) }}>
 //                     Zone {car.zone} · Slot {car.slot}
 //                   </Text>
 //                 </View>
 //                 <TouchableOpacity
 //                   onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
 //                   style={{
-//                     borderWidth: 1.5,
+//                     borderWidth: rp(1.5),
 //                     borderColor: "#059669",
-//                     borderRadius: 14,
-//                     paddingVertical: 12,
+//                     borderRadius: rp(14),
+//                     paddingVertical: rp(12),
 //                     alignItems: "center",
-//                     marginTop: 12,
+//                     marginTop: rp(12),
 //                     flexDirection: "row",
 //                     justifyContent: "center",
 //                   }}
 //                 >
 //                   <Ionicons name="qr-code-outline" size={16} color="#059669" />
-//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>
+//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>
 //                     SHOW QR CODE
 //                   </Text>
 //                 </TouchableOpacity>
 //               </View>
 //             ) : (
-//               <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+//               <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(12) }}>
 //                 <TouchableOpacity
 //                   onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}
 //                   style={{
 //                     flex: 1,
-//                     borderWidth: 1.5,
+//                     borderWidth: rp(1.5),
 //                     borderColor: "#059669",
-//                     borderRadius: 14,
-//                     paddingVertical: 12,
+//                     borderRadius: rp(14),
+//                     paddingVertical: rp(12),
 //                     alignItems: "center",
 //                     flexDirection: "row",
 //                     justifyContent: "center",
 //                   }}
 //                 >
 //                   <Ionicons name="qr-code-outline" size={14} color="#059669" />
-//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>QR CODE</Text>
+//                   <Text style={{ color: "#059669", fontWeight: "900", fontSize: rs(11), marginLeft: rp(4), letterSpacing: rs(1) }}>QR CODE</Text>
 //                 </TouchableOpacity>
 //                 <TouchableOpacity
 //                   onPress={() => openParkModal(car)}
@@ -2078,8 +2079,8 @@ export default function Tasks() {
 //                   style={{
 //                     flex: 1,
 //                     backgroundColor: openingParkModal === car.id ? "#047857" : "#059669",
-//                     borderRadius: 14,
-//                     paddingVertical: 12,
+//                     borderRadius: rp(14),
+//                     paddingVertical: rp(12),
 //                     alignItems: "center",
 //                     flexDirection: "row",
 //                     justifyContent: "center",
@@ -2091,7 +2092,7 @@ export default function Tasks() {
 //                   ) : (
 //                     <>
 //                       <Ionicons name="location" size={14} color="#fff" />
-//                       <Text style={{ color: "#fff", fontWeight: "900", fontSize: 11, marginLeft: 4, letterSpacing: 1 }}>MARK PARKED</Text>
+//                       <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11), marginLeft: rp(4), letterSpacing: rs(1) }}>MARK PARKED</Text>
 //                     </>
 //                   )}
 //                 </TouchableOpacity>
@@ -2101,10 +2102,10 @@ export default function Tasks() {
 //         ))}
 
 //         {tab === "retrievals" && retrievals.length === 0 && (
-//           <View style={{ alignItems: "center", marginTop: 60 }}>
-//             <Text style={{ fontSize: 64 }}>🔔</Text>
-//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12 }}>No retrieval requests</Text>
-//             <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>You're all caught up!</Text>
+//           <View style={{ alignItems: "center", marginTop: rp(60) }}>
+//             <Text style={{ fontSize: rs(64) }}>🔔</Text>
+//             <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No retrieval requests</Text>
+//             <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>You're all caught up!</Text>
 //           </View>
 //         )}
 //         {tab === "retrievals" && retrievals.map((car) => {
@@ -2117,45 +2118,45 @@ export default function Tasks() {
 //               key={car.id}
 //               style={{
 //                 backgroundColor: "#fff",
-//                 borderRadius: 24,
-//                 padding: 18,
-//                 marginBottom: 12,
-//                 borderLeftWidth: 4,
+//                 borderRadius: rp(24),
+//                 padding: rp(18),
+//                 marginBottom: rp(12),
+//                 borderLeftWidth: rp(4),
 //                 borderLeftColor: borderColor,
 //                 ...cardShadow,
 //               }}
 //             >
 //               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
 //                 <View style={{ flex: 1 }}>
-//                   <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-//                   <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
+//                   <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+//                   <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
 //                   <View
 //                     style={{
 //                       alignSelf: "flex-start",
 //                       flexDirection: "row",
 //                       alignItems: "center",
 //                       backgroundColor: "#F3F4F6",
-//                       paddingHorizontal: 8,
-//                       paddingVertical: 3,
-//                       borderRadius: 99,
-//                       marginTop: 6,
+//                       paddingHorizontal: rp(8),
+//                       paddingVertical: rp(3),
+//                       borderRadius: rp(99),
+//                       marginTop: rp(6),
 //                     }}
 //                   >
 //                     <Ionicons name="location-outline" size={11} color="#6B7280" />
-//                     <Text style={{ color: "#6B7280", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>
+//                     <Text style={{ color: "#6B7280", fontSize: rs(11), fontWeight: "700", marginLeft: rp(4) }}>
 //                       Zone {car.zone} · Slot {car.slot}
 //                     </Text>
 //                   </View>
 //                 </View>
 //                 <View
 //                   style={{
-//                     paddingHorizontal: 10,
-//                     paddingVertical: 3,
-//                     borderRadius: 99,
+//                     paddingHorizontal: rp(10),
+//                     paddingVertical: rp(3),
+//                     borderRadius: rp(99),
 //                     backgroundColor: borderColor,
 //                   }}
 //                 >
-//                   <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>
+//                   <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>
 //                     {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : isMine ? "YOURS" : "OTHER"}
 //                   </Text>
 //                 </View>
@@ -2163,50 +2164,50 @@ export default function Tasks() {
 //               {car.status === "RETRIEVAL_REQUESTED" && (
 //                 <TouchableOpacity
 //                   onPress={() => pickup(car)}
-//                   style={{ backgroundColor: "#F59E0B", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+//                   style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
 //                 >
 //                   <Ionicons name="hand-right" size={14} color="#fff" />
-//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>PICK UP</Text>
+//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
 //                 </TouchableOpacity>
 //               )}
 //               {car.status === "BEING_FETCHED" && isMine && (
 //                 <TouchableOpacity
 //                   onPress={() => handleHandover(car)}
-//                   style={{ backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 12, flexDirection: "row", justifyContent: "center" }}
+//                   style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
 //                 >
 //                   <Ionicons name="camera" size={14} color="#fff" />
-//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1.5 }}>HANDED TO GUEST</Text>
+//                   <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>HANDED TO GUEST</Text>
 //                 </TouchableOpacity>
 //               )}
 //               {car.status === "BEING_FETCHED" && !isMine && (
-//                 <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
+//                 <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(10), fontStyle: "italic" }}>
 //                   Being fetched by another driver
 //                 </Text>
 //               )}
 //             </View>
 //           );
 //         })}
-//         <View style={{ height: 40 }} />
+//         <View style={{ height: rp(40) }} />
 //       </ScrollView>
 
 //       <Modal visible={showParkModal} transparent animationType="slide">
 //         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "85%" }}>
-//             <View style={{ alignItems: "center", marginBottom: 12 }}>
-//               <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+//             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
+//               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
 //             </View>
-//             <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}>PARK VEHICLE</Text>
-//             <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", marginTop: 2 }}>{selectedCar?.plate}</Text>
+//             <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}>PARK VEHICLE</Text>
+//             <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(2) }}>{selectedCar?.plate}</Text>
 //             {eventZones.length === 0 ? (
-//               <View style={{ alignItems: "center", paddingVertical: 40 }}>
+//               <View style={{ alignItems: "center", paddingVertical: rp(40) }}>
 //                 <Ionicons name="map-outline" size={64} color="#9CA3AF" />
-//                 <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12 }}>No Parking Zones Configured</Text>
-//                 <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 4 }}>Please ask your admin to set up zones</Text>
+//                 <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(12) }}>No Parking Zones Configured</Text>
+//                 <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>Please ask your admin to set up zones</Text>
 //               </View>
 //             ) : (
 //               <>
-//                 <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 18, marginBottom: 8 }}>SELECT ZONE</Text>
-//                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+//                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(18), marginBottom: rp(8) }}>SELECT ZONE</Text>
+//                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }}>
 //                   {eventZones.map((z) => {
 //                     const zoneSlots = slots.filter((s) => s.zone_name === z.name);
 //                     const free = zoneSlots.filter((s) => !s.is_occupied).length;
@@ -2216,27 +2217,27 @@ export default function Tasks() {
 //                         key={z.name}
 //                         onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
 //                         style={{
-//                           paddingHorizontal: 14,
-//                           paddingVertical: 10,
-//                           borderRadius: 99,
+//                           paddingHorizontal: rp(14),
+//                           paddingVertical: rp(10),
+//                           borderRadius: rp(99),
 //                           backgroundColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#fff",
-//                           borderWidth: 1,
+//                           borderWidth: rp(1),
 //                           borderColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#E5E7EB",
 //                         }}
 //                       >
-//                         <Text style={{ fontSize: 12, fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: 0.5 }}>
+//                         <Text style={{ fontSize: rs(12), fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: rs(0.5) }}>
 //                           {z.name} — {isFull ? "FULL" : `${free} free`}
 //                         </Text>
 //                       </TouchableOpacity>
 //                     );
 //                   })}
 //                 </ScrollView>
-//                 <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginTop: 14, marginBottom: 8 }}>SELECT SLOT</Text>
+//                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>SELECT SLOT</Text>
 //                 <FlatList
 //                   data={slots.filter((s) => s.zone_name === selectedZone)}
 //                   numColumns={5}
 //                   keyExtractor={(item, idx) => `${item.zone_name}-${item.slot_number}-${idx}`}
-//                   columnWrapperStyle={{ gap: 6, marginBottom: 6 }}
+//                   columnWrapperStyle={{ gap: rp(6), marginBottom: rp(6) }}
 //                   renderItem={({ item }) => {
 //                     const isSel = selectedSlot === item.slot_number;
 //                     let bg = "#D1FAE5";
@@ -2247,9 +2248,9 @@ export default function Tasks() {
 //                         disabled={item.is_occupied}
 //                         onPress={() => setSelectedSlot(item.slot_number)}
 //                         style={{
-//                           width: 56,
-//                           height: 56,
-//                           borderRadius: 14,
+//                           width: rp(56),
+//                           height: rp(56),
+//                           borderRadius: rp(14),
 //                           backgroundColor: bg,
 //                           alignItems: "center",
 //                           justifyContent: "center",
@@ -2265,7 +2266,7 @@ export default function Tasks() {
 //                       </TouchableOpacity>
 //                     );
 //                   }}
-//                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>No slots in this zone</Text>}
+//                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
 //                   style={{ maxHeight: 280 }}
 //                 />
 //                 <TouchableOpacity
@@ -2273,22 +2274,22 @@ export default function Tasks() {
 //                   disabled={!selectedSlot || confirmingPark}
 //                   activeOpacity={0.7}
 //                   style={{
-//                     borderRadius: 16,
-//                     paddingVertical: 16,
+//                     borderRadius: rp(16),
+//                     paddingVertical: rp(16),
 //                     alignItems: "center",
-//                     marginTop: 14,
+//                     marginTop: rp(14),
 //                     backgroundColor: selectedSlot && !confirmingPark ? "#7C3AED" : "#D1D5DB",
 //                   }}
 //                 >
 //                   {confirmingPark ? (
 //                     <ActivityIndicator color="#fff" />
 //                   ) : (
-//                     <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>CONFIRM PARKING</Text>
+//                     <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>CONFIRM PARKING</Text>
 //                   )}
 //                 </TouchableOpacity>
 //               </>
 //             )}
-//             <TouchableOpacity onPress={() => setShowParkModal(false)} style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}>
+//             <TouchableOpacity onPress={() => setShowParkModal(false)} style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}>
 //               <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
 //             </TouchableOpacity>
 //           </View>

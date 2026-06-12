@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { rs, rp } from '../../utils/responsive';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,8 +11,8 @@ import { useAppStore } from "../../lib/store";
 const cardShadow = {
   shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -99,9 +100,9 @@ export default function AllEvents() {
             backgroundColor: ACCENT,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 24,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(24),
           }}
         >
           <View
@@ -119,37 +120,37 @@ export default function AllEvents() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
               All Events
             </Text>
           </View>
         </View>
       </SafeAreaView>
 
-      <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 16 }}>
+      <View style={{ flexDirection: "row", gap: rp(8), paddingHorizontal: rp(16), paddingTop: rp(16) }}>
         {["all", "active", "closed", ...(isHotelOwner ? ["special", "daily"] : [])].map((f) => (
           <TouchableOpacity
             key={f}
             onPress={() => setFilter(f)}
             style={{
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              borderRadius: 99,
+              paddingHorizontal: rp(16),
+              paddingVertical: rp(8),
+              borderRadius: rp(99),
               backgroundColor: filter === f ? ACCENT : "#fff",
-              borderWidth: 1,
+              borderWidth: rp(1),
               borderColor: filter === f ? ACCENT : "#E5E7EB",
             }}
           >
             <Text
               style={{
-                fontSize: 11,
+                fontSize: rs(11),
                 fontWeight: "800",
                 color: filter === f ? "#fff" : "#6B7280",
-                letterSpacing: 1.5,
+                letterSpacing: rs(1.5),
               }}
             >
               {f.toUpperCase()}
@@ -159,8 +160,8 @@ export default function AllEvents() {
       </View>
 
       <ScrollView
-        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+        contentContainerStyle={{ paddingBottom: rp(100) }}
       >
         {loading && <ActivityIndicator color={ACCENT} />}
         {filtered.map((e) => (
@@ -170,20 +171,20 @@ export default function AllEvents() {
             activeOpacity={0.85}
             style={{
               backgroundColor: "#fff",
-              borderRadius: 24,
-              padding: 16,
-              marginBottom: 12,
+              borderRadius: rp(24),
+              padding: rp(16),
+              marginBottom: rp(12),
               flexDirection: "row",
               alignItems: "center",
-              borderLeftWidth: 4,
+              borderLeftWidth: rp(4),
               borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF",
               ...cardShadow,
               shadowColor: ACCENT,
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+              <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{e.name}</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6), marginTop: rp(8) }}>
                 <View style={chipStyle}>
                   <Ionicons name="calendar-outline" size={11} color="#6B7280" />
                   <Text style={chipText}>
@@ -195,48 +196,48 @@ export default function AllEvents() {
                   <Text style={chipText}>{e.venue}</Text>
                 </View>
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(10) }}>
                 <View
                   style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 99,
+                    paddingHorizontal: rp(8),
+                    paddingVertical: rp(3),
+                    borderRadius: rp(99),
                     backgroundColor: e.status === "active" ? "#D1FAE5" : "#F3F4F6",
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 10,
+                      fontSize: rs(10),
                       fontWeight: "800",
                       color: e.status === "active" ? "#059669" : "#6B7280",
-                      letterSpacing: 1,
+                      letterSpacing: rs(1),
                     }}
                   >
                     {e.status?.toUpperCase()}
                   </Text>
                 </View>
-                <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 8 }}>Max {e.max_cars}</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginLeft: rp(8) }}>Max {e.max_cars}</Text>
               </View>
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
               <TouchableOpacity
                 onPress={(ev) => cloneEvent(ev, e)}
                 disabled={cloningId === e.id}
                 style={{
                   backgroundColor: BG_LIGHT,
-                  borderRadius: 20,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderWidth: 1,
+                  borderRadius: rp(20),
+                  paddingHorizontal: rp(10),
+                  paddingVertical: rp(6),
+                  borderWidth: rp(1),
                   borderColor: isHotelOwner ? "#BFDBFE" : "#DDD6FE",
                 }}
               >
                 {cloningId === e.id ? (
                   <ActivityIndicator size={14} color={ACCENT} />
                 ) : (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: rp(4) }}>
                     <Ionicons name="copy-outline" size={14} color={ACCENT} />
-                    <Text style={{ color: ACCENT, fontSize: 11, fontWeight: "800" }}>Clone</Text>
+                    <Text style={{ color: ACCENT, fontSize: rs(11), fontWeight: "800" }}>Clone</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -245,15 +246,15 @@ export default function AllEvents() {
           </TouchableOpacity>
         ))}
         {!loading && filtered.length === 0 && (
-          <View style={{ alignItems: "center", marginTop: 60 }}>
-            <Text style={{ fontSize: 64 }}>📅</Text>
-            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 8 }}>No events found</Text>
-            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
+          <View style={{ alignItems: "center", marginTop: rp(60) }}>
+            <Text style={{ fontSize: rs(64) }}>📅</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(8) }}>No events found</Text>
+            <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>
               Try a different filter
             </Text>
           </View>
         )}
-        <View style={{ height: 40 }} />
+        <View style={{ height: rp(40) }} />
       </ScrollView>
     </View>
   );
@@ -263,13 +264,13 @@ const chipStyle = {
   flexDirection: "row",
   alignItems: "center",
   backgroundColor: "#F3F4F6",
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 99,
-  gap: 4,
+  paddingHorizontal: rp(8),
+  paddingVertical: rp(4),
+  borderRadius: rp(99),
+  gap: rp(4),
 };
 const chipText = {
   color: "#6B7280",
-  fontSize: 11,
+  fontSize: rs(11),
   fontWeight: "600",
 };

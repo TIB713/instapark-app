@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -26,8 +27,8 @@ const PURPLE = "#7C3AED";
 const cardShadow = {
   shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -203,9 +204,9 @@ export default function SupervisorDetail() {
             backgroundColor: PURPLE,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 24,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(24),
           }}
         >
           <View
@@ -223,14 +224,14 @@ export default function SupervisorDetail() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={exportPDF}
               disabled={exportingPDF}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8, marginLeft: 10 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8), marginLeft: rp(10) }}
             >
               {exportingPDF ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -238,15 +239,15 @@ export default function SupervisorDetail() {
                 <Ionicons name="download-outline" size={22} color="#fff" />
               )}
             </TouchableOpacity>
-            <View style={{ marginLeft: 14, flex: 1 }}>
+            <View style={{ marginLeft: rp(14), flex: 1 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900" }}>{supervisorName || supervisor?.name}</Text>
-                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginLeft: 10 }}>
-                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900", letterSpacing: 1 }}>SUPERVISOR</Text>
+                <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900" }}>{supervisorName || supervisor?.name}</Text>
+                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(6), marginLeft: rp(10) }}>
+                  <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "900", letterSpacing: rs(1) }}>SUPERVISOR</Text>
                 </View>
               </View>
               {supervisor?.employee_id ? ( 
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 2 }}>{supervisor.employee_id}</Text> 
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(12), marginTop: rp(2) }}>{supervisor.employee_id}</Text> 
               ) : null}
             </View>
           </View>
@@ -257,14 +258,14 @@ export default function SupervisorDetail() {
         style={{
           flexDirection: "row",
           backgroundColor: "#fff",
-          marginHorizontal: 16,
+          marginHorizontal: rp(16),
           marginTop: -22,
-          borderRadius: 20,
-          padding: 4,
+          borderRadius: rp(20),
+          padding: rp(4),
           shadowColor: PURPLE,
           shadowOpacity: 0.08,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: rp(16),
+          shadowOffset: { width: 0, height: rp(4) },
           elevation: 4,
         }}
       >
@@ -277,8 +278,8 @@ export default function SupervisorDetail() {
             onPress={() => setTab(k)}
             style={{
               flex: 1,
-              paddingVertical: 10,
-              borderRadius: 16,
+              paddingVertical: rp(10),
+              borderRadius: rp(16),
               backgroundColor: tab === k ? PURPLE : "transparent",
               alignItems: "center",
             }}
@@ -286,9 +287,9 @@ export default function SupervisorDetail() {
             <Text
               style={{
                 fontWeight: "800",
-                fontSize: 13,
+                fontSize: rs(13),
                 color: tab === k ? "#fff" : "#6B7280",
-                letterSpacing: 1,
+                letterSpacing: rs(1),
               }}
             >
               {l}
@@ -298,31 +299,31 @@ export default function SupervisorDetail() {
       </View>
 
       {supervisor && ( 
-        <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: "#fff", borderRadius: 20, padding: 14, flexDirection: "row", alignItems: "center", gap: 14, ...cardShadow }}> 
+        <View style={{ marginHorizontal: rp(16), marginTop: rp(12), backgroundColor: "#fff", borderRadius: rp(20), padding: rp(14), flexDirection: "row", alignItems: "center", gap: rp(14), ...cardShadow }}> 
           {supervisor.supervisor_photo ? ( 
-            <Image source={{ uri: supervisor.supervisor_photo }} style={{ width: 56, height: 56, borderRadius: 28 }} /> 
+            <Image source={{ uri: supervisor.supervisor_photo }} style={{ width: rp(56), height: rp(56), borderRadius: rp(28) }} /> 
           ) : ( 
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#F3F0FF", alignItems: "center", justifyContent: "center" }}> 
+            <View style={{ width: rp(56), height: rp(56), borderRadius: rp(28), backgroundColor: "#F3F0FF", alignItems: "center", justifyContent: "center" }}> 
               <Ionicons name="person" size={28} color="#7C3AED" /> 
             </View> 
           )} 
           <View style={{ flex: 1 }}> 
-            <Text style={{ fontWeight: "900", fontSize: 16, color: "#111827" }}>{supervisor.name}</Text> 
-            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 1 }}>{supervisor.employee_id || supervisor.provider_name || "—"}</Text> 
-            <View style={{ flexDirection: "row", gap: 6, marginTop: 5, flexWrap: "wrap" }}> 
+            <Text style={{ fontWeight: "900", fontSize: rs(16), color: "#111827" }}>{supervisor.name}</Text> 
+            <Text style={{ fontSize: rs(12), color: "#6B7280", marginTop: rp(1) }}>{supervisor.employee_id || supervisor.provider_name || "—"}</Text> 
+            <View style={{ flexDirection: "row", gap: rp(6), marginTop: rp(5), flexWrap: "wrap" }}> 
               {supervisor.is_active ? ( 
-                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}> 
-                  <Text style={{ color: "#059669", fontSize: 10, fontWeight: "800" }}>ACTIVE</Text> 
+                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}> 
+                  <Text style={{ color: "#059669", fontSize: rs(10), fontWeight: "800" }}>ACTIVE</Text> 
                 </View> 
               ) : ( 
-                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}> 
-                  <Text style={{ color: "#EF4444", fontSize: 10, fontWeight: "800" }}>INACTIVE</Text> 
+                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}> 
+                  <Text style={{ color: "#EF4444", fontSize: rs(10), fontWeight: "800" }}>INACTIVE</Text> 
                 </View> 
               )} 
               {supervisor.phone ? ( 
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}> 
+                <View style={{ flexDirection: "row", alignItems: "center", gap: rp(3), backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}> 
                   <Ionicons name="call-outline" size={10} color="#6B7280" /> 
-                  <Text style={{ color: "#6B7280", fontSize: 10, fontWeight: "700" }}>{supervisor.phone}</Text> 
+                  <Text style={{ color: "#6B7280", fontSize: rs(10), fontWeight: "700" }}>{supervisor.phone}</Text> 
                 </View> 
               ) : null} 
             </View> 
@@ -332,15 +333,15 @@ export default function SupervisorDetail() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: rp(40) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />}
       >
         {tab === "overview" && (
           <>
             {/* Stats Row */}
-            <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            <View style={{ paddingHorizontal: rp(16), marginTop: rp(20) }}>
               <Text style={sectionTitle}>PERFORMANCE</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(12) }}>
                 <StatCard label="EVENTS SUPERVISED" value={stats?.total_events || 0} color="#7C3AED" icon="calendar" />
                 <StatCard label="DRIVERS OVERSEEN" value={stats?.total_drivers || 0} color="#0EA5E9" icon="people" />
                 <StatCard label="AVG RATING" value={stats?.avg_rating || "—"} color="#F59E0B" icon="star" />
@@ -348,8 +349,8 @@ export default function SupervisorDetail() {
               </View>
             </View>
 
-            <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginTop: 24, marginBottom: 10, marginHorizontal: 16 }}>EDIT SUPERVISOR</Text>
-            <View style={[{ backgroundColor: "#fff", borderRadius: 24, padding: 18, marginHorizontal: 16 }, cardShadow]}>
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginTop: rp(24), marginBottom: rp(10), marginHorizontal: rp(16) }}>EDIT SUPERVISOR</Text>
+            <View style={[{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(18), marginHorizontal: rp(16) }, cardShadow]}>
               <Text style={miniLabel}>NAME</Text>
               <View style={miniInput}>
                 <Ionicons name="person-outline" size={16} color="#7C3AED" />
@@ -373,32 +374,32 @@ export default function SupervisorDetail() {
               <TouchableOpacity
                 onPress={saveSupervisor}
                 disabled={saving}
-                style={{ backgroundColor: "#7C3AED", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginTop: 4 }}
+                style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(4) }}
               >
-                {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE</Text>}
+                {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SAVE</Text>}
               </TouchableOpacity>
             </View>
           </>
         )}
 
         {tab === "events" && ( 
-          <View style={{ paddingHorizontal: 16, paddingTop: 16 }}> 
+          <View style={{ paddingHorizontal: rp(16), paddingTop: rp(16) }}> 
             {/* Filter chips — same as driver-stats */} 
-            <ScrollView horizontal contentContainerStyle={{ gap: 8, marginBottom: 16 }} showsHorizontalScrollIndicator={false}> 
+            <ScrollView horizontal contentContainerStyle={{ gap: rp(8), marginBottom: rp(16) }} showsHorizontalScrollIndicator={false}> 
               {["all", "active", "closed"].map((f) => ( 
                 <TouchableOpacity 
                   key={f} 
                   onPress={() => setEvtFilter(f)} 
                   style={{ 
-                    paddingHorizontal: 14, 
-                    paddingVertical: 8, 
-                    borderRadius: 99, 
+                    paddingHorizontal: rp(14), 
+                    paddingVertical: rp(8), 
+                    borderRadius: rp(99), 
                     backgroundColor: evtFilter === f ? "#7C3AED" : "#fff", 
-                    borderWidth: 1, 
+                    borderWidth: rp(1), 
                     borderColor: evtFilter === f ? "#7C3AED" : "#E5E7EB", 
                   }} 
                 > 
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: evtFilter === f ? "#fff" : "#6B7280", letterSpacing: 1.5 }}> 
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: evtFilter === f ? "#fff" : "#6B7280", letterSpacing: rs(1.5) }}> 
                     {f.toUpperCase()} 
                   </Text> 
                 </TouchableOpacity> 
@@ -406,9 +407,9 @@ export default function SupervisorDetail() {
             </ScrollView> 
       
             {filteredEvts.length === 0 ? ( 
-              <View style={{ alignItems: "center", marginTop: 60 }}> 
-                <Text style={{ fontSize: 48 }}>📅</Text> 
-                <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No events found</Text> 
+              <View style={{ alignItems: "center", marginTop: rp(60) }}> 
+                <Text style={{ fontSize: rs(48) }}>📅</Text> 
+                <Text style={{ color: "#6B7280", marginTop: rp(8), fontWeight: "700" }}>No events found</Text> 
               </View> 
             ) : ( 
               filteredEvts.map((e) => ( 
@@ -418,19 +419,19 @@ export default function SupervisorDetail() {
                   activeOpacity={0.85} 
                   style={{ 
                     backgroundColor: "#fff", 
-                    borderRadius: 24, 
-                    padding: 16, 
-                    marginBottom: 12, 
+                    borderRadius: rp(24), 
+                    padding: rp(16), 
+                    marginBottom: rp(12), 
                     flexDirection: "row", 
                     alignItems: "center", 
-                    borderLeftWidth: 4, 
+                    borderLeftWidth: rp(4), 
                     borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF", 
                     ...cardShadow, 
                   }} 
                 > 
                   <View style={{ flex: 1 }}> 
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{e.name}</Text> 
-                    <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}> 
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{e.name}</Text> 
+                    <View style={{ flexDirection: "row", gap: rp(6), marginTop: rp(6), flexWrap: "wrap" }}> 
                       <View style={pillGray}> 
                         <Ionicons name="calendar-outline" size={10} color="#6B7280" /> 
                         <Text style={pillGrayText}>{e.date}</Text> 
@@ -445,7 +446,7 @@ export default function SupervisorDetail() {
                 </TouchableOpacity> 
               )) 
             )} 
-            <View style={{ height: 40 }} /> 
+            <View style={{ height: rp(40) }} /> 
           </View> 
         )}
       </ScrollView>
@@ -455,23 +456,23 @@ export default function SupervisorDetail() {
 
 function StatCard({ label, value, color, icon }) {
   return (
-    <View style={{ width: "48%", backgroundColor: "#fff", borderRadius: 20, padding: 16, ...cardShadow }}>
-      <View style={{ backgroundColor: color + "15", width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+    <View style={{ width: "48%", backgroundColor: "#fff", borderRadius: rp(20), padding: rp(16), ...cardShadow }}>
+      <View style={{ backgroundColor: color + "15", width: rp(32), height: rp(32), borderRadius: rp(10), alignItems: "center", justifyContent: "center", marginBottom: rp(12) }}>
         <Ionicons name={icon} size={18} color={color} />
       </View>
-      <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827" }}>{value}</Text>
-      <Text style={{ fontSize: 9, fontWeight: "800", color: "#6B7280", letterSpacing: 1, marginTop: 4 }}>{label}</Text>
+      <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827" }}>{value}</Text>
+      <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#6B7280", letterSpacing: rs(1), marginTop: rp(4) }}>{label}</Text>
     </View>
   );
 }
 
-const sectionTitle = { fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 };
-const infoRow = { flexDirection: "row", alignItems: "center", gap: 12 };
-const infoLabel = { fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 2 };
-const infoValue = { fontSize: 14, fontWeight: "700", color: "#111827" };
+const sectionTitle = { fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(12) };
+const infoRow = { flexDirection: "row", alignItems: "center", gap: rp(12) };
+const infoLabel = { fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(2) };
+const infoValue = { fontSize: rs(14), fontWeight: "700", color: "#111827" };
 
-const miniLabel = { fontSize: 10, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginBottom: 6 };
-const miniInput = { backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, marginBottom: 12 };
-const miniInputText = { flex: 1, paddingVertical: 10, marginLeft: 8, fontSize: 14, color: "#111827" };
-const pillGray = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, gap: 4 };
-const pillGrayText = { color: "#6B7280", fontSize: 10, fontWeight: "700" };
+const miniLabel = { fontSize: rs(10), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(6) };
+const miniInput = { backgroundColor: "#F9FAFB", borderRadius: rp(12), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: rp(12) };
+const miniInputText = { flex: 1, paddingVertical: rp(10), marginLeft: rp(8), fontSize: rs(14), color: "#111827" };
+const pillGray = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99), gap: rp(4) };
+const pillGrayText = { color: "#6B7280", fontSize: rs(10), fontWeight: "700" };

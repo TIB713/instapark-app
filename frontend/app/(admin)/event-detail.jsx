@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -40,8 +41,8 @@ const FILTERS = ["ALL", "PRE_REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQ
 const cardShadow = {
   shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -764,9 +765,9 @@ export default function EventDetail() {
             backgroundColor: "#7C3AED",
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 16,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(16),
           }}
         >
           <View
@@ -781,37 +782,37 @@ export default function EventDetail() {
               borderBottomRightRadius: 44,
             }}
           />
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(14) }}>
             <TouchableOpacity onPress={() => router.back()} style={iconBtn}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flex: 1, marginLeft: rp(12) }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900" }} numberOfLines={1}>
+                <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900" }} numberOfLines={1}>
                   {event?.name || "Event"}
                 </Text>
                 {event?.event_type === "hotel_daily" && (
-                  <View style={{ backgroundColor: "#0284C7", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
-                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>🏨 Auto Daily</Text>
+                  <View style={{ backgroundColor: "#0284C7", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6), marginLeft: rp(8) }}>
+                    <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "900" }}>🏨 Auto Daily</Text>
                   </View>
                 )}
                 {event?.event_type === "hotel_special" && (
-                  <View style={{ backgroundColor: "#1D4ED8", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
-                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>🏨 Special</Text>
+                  <View style={{ backgroundColor: "#1D4ED8", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6), marginLeft: rp(8) }}>
+                    <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "900" }}>🏨 Special</Text>
                   </View>
                 )}
               </View>
               {event?.status && (
-                <View style={{ flexDirection: "row", marginTop: 4 }}>
+                <View style={{ flexDirection: "row", marginTop: rp(4) }}>
                   <View
                     style={{
                       backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)",
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 99,
+                      paddingHorizontal: rp(8),
+                      paddingVertical: rp(2),
+                      borderRadius: rp(99),
                     }}
                   >
-                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>
+                    <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1.5) }}>
                       {event.status === "closed" ? "CLOSED" : event.status.toUpperCase()}
                     </Text>
                   </View>
@@ -820,7 +821,7 @@ export default function EventDetail() {
             </View>
             <TouchableOpacity
               onPress={() => setShowMenu(!showMenu)}
-              style={[iconBtn, { marginRight: 8 }]}
+              style={[iconBtn, { marginRight: rp(8) }]}
             >
               <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
             </TouchableOpacity>
@@ -853,8 +854,8 @@ export default function EventDetail() {
               top: 130, 
               right: 20, 
               backgroundColor: '#fff', 
-              borderRadius: 16, 
-              paddingVertical: 8, 
+              borderRadius: rp(16), 
+              paddingVertical: rp(8), 
               zIndex: 1000, 
               ...cardShadow 
             }}
@@ -863,18 +864,18 @@ export default function EventDetail() {
             {!isClosed && (
               <>
                 <TouchableOpacity 
-                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => {
                     setShowMenu(false);
                     router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } });
                   }}
                 >
                   <Ionicons name="create-outline" size={20} color="#7C3AED" />
-                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Edit Event</Text>
+                  <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Edit Event</Text>
                 </TouchableOpacity>
-                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity 
-                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => {
                     setShowMenu(false);
                     if (event?.event_type === "hotel_special") {
@@ -885,43 +886,43 @@ export default function EventDetail() {
                   }}
                 >
                   <Ionicons name="qr-code-outline" size={20} color="#7C3AED" />
-                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
+                  <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
                 </TouchableOpacity>
-                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity 
-                  style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+                  style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => {
                     setShowMenu(false);
                     setShowIncidentModal(true);
                   }}
                 >
                   <Ionicons name="warning-outline" size={20} color="#7C3AED" />
-                  <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Report Incident</Text>
+                  <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Report Incident</Text>
                 </TouchableOpacity>
-                <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
               </>
             )}
             {/* Shared Menu Items */}
             <TouchableOpacity 
-              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
               onPress={() => {
                 setShowMenu(false);
                 exportCSV();
               }}
             >
               <Ionicons name="document-text-outline" size={20} color="#7C3AED" />
-              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export CSV</Text>
+              <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Export CSV</Text>
             </TouchableOpacity>
-            <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+            <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
             <TouchableOpacity 
-              style={{ paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' }}
+              style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
               onPress={() => {
                 setShowMenu(false);
                 exportPDF();
               }}
             >
               <Ionicons name="document-outline" size={20} color="#7C3AED" />
-              <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: '600', color: '#0F2044' }}>Export PDF</Text>
+              <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Export PDF</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -932,10 +933,10 @@ export default function EventDetail() {
         style={{
           backgroundColor: "#fff",
           flexDirection: "row",
-          marginHorizontal: 16,
+          marginHorizontal: rp(16),
           marginTop: -22,
-          borderRadius: 20,
-          padding: 4,
+          borderRadius: rp(20),
+          padding: rp(4),
           ...cardShadow,
         }}
       >
@@ -959,8 +960,8 @@ export default function EventDetail() {
             testID={`tab-${k}`}
             style={{
               flex: 1,
-              paddingVertical: 10,
-              borderRadius: 16,
+              paddingVertical: rp(10),
+              borderRadius: rp(16),
               backgroundColor: tab === k ? "#7C3AED" : "transparent",
               alignItems: "center",
             }}
@@ -970,7 +971,7 @@ export default function EventDetail() {
                 fontWeight: "800",
                 fontSize: isClosed ? 13 : 11,
                 color: tab === k ? "#fff" : "#6B7280",
-                letterSpacing: 1,
+                letterSpacing: rs(1),
               }}
             >
               {l}
@@ -981,8 +982,8 @@ export default function EventDetail() {
 
       {tab === "cars" && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -995,12 +996,12 @@ export default function EventDetail() {
           <View
             style={{
               backgroundColor: "#fff",
-              borderRadius: 16,
-              paddingHorizontal: 14,
+              borderRadius: rp(16),
+              paddingHorizontal: rp(14),
               flexDirection: "row",
               alignItems: "center",
-              marginBottom: 12,
-              borderWidth: 1,
+              marginBottom: rp(12),
+              borderWidth: rp(1),
               borderColor: "#E5E7EB",
             }}
           >
@@ -1010,34 +1011,34 @@ export default function EventDetail() {
               onChangeText={setSearch}
               placeholder="Search plate..."
               placeholderTextColor="#9CA3AF"
-              style={{ flex: 1, paddingVertical: 12, marginLeft: 8, color: "#111827" }}
+              style={{ flex: 1, paddingVertical: rp(12), marginLeft: rp(8), color: "#111827" }}
               testID="car-search"
             />
           </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingBottom: 8 }}
+            contentContainerStyle={{ gap: rp(8), paddingBottom: rp(8) }}
           >
             {FILTERS.map((f) => (
               <TouchableOpacity
                 key={f}
                 onPress={() => setStatusFilter(f)}
                 style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 99,
+                  paddingHorizontal: rp(14),
+                  paddingVertical: rp(8),
+                  borderRadius: rp(99),
                   backgroundColor: statusFilter === f ? "#7C3AED" : "#fff",
-                  borderWidth: 1,
+                  borderWidth: rp(1),
                   borderColor: statusFilter === f ? "#7C3AED" : "#E5E7EB",
                 }}
               >
                 <Text
                   style={{
-                    fontSize: 11,
+                    fontSize: rs(11),
                     fontWeight: "800",
                     color: statusFilter === f ? "#fff" : "#6B7280",
-                    letterSpacing: 1,
+                    letterSpacing: rs(1),
                   }}
                 >
                   {f === "ALL" ? "All" : STATUS_CONFIG[f]?.label || f}
@@ -1045,7 +1046,7 @@ export default function EventDetail() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <Text style={{ color: "#6B7280", fontSize: 11, marginVertical: 8, fontWeight: "600" }}>
+          <Text style={{ color: "#6B7280", fontSize: rs(11), marginVertical: rp(8), fontWeight: "600" }}>
             {filteredCars.length} cars found
           </Text>
           {filteredCars.map((car) => {
@@ -1057,86 +1058,86 @@ export default function EventDetail() {
                 activeOpacity={0.85}
                 style={{
                   backgroundColor: "#fff",
-                  borderRadius: 24,
-                  padding: 16,
-                  marginBottom: 12,
+                  borderRadius: rp(24),
+                  padding: rp(16),
+                  marginBottom: rp(12),
                   flexDirection: "row",
                   alignItems: "center",
-                  borderLeftWidth: 4,
+                  borderLeftWidth: rp(4),
                   borderLeftColor: cfg.color,
                   ...cardShadow,
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{car.plate}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{car.color} {car.make}</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 6 }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{car.plate}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{car.color} {car.make}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6), flexWrap: "wrap", gap: rp(6) }}>
                     {car.zone && car.slot && (
-                      <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                        <Text style={{ color: "#374151", fontSize: 10, fontWeight: "700" }}>
+                      <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ color: "#374151", fontSize: rs(10), fontWeight: "700" }}>
                           {car.zone}-{car.slot}
                         </Text>
                       </View>
                     )}
-                    <Text style={{ color: "#9CA3AF", fontSize: 11 }}>
+                    <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>
                       {car.check_in_time ? new Date(car.check_in_time).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : "Just now"}
                     </Text>
                   </View>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
-                  <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, backgroundColor: cfg.color }}>
-                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: 10, letterSpacing: 0.5 }}>{cfg.label}</Text>
+                  <View style={{ paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: cfg.color }}>
+                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(0.5) }}>{cfg.label}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginTop: 8 }} />
+                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginTop: rp(8) }} />
                 </View>
               </TouchableOpacity>
             );
           })}
           {filteredCars.length === 0 && (
-            <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Text style={{ fontSize: 48 }}>🚗</Text>
-              <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No cars yet</Text>
+            <View style={{ alignItems: "center", marginTop: rp(40) }}>
+              <Text style={{ fontSize: rs(48) }}>🚗</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(8), fontWeight: "700" }}>No cars yet</Text>
             </View>
           )}
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       )}
 
       {tab === "incidents" && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
           }
         >
           {incidents.length === 0 ? (
-            <View style={{ alignItems: "center", marginTop: 60 }}>
-              <View style={{ backgroundColor: "#D1FAE5", width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <View style={{ alignItems: "center", marginTop: rp(60) }}>
+              <View style={{ backgroundColor: "#D1FAE5", width: rp(80), height: rp(80), borderRadius: rp(40), alignItems: "center", justifyContent: "center", marginBottom: rp(16) }}>
                 <Ionicons name="checkmark" size={40} color="#059669" />
               </View>
-              <Text style={{ color: "#111827", fontWeight: "900", fontSize: 18 }}>No incidents reported</Text>
-              <Text style={{ color: "#6B7280", marginTop: 4 }}>Everything is running smoothly</Text>
+              <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(18) }}>No incidents reported</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(4) }}>Everything is running smoothly</Text>
             </View>
           ) : (
             incidents.map((i) => (
-              <View key={i.id} style={{ backgroundColor: "#fff", borderRadius: 24, padding: 18, marginBottom: 12, ...cardShadow }}>
+              <View key={i.id} style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(18), marginBottom: rp(12), ...cardShadow }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <View style={{ backgroundColor: "#111827", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: 14 }}>{i.plate}</Text>
+                  <View style={{ backgroundColor: "#111827", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(14) }}>{i.plate}</Text>
                   </View>
-                  <Text style={{ color: "#9CA3AF", fontSize: 11 }}>
+                  <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>
                     {new Date(i.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: 'Asia/Kolkata' })}
                   </Text>
                 </View>
                 
-                <View style={{ marginTop: 12 }}>
-                  <Text style={{ color: "#374151", fontSize: 14, lineHeight: 20 }}>{i.description}</Text>
+                <View style={{ marginTop: rp(12) }}>
+                  <Text style={{ color: "#374151", fontSize: rs(14), lineHeight: 20 }}>{i.description}</Text>
                 </View>
 
-                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), paddingTop: rp(12), borderTopWidth: rp(1), borderTopColor: "#F3F4F6" }}>
                   <Ionicons name="person-circle-outline" size={16} color="#6B7280" />
-                  <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 6 }}>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(6) }}>
                     Reported by: <Text style={{ fontWeight: "700" }}>{i.driver_name || "Unknown Driver"}</Text>
                   </Text>
                 </View>
@@ -1144,7 +1145,7 @@ export default function EventDetail() {
                 {i.photo_url && (
                   <Image
                     source={{ uri: i.photo_url }}
-                    style={{ width: "100%", height: 200, borderRadius: 16, marginTop: 12 }}
+                    style={{ width: "100%", height: rp(200), borderRadius: rp(16), marginTop: rp(12) }}
                     resizeMode="cover"
                   />
                 )}
@@ -1156,17 +1157,17 @@ export default function EventDetail() {
 
       {tab === "employees" && !isClosed && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
           {/* Internal tab toggle bar */}
           <View
             style={{
               backgroundColor: "#fff",
               flexDirection: "row",
-              borderRadius: 20,
-              padding: 4,
-              marginBottom: 16,
+              borderRadius: rp(20),
+              padding: rp(4),
+              marginBottom: rp(16),
               ...cardShadow,
             }}
           >
@@ -1174,27 +1175,27 @@ export default function EventDetail() {
               onPress={() => setEmployeeTab("supervisors")}
               style={{
                 flex: 1,
-                paddingVertical: 10,
-                borderRadius: 16,
+                paddingVertical: rp(10),
+                borderRadius: rp(16),
                 backgroundColor: employeeTab === "supervisors" ? "#0F2044" : "transparent",
                 alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "center",
-                gap: 6,
+                gap: rp(6),
               }}
             >
               <Text
                 style={{
                   fontWeight: "800",
-                  fontSize: 13,
+                  fontSize: rs(13),
                   color: employeeTab === "supervisors" ? "#fff" : "#6B7280",
-                  letterSpacing: 1,
+                  letterSpacing: rs(1),
                 }}
               >
                 Supervisors
               </Text>
-              <View style={{ backgroundColor: employeeTab === "supervisors" ? "rgba(255,255,255,0.2)" : "#EDE9FE", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 99 }}>
-                <Text style={{ color: employeeTab === "supervisors" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: 10 }}>{supervisors.filter(s => s.assigned).length}/{supervisors.length}</Text>
+              <View style={{ backgroundColor: employeeTab === "supervisors" ? "rgba(255,255,255,0.2)" : "#EDE9FE", paddingHorizontal: rp(6), paddingVertical: rp(1), borderRadius: rp(99) }}>
+                <Text style={{ color: employeeTab === "supervisors" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: rs(10) }}>{supervisors.filter(s => s.assigned).length}/{supervisors.length}</Text>
               </View>
             </TouchableOpacity>
 
@@ -1202,27 +1203,27 @@ export default function EventDetail() {
               onPress={() => setEmployeeTab("drivers")}
               style={{
                 flex: 1,
-                paddingVertical: 10,
-                borderRadius: 16,
+                paddingVertical: rp(10),
+                borderRadius: rp(16),
                 backgroundColor: employeeTab === "drivers" ? "#0F2044" : "transparent",
                 alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "center",
-                gap: 6,
+                gap: rp(6),
               }}
             >
               <Text
                 style={{
                   fontWeight: "800",
-                  fontSize: 13,
+                  fontSize: rs(13),
                   color: employeeTab === "drivers" ? "#fff" : "#6B7280",
-                  letterSpacing: 1,
+                  letterSpacing: rs(1),
                 }}
               >
                 Drivers
               </Text>
-              <View style={{ backgroundColor: employeeTab === "drivers" ? "rgba(255,255,255,0.2)" : "#F3F0FF", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 99 }}>
-                <Text style={{ color: employeeTab === "drivers" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: 10 }}>{drivers.filter(d => d.assigned).length}/{drivers.length}</Text>
+              <View style={{ backgroundColor: employeeTab === "drivers" ? "rgba(255,255,255,0.2)" : "#F3F0FF", paddingHorizontal: rp(6), paddingVertical: rp(1), borderRadius: rp(99) }}>
+                <Text style={{ color: employeeTab === "drivers" ? "#fff" : "#7C3AED", fontWeight: "800", fontSize: rs(10) }}>{drivers.filter(d => d.assigned).length}/{drivers.length}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -1230,20 +1231,20 @@ export default function EventDetail() {
           {employeeTab === "supervisors" && (
             <>
               {/* SUPERVISORS CONTENT */}
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: rp(12) }}>
                 <TouchableOpacity
                   onPress={() => setShowAddSupervisorModal(true)}
-                  style={{ backgroundColor: "#0F2044", borderRadius: 12, paddingVertical: 7, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6 }}
+                  style={{ backgroundColor: "#0F2044", borderRadius: rp(12), paddingVertical: rp(7), paddingHorizontal: rp(14), flexDirection: "row", alignItems: "center", gap: rp(6) }}
                 >
                   <Ionicons name="add" size={14} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, letterSpacing: 1 }}>ADD SUPERVISOR</Text>
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), letterSpacing: rs(1) }}>ADD SUPERVISOR</Text>
                 </TouchableOpacity>
               </View>
 
               {supervisors.length === 0 && (
-                <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                  <Text style={{ fontSize: 48 }}>🛡️</Text>
-                  <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No supervisors</Text>
+                <View style={{ alignItems: "center", paddingVertical: rp(40) }}>
+                  <Text style={{ fontSize: rs(48) }}>🛡️</Text>
+                  <Text style={{ color: "#6B7280", marginTop: rp(8), fontWeight: "700" }}>No supervisors</Text>
                 </View>
               )}
 
@@ -1252,9 +1253,9 @@ export default function EventDetail() {
                   key={s.id}
                   style={{
                     backgroundColor: "#fff",
-                    borderRadius: 24,
-                    padding: 16,
-                    marginBottom: 12,
+                    borderRadius: rp(24),
+                    padding: rp(16),
+                    marginBottom: rp(12),
                     ...cardShadow,
                   }}
                 >
@@ -1262,19 +1263,19 @@ export default function EventDetail() {
                     <View
                       style={{
                         backgroundColor: "#0F2044",
-                        borderRadius: 99,
-                        width: 48,
-                        height: 48,
+                        borderRadius: rp(99),
+                        width: rp(48),
+                        height: rp(48),
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 18 }}>
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(18) }}>
                         {s.name?.[0]?.toUpperCase()}
                       </Text>
                     </View>
                     <TouchableOpacity
-                      style={{ flex: 1, marginLeft: 12 }}
+                      style={{ flex: 1, marginLeft: rp(12) }}
                       onPress={() =>
                         router.push({
                           pathname: "/(admin)/supervisor-detail",
@@ -1282,19 +1283,19 @@ export default function EventDetail() {
                         })
                       }
                     >
-                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{s.name}</Text>
-                      <Text style={{ color: "#6B7280", fontSize: 12 }}>{s.email}</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{s.name}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: rs(12) }}>{s.email}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(4) }}>
                         <View
                           style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 99,
-                            marginRight: 6,
+                            width: rp(8),
+                            height: rp(8),
+                            borderRadius: rp(99),
+                            marginRight: rp(6),
                             backgroundColor: s.available ? "#059669" : "#F43F5E",
                           }}
                         />
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: s.available ? "#059669" : "#F43F5E" }}>
+                        <Text style={{ fontSize: rs(11), fontWeight: "700", color: s.available ? "#059669" : "#F43F5E" }}>
                           {s.available ? "Available" : `In ${s.conflict_event_name || "another event"}`}
                         </Text>
                       </View>
@@ -1307,9 +1308,9 @@ export default function EventDetail() {
                       disabled={assigningSupervisorId === s.id}
                       activeOpacity={0.7}
                       style={{
-                        marginTop: 12,
-                        borderRadius: 14,
-                        paddingVertical: 12,
+                        marginTop: rp(12),
+                        borderRadius: rp(14),
+                        paddingVertical: rp(12),
                         alignItems: "center",
                         backgroundColor: s.assigned ? "transparent" : "#0F2044",
                         borderWidth: s.assigned ? 1.5 : 0,
@@ -1323,9 +1324,9 @@ export default function EventDetail() {
                         <Text
                           style={{
                             fontWeight: "900",
-                            letterSpacing: 1.5,
+                            letterSpacing: rs(1.5),
                             color: s.assigned ? "#F43F5E" : "#fff",
-                            fontSize: 13,
+                            fontSize: rs(13),
                           }}
                         >
                           {s.assigned ? "UNASSIGN" : "ASSIGN"}
@@ -1333,8 +1334,8 @@ export default function EventDetail() {
                       )}
                     </TouchableOpacity>
                   ) : (
-                    <View style={{ marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 12, alignItems: "center" }}>
-                      <Text style={{ color: "#9CA3AF", fontSize: 11 }}>In {s.conflict_event_name}</Text>
+                    <View style={{ marginTop: rp(12), backgroundColor: "#F3F4F6", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center" }}>
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>In {s.conflict_event_name}</Text>
                     </View>
                   )}
                 </View>
@@ -1345,22 +1346,22 @@ export default function EventDetail() {
           {employeeTab === "drivers" && (
             <>
               {/* DRIVERS CONTENT */}
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 16, gap: 8 }}>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: rp(16), gap: rp(8) }}>
                 <TouchableOpacity
                   onPress={() => setShowAddDriverModal(true)}
-                  style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingVertical: 7, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 6 }}
+                  style={{ backgroundColor: "#7C3AED", borderRadius: rp(12), paddingVertical: rp(7), paddingHorizontal: rp(14), flexDirection: "row", alignItems: "center", gap: rp(6) }}
                 >
                   <Ionicons name="add" size={14} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, letterSpacing: 1 }}>ADD DRIVER</Text>
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), letterSpacing: rs(1) }}>ADD DRIVER</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={assignAll}
                   disabled={assigningAll || drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0}
                   style={{
                     backgroundColor: assigningAll ? "#EDE9FE" : "#7C3AED",
-                    borderRadius: 12,
-                    paddingVertical: 7,
-                    paddingHorizontal: 14,
+                    borderRadius: rp(12),
+                    paddingVertical: rp(7),
+                    paddingHorizontal: rp(14),
                     flexDirection: "row",
                     alignItems: "center",
                     opacity: drivers.filter(d => (d.available || d.assigned) && !d.assigned).length === 0 ? 0.5 : 1,
@@ -1371,16 +1372,16 @@ export default function EventDetail() {
                   ) : (
                     <>
                       <Ionicons name="checkmark-done" size={14} color="#fff" />
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 12, marginLeft: 6, letterSpacing: 1 }}>ASSIGN ALL</Text>
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1) }}>ASSIGN ALL</Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
 
               {drivers.length === 0 && (
-                <View style={{ alignItems: "center", marginTop: 40 }}>
-                  <Text style={{ fontSize: 48 }}>👥</Text>
-                  <Text style={{ color: "#6B7280", marginTop: 8, fontWeight: "700" }}>No drivers</Text>
+                <View style={{ alignItems: "center", marginTop: rp(40) }}>
+                  <Text style={{ fontSize: rs(48) }}>👥</Text>
+                  <Text style={{ color: "#6B7280", marginTop: rp(8), fontWeight: "700" }}>No drivers</Text>
                 </View>
               )}
 
@@ -1389,9 +1390,9 @@ export default function EventDetail() {
                   key={d.id}
                   style={{
                     backgroundColor: "#fff",
-                    borderRadius: 24,
-                    padding: 16,
-                    marginBottom: 12,
+                    borderRadius: rp(24),
+                    padding: rp(16),
+                    marginBottom: rp(12),
                     ...cardShadow,
                   }}
                 >
@@ -1399,19 +1400,19 @@ export default function EventDetail() {
                     <View
                       style={{
                         backgroundColor: "#7C3AED",
-                        borderRadius: 99,
-                        width: 48,
-                        height: 48,
+                        borderRadius: rp(99),
+                        width: rp(48),
+                        height: rp(48),
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 18 }}>
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(18) }}>
                         {d.name?.[0]?.toUpperCase()}
                       </Text>
                     </View>
                     <TouchableOpacity
-                      style={{ flex: 1, marginLeft: 12 }}
+                      style={{ flex: 1, marginLeft: rp(12) }}
                       onPress={() =>
                         router.push({
                           pathname: "/(admin)/driver-stats",
@@ -1419,32 +1420,32 @@ export default function EventDetail() {
                         })
                       }
                     >
-                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{d.name}</Text>
-                      <Text style={{ color: "#6B7280", fontSize: 12 }}>{d.employee_id}</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{d.name}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: rs(12) }}>{d.employee_id}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(4) }}>
                         <View
                           style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 99,
-                            marginRight: 6,
+                            width: rp(8),
+                            height: rp(8),
+                            borderRadius: rp(99),
+                            marginRight: rp(6),
                             backgroundColor: d.available ? "#059669" : "#F43F5E",
                           }}
                         />
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
+                        <Text style={{ fontSize: rs(11), fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
                           {d.available ? "Available" : `In ${d.conflict_event_name || "another event"}`}
                         </Text>
                       </View>
                     </TouchableOpacity>
                   </View>
-                  <View style={{ flexDirection: "row", marginTop: 10, gap: 10 }}>
-                    <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                      <Text style={{ color: "#059669", fontSize: 11, fontWeight: "700" }}>
+                  <View style={{ flexDirection: "row", marginTop: rp(10), gap: rp(10) }}>
+                    <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                      <Text style={{ color: "#059669", fontSize: rs(11), fontWeight: "700" }}>
                         Checked in: {d.cars_checked_in || 0}
                       </Text>
                     </View>
-                    <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                      <Text style={{ color: "#0EA5E9", fontSize: 11, fontWeight: "700" }}>
+                    <View style={{ backgroundColor: "#DBEAFE", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                      <Text style={{ color: "#0EA5E9", fontSize: rs(11), fontWeight: "700" }}>
                         Retrieved: {d.cars_retrieved || 0}
                       </Text>
                     </View>
@@ -1455,9 +1456,9 @@ export default function EventDetail() {
                       disabled={assigningId === d.id}
                       activeOpacity={0.7}
                       style={{
-                        marginTop: 12,
-                        borderRadius: 14,
-                        paddingVertical: 12,
+                        marginTop: rp(12),
+                        borderRadius: rp(14),
+                        paddingVertical: rp(12),
                         alignItems: "center",
                         backgroundColor: d.assigned ? "transparent" : "#7C3AED",
                         borderWidth: d.assigned ? 1.5 : 0,
@@ -1471,9 +1472,9 @@ export default function EventDetail() {
                         <Text
                           style={{
                             fontWeight: "900",
-                            letterSpacing: 1.5,
+                            letterSpacing: rs(1.5),
                             color: d.assigned ? "#F43F5E" : "#fff",
-                            fontSize: 13,
+                            fontSize: rs(13),
                           }}
                         >
                           {d.assigned ? "UNASSIGN" : "ASSIGN"}
@@ -1481,28 +1482,28 @@ export default function EventDetail() {
                       )}
                     </TouchableOpacity>
                   ) : (
-                    <View style={{ marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 12, alignItems: "center" }}>
-                      <Text style={{ color: "#9CA3AF", fontSize: 11 }}>In {d.conflict_event_name}</Text>
+                    <View style={{ marginTop: rp(12), backgroundColor: "#F3F4F6", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center" }}>
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>In {d.conflict_event_name}</Text>
                     </View>
                   )}
                 </View>
               ))}
             </>
           )}
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       )}
 
       {tab === "stats" && (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
-          <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: 16, paddingVertical: 10, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
-            <Text style={{ color: "#7C3AED", fontWeight: "800", letterSpacing: 1 }}>↻ Refresh Stats</Text>
+          <TouchableOpacity onPress={fetchStats} style={{ backgroundColor: "#fff", borderRadius: rp(16), paddingVertical: rp(10), alignItems: "center", marginBottom: rp(16), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
+            <Text style={{ color: "#7C3AED", fontWeight: "800", letterSpacing: rs(1) }}>↻ Refresh Stats</Text>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: rp(16) }}>
             {[
               { label: "TOTAL CARS", value: stats?.total_cars ?? 0, color: "#1D4ED8", icon: "car" },
               { label: "PRE-REGISTERED", value: stats?.pre_registered ?? 0, color: "#7C3AED", icon: "bookmark", sub: "arrived with pass" },
@@ -1520,20 +1521,20 @@ export default function EventDetail() {
                 style={{
                   width: "48%",
                   backgroundColor: "#fff",
-                  borderRadius: 16,
-                  padding: 16,
-                  marginBottom: 12,
-                  borderLeftWidth: 4,
+                  borderRadius: rp(16),
+                  padding: rp(16),
+                  marginBottom: rp(12),
+                  borderLeftWidth: rp(4),
                   borderLeftColor: s.color,
                   ...cardShadow,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: rp(4) }}>
                   <Ionicons name={s.icon} size={16} color={s.color} />
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>{s.value}</Text>
-                <Text style={{ fontSize: 10, color: "#6B7280", fontWeight: "800", marginTop: 2 }}>{s.label}</Text>
-                {s.sub && <Text style={{ fontSize: 9, color: "#9CA3AF", marginTop: 1 }}>{s.sub}</Text>}
+                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#111827" }}>{s.value}</Text>
+                <Text style={{ fontSize: rs(10), color: "#6B7280", fontWeight: "800", marginTop: rp(2) }}>{s.label}</Text>
+                {s.sub && <Text style={{ fontSize: rs(9), color: "#9CA3AF", marginTop: rp(1) }}>{s.sub}</Text>}
               </View>
             ))}
           </View>
@@ -1543,15 +1544,15 @@ export default function EventDetail() {
             disabled={exportingCSV}
             style={{
               backgroundColor: exportingCSV ? "#D1FAE5" : "#ECFDF5",
-              borderRadius: 14,
-              paddingVertical: 12,
+              borderRadius: rp(14),
+              paddingVertical: rp(12),
               alignItems: "center",
-              marginBottom: 16,
-              borderWidth: 1,
+              marginBottom: rp(16),
+              borderWidth: rp(1),
               borderColor: "#6EE7B7",
               flexDirection: "row",
               justifyContent: "center",
-              gap: 6,
+              gap: rp(6),
             }}
           >
             {exportingCSV ? (
@@ -1566,8 +1567,8 @@ export default function EventDetail() {
             <Text style={{
               color: "#059669",
               fontWeight: "800",
-              fontSize: 13,
-              marginLeft: 6,
+              fontSize: rs(13),
+              marginLeft: rp(6),
             }}>
               {exportingCSV ? "Generating..." : "Export CSV"}
             </Text>
@@ -1577,15 +1578,15 @@ export default function EventDetail() {
             disabled={exportingPDF}
             style={{
               backgroundColor: exportingPDF ? "#EDE9FE" : "#F5F3FF",
-              borderRadius: 14,
-              paddingVertical: 12,
+              borderRadius: rp(14),
+              paddingVertical: rp(12),
               alignItems: "center",
-              marginBottom: 16,
-              borderWidth: 1,
+              marginBottom: rp(16),
+              borderWidth: rp(1),
               borderColor: "#DDD6FE",
               flexDirection: "row",
               justifyContent: "center",
-              gap: 6,
+              gap: rp(6),
             }}
           >
             {exportingPDF ? (
@@ -1595,63 +1596,63 @@ export default function EventDetail() {
                 color="#7C3AED" />
             )}
             <Text style={{ color: "#7C3AED", fontWeight: "800",
-              fontSize: 13, marginLeft: 6 }}>
+              fontSize: rs(13), marginLeft: rp(6) }}>
               {exportingPDF ? "Generating..." : "Export PDF Report"}
             </Text>
           </TouchableOpacity>
 
-          <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3, marginBottom: 12, marginTop: 8 }}>
+          <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3), marginBottom: rp(12), marginTop: rp(8) }}>
             PARKING SUMMARY
           </Text>
-          <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: rp(16) }}>
               <View style={{ width: "45%" }}>
-                <Text style={{ fontSize: 24, fontWeight: "900", color: "#7C3AED" }}>{slots.length}</Text>
-                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL SLOTS</Text>
+                <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#7C3AED" }}>{slots.length}</Text>
+                <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>TOTAL SLOTS</Text>
               </View>
               <View style={{ width: "45%" }}>
-                <Text style={{ fontSize: 24, fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
-                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
+                <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
+                <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
               </View>
               <View style={{ width: "45%" }}>
-                <Text style={{ fontSize: 24, fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
-                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
+                <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
+                <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
               </View>
               <View style={{ width: "45%" }}>
-                <Text style={{ fontSize: 24, fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
-                <Text style={{ fontSize: 10, color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
+                <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
+                <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
               </View>
             </View>
           </View>
 
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       )}
 
       {tab === "slots" && !isClosed && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
           
           {/* Internal sub-tab toggle */}
-          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: 18, padding: 4, marginBottom: 16, ...cardShadow }}>
+          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: rp(18), padding: rp(4), marginBottom: rp(16), ...cardShadow }}>
             <TouchableOpacity
               onPress={() => setSlotTab("parking")}
               style={{
-                flex: 1, paddingVertical: 10, borderRadius: 14,
+                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
                 backgroundColor: slotTab === "parking" ? "#7C3AED" : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6
+                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
               }}
             >
-              <Text style={{ fontWeight: "800", fontSize: 13, color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
+              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setSlotTab("keys")}
               style={{
-                flex: 1, paddingVertical: 10, borderRadius: 14,
+                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
                 backgroundColor: slotTab === "keys" ? "#7C3AED" : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6
+                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
               }}
             >
-              <Text style={{ fontWeight: "800", fontSize: 13, color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
+              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
             </TouchableOpacity>
           </View>
 
@@ -1665,37 +1666,37 @@ export default function EventDetail() {
                 const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
                 const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
                 return (
-                  <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 12 }}>
+                  <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(12) }}>
                       CAPACITY OVERVIEW
                     </Text>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(12) }}>
                       <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#111827" }}>{occupied}</Text>
-                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827" }}>{occupied}</Text>
+                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
                       </View>
                       <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#059669" }}>{free}</Text>
-                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>FREE</Text>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#059669" }}>{free}</Text>
+                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>FREE</Text>
                       </View>
                       <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 28, fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
-                        <Text style={{ fontSize: 11, color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
+                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
                       </View>
                     </View>
-                    <View style={{ height: 10, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                      <View style={{ height: 10, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                    <View style={{ height: rp(10), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
+                      <View style={{ height: rp(10), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
                     </View>
-                    <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 8, textAlign: "right" }}>
+                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(8), textAlign: "right" }}>
                       {pct}% full
                     </Text>
                     {pct >= 80 && (
                       <TouchableOpacity
                         onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
-                        style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: 14, padding: 12, marginTop: 12, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                        style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: rp(14), padding: rp(12), marginTop: rp(12), flexDirection: "row", alignItems: "center", justifyContent: "center" }}
                       >
                         <Ionicons name="warning-outline" size={16} color={pct >= 90 ? "#EF4444" : "#D97706"} />
-                        <Text style={{ fontWeight: "800", fontSize: 12, color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: 6 }}>
+                        <Text style={{ fontWeight: "800", fontSize: rs(12), color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: rp(6) }}>
                           {pct >= 90 ? "ALMOST FULL — TAP TO ADD MORE SLOTS" : "FILLING UP — TAP TO ADD MORE SLOTS"}
                         </Text>
                       </TouchableOpacity>
@@ -1709,7 +1710,7 @@ export default function EventDetail() {
                 const zones = [...new Set(slots.map(s => s.zone_name))];
                 if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
                 return (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
                     {zones.map(z => {
                       const zSlots = slots.filter(s => s.zone_name === z);
                       const zOcc = zSlots.filter(s => s.is_occupied).length;
@@ -1719,17 +1720,17 @@ export default function EventDetail() {
                           onPress={() => setSelectedZone(z)}
                           style={{
                             backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
-                            borderRadius: 16,
-                            paddingHorizontal: 16,
-                            paddingVertical: 10,
-                            marginRight: 10,
+                            borderRadius: rp(16),
+                            paddingHorizontal: rp(16),
+                            paddingVertical: rp(10),
+                            marginRight: rp(10),
                             ...cardShadow,
                           }}
                         >
-                          <Text style={{ fontWeight: "800", fontSize: 13, color: selectedZone === z ? "#fff" : "#111827" }}>
+                          <Text style={{ fontWeight: "800", fontSize: rs(13), color: selectedZone === z ? "#fff" : "#111827" }}>
                             Zone {z}
                           </Text>
-                          <Text style={{ fontSize: 11, color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: 2 }}>
+                          <Text style={{ fontSize: rs(11), color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: rp(2) }}>
                             {zOcc}/{zSlots.length} occupied
                           </Text>
                         </TouchableOpacity>
@@ -1743,22 +1744,22 @@ export default function EventDetail() {
               {(() => {
                 const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
                 return (
-                  <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, ...cardShadow }}>
-                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 16 }}>
+                  <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), ...cardShadow }}>
+                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(16) }}>
                       ZONE {selectedZone} — SLOT MAP
                     </Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8) }}>
                       {zoneSlots.map(s => (
                         <View
                           key={s.id}
                           style={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 14,
+                            width: rp(56),
+                            height: rp(56),
+                            borderRadius: rp(14),
                             backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
                             alignItems: "center",
                             justifyContent: "center",
-                            borderWidth: 1.5,
+                            borderWidth: rp(1.5),
                             borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
                           }}
                         >
@@ -1767,14 +1768,14 @@ export default function EventDetail() {
                             size={16}
                             color={s.is_occupied ? "#EF4444" : "#059669"}
                           />
-                          <Text style={{ fontSize: 11, fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: 2 }}>
+                          <Text style={{ fontSize: rs(11), fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: rp(2) }}>
                             {s.slot_number}
                           </Text>
                         </View>
                       ))}
                     </View>
                     {zoneSlots.length === 0 && (
-                      <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 24 }}>
+                      <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>
                         No slots in this zone
                       </Text>
                     )}
@@ -1786,11 +1787,11 @@ export default function EventDetail() {
             <>
               {/* Summary card */}
               {keyStats && (
-                <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, marginBottom: 16, ...cardShadow }}>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 14 }}>
+                <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(14) }}>
                     KEY BOARD STATUS
                   </Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(16) }}>
                     {[
                       { label: "IN BOOTH", value: keyStats.in_booth, color: "#7C3AED" },
                       { label: "AVAILABLE", value: keyStats.hooks_available, color: "#059669" },
@@ -1798,8 +1799,8 @@ export default function EventDetail() {
                       { label: "TOTAL HOOKS", value: keyStats.total_hooks, color: "#0EA5E9" },
                     ].map(s => (
                       <View key={s.label} style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: 24, fontWeight: "900", color: s.color }}>{s.value}</Text>
-                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1.5, marginTop: 4, textAlign: "center" }}>
+                        <Text style={{ fontSize: rs(24), fontWeight: "900", color: s.color }}>{s.value}</Text>
+                        <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5), marginTop: rp(4), textAlign: "center" }}>
                           {s.label}
                         </Text>
                       </View>
@@ -1812,10 +1813,10 @@ export default function EventDetail() {
                     const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#7C3AED";
                     return (
                       <>
-                        <View style={{ height: 8, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                          <View style={{ height: 8, width: `${pct}%`, backgroundColor: barColor, borderRadius: 99 }} />
+                        <View style={{ height: rp(8), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
+                          <View style={{ height: rp(8), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
                         </View>
-                        <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 6, textAlign: "right" }}>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(6), textAlign: "right" }}>
                           {pct}% full
                         </Text>
                       </>
@@ -1824,9 +1825,9 @@ export default function EventDetail() {
 
                   {/* Full board warning */}
                   {keyStats.hooks_full && (
-                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: 14, padding: 12, marginTop: 8, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: rp(14), padding: rp(12), marginTop: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
                       <Ionicons name="warning" size={18} color="#EF4444" />
-                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: 13, flex: 1 }}>
+                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: rs(13), flex: 1 }}>
                         Key board is full — no hooks available
                       </Text>
                     </View>
@@ -1836,13 +1837,13 @@ export default function EventDetail() {
 
               {/* Untagged warning */}
               {keyStats?.untagged_count > 0 && (
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: 16, padding: 14, marginBottom: 16, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#FDE68A" }}>
+                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(16), padding: rp(14), marginBottom: rp(16), flexDirection: "row", alignItems: "center", gap: rp(10), borderWidth: rp(1), borderColor: "#FDE68A" }}>
                   <Ionicons name="warning" size={20} color="#D97706" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: 13 }}>
+                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: rs(13) }}>
                       {keyStats.untagged_count} car(s) have no key tag
                     </Text>
-                    <Text style={{ color: "#B45309", fontSize: 11, marginTop: 2 }}>
+                    <Text style={{ color: "#B45309", fontSize: rs(11), marginTop: rp(2) }}>
                       Ask drivers to add key tag numbers for these cars
                     </Text>
                   </View>
@@ -1852,28 +1853,28 @@ export default function EventDetail() {
               {/* Keys in booth */}
               {keys.filter(k => k.in_booth).length > 0 && (
                 <>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3, marginBottom: 10 }}>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3), marginBottom: rp(10) }}>
                     IN BOOTH ({keys.filter(k => k.in_booth).length})
                   </Text>
                   {keys.filter(k => k.in_booth).map(k => (
                     <View key={k.car_id} style={{
-                      backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8,
-                      flexDirection: "row", alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#7C3AED",
+                      backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8),
+                      flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: "#7C3AED",
                       ...cardShadow }}>
-                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
                         <Ionicons name="key" size={16} color="#7C3AED" />
-                        <Text style={{ fontSize: 10, fontWeight: "900", color: "#7C3AED", marginTop: 1 }}>
+                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: "#7C3AED", marginTop: rp(1) }}>
                           #{k.key_tag}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: 14 }}>{k.plate}</Text>
-                        <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>
+                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(14) }}>{k.plate}</Text>
+                        <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>
                           {k.color} {k.make}{k.zone ? ` · Zone ${k.zone} Slot ${k.slot}` : ""}
                         </Text>
                       </View>
-                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#7C3AED", letterSpacing: 1 }}>
+                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(1) }}>
                           {k.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : k.status === "BEING_FETCHED" ? "FETCHING" : "PARKED"}
                         </Text>
                       </View>
@@ -1885,28 +1886,28 @@ export default function EventDetail() {
               {/* Returned keys */}
               {keys.filter(k => !k.in_booth).length > 0 && (
                 <>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#059669", letterSpacing: 3, marginTop: 8, marginBottom: 10 }}>
+                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#059669", letterSpacing: rs(3), marginTop: rp(8), marginBottom: rp(10) }}>
                     RETURNED ({keys.filter(k => !k.in_booth).length})
                   </Text>
                   {keys.filter(k => !k.in_booth).map(k => (
                     <View key={k.car_id} style={{
-                      backgroundColor: "#fff", borderRadius: 16, padding: 14, marginBottom: 8,
-                      flexDirection: "row", alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#D1FAE5",
+                      backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8),
+                      flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: "#D1FAE5",
                       opacity: 0.75, ...cardShadow }}>
-                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: 12, width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
                         <Ionicons name="key-outline" size={16} color="#059669" />
-                        <Text style={{ fontSize: 10, fontWeight: "900", color: "#059669", marginTop: 1 }}>
+                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: "#059669", marginTop: rp(1) }}>
                           #{k.key_tag}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: 14 }}>{k.plate}</Text>
-                        <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 2 }}>
+                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: rs(14) }}>{k.plate}</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(2) }}>
                           {k.color} {k.make} · Delivered
                         </Text>
                       </View>
-                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#059669", letterSpacing: 1 }}>
+                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#059669", letterSpacing: rs(1) }}>
                           RETURNED
                         </Text>
                       </View>
@@ -1917,12 +1918,12 @@ export default function EventDetail() {
 
               {/* Empty state */}
               {keys.length === 0 && (
-                <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 40, alignItems: "center", ...cardShadow }}>
+                <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(40), alignItems: "center", ...cardShadow }}>
                   <Ionicons name="key-outline" size={44} color="#D1D5DB" />
-                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: 12, fontSize: 15 }}>
+                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>
                     No key tags recorded yet
                   </Text>
-                  <Text style={{ color: "#D1D5DB", fontSize: 12, marginTop: 6, textAlign: "center" }}>
+                  <Text style={{ color: "#D1D5DB", fontSize: rs(12), marginTop: rp(6), textAlign: "center" }}>
                     Drivers add key tags from their tasks screen after parking
                   </Text>
                 </View>
@@ -1945,20 +1946,20 @@ export default function EventDetail() {
             flex: 1,
             backgroundColor: "rgba(0,0,0,0.6)",
             justifyContent: "center",
-            padding: 24,
+            padding: rp(24),
           }}
         >
           <View
             style={{
               backgroundColor: "#fff",
-              borderRadius: 32,
-              padding: 32,
+              borderRadius: rp(32),
+              padding: rp(32),
               alignItems: "center",
               width: "100%",
               shadowColor: "#000",
               shadowOpacity: 0.2,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 12 },
+              shadowRadius: rp(24),
+              shadowOffset: { width: 0, height: rp(12) },
               elevation: 12,
             }}
           >
@@ -1968,10 +1969,10 @@ export default function EventDetail() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                marginBottom: 20,
+                marginBottom: rp(20),
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: "800", color: "#1D4ED8", letterSpacing: 3 }}>
+              <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#1D4ED8", letterSpacing: rs(3) }}>
                 SPECIAL EVENT GUEST QR
               </Text>
               <TouchableOpacity onPress={() => setShowSpecialEventQRModal(false)}>
@@ -1981,7 +1982,7 @@ export default function EventDetail() {
 
             <Text
               style={{
-                fontSize: 22,
+                fontSize: rs(22),
                 fontWeight: "900",
                 color: "#111827",
                 textAlign: "center",
@@ -1991,12 +1992,12 @@ export default function EventDetail() {
             </Text>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: rs(14),
                 fontWeight: "700",
                 color: "#6B7280",
                 textAlign: "center",
-                marginTop: 4,
-                marginBottom: 24,
+                marginTop: rp(4),
+                marginBottom: rp(24),
               }}
             >
               {specialEventHotel?.name}
@@ -2004,10 +2005,10 @@ export default function EventDetail() {
 
             <View
               style={{
-                padding: 14,
+                padding: rp(14),
                 backgroundColor: "#F5F3FF",
-                borderRadius: 20,
-                marginBottom: 20,
+                borderRadius: rp(20),
+                marginBottom: rp(20),
               }}
             >
               {specialEventQRToken ? (
@@ -2019,8 +2020,8 @@ export default function EventDetail() {
               ) : (
                 <View
                   style={{
-                    width: 220,
-                    height: 220,
+                    width: rp(220),
+                    height: rp(220),
                     justifyContent: "center",
                     alignItems: "center",
                   }}
@@ -2033,9 +2034,9 @@ export default function EventDetail() {
             <Text
               style={{
                 color: "#9CA3AF",
-                fontSize: 11,
-                marginTop: 0,
-                marginBottom: 24,
+                fontSize: rs(11),
+                marginTop: rp(0),
+                marginBottom: rp(24),
                 textAlign: "center",
               }}
             >
@@ -2053,22 +2054,22 @@ export default function EventDetail() {
               }}
               style={{
                 backgroundColor: "#1D4ED8",
-                borderRadius: 16,
-                paddingVertical: 14,
+                borderRadius: rp(16),
+                paddingVertical: rp(14),
                 width: "100%",
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
+                gap: rp(8),
               }}
             >
               <Ionicons name="share-outline" size={20} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SHARE LINK</Text>
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SHARE LINK</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setShowSpecialEventQRModal(false)}
-              style={{ paddingVertical: 12, marginTop: 8, alignItems: "center", width: "100%" }}
+              style={{ paddingVertical: rp(12), marginTop: rp(8), alignItems: "center", width: "100%" }}
             >
               <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
             </TouchableOpacity>
@@ -2078,48 +2079,48 @@ export default function EventDetail() {
 
       <Modal visible={showCarModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20, maxHeight: "85%" }}>
-            <View style={{ alignItems: "center", marginBottom: 12 }}>
-              <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+            <View style={{ alignItems: "center", marginBottom: rp(12) }}>
+              <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
             </View>
             <ScrollView>
               {selectedCar && (
                 <>
                   <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 28, fontWeight: "900", color: "#7C3AED" }}>{selectedCar.plate}</Text>
-                      <Text style={{ color: "#6B7280", marginTop: 4 }}>{selectedCar.color} {selectedCar.make}</Text>
-                      <Text style={{ color: "#9CA3AF", fontSize: 13, marginTop: 4 }}>
+                      <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#7C3AED" }}>{selectedCar.plate}</Text>
+                      <Text style={{ color: "#6B7280", marginTop: rp(4) }}>{selectedCar.color} {selectedCar.make}</Text>
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(13), marginTop: rp(4) }}>
                         {selectedCar.zone ? `Zone ${selectedCar.zone} · Slot ${selectedCar.slot}` : "Not parked"}
                       </Text>
                     </View>
-                    <View style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
-                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>
+                    <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
+                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(11) }}>
                         {STATUS_CONFIG[selectedCar.status]?.label}
                       </Text>
                     </View>
                   </View>
                   {selectedCar.notes ? (
-                    <Text style={{ color: "#6B7280", marginTop: 12, fontStyle: "italic" }}>"{selectedCar.notes}"</Text>
+                    <Text style={{ color: "#6B7280", marginTop: rp(12), fontStyle: "italic" }}>"{selectedCar.notes}"</Text>
                   ) : null}
 
-                  <Text style={[modalLabel, { marginTop: 16 }]}>CHECK-IN PHOTOS</Text>
+                  <Text style={[modalLabel, { marginTop: rp(16) }]}>CHECK-IN PHOTOS</Text>
                   {carPhotos.filter((p) => p.type === "checkin").length === 0 ? (
-                    <Text style={{ color: "#9CA3AF", fontSize: 13 }}>No photos available</Text>
+                    <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}>No photos available</Text>
                   ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
                       {carPhotos.filter((p) => p.type === "checkin").map((p, i) => (
-                        <Image key={i} source={{ uri: p.url }} style={{ width: 120, height: 120, borderRadius: 14 }} />
+                        <Image key={i} source={{ uri: p.url }} style={{ width: rp(120), height: rp(120), borderRadius: rp(14) }} />
                       ))}
                     </ScrollView>
                   )}
 
                   {carPhotos.find((p) => p.type === "handover") && (
                     <>
-                      <Text style={[modalLabel, { marginTop: 16 }]}>HANDOVER PHOTO</Text>
+                      <Text style={[modalLabel, { marginTop: rp(16) }]}>HANDOVER PHOTO</Text>
                       <Image
                         source={{ uri: carPhotos.find((p) => p.type === "handover").url }}
-                        style={{ width: "100%", height: 200, borderRadius: 14 }}
+                        style={{ width: "100%", height: rp(200), borderRadius: rp(14) }}
                       />
                     </>
                   )}
@@ -2132,14 +2133,14 @@ export default function EventDetail() {
                         params: { car_id: selectedCar.id } 
                       }); 
                     }} 
-                    style={{ backgroundColor: "#111827", borderRadius: 16, 
-                    paddingVertical: 14, alignItems: "center", 
-                    marginTop: 20, flexDirection: "row", 
+                    style={{ backgroundColor: "#111827", borderRadius: rp(16), 
+                    paddingVertical: rp(14), alignItems: "center", 
+                    marginTop: rp(20), flexDirection: "row", 
                     justifyContent: "center" }} 
                   > 
                     <Ionicons name="time-outline" size={18} color="#fff" /> 
                     <Text style={{ color: "#fff", fontWeight: "900", 
-                    letterSpacing: 2, marginLeft: 8 }}>VIEW FULL LOG</Text> 
+                    letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text> 
                   </TouchableOpacity> 
 
                   <TouchableOpacity
@@ -2147,17 +2148,17 @@ export default function EventDetail() {
                       setShowCarModal(false);
                       router.push({ pathname: "/(admin)/qr-display", params: { token: selectedCar.qr_token, plate: selectedCar.plate } });
                     }}
-                    style={{ backgroundColor: "#7C3AED", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginTop: 20 }}
+                    style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20) }}
                   >
-                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>VIEW QR</Text>
+                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>VIEW QR</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => removeCar(selectedCar)}
-                    style={{ borderWidth: 1.5, borderColor: "#F43F5E", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginTop: 8, marginBottom: 16 }}
+                    style={{ borderWidth: rp(1.5), borderColor: "#F43F5E", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(8), marginBottom: rp(16) }}
                   >
-                    <Text style={{ color: "#F43F5E", fontWeight: "900", letterSpacing: 2 }}>REMOVE VEHICLE</Text>
+                    <Text style={{ color: "#F43F5E", fontWeight: "900", letterSpacing: rs(2) }}>REMOVE VEHICLE</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: 10, alignItems: "center", marginBottom: 12 }}>
+                  <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
                     <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
                   </TouchableOpacity>
                 </>
@@ -2170,11 +2171,11 @@ export default function EventDetail() {
       <Modal visible={showAddSupervisorModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 20 }}>
-              <View style={{ alignItems: "center", marginBottom: 14 }}>
-                <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20) }}>
+              <View style={{ alignItems: "center", marginBottom: rp(14) }}>
+                <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
-              <Text style={{ fontSize: 20, fontWeight: "900", color: "#0F2044", marginBottom: 20 }}>Add Supervisor</Text>
+              <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#0F2044", marginBottom: rp(20) }}>Add Supervisor</Text>
 
               <Text style={modalLabel}>NAME</Text>
               <TextInput value={supName} onChangeText={setSupName} placeholder="Full Name" style={modalInput} />
@@ -2191,9 +2192,9 @@ export default function EventDetail() {
               <TouchableOpacity
                 onPress={saveSupervisor}
                 disabled={savingSupervisor}
-                style={{ backgroundColor: "#0F2044", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 10, shadowColor: "#0F2044", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
+                style={{ backgroundColor: "#0F2044", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginTop: rp(10), shadowColor: "#0F2044", shadowOpacity: 0.3, shadowRadius: rp(12), shadowOffset: { width: 0, height: rp(6) }, elevation: 6 }}
               >
-                {savingSupervisor ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE SUPERVISOR</Text>}
+                {savingSupervisor ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SAVE SUPERVISOR</Text>}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -2201,7 +2202,7 @@ export default function EventDetail() {
                   resetSupForm();
                   setShowAddSupervisorModal(false);
                 }}
-                style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}
+                style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}
               >
                 <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
               </TouchableOpacity>
@@ -2215,18 +2216,18 @@ export default function EventDetail() {
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
-              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
-                <View style={{ alignItems: "center", marginBottom: 14 }}>
-                  <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+                <View style={{ alignItems: "center", marginBottom: rp(14) }}>
+                  <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: "900", color: "#059669", marginBottom: 20 }}>Add Driver</Text>
+                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#059669", marginBottom: rp(20) }}>Add Driver</Text>
 
-                <TouchableOpacity onPress={pickDriverPhoto} style={{ alignItems: "center", marginBottom: 16 }}>
+                <TouchableOpacity onPress={pickDriverPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Driver Photo (optional)</Text>
                   {drvPhotoUri ? (
-                    <Image source={{ uri: drvPhotoUri }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: "#059669" }} />
+                    <Image source={{ uri: drvPhotoUri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(40), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <View style={{ width: rp(80), height: rp(80), borderRadius: rp(40), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="person" size={32} color="#9CA3AF" />
                     </View>
                   )}
@@ -2249,12 +2250,12 @@ export default function EventDetail() {
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER (OPTIONAL)</Text>
                 <TextInput value={drvLicenseNumber} onChangeText={(v) => setDrvLicenseNumber(v.toUpperCase())} placeholder="DL number" autoCapitalize="characters" style={modalInput} />
 
-                <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: 16 }}>
+                <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo (optional)</Text>
                   {drvLicensePhotoUri ? (
-                    <Image source={{ uri: drvLicensePhotoUri }} style={{ width: 120, height: 80, borderRadius: 12, borderWidth: 2, borderColor: "#059669" }} />
+                    <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: 120, height: 80, borderRadius: 12, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
@@ -2263,16 +2264,16 @@ export default function EventDetail() {
                 <TouchableOpacity
                   onPress={saveDriver}
                   disabled={savingDriver}
-                  style={{ backgroundColor: "#059669", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 10, shadowColor: "#059669", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
+                  style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginTop: rp(10), shadowColor: "#059669", shadowOpacity: 0.3, shadowRadius: rp(12), shadowOffset: { width: 0, height: rp(6) }, elevation: 6 }}
                 >
-                  {savingDriver ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE DRIVER</Text>}
+                  {savingDriver ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SAVE DRIVER</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
                     resetDrvForm();
                     setShowAddDriverModal(false);
                   }}
-                  style={{ paddingVertical: 12, alignItems: "center", marginTop: 4 }}
+                  style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}
                 >
                   <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
                 </TouchableOpacity>
@@ -2294,26 +2295,26 @@ export default function EventDetail() {
           > 
             <View style={{ backgroundColor: "#fff", 
             borderTopLeftRadius: 36, borderTopRightRadius: 36, 
-            padding: 20, maxHeight: "92%" }}> 
+            padding: rp(20), maxHeight: "92%" }}> 
       
               {/* Handle */} 
-              <View style={{ alignItems: "center", marginBottom: 14 }}> 
-                <View style={{ backgroundColor: "#D1D5DB", width: 48, 
-                height: 4, borderRadius: 99 }} /> 
+              <View style={{ alignItems: "center", marginBottom: rp(14) }}> 
+                <View style={{ backgroundColor: "#D1D5DB", width: rp(48), 
+                height: rp(4), borderRadius: rp(99) }} /> 
               </View> 
       
               {/* Header */} 
               <View style={{ flexDirection: "row", alignItems: "center", 
-              marginBottom: 16 }}> 
+              marginBottom: rp(16) }}> 
                 <View style={{ backgroundColor: "#FEF3C7", 
-                borderRadius: 99, padding: 8, marginRight: 10 }}> 
+                borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}> 
                   <Ionicons name="warning" size={20} color="#F59E0B" /> 
                 </View> 
                 <View style={{ flex: 1 }}> 
-                  <Text style={{ fontSize: 18, fontWeight: "900", 
+                  <Text style={{ fontSize: rs(18), fontWeight: "900", 
                   color: "#111827" }}>Report Incident</Text> 
-                  <Text style={{ fontSize: 12, color: "#9CA3AF", 
-                  marginTop: 2 }}> 
+                  <Text style={{ fontSize: rs(12), color: "#9CA3AF", 
+                  marginTop: rp(2) }}> 
                     {event?.name || "Current Event"} 
                   </Text> 
                 </View> 
@@ -2328,15 +2329,15 @@ export default function EventDetail() {
               <ScrollView showsVerticalScrollIndicator={false}> 
       
                 {/* Car search */} 
-                <Text style={{ fontSize: 11, fontWeight: "800", 
-                color: "#6B7280", letterSpacing: 2, marginBottom: 8 }}> 
+                <Text style={{ fontSize: rs(11), fontWeight: "800", 
+                color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) }}> 
                   SELECT CAR * 
                 </Text> 
                 <View style={{ backgroundColor: "#F9FAFB", 
-                borderRadius: 14, borderWidth: 1, 
+                borderRadius: rp(14), borderWidth: rp(1), 
                 borderColor: "#E5E7EB", flexDirection: "row", 
-                alignItems: "center", paddingHorizontal: 12, 
-                marginBottom: 6 }}> 
+                alignItems: "center", paddingHorizontal: rp(12), 
+                marginBottom: rp(6) }}> 
                   <Ionicons name="search" size={16} color="#7C3AED" /> 
                   <TextInput 
                     value={incidentCarSearch} 
@@ -2344,8 +2345,8 @@ export default function EventDetail() {
                     placeholder="Search plate number..." 
                     placeholderTextColor="#9CA3AF" 
                     autoCapitalize="characters" 
-                    style={{ flex: 1, paddingVertical: 13, 
-                    paddingLeft: 8, color: "#111827", fontWeight: "700" }} 
+                    style={{ flex: 1, paddingVertical: rp(13), 
+                    paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} 
                   /> 
                   {incidentCar && ( 
                     <TouchableOpacity onPress={() => { 
@@ -2360,8 +2361,8 @@ export default function EventDetail() {
       
                 {incidentCarSearch.length > 1 && !incidentCar && ( 
                   <View style={{ backgroundColor: "#fff", 
-                  borderRadius: 14, borderWidth: 1, 
-                  borderColor: "#E5E7EB", marginBottom: 12, 
+                  borderRadius: rp(14), borderWidth: rp(1), 
+                  borderColor: "#E5E7EB", marginBottom: rp(12), 
                   overflow: "hidden" }}> 
                     {cars 
                       .filter(c => 
@@ -2377,14 +2378,14 @@ export default function EventDetail() {
                             setIncidentCar(c); 
                             setIncidentCarSearch(c.plate); 
                           }} 
-                          style={{ padding: 14, borderBottomWidth: 1, 
+                          style={{ padding: rp(14), borderBottomWidth: rp(1), 
                           borderBottomColor: "#F3F4F6", 
                           flexDirection: "row", 
                           alignItems: "center" }} 
                         > 
                           <View style={{ backgroundColor: "#F3F4F6", 
-                          borderRadius: 8, padding: 6, 
-                          marginRight: 10 }}> 
+                          borderRadius: rp(8), padding: rp(6), 
+                          marginRight: rp(10) }}> 
                             <Ionicons name="car-outline" size={16} 
                             color="#374151" /> 
                           </View> 
@@ -2392,7 +2393,7 @@ export default function EventDetail() {
                             <Text style={{ fontWeight: "900", 
                             color: "#111827" }}>{c.plate}</Text> 
                             <Text style={{ color: "#6B7280", 
-                            fontSize: 12 }}> 
+                            fontSize: rs(12) }}> 
                               {c.color} {c.make} 
                             </Text> 
                           </View> 
@@ -2404,8 +2405,8 @@ export default function EventDetail() {
                         incidentCarSearch.toLowerCase() 
                       ) 
                     ).length === 0 && ( 
-                      <View style={{ padding: 16, alignItems: "center" }}> 
-                        <Text style={{ color: "#9CA3AF", fontSize: 13 }}> 
+                      <View style={{ padding: rp(16), alignItems: "center" }}> 
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}> 
                           No cars found 
                         </Text> 
                       </View> 
@@ -2415,12 +2416,12 @@ export default function EventDetail() {
       
                 {incidentCar && ( 
                   <View style={{ backgroundColor: "#D1FAE5", 
-                  borderRadius: 12, padding: 12, marginBottom: 16, 
+                  borderRadius: rp(12), padding: rp(12), marginBottom: rp(16), 
                   flexDirection: "row", alignItems: "center" }}> 
                     <Ionicons name="checkmark-circle" size={18} 
                     color="#059669" /> 
                     <Text style={{ color: "#059669", fontWeight: "800", 
-                    marginLeft: 8, flex: 1 }}> 
+                    marginLeft: rp(8), flex: 1 }}> 
                       {incidentCar.plate} · {incidentCar.color}{" "} 
                       {incidentCar.make} 
                     </Text> 
@@ -2428,14 +2429,14 @@ export default function EventDetail() {
                 )} 
       
                 {/* Driver select */} 
-                <Text style={{ fontSize: 11, fontWeight: "800", 
-                color: "#6B7280", letterSpacing: 2, marginBottom: 8 }}> 
+                <Text style={{ fontSize: rs(11), fontWeight: "800", 
+                color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) }}> 
                   DRIVER INVOLVED (OPTIONAL) 
                 </Text> 
                 <ScrollView 
                   horizontal 
                   showsHorizontalScrollIndicator={false} 
-                  contentContainerStyle={{ gap: 8, marginBottom: 16 }} 
+                  contentContainerStyle={{ gap: rp(8), marginBottom: rp(16) }} 
                 > 
                   {[{ id: null, name: "None" }, 
                     ...drivers.filter(d => d.assigned) 
@@ -2446,10 +2447,10 @@ export default function EventDetail() {
                         setIncidentDriver(d.id ? d : null) 
                       } 
                       style={{ 
-                        paddingHorizontal: 14, 
-                        paddingVertical: 10, 
-                        borderRadius: 99, 
-                        borderWidth: 1.5, 
+                        paddingHorizontal: rp(14), 
+                        paddingVertical: rp(10), 
+                        borderRadius: rp(99), 
+                        borderWidth: rp(1.5), 
                         backgroundColor: 
                           (incidentDriver?.id ?? null) === d.id 
                             ? "#7C3AED" : "#fff", 
@@ -2460,7 +2461,7 @@ export default function EventDetail() {
                     > 
                       <Text style={{ 
                         fontWeight: "800", 
-                        fontSize: 13, 
+                        fontSize: rs(13), 
                         color: 
                           (incidentDriver?.id ?? null) === d.id 
                             ? "#fff" : "#374151", 
@@ -2472,8 +2473,8 @@ export default function EventDetail() {
                 </ScrollView> 
       
                 {/* Description */} 
-                <Text style={{ fontSize: 11, fontWeight: "800", 
-                color: "#6B7280", letterSpacing: 2, marginBottom: 8 }}> 
+                <Text style={{ fontSize: rs(11), fontWeight: "800", 
+                color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) }}> 
                   DESCRIPTION * 
                 </Text> 
                 <TextInput 
@@ -2483,21 +2484,21 @@ export default function EventDetail() {
                   placeholderTextColor="#9CA3AF" 
                   multiline 
                   numberOfLines={4} 
-                  style={{ backgroundColor: "#F9FAFB", borderRadius: 14, 
-                  borderWidth: 1, borderColor: "#E5E7EB", padding: 14, 
+                  style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), 
+                  borderWidth: rp(1), borderColor: "#E5E7EB", padding: rp(14), 
                   color: "#111827", textAlignVertical: "top", 
-                  minHeight: 110, marginBottom: 16, fontSize: 14, 
+                  minHeight: 110, marginBottom: rp(16), fontSize: rs(14), 
                   lineHeight: 22 }} 
                 /> 
       
                 {/* Photo */} 
                 <TouchableOpacity 
                   onPress={pickIncidentPhoto} 
-                  style={{ borderWidth: 1.5, 
+                  style={{ borderWidth: rp(1.5), 
                   borderColor: incidentPhoto ? "#059669" : "#E5E7EB", 
                   borderStyle: incidentPhoto ? "solid" : "dashed", 
-                  borderRadius: 14, padding: 16, alignItems: "center", 
-                  marginBottom: 20, 
+                  borderRadius: rp(14), padding: rp(16), alignItems: "center", 
+                  marginBottom: rp(20), 
                   backgroundColor: incidentPhoto 
                     ? "#D1FAE5" : "#FAFAFA" }} 
                 > 
@@ -2509,7 +2510,7 @@ export default function EventDetail() {
                   /> 
                   <Text style={{ 
                     color: incidentPhoto ? "#059669" : "#9CA3AF", 
-                    marginTop: 6, fontWeight: "700", fontSize: 13 
+                    marginTop: rp(6), fontWeight: "700", fontSize: rs(13) 
                   }}> 
                     {incidentPhoto 
                       ? "Photo Added ✓ (tap to retake)" 
@@ -2524,18 +2525,18 @@ export default function EventDetail() {
                   activeOpacity={0.85} 
                   style={{ backgroundColor: 
                     submittingIncident ? "#D1D5DB" : "#F59E0B", 
-                    borderRadius: 18, paddingVertical: 18, 
-                    alignItems: "center", marginBottom: 24, 
+                    borderRadius: rp(18), paddingVertical: rp(18), 
+                    alignItems: "center", marginBottom: rp(24), 
                     shadowColor: "#F59E0B", shadowOpacity: 0.35, 
-                    shadowRadius: 12, 
-                    shadowOffset: { width: 0, height: 6 }, 
+                    shadowRadius: rp(12), 
+                    shadowOffset: { width: 0, height: rp(6) }, 
                     elevation: 6 }} 
                 > 
                   {submittingIncident ? ( 
                     <ActivityIndicator color="#fff" /> 
                   ) : ( 
                     <Text style={{ color: "#fff", fontWeight: "900", 
-                    letterSpacing: 2, fontSize: 14 }}> 
+                    letterSpacing: rs(2), fontSize: rs(14) }}> 
                       SUBMIT INCIDENT REPORT 
                     </Text> 
                   )} 
@@ -2552,26 +2553,26 @@ export default function EventDetail() {
 
 const iconBtn = {
   backgroundColor: "rgba(255,255,255,0.15)",
-  borderRadius: 99,
-  padding: 8,
+  borderRadius: rp(99),
+  padding: rp(8),
 };
 
 const modalLabel = {
-  fontSize: 11,
+  fontSize: rs(11),
   fontWeight: "800",
   color: "#6B7280",
-  letterSpacing: 3,
-  marginBottom: 8,
+  letterSpacing: rs(3),
+  marginBottom: rp(8),
 };
 
 const modalInput = {
   backgroundColor: "#F9FAFB",
-  borderRadius: 14,
-  borderWidth: 1,
+  borderRadius: rp(14),
+  borderWidth: rp(1),
   borderColor: "#E5E7EB",
-  padding: 14,
+  padding: rp(14),
   color: "#111827",
-  marginBottom: 16,
-  fontSize: 15,
+  marginBottom: rp(16),
+  fontSize: rs(15),
   fontWeight: "700",
 };

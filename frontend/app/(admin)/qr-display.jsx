@@ -1,4 +1,5 @@
-import { useState } from "react"; 
+import { useState } from "react";
+import { rs, rp } from '../../utils/responsive'; 
 import { 
   View, 
   Text, 
@@ -76,42 +77,42 @@ export default function AdminQRDisplay() {
         }} 
       /> 
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}> 
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 8 }}> 
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: rp(20), paddingTop: rp(8) }}> 
           <TouchableOpacity 
             onPress={() => router.back()} 
-            style={{ backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 99, padding: 10 }} 
+            style={{ backgroundColor: "rgba(255,255,255,0.18)", borderRadius: rp(99), padding: rp(10) }} 
           > 
             <Ionicons name="chevron-back" size={22} color="#fff" /> 
           </TouchableOpacity> 
-          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 14, flex: 1, letterSpacing: 0.5 }}> 
+          <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(14), flex: 1, letterSpacing: rs(0.5) }}> 
             Guest QR Code 
           </Text> 
         </View> 
  
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }}> 
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: rp(24) }}> 
           <View 
             style={{ 
               backgroundColor: "#fff", 
-              borderRadius: 32, 
-              padding: 32, 
+              borderRadius: rp(32), 
+              padding: rp(32), 
               alignItems: "center", 
               width: "100%", 
               shadowColor: "#000", 
               shadowOpacity: 0.2, 
-              shadowRadius: 24, 
-              shadowOffset: { width: 0, height: 12 }, 
+              shadowRadius: rp(24), 
+              shadowOffset: { width: 0, height: rp(12) }, 
               elevation: 12, 
             }} 
           > 
-            <Text style={{ fontSize: 11, fontWeight: "800", color: "#7C3AED", letterSpacing: 3 }}> 
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}> 
               GUEST QR CODE 
             </Text> 
-            <Text style={{ fontSize: 28, fontWeight: "900", color: "#111827", marginTop: 6 }}>{plate}</Text> 
-            <Text style={{ color: "#9CA3AF", marginTop: 4, marginBottom: 24, fontSize: 13 }}>Show this to the guest</Text> 
-            <View style={{ padding: 14, backgroundColor: "#F5F3FF", borderRadius: 20 }}> 
+            <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827", marginTop: rp(6) }}>{plate}</Text> 
+            <Text style={{ color: "#9CA3AF", marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>Show this to the guest</Text> 
+            <View style={{ padding: rp(14), backgroundColor: "#F5F3FF", borderRadius: rp(20) }}> 
               <QRCode value={guestUrl} size={220} color="#4F46E5" /> 
             </View> 
-            <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 18, textAlign: "center" }}> 
+            <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(18), textAlign: "center" }}> 
               Guest scans this to request their car 
             </Text> 
           </View> 
@@ -121,11 +122,11 @@ export default function AdminQRDisplay() {
             onPress={() => Share.share({ message: `Valet QR for ${plate}. Scan to request: ${guestUrl}` })} 
             style={{ 
               backgroundColor: "rgba(255,255,255,0.15)", 
-              borderWidth: 1.5, 
+              borderWidth: rp(1.5), 
               borderColor: "#fff", 
-              borderRadius: 16, 
-              paddingVertical: 14, 
-              marginTop: 24, 
+              borderRadius: rp(16), 
+              paddingVertical: rp(14), 
+              marginTop: rp(24), 
               width: "100%", 
               flexDirection: "row", 
               alignItems: "center", 
@@ -133,7 +134,7 @@ export default function AdminQRDisplay() {
             }} 
           > 
             <Ionicons name="share-outline" size={20} color="#fff" /> 
-            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2, marginLeft: 8 }}>SHARE</Text> 
+            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>SHARE</Text> 
           </TouchableOpacity> 
  
           {/* Send SMS button */} 
@@ -141,9 +142,9 @@ export default function AdminQRDisplay() {
             onPress={handleOpenSmsModal} 
             style={{ 
               backgroundColor: "#fff", 
-              borderRadius: 16, 
-              paddingVertical: 14, 
-              marginTop: 12, 
+              borderRadius: rp(16), 
+              paddingVertical: rp(14), 
+              marginTop: rp(12), 
               width: "100%", 
               flexDirection: "row", 
               alignItems: "center", 
@@ -151,7 +152,7 @@ export default function AdminQRDisplay() {
             }} 
           > 
             <Ionicons name="chatbubble-ellipses-outline" size={20} color="#7C3AED" /> 
-            <Text style={{ color: "#7C3AED", fontWeight: "900", letterSpacing: 2, marginLeft: 8 }}>SEND SMS TO GUEST</Text> 
+            <Text style={{ color: "#7C3AED", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>SEND SMS TO GUEST</Text> 
           </TouchableOpacity> 
         </View> 
       </SafeAreaView> 
@@ -172,16 +173,16 @@ export default function AdminQRDisplay() {
               backgroundColor: "#fff", 
               borderTopLeftRadius: 28, 
               borderTopRightRadius: 28, 
-              padding: 28, 
+              padding: rp(28), 
               shadowColor: "#000", 
               shadowOpacity: 0.15, 
-              shadowRadius: 20, 
+              shadowRadius: rp(20), 
               elevation: 20, 
             }} 
           > 
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}> 
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(20) }}> 
               <Ionicons name="chatbubble-ellipses-outline" size={22} color="#7C3AED" /> 
-              <Text style={{ fontSize: 17, fontWeight: "900", color: "#111827", marginLeft: 10, flex: 1 }}> 
+              <Text style={{ fontSize: rs(17), fontWeight: "900", color: "#111827", marginLeft: rp(10), flex: 1 }}> 
                 Send Retrieval Link via SMS 
               </Text> 
               <TouchableOpacity onPress={() => setSmsModalVisible(false)}> 
@@ -189,24 +190,24 @@ export default function AdminQRDisplay() {
               </TouchableOpacity> 
             </View> 
  
-            <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 8 }}> 
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8) }}> 
               GUEST MOBILE NUMBER 
             </Text> 
             <View 
               style={{ 
                 backgroundColor: "#F9FAFB", 
-                borderRadius: 14, 
-                borderWidth: 1, 
+                borderRadius: rp(14), 
+                borderWidth: rp(1), 
                 borderColor: "#E5E7EB", 
                 flexDirection: "row", 
                 alignItems: "center", 
-                paddingHorizontal: 14, 
-                marginBottom: 20, 
+                paddingHorizontal: rp(14), 
+                marginBottom: rp(20), 
               }} 
             > 
                <Ionicons name="phone-portrait-outline" size={18} color="#7C3AED" /> 
               {loadingPhone ? ( 
-                <ActivityIndicator color="#7C3AED" style={{ paddingVertical: 14, paddingLeft: 10 }} /> 
+                <ActivityIndicator color="#7C3AED" style={{ paddingVertical: rp(14), paddingLeft: rp(10) }} /> 
               ) : ( 
                 <TextInput 
                   value={phone} 
@@ -215,12 +216,12 @@ export default function AdminQRDisplay() {
                   placeholderTextColor="#9CA3AF" 
                   keyboardType="phone-pad" 
                   maxLength={10} 
-                  style={{ flex: 1, fontSize: 16, paddingVertical: 14, paddingLeft: 10, color: "#111827" }} 
+                  style={{ flex: 1, fontSize: rs(16), paddingVertical: rp(14), paddingLeft: rp(10), color: "#111827" }} 
                 /> 
               )} 
             </View> 
  
-            <Text style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 20, lineHeight: 18 }}> 
+            <Text style={{ fontSize: rs(12), color: "#9CA3AF", marginBottom: rp(20), lineHeight: 18 }}> 
               The guest will receive a link to request retrieval of their {plate} when ready. 
             </Text> 
  
@@ -229,15 +230,15 @@ export default function AdminQRDisplay() {
               disabled={sending} 
               style={{ 
                 backgroundColor: "#7C3AED", 
-                borderRadius: 14, 
-                paddingVertical: 15, 
+                borderRadius: rp(14), 
+                paddingVertical: rp(15), 
                 alignItems: "center", 
               }} 
             > 
               {sending ? ( 
                 <ActivityIndicator color="#fff" /> 
               ) : ( 
-                <Text style={{ color: "#fff", fontWeight: "900", fontSize: 14, letterSpacing: 2 }}> 
+                <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(14), letterSpacing: rs(2) }}> 
                   SEND SMS 
                 </Text> 
               )} 

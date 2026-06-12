@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import QRCode from "react-native-qrcode-svg";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
@@ -25,14 +27,14 @@ const ACCENT_COLOR = "#1D4ED8";
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
 const cardBase = {
   backgroundColor: "#fff",
-  borderRadius: 24,
+  borderRadius: rp(24),
 };
 
 export default function HotelDetail() {
@@ -63,12 +65,28 @@ export default function HotelDetail() {
   const [newEventStartTime, setNewEventStartTime] = useState("18:00");
   const [newEventEndTime, setNewEventEndTime] = useState("23:00");
   const [newEventMaxCars, setNewEventMaxCars] = useState("100");
+  const [newEventKeyHooks, setNewEventKeyHooks] = useState("50");
+  const [newEventZones, setNewEventZones] = useState([{ name: "Zone A", slots: "50" }]);
+  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
+  const [showEventStartTimePicker, setShowEventStartTimePicker] = useState(false);
+  const [showEventEndTimePicker, setShowEventEndTimePicker] = useState(false);
 
   // Team tab state
-  const [availableDrivers, setAvailableDrivers] = useState([]);
-  const [availableSupervisors, setAvailableSupervisors] = useState([]);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [allDrivers, setAllDrivers] = useState([]);
+  const [allSupervisors, setAllSupervisors] = useState([]);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [showCreateDriverModal, setShowCreateDriverModal] = useState(false);
+  const [showCreateSupervisorModal, setShowCreateSupervisorModal] = useState(false);
+  const [drvName, setDrvName] = useState("");
+  const [drvEmail, setDrvEmail] = useState("");
+  const [drvPhone, setDrvPhone] = useState("");
+  const [drvPin, setDrvPin] = useState("");
+  const [savingDrv, setSavingDrv] = useState(false);
+  const [supName, setSupName] = useState("");
+  const [supEmail, setSupEmail] = useState("");
+  const [supPhone, setSupPhone] = useState("");
+  const [supPassword, setSupPassword] = useState("");
+  const [savingSup, setSavingSup] = useState(false);
 
   // Info tab state (editable)
   const [editHotel, setEditHotel] = useState(null);
@@ -80,6 +98,25 @@ export default function HotelDetail() {
   const pastEvents = allEvents
     .filter(e => e.status === "closed" && e.date < today)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const assignedDriverIds = new Set(hotel?.assigned_driver_ids || (hotel?.assigned_drivers || []).map(d => d.id));
+  const assignedSupervisorIds = new Set(hotel?.assigned_supervisor_ids || (hotel?.assigned_supervisors || []).map(s => s.id));
+
+  const sortedDrivers = [
+    ...allDrivers.filter(d => assignedDriverIds.has(d.id)),
+    ...allDrivers.filter(d => !assignedDriverIds.has(d.id))
+  ].filter(d =>
+    d.name?.toLowerCase().includes(teamSearch.toLowerCase()) ||
+    d.employee_id?.toLowerCase().includes(teamSearch.toLowerCase())
+  );
+
+  const sortedSupervisors = [
+    ...allSupervisors.filter(s => assignedSupervisorIds.has(s.id)),
+    ...allSupervisors.filter(s => !assignedSupervisorIds.has(s.id))
+  ].filter(s =>
+    s.name?.toLowerCase().includes(teamSearch.toLowerCase()) ||
+    s.employee_id?.toLowerCase().includes(teamSearch.toLowerCase())
+  );
 
   const fetchHotel = useCallback(async () => {
     try {
@@ -101,38 +138,36 @@ export default function HotelDetail() {
     }
   }, [hid]);
 
-  const fetchAvailableMembers = useCallback(async () => {
-    setLoadingMembers(true);
+  const fetchAllMembers = useCallback(async () => {
     try {
-      if (teamTab === "drivers") {
-        const { data } = await api.get("/drivers");
-        const assignedIds = new Set((hotel?.assigned_drivers || []).map(d => d.id));
-        setAvailableDrivers((data || []).filter(d => !assignedIds.has(d.id)));
-      } else {
-        const { data } = await api.get("/supervisors");
-        const assignedIds = new Set((hotel?.assigned_supervisors || []).map(s => s.id));
-        setAvailableSupervisors((data || []).filter(s => !assignedIds.has(s.id)));
-      }
+      const [drvRes, supRes] = await Promise.all([
+        api.get("/drivers"),
+        api.get("/supervisors")
+      ]);
+      setAllDrivers(drvRes.data || []);
+      setAllSupervisors(supRes.data || []);
     } catch (e) {
-      console.error("Error fetching available members:", e);
-    } finally {
-      setLoadingMembers(false);
+      console.error("Failed to fetch members", e);
     }
-  }, [teamTab, hotel]);
+  }, []);
 
   const init = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchHotel(), fetchEvents()]);
+    await Promise.all([fetchHotel(), fetchEvents(), fetchAllMembers()]);
     setLoading(false);
-  }, [fetchHotel, fetchEvents]);
+  }, [fetchHotel, fetchEvents, fetchAllMembers]);
 
   useEffect(() => {
     init();
   }, [init]);
 
+  useEffect(() => {
+    setTeamSearch("");
+  }, [teamTab]);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchHotel(), fetchEvents()]);
+    await Promise.all([fetchHotel(), fetchEvents(), fetchAllMembers()]);
     setRefreshing(false);
   };
 
@@ -146,11 +181,24 @@ export default function HotelDetail() {
     }
   };
 
+  const resetDrvForm = () => {
+    setDrvName("");
+    setDrvEmail("");
+    setDrvPhone("");
+    setDrvPin("");
+  };
+
+  const resetSupForm = () => {
+    setSupName("");
+    setSupEmail("");
+    setSupPhone("");
+    setSupPassword("");
+  };
+
   const addMember = async (memberId) => {
     try {
       const type = teamTab === "drivers" ? "drivers" : "supervisors";
       await api.post(`/hotels/${hid}/${type}/${memberId}`);
-      setShowAddMemberModal(false);
       fetchHotel();
     } catch (e) {
       Alert.alert("Error", "Failed to add member");
@@ -176,14 +224,79 @@ export default function HotelDetail() {
     ]);
   };
 
+  const saveDriver = async () => {
+    if (!drvName.trim() || !drvEmail.trim() || !drvPin.trim()) {
+      Alert.alert("Required", "Name, email, and PIN are required");
+      return;
+    }
+    setSavingDrv(true);
+    try {
+      const { data: newDriver } = await api.post("/drivers", {
+        name: drvName.trim(),
+        email: drvEmail.trim().toLowerCase(),
+        phone: drvPhone.trim() || undefined,
+        pin: drvPin,
+      });
+      setShowCreateDriverModal(false);
+      resetDrvForm();
+      await addMember(newDriver.id);
+      fetchAllMembers();
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Failed to add driver");
+    } finally {
+      setSavingDrv(false);
+    }
+  };
+
+  const saveSupervisor = async () => {
+    if (!supName.trim() || !supEmail.trim() || !supPassword.trim()) {
+      Alert.alert("Required", "Name, email, and password are required");
+      return;
+    }
+    setSavingSup(true);
+    try {
+      const { data: newSupervisor } = await api.post("/supervisors", {
+        name: supName.trim(),
+        email: supEmail.trim().toLowerCase(),
+        phone: supPhone.trim() || undefined,
+        password: supPassword,
+      });
+      setShowCreateSupervisorModal(false);
+      resetSupForm();
+      await addMember(newSupervisor.id);
+      fetchAllMembers();
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Failed to add supervisor");
+    } finally {
+      setSavingSup(false);
+    }
+  };
+
   const openEvent = (event) => {
     setCurrentEventId(event.id);
     router.push("/(admin)/event-detail");
   };
 
   const saveSpecialEvent = async () => {
-    if (!newEventName || !newEventDate) {
-      Alert.alert("Required", "Name and Date are required");
+    if (!newEventName.trim()) {
+      Alert.alert("Required", "Please enter the event name");
+      return;
+    }
+    if (!newEventDate) {
+      Alert.alert("Required", "Please select a date");
+      return;
+    }
+    if (!newEventStartTime) {
+      Alert.alert("Required", "Please select a start time");
+      return;
+    }
+    if (!newEventEndTime) {
+      Alert.alert("Required", "Please select an end time");
+      return;
+    }
+    const maxCarsNum = parseInt(newEventMaxCars);
+    if (isNaN(maxCarsNum) || maxCarsNum < 1) {
+      Alert.alert("Required", "Please enter a valid number for max cars");
       return;
     }
     setSavingEvent(true);
@@ -191,18 +304,30 @@ export default function HotelDetail() {
       await api.post(`/hotels/${hid}/events`, {
         name: newEventName.trim(),
         date: newEventDate,
+        end_date: newEventDate,
         start_time: newEventStartTime,
         end_time: newEventEndTime,
-        max_cars: parseInt(newEventMaxCars),
+        max_cars: maxCarsNum,
+        key_hooks: parseInt(newEventKeyHooks) || 50,
+        zones: newEventZones.map(z => ({ name: z.name, slots: parseInt(z.slots) || 50 })),
+        gates: ["Main Gate"],
         event_type: "hotel_special",
         venue: hotel?.name,
       });
       setShowAddEventModal(false);
       setNewEventName("");
+      setNewEventKeyHooks("50");
+      setNewEventZones([{ name: "Zone A", slots: "50" }]);
       fetchEvents();
       Alert.alert("Success", "Special event created");
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to create event");
+      const detail = e.response?.data?.detail;
+      const message = Array.isArray(detail)
+        ? detail.map(d => d.msg || JSON.stringify(d)).join(", ")
+        : typeof detail === "string"
+        ? detail
+        : "Failed to create special event";
+      Alert.alert("Error", message);
     } finally {
       setSavingEvent(false);
     }
@@ -230,8 +355,25 @@ export default function HotelDetail() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color={ACCENT_COLOR} />
+      <View style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
+        <SafeAreaView edges={["top"]} style={{ backgroundColor: ACCENT_COLOR }}>
+          <View
+            style={{
+              backgroundColor: ACCENT_COLOR,
+              borderBottomLeftRadius: 44,
+              borderBottomRightRadius: 44,
+              paddingHorizontal: rp(20),
+              paddingTop: rp(8),
+              paddingBottom: rp(24),
+              alignItems: "center"
+            }}
+          >
+            <ActivityIndicator size="small" color="#fff" />
+            <Text style={{ color: "#fff", marginTop: rp(8), fontWeight: "700", opacity: 0.8 }}>
+              Loading Hotel...
+            </Text>
+          </View>
+        </SafeAreaView>
       </View>
     );
   }
@@ -244,30 +386,30 @@ export default function HotelDetail() {
             backgroundColor: ACCENT_COLOR,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 24,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(24),
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900" }} numberOfLines={1}>
+            <View style={{ flex: 1, marginLeft: rp(12) }}>
+              <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900" }} numberOfLines={1}>
                 {hotel?.name}
               </Text>
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>{hotel?.city}, {hotel?.state}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(12) }}>{hotel?.city}, {hotel?.state}</Text>
             </View>
             <TouchableOpacity
               onPress={addSpecialEvent}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: rp(12), paddingVertical: rp(8), borderRadius: rp(12), flexDirection: "row", alignItems: "center", gap: rp(6) }}
             >
               <Ionicons name="star" size={16} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "900", fontSize: 11 }}>SPECIAL EVENT</Text>
+              <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11) }}>SPECIAL EVENT</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -278,10 +420,10 @@ export default function HotelDetail() {
         style={{
           backgroundColor: "#fff",
           flexDirection: "row",
-          marginHorizontal: 16,
+          marginHorizontal: rp(16),
           marginTop: -20,
-          borderRadius: 20,
-          padding: 4,
+          borderRadius: rp(20),
+          padding: rp(4),
           ...cardShadow,
         }}
       >
@@ -298,8 +440,8 @@ export default function HotelDetail() {
               onPress={() => setTab(k)}
               style={{
                 flex: 1,
-                paddingVertical: 10,
-                borderRadius: 16,
+                paddingVertical: rp(10),
+                borderRadius: rp(16),
                 backgroundColor: tab === k ? ACCENT_COLOR : "transparent",
                 alignItems: "center",
               }}
@@ -307,9 +449,9 @@ export default function HotelDetail() {
               <Text
                 style={{
                   fontWeight: "800",
-                  fontSize: 12,
+                  fontSize: rs(12),
                   color: tab === k ? "#fff" : "#6B7280",
-                  letterSpacing: 0.5,
+                  letterSpacing: rs(0.5),
                 }}
               >
                 {l}
@@ -320,8 +462,8 @@ export default function HotelDetail() {
       </View>
 
       <ScrollView
-        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+        contentContainerStyle={{ paddingBottom: rp(100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT_COLOR} />}
       >
         {tab === "today" && (
@@ -332,60 +474,60 @@ export default function HotelDetail() {
                 <TouchableOpacity
                   key={e.id}
                   onPress={() => openEvent(e)}
-                  style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, ...cardShadow, marginBottom: 12 }}
+                  style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), ...cardShadow, marginBottom: rp(12) }}
                 >
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                        <Text style={{ fontSize: 18, fontWeight: "900", color: "#111827" }}>{e.name}</Text>
-                        <View style={{ backgroundColor: e.event_type === "hotel_daily" ? "#E0F2FE" : "#EBF5FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                          <Text style={{ color: e.event_type === "hotel_daily" ? "#0369A1" : ACCENT_COLOR, fontWeight: "800", fontSize: 9 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: rp(8) }}>
+                        <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827" }}>{e.name}</Text>
+                        <View style={{ backgroundColor: e.event_type === "hotel_daily" ? "#E0F2FE" : "#EBF5FF", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
+                          <Text style={{ color: e.event_type === "hotel_daily" ? "#0369A1" : ACCENT_COLOR, fontWeight: "800", fontSize: rs(9) }}>
                             {e.event_type === "hotel_daily" ? "AUTO DAILY" : "SPECIAL"}
                           </Text>
                         </View>
                         {e.event_type === "hotel_special" && (
                           <TouchableOpacity
                             onPress={() => handleShowEventQR(e)}
-                            style={{ backgroundColor: "#F5F3FF", padding: 6, borderRadius: 8 }}
+                            style={{ backgroundColor: "#F5F3FF", padding: rp(6), borderRadius: rp(8) }}
                           >
                             <Ionicons name="qr-code" size={16} color={ACCENT_COLOR} />
                           </TouchableOpacity>
                         )}
                       </View>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 12 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(8), gap: rp(12) }}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                           <Ionicons name="time-outline" size={14} color={ACCENT_COLOR} />
-                          <Text style={{ color: "#6B7280", fontSize: 13, marginLeft: 4 }}>{e.start_time}—{e.end_time}</Text>
+                          <Text style={{ color: "#6B7280", fontSize: rs(13), marginLeft: rp(4) }}>{e.start_time}—{e.end_time}</Text>
                         </View>
-                        <View style={{ backgroundColor: e.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                          <Text style={{ color: e.status === "active" ? "#059669" : "#6B7280", fontWeight: "800", fontSize: 10 }}>{e.status.toUpperCase()}</Text>
+                        <View style={{ backgroundColor: e.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
+                          <Text style={{ color: e.status === "active" ? "#059669" : "#6B7280", fontWeight: "800", fontSize: rs(10) }}>{e.status.toUpperCase()}</Text>
                         </View>
                       </View>
                     </View>
                     <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
                   </View>
                   
-                  <View style={{ height: 1, backgroundColor: "#F3F4F6", marginVertical: 16 }} />
+                  <View style={{ height: rp(1), backgroundColor: "#F3F4F6", marginVertical: rp(16) }} />
                   
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <View>
-                      <Text style={{ color: "#9CA3AF", fontSize: 11, fontWeight: "700" }}>TOTAL CARS</Text>
-                      <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", marginTop: 4 }}>{e.total_cars || 0}</Text>
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11), fontWeight: "700" }}>TOTAL CARS</Text>
+                      <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(4) }}>{e.total_cars || 0}</Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => openEvent(e)}
-                      style={{ backgroundColor: ACCENT_COLOR, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 14, justifyContent: "center" }}
+                      style={{ backgroundColor: ACCENT_COLOR, paddingHorizontal: rp(20), paddingVertical: rp(10), borderRadius: rp(14), justifyContent: "center" }}
                     >
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: 13 }}>OPEN EVENT</Text>
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(13) }}>OPEN EVENT</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
               ))
             ) : (
-              <View style={{ backgroundColor: "#F3F4F6", borderRadius: 24, padding: 32, alignItems: "center", borderStyle: "dashed", borderWidth: 2, borderColor: "#D1D5DB" }}>
-                <Text style={{ fontSize: 40 }}>🗓️</Text>
-                <Text style={{ color: "#6B7280", fontWeight: "700", marginTop: 12, fontSize: 15 }}>No events today</Text>
-                <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4, textAlign: "center" }}>Daily event is created automatically at midnight</Text>
+              <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(24), padding: rp(32), alignItems: "center", borderStyle: "dashed", borderWidth: rp(2), borderColor: "#D1D5DB" }}>
+                <Text style={{ fontSize: rs(40) }}>🗓️</Text>
+                <Text style={{ color: "#6B7280", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>No events today</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(4), textAlign: "center" }}>Daily event is created automatically at midnight</Text>
               </View>
             )}
           </View>
@@ -393,11 +535,11 @@ export default function HotelDetail() {
 
         {tab === "events" && (
           <View>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
               <Text style={sectionTitle}>PAST EVENTS</Text>
-              <TouchableOpacity onPress={addSpecialEvent} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <TouchableOpacity onPress={addSpecialEvent} style={{ flexDirection: "row", alignItems: "center", gap: rp(4) }}>
                 <Ionicons name="add-circle" size={18} color={ACCENT_COLOR} />
-                <Text style={{ color: ACCENT_COLOR, fontWeight: "800", fontSize: 13 }}>Add Special</Text>
+                <Text style={{ color: ACCENT_COLOR, fontWeight: "800", fontSize: rs(13) }}>Add Special</Text>
               </TouchableOpacity>
             </View>
             {pastEvents.length > 0 ? (
@@ -405,42 +547,42 @@ export default function HotelDetail() {
                 <TouchableOpacity
                   key={e.id}
                   onPress={() => openEvent(e)}
-                  style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, marginBottom: 12, flexDirection: "row", alignItems: "center", ...cardShadow }}
+                  style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), marginBottom: rp(12), flexDirection: "row", alignItems: "center", ...cardShadow }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
-                    <Text style={{ color: "#6B7280", fontSize: 12, marginTop: 2 }}>{e.date}</Text>
-                    <View style={{ flexDirection: "row", marginTop: 8, gap: 8, alignItems: "center" }}>
-                      <View style={{ backgroundColor: e.event_type === "hotel_daily" ? "#E0F2FE" : "#EBF5FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                        <Text style={{ color: e.event_type === "hotel_daily" ? "#0369A1" : ACCENT_COLOR, fontWeight: "800", fontSize: 9 }}>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{e.name}</Text>
+                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{e.date}</Text>
+                    <View style={{ flexDirection: "row", marginTop: rp(8), gap: rp(8), alignItems: "center" }}>
+                      <View style={{ backgroundColor: e.event_type === "hotel_daily" ? "#E0F2FE" : "#EBF5FF", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
+                        <Text style={{ color: e.event_type === "hotel_daily" ? "#0369A1" : ACCENT_COLOR, fontWeight: "800", fontSize: rs(9) }}>
                           {e.event_type === "hotel_daily" ? "AUTO DAILY" : "SPECIAL"}
                         </Text>
                       </View>
                       {e.event_type === "hotel_special" && (
                         <TouchableOpacity
                           onPress={() => handleShowEventQR(e)}
-                          style={{ backgroundColor: "#F5F3FF", padding: 4, borderRadius: 6 }}
+                          style={{ backgroundColor: "#F5F3FF", padding: rp(4), borderRadius: rp(6) }}
                         >
                           <Ionicons name="qr-code" size={14} color={ACCENT_COLOR} />
                         </TouchableOpacity>
                       )}
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <Ionicons name="location-outline" size={12} color="#9CA3AF" />
-                        <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 4 }} numberOfLines={1}>{e.venue}</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginLeft: rp(4) }} numberOfLines={1}>{e.venue}</Text>
                       </View>
                     </View>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: 18 }}>{e.total_cars || 0}</Text>
-                    <Text style={{ color: "#9CA3AF", fontSize: 9, fontWeight: "700" }}>CARS</Text>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18) }}>{e.total_cars || 0}</Text>
+                    <Text style={{ color: "#9CA3AF", fontSize: rs(9), fontWeight: "700" }}>CARS</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: 12 }} />
+                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: rp(12) }} />
                 </TouchableOpacity>
               ))
             ) : (
-              <View style={{ backgroundColor: "#F3F4F6", borderRadius: 24, padding: 32, alignItems: "center", borderStyle: "dashed", borderWidth: 2, borderColor: "#D1D5DB" }}>
-                <Text style={{ fontSize: 40 }}>📁</Text>
-                <Text style={{ color: "#6B7280", fontWeight: "700", marginTop: 12, fontSize: 15 }}>No past events yet</Text>
+              <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(24), padding: rp(32), alignItems: "center", borderStyle: "dashed", borderWidth: rp(2), borderColor: "#D1D5DB" }}>
+                <Text style={{ fontSize: rs(40) }}>📁</Text>
+                <Text style={{ color: "#6B7280", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>No past events yet</Text>
               </View>
             )}
           </View>
@@ -448,7 +590,7 @@ export default function HotelDetail() {
 
         {tab === "team" && (
           <View>
-            <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: 20, padding: 4, marginBottom: 16, ...cardShadow }}>
+            <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: rp(20), padding: rp(4), marginBottom: rp(16), ...cardShadow }}>
               {["Drivers", "Supervisors"].map((l) => {
                 const k = l.toLowerCase();
                 return (
@@ -457,62 +599,86 @@ export default function HotelDetail() {
                     onPress={() => setTeamTab(k)}
                     style={{
                       flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 16,
+                      paddingVertical: rp(10),
+                      borderRadius: rp(16),
                       backgroundColor: teamTab === k ? ACCENT_COLOR : "transparent",
                       alignItems: "center",
                     }}
                   >
-                    <Text style={{ fontWeight: "800", fontSize: 13, color: teamTab === k ? "#fff" : "#6B7280" }}>{l}</Text>
+                    <Text style={{ fontWeight: "800", fontSize: rs(13), color: teamTab === k ? "#fff" : "#6B7280" }}>{l}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
               <Text style={sectionTitle}>{teamTab.toUpperCase()}</Text>
               <TouchableOpacity
                 onPress={() => {
-                  fetchAvailableMembers();
-                  setShowAddMemberModal(true);
+                  if (teamTab === "drivers") {
+                    setShowCreateDriverModal(true);
+                  } else {
+                    setShowCreateSupervisorModal(true);
+                  }
                 }}
-                style={{ backgroundColor: ACCENT_COLOR, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 4 }}
+                style={{ backgroundColor: ACCENT_COLOR, paddingHorizontal: rp(12), paddingVertical: rp(6), borderRadius: rp(10), flexDirection: "row", alignItems: "center", gap: rp(4) }}
               >
                 <Ionicons name="add" size={16} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "900", fontSize: 11 }}>ADD {teamTab.toUpperCase().slice(0, -1)}</Text>
+                <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11) }}>NEW {teamTab.toUpperCase().slice(0, -1)}</Text>
               </TouchableOpacity>
             </View>
 
-            {(teamTab === "drivers" ? hotel?.assigned_drivers : hotel?.assigned_supervisors)?.map((m) => (
-              <View key={m.id} style={{ backgroundColor: "#fff", borderRadius: 24, padding: 16, marginBottom: 12, flexDirection: "row", alignItems: "center", ...cardShadow }}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: ACCENT_COLOR, alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: 16 }}>{m.name?.[0]?.toUpperCase()}</Text>
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{m.name}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 11 }}>ID: {m.employee_id || "N/A"}</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                    <Ionicons name="call-outline" size={10} color="#9CA3AF" />
-                    <Text style={{ color: "#9CA3AF", fontSize: 10, marginLeft: 4 }}>{m.phone || "No phone"}</Text>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#059669", marginLeft: 10, marginRight: 4 }} />
-                    <Text style={{ color: "#059669", fontSize: 10, fontWeight: "700" }}>ACTIVE</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingHorizontal: rp(12), marginBottom: rp(16) }}>
+              <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+              <TextInput
+                value={teamSearch}
+                onChangeText={setTeamSearch}
+                placeholder={teamTab === "drivers" ? "Search drivers..." : "Search supervisors..."}
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, paddingVertical: rp(10), paddingHorizontal: rp(8), fontSize: rs(14) }}
+              />
+            </View>
+
+            {(teamTab === "drivers" ? sortedDrivers : sortedSupervisors).map((m) => {
+              const isAssigned = (teamTab === "drivers" ? assignedDriverIds : assignedSupervisorIds).has(m.id);
+              return (
+                <View key={m.id} style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), marginBottom: rp(12), flexDirection: "row", alignItems: "center", ...cardShadow }}>
+                  <View style={{ width: rp(44), height: rp(44), borderRadius: rp(22), backgroundColor: ACCENT_COLOR, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(16) }}>{m.name?.[0]?.toUpperCase()}</Text>
                   </View>
+                  <View style={{ flex: 1, marginLeft: rp(12) }}>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{m.name}</Text>
+                    <Text style={{ color: "#6B7280", fontSize: rs(11) }}>ID: {m.employee_id || "N/A"}</Text>
+                    {isAssigned && (
+                      <View style={{ marginTop: rp(4), flexDirection: "row", alignItems: "center" }}>
+                        <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(8) }}>
+                          <Text style={{ color: "#059669", fontSize: rs(10), fontWeight: "700" }}>ASSIGNED</Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                  {isAssigned ? (
+                    <TouchableOpacity onPress={() => removeMember(m.id)} style={{ padding: rp(8) }}>
+                      <Ionicons name="remove-circle-outline" size={24} color="#F43F5E" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={() => addMember(m.id)} style={{ padding: rp(8) }}>
+                      <Ionicons name="add-circle-outline" size={24} color="#059669" />
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <TouchableOpacity onPress={() => removeMember(m.id)} style={{ padding: 8 }}>
-                  <Ionicons name="trash-outline" size={20} color="#F43F5E" />
-                </TouchableOpacity>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
         {tab === "info" && (
           <View>
             <Text style={sectionTitle}>HOTEL INFORMATION</Text>
-            <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 20, ...cardShadow }}>
+            <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), ...cardShadow }}>
               <InfoField label="HOTEL NAME" value={editHotel?.name} onSave={(v) => updateHotel({ name: v })} />
               <InfoField label="ADDRESS" value={editHotel?.address} onSave={(v) => updateHotel({ address: v })} />
-              <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>
                   <InfoField label="CITY" value={editHotel?.city} onSave={(v) => updateHotel({ city: v })} />
                 </View>
@@ -525,7 +691,7 @@ export default function HotelDetail() {
               <InfoField label="EMAIL" value={editHotel?.contact_person_email} onSave={(v) => updateHotel({ contact_person_email: v })} />
               <InfoField label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ total_valet_slots: parseInt(v) })} />
               
-              <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>
                   <InfoField label="START HOURS" value={editHotel?.operating_hours_start} onSave={(v) => updateHotel({ operating_hours_start: v })} />
                 </View>
@@ -534,10 +700,10 @@ export default function HotelDetail() {
                 </View>
               </View>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: rp(12) }}>
                 <View>
-                  <Text style={{ fontSize: 10, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1.5 }}>HOTEL STATUS</Text>
-                  <Text style={{ fontSize: 15, fontWeight: "900", color: editHotel?.is_active ? "#059669" : "#6B7280", marginTop: 4 }}>
+                  <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5) }}>HOTEL STATUS</Text>
+                  <Text style={{ fontSize: rs(15), fontWeight: "900", color: editHotel?.is_active ? "#059669" : "#6B7280", marginTop: rp(4) }}>
                     {editHotel?.is_active ? "ACTIVE" : "INACTIVE"}
                   </Text>
                 </View>
@@ -553,26 +719,26 @@ export default function HotelDetail() {
         )}
 
         {tab === "qr" && (
-          <View style={{ padding: 16 }}>
-            <View style={[cardBase, cardShadow, { alignItems: "center", padding: 28 }]}>
+          <View style={{ padding: rp(16) }}>
+            <View style={[cardBase, cardShadow, { alignItems: "center", padding: rp(28) }]}>
               <Text
                 style={{
-                  fontSize: 11,
+                  fontSize: rs(11),
                   fontWeight: "800",
                   color: "#1D4ED8",
-                  letterSpacing: 3,
-                  marginBottom: 6,
+                  letterSpacing: rs(3),
+                  marginBottom: rp(6),
                 }}
               >
                 HOTEL GUEST PRE-REGISTRATION
               </Text>
               <Text
                 style={{
-                  fontSize: 18,
+                  fontSize: rs(18),
                   fontWeight: "900",
                   color: "#111827",
                   textAlign: "center",
-                  marginBottom: 4,
+                  marginBottom: rp(4),
                 }}
               >
                 {hotel?.name}
@@ -580,19 +746,19 @@ export default function HotelDetail() {
               <Text
                 style={{
                   color: "#9CA3AF",
-                  fontSize: 13,
+                  fontSize: rs(13),
                   textAlign: "center",
-                  marginBottom: 24,
+                  marginBottom: rp(24),
                 }}
               >
                 Place this QR at your hotel valet desk
               </Text>
               <View
                 style={{
-                  padding: 14,
+                  padding: rp(14),
                   backgroundColor: "#EFF6FF",
-                  borderRadius: 20,
-                  marginBottom: 20,
+                  borderRadius: rp(20),
+                  marginBottom: rp(20),
                 }}
               >
                 {hotel?.hotel_qr_token ? (
@@ -604,8 +770,8 @@ export default function HotelDetail() {
                 ) : (
                   <View
                     style={{
-                      width: 200,
-                      height: 200,
+                      width: rp(200),
+                      height: rp(200),
                       justifyContent: "center",
                       alignItems: "center",
                     }}
@@ -617,9 +783,9 @@ export default function HotelDetail() {
               <Text
                 style={{
                   color: "#9CA3AF",
-                  fontSize: 11,
+                  fontSize: rs(11),
                   textAlign: "center",
-                  marginBottom: 20,
+                  marginBottom: rp(20),
                 }}
               >
                 Guests scan this to pre-register their vehicle
@@ -632,14 +798,14 @@ export default function HotelDetail() {
                 }
                 style={{
                   backgroundColor: "rgba(29,78,216,0.1)",
-                  borderWidth: 1.5,
+                  borderWidth: rp(1.5),
                   borderColor: "#1D4ED8",
-                  borderRadius: 14,
-                  paddingVertical: 12,
-                  paddingHorizontal: 28,
+                  borderRadius: rp(14),
+                  paddingVertical: rp(12),
+                  paddingHorizontal: rp(28),
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 8,
+                  gap: rp(8),
                 }}
               >
                 <Ionicons name="share-outline" size={18} color="#1D4ED8" />
@@ -647,8 +813,8 @@ export default function HotelDetail() {
                   style={{
                     color: "#1D4ED8",
                     fontWeight: "900",
-                    letterSpacing: 1.5,
-                    fontSize: 13,
+                    letterSpacing: rs(1.5),
+                    fontSize: rs(13),
                   }}
                 >
                   SHARE LINK
@@ -659,45 +825,55 @@ export default function HotelDetail() {
         )}
       </ScrollView>
 
-      {/* Add Member Modal */}
-      <Modal visible={showAddMemberModal} transparent animationType="fade" onRequestClose={() => setShowAddMemberModal(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 20 }}>
-          <View style={{ backgroundColor: "#fff", borderRadius: 32, padding: 24, maxHeight: "80%" }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <Text style={{ fontSize: 20, fontWeight: "900", color: ACCENT_COLOR }}>Add {teamTab === "drivers" ? "Driver" : "Supervisor"}</Text>
-              <TouchableOpacity onPress={() => setShowAddMemberModal(false)}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+      {/* Create Driver Modal */}
+      <Modal visible={showCreateDriverModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(24) }}>
+              <View style={{ alignItems: "center", marginBottom: rp(16) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
+              <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#059669", marginBottom: rp(20) }}>Add Driver</Text>
+              <Text style={modalLabel}>NAME</Text>
+              <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalTextInput} />
+              <Text style={modalLabel}>EMAIL</Text>
+              <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalTextInput} />
+              <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+              <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
+              <Text style={modalLabel}>4-DIGIT PIN</Text>
+              <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} secureTextEntry style={modalTextInput} />
+              <TouchableOpacity onPress={saveDriver} disabled={savingDrv} style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}>
+                {savingDrv ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE DRIVER</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { resetDrvForm(); setShowCreateDriverModal(false); }} style={{ paddingVertical: rp(12), alignItems: "center" }}>
+                <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
 
-            {loadingMembers ? (
-              <ActivityIndicator color={ACCENT_COLOR} style={{ marginVertical: 40 }} />
-            ) : (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {(teamTab === "drivers" ? availableDrivers : availableSupervisors).map((m) => (
-                  <TouchableOpacity
-                    key={m.id}
-                    onPress={() => addMember(m.id)}
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}
-                  >
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ fontWeight: "800", color: ACCENT_COLOR }}>{m.name?.[0]?.toUpperCase()}</Text>
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={{ fontWeight: "800", color: "#111827" }}>{m.name}</Text>
-                      <Text style={{ fontSize: 11, color: "#6B7280" }}>{m.employee_id || m.email}</Text>
-                    </View>
-                    <Ionicons name="add-circle-outline" size={24} color={ACCENT_COLOR} />
-                  </TouchableOpacity>
-                ))}
-                {(teamTab === "drivers" ? availableDrivers : availableSupervisors).length === 0 && (
-                  <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                    <Text style={{ color: "#9CA3AF", fontSize: 13 }}>No available {teamTab} found</Text>
-                  </View>
-                )}
-              </ScrollView>
-            )}
-          </View>
+      {/* Create Supervisor Modal */}
+      <Modal visible={showCreateSupervisorModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(24) }}>
+              <View style={{ alignItems: "center", marginBottom: rp(16) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
+              <Text style={{ fontSize: rs(20), fontWeight: "900", color: ACCENT_COLOR, marginBottom: rp(20) }}>Add Supervisor</Text>
+              <Text style={modalLabel}>NAME</Text>
+              <TextInput value={supName} onChangeText={setSupName} placeholder="Full Name" style={modalTextInput} />
+              <Text style={modalLabel}>EMAIL</Text>
+              <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" autoCapitalize="none" keyboardType="email-address" style={modalTextInput} />
+              <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+              <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
+              <Text style={modalLabel}>PASSWORD</Text>
+              <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalTextInput} />
+              <TouchableOpacity onPress={saveSupervisor} disabled={savingSup} style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}>
+                {savingSup ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE SUPERVISOR</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { resetSupForm(); setShowCreateSupervisorModal(false); }} style={{ paddingVertical: rp(12), alignItems: "center" }}>
+                <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -705,51 +881,147 @@ export default function HotelDetail() {
       <Modal visible={showAddEventModal} transparent animationType="slide" onRequestClose={() => setShowAddEventModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 24 }}>
-              <View style={{ alignItems: "center", marginBottom: 16 }}>
-                <View style={{ backgroundColor: "#D1D5DB", width: 48, height: 4, borderRadius: 99 }} />
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(24) }}>
+              <View style={{ alignItems: "center", marginBottom: rp(16) }}>
+                <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
-              <Text style={{ fontSize: 20, fontWeight: "900", color: ACCENT_COLOR, marginBottom: 20 }}>Add Special Event</Text>
+              <Text style={{ fontSize: rs(20), fontWeight: "900", color: ACCENT_COLOR, marginBottom: rp(20) }}>Add Special Event</Text>
               
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={modalLabel}>EVENT NAME</Text>
-                <TextInput value={newEventName} onChangeText={setNewEventName} placeholder="Wedding Reception" style={modalInput} />
+                <TextInput value={newEventName} onChangeText={setNewEventName} placeholder="Wedding Reception" style={modalTextInput} />
 
-                <Text style={modalLabel}>DATE (YYYY-MM-DD)</Text>
-                <TextInput value={newEventDate} onChangeText={setNewEventDate} placeholder="2026-06-15" style={modalInput} />
+                <Text style={modalLabel}>DATE</Text>
+                <TouchableOpacity
+                  style={modalInput}
+                  onPress={() => setShowEventDatePicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
+                  <Text style={{ color: newEventDate ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
+                    {newEventDate || "Select date"}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                </TouchableOpacity>
 
-                <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flexDirection: "row", gap: rp(12) }}>
                   <View style={{ flex: 1 }}>
                     <Text style={modalLabel}>START TIME</Text>
-                    <TextInput value={newEventStartTime} onChangeText={setNewEventStartTime} placeholder="18:00" style={modalInput} />
+                    <TouchableOpacity
+                      style={modalInput}
+                      onPress={() => setShowEventStartTimePicker(true)}
+                    >
+                      <Ionicons name="time-outline" size={18} color="#7C3AED" />
+                      <Text style={{ color: newEventStartTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
+                        {newEventStartTime || "Select start time"}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={modalLabel}>END TIME</Text>
-                    <TextInput value={newEventEndTime} onChangeText={setNewEventEndTime} placeholder="23:00" style={modalInput} />
+                    <TouchableOpacity
+                      style={modalInput}
+                      onPress={() => setShowEventEndTimePicker(true)}
+                    >
+                      <Ionicons name="time-outline" size={18} color="#7C3AED" />
+                      <Text style={{ color: newEventEndTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
+                        {newEventEndTime || "Select end time"}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
                 <Text style={modalLabel}>MAX CARS</Text>
-                <TextInput value={newEventMaxCars} onChangeText={setNewEventMaxCars} keyboardType="numeric" placeholder="100" style={modalInput} />
+                <TextInput value={newEventMaxCars} onChangeText={setNewEventMaxCars} keyboardType="numeric" placeholder="100" style={modalTextInput} />
 
-                <Text style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, fontStyle: "italic" }}>
-                  Venue: {hotel?.address}
+                <Text style={modalLabel}>KEY HOOKS</Text>
+                <TextInput value={newEventKeyHooks} onChangeText={setNewEventKeyHooks} keyboardType="numeric" placeholder="50" style={modalTextInput} />
+
+                <Text style={modalLabel}>PARKING ZONE</Text>
+                <View style={{ flexDirection: "row", gap: rp(8) }}>
+                  <TextInput
+                    value={newEventZones[0]?.name}
+                    onChangeText={(v) => setNewEventZones([{ ...newEventZones[0], name: v }])}
+                    placeholder="Zone A"
+                    style={[modalTextInput, { flex: 1 }]}
+                  />
+                  <TextInput
+                    value={newEventZones[0]?.slots}
+                    onChangeText={(v) => setNewEventZones([{ ...newEventZones[0], slots: v }])}
+                    placeholder="Slots"
+                    keyboardType="numeric"
+                    style={[modalTextInput, { width: rp(80) }]}
+                  />
+                </View>
+                <Text style={{ fontSize: rs(10), color: "#9CA3AF", marginTop: rp(4) }}>Zone name and number of parking slots</Text>
+
+                <Text style={{ fontSize: rs(11), color: "#9CA3AF", marginTop: rp(12), fontStyle: "italic" }}>
+                  Venue: {hotel?.name}
                 </Text>
 
                 <TouchableOpacity
                   onPress={saveSpecialEvent}
                   disabled={savingEvent}
-                  style={{ backgroundColor: ACCENT_COLOR, borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 20 }}
+                  style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginTop: rp(20) }}
                 >
-                  {savingEvent ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>CREATE EVENT</Text>}
+                  {savingEvent ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>CREATE EVENT</Text>}
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => setShowAddEventModal(false)} style={{ paddingVertical: 12, alignItems: "center" }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowAddEventModal(false);
+                    setNewEventName("");
+                    setNewEventKeyHooks("50");
+                    setNewEventZones([{ name: "Zone A", slots: "50" }]);
+                  }}
+                  style={{ paddingVertical: rp(12), alignItems: "center" }}
+                >
                   <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
           </View>
+
+          {showEventDatePicker && (
+            <DateTimePicker
+              value={newEventDate ? new Date(newEventDate) : new Date()}
+              mode="date"
+              minimumDate={new Date()}
+              onChange={(_, d) => {
+                setShowEventDatePicker(false);
+                if (d) setNewEventDate(d.toISOString().split("T")[0]);
+              }}
+            />
+          )}
+          {showEventStartTimePicker && (
+            <DateTimePicker
+              value={newEventStartTime ? new Date(`2000-01-01T${newEventStartTime}:00`) : new Date()}
+              mode="time"
+              is24Hour
+              onChange={(_, d) => {
+                setShowEventStartTimePicker(false);
+                if (d) {
+                  const h = String(d.getHours()).padStart(2, "0");
+                  const m = String(d.getMinutes()).padStart(2, "0");
+                  setNewEventStartTime(`${h}:${m}`);
+                }
+              }}
+            />
+          )}
+          {showEventEndTimePicker && (
+            <DateTimePicker
+              value={newEventEndTime ? new Date(`2000-01-01T${newEventEndTime}:00`) : new Date()}
+              mode="time"
+              is24Hour
+              onChange={(_, d) => {
+                setShowEventEndTimePicker(false);
+                if (d) {
+                  const h = String(d.getHours()).padStart(2, "0");
+                  const m = String(d.getMinutes()).padStart(2, "0");
+                  setNewEventEndTime(`${h}:${m}`);
+                }
+              }}
+            />
+          )}
         </KeyboardAvoidingView>
       </Modal>
 
@@ -760,21 +1032,21 @@ export default function HotelDetail() {
         animationType="fade"
         onRequestClose={() => setShowEventQRModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 24 }}>
-          <View style={{ backgroundColor: "#fff", borderRadius: 32, padding: 32, alignItems: "center", width: "100%", ...cardShadow }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 20 }}>
-              <Text style={{ fontSize: 11, fontWeight: "800", color: ACCENT_COLOR, letterSpacing: 3 }}>SPECIAL EVENT GUEST QR</Text>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: rp(24) }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: rp(32), padding: rp(32), alignItems: "center", width: "100%", ...cardShadow }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: rp(20) }}>
+              <Text style={{ fontSize: rs(11), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(3) }}>SPECIAL EVENT GUEST QR</Text>
               <TouchableOpacity onPress={() => setShowEventQRModal(false)}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
 
-            <Text style={{ fontSize: 22, fontWeight: "900", color: "#111827", textAlign: "center" }}>{selectedEventForQR?.name}</Text>
-            <Text style={{ fontSize: 14, fontWeight: "700", color: "#6B7280", textAlign: "center", marginTop: 4, marginBottom: 24 }}>{hotel?.name}</Text>
+            <Text style={{ fontSize: rs(22), fontWeight: "900", color: "#111827", textAlign: "center" }}>{selectedEventForQR?.name}</Text>
+            <Text style={{ fontSize: rs(14), fontWeight: "700", color: "#6B7280", textAlign: "center", marginTop: rp(4), marginBottom: rp(24) }}>{hotel?.name}</Text>
 
-            <View style={{ padding: 14, backgroundColor: "#F5F3FF", borderRadius: 20, marginBottom: 20 }}>
+            <View style={{ padding: rp(14), backgroundColor: "#F5F3FF", borderRadius: rp(20), marginBottom: rp(20) }}>
               {loadingEventQR ? (
-                <View style={{ width: 220, height: 220, justifyContent: "center", alignItems: "center" }}>
+                <View style={{ width: rp(220), height: rp(220), justifyContent: "center", alignItems: "center" }}>
                   <ActivityIndicator color={ACCENT_COLOR} size="large" />
                 </View>
               ) : eventQRToken ? (
@@ -784,13 +1056,13 @@ export default function HotelDetail() {
                   color={ACCENT_COLOR}
                 />
               ) : (
-                <View style={{ width: 220, height: 220, justifyContent: "center", alignItems: "center" }}>
+                <View style={{ width: rp(220), height: rp(220), justifyContent: "center", alignItems: "center" }}>
                   <Text style={{ color: "#9CA3AF" }}>QR Unavailable</Text>
                 </View>
               )}
             </View>
 
-            <Text style={{ color: "#9CA3AF", fontSize: 11, marginBottom: 24, textAlign: "center" }}>Guest scans this to pre-register their vehicle</Text>
+            <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginBottom: rp(24), textAlign: "center" }}>Guest scans this to pre-register their vehicle</Text>
 
             <TouchableOpacity
               onPress={() => {
@@ -800,13 +1072,13 @@ export default function HotelDetail() {
                 });
               }}
               disabled={!eventQRToken}
-              style={{ backgroundColor: ACCENT_COLOR, borderRadius: 16, paddingVertical: 14, width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, opacity: eventQRToken ? 1 : 0.6 }}
+              style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(14), width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rp(8), opacity: eventQRToken ? 1 : 0.6 }}
             >
               <Ionicons name="share-outline" size={20} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SHARE LINK</Text>
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SHARE LINK</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setShowEventQRModal(false)} style={{ paddingVertical: 12, marginTop: 8, alignItems: "center", width: "100%" }}>
+            <TouchableOpacity onPress={() => setShowEventQRModal(false)} style={{ paddingVertical: rp(12), marginTop: rp(8), alignItems: "center", width: "100%" }}>
               <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -824,22 +1096,22 @@ function InfoField({ label, value, onSave, keyboardType = "default" }) {
 
   if (isEditing) {
     return (
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 10, fontWeight: "800", color: ACCENT_COLOR, letterSpacing: 1.5 }}>{label}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 10 }}>
+      <View style={{ marginBottom: rp(16) }}>
+        <Text style={{ fontSize: rs(10), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(1.5) }}>{label}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(4), gap: rp(10) }}>
           <TextInput
             value={val}
             onChangeText={setVal}
             keyboardType={keyboardType}
             autoFocus
-            style={{ flex: 1, backgroundColor: "#F9FAF8", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: "#111827", borderWidth: 1, borderColor: ACCENT_COLOR }}
+            style={{ flex: 1, backgroundColor: "#F9FAF8", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(8), fontSize: rs(15), color: "#111827", borderWidth: rp(1), borderColor: ACCENT_COLOR }}
           />
           <TouchableOpacity
             onPress={() => {
               onSave(val);
               setIsEditing(false);
             }}
-            style={{ backgroundColor: ACCENT_COLOR, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }}
+            style={{ backgroundColor: ACCENT_COLOR, width: rp(36), height: rp(36), borderRadius: rp(18), alignItems: "center", justifyContent: "center" }}
           >
             <Ionicons name="checkmark" size={20} color="#fff" />
           </TouchableOpacity>
@@ -852,10 +1124,10 @@ function InfoField({ label, value, onSave, keyboardType = "default" }) {
   }
 
   return (
-    <TouchableOpacity onPress={() => setIsEditing(true)} style={{ marginBottom: 16 }}>
-      <Text style={{ fontSize: 10, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1.5 }}>{label}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-        <Text style={{ fontSize: 15, fontWeight: "900", color: "#111827" }}>{value || "—"}</Text>
+    <TouchableOpacity onPress={() => setIsEditing(true)} style={{ marginBottom: rp(16) }}>
+      <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5) }}>{label}</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: rp(4) }}>
+        <Text style={{ fontSize: rs(15), fontWeight: "900", color: "#111827" }}>{value || "—"}</Text>
         <Ionicons name="pencil" size={14} color="#9CA3AF" />
       </View>
     </TouchableOpacity>
@@ -863,43 +1135,56 @@ function InfoField({ label, value, onSave, keyboardType = "default" }) {
 }
 
 const sectionTitle = {
-  fontSize: 11,
+  fontSize: rs(11),
   fontWeight: "800",
   color: "#6B7280",
-  letterSpacing: 2,
-  marginBottom: 12,
-  marginTop: 8,
+  letterSpacing: rs(2),
+  marginBottom: rp(12),
+  marginTop: rp(8),
 };
 
 const modalLabel = {
-  fontSize: 11,
+  fontSize: rs(11),
   fontWeight: "800",
   color: "#6B7280",
-  letterSpacing: 1,
-  marginBottom: 6,
-  marginTop: 12,
+  letterSpacing: rs(1),
+  marginBottom: rp(6),
+  marginTop: rp(12),
 };
 
 const modalInput = {
-  borderWidth: 1.5,
+  borderWidth: rp(1.5),
   borderColor: "#E5E7EB",
-  borderRadius: 12,
-  paddingHorizontal: 14,
-  paddingVertical: 11,
-  fontSize: 14,
+  borderRadius: rp(12),
+  paddingHorizontal: rp(14),
+  paddingVertical: rp(11),
+  fontSize: rs(14),
+  color: "#111827",
+  backgroundColor: "#F9FAFB",
+  flexDirection: "row",
+  alignItems: "center",
+};
+
+const modalTextInput = {
+  borderWidth: rp(1.5),
+  borderColor: "#E5E7EB",
+  borderRadius: rp(12),
+  paddingHorizontal: rp(14),
+  paddingVertical: rp(11),
+  fontSize: rs(14),
   color: "#111827",
   backgroundColor: "#F9FAFB",
 };
 
 const modalTitle = {
-  fontSize: 18,
+  fontSize: rs(18),
   fontWeight: "900",
   color: "#0F2044",
-  marginBottom: 4,
+  marginBottom: rp(4),
 };
 
 const iconBtn = {
   backgroundColor: "rgba(255,255,255,0.15)",
-  borderRadius: 99,
-  padding: 8,
+  borderRadius: rp(99),
+  padding: rp(8),
 };

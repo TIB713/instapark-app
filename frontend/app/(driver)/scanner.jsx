@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react"; 
+import { useState, useEffect, useRef, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive'; 
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native"; 
 import { CameraView, useCameraPermissions } from "expo-camera"; 
 import { useRouter } from "expo-router"; 
@@ -89,17 +90,17 @@ export default function Scanner() {
   ); 
  
   if (!permission.granted) return ( 
-    <View style={{ flex: 1, backgroundColor: "#0F2044", justifyContent: "center", alignItems: "center", padding: 24 }}> 
+    <View style={{ flex: 1, backgroundColor: "#0F2044", justifyContent: "center", alignItems: "center", padding: rp(24) }}> 
       <Ionicons name="camera-outline" size={64} color="#fff" /> 
-      <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900", marginTop: 16, textAlign: "center" }}> 
+      <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginTop: rp(16), textAlign: "center" }}> 
         Camera Permission Required 
       </Text> 
-      <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginTop: 8, marginBottom: 24 }}> 
+      <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginTop: rp(8), marginBottom: rp(24) }}> 
         Camera access is needed to scan guest pre-registration QR codes. 
       </Text> 
       <TouchableOpacity onPress={requestPermission} 
-        style={{ backgroundColor: "#059669", borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32 }}> 
-        <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>GRANT PERMISSION</Text> 
+        style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(14), paddingHorizontal: rp(32) }}> 
+        <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>GRANT PERMISSION</Text> 
       </TouchableOpacity> 
     </View> 
   ); 
@@ -107,12 +108,12 @@ export default function Scanner() {
   return ( 
     <View style={{ flex: 1, backgroundColor: "#000" }}> 
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#000" }}> 
-        <View style={{ flexDirection: "row", alignItems: "center", padding: 16 }}> 
+        <View style={{ flexDirection: "row", alignItems: "center", padding: rp(16) }}> 
           <TouchableOpacity onPress={() => router.back()} 
-            style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}> 
+            style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}> 
             <Ionicons name="chevron-back" size={22} color="#fff" /> 
           </TouchableOpacity> 
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900", marginLeft: 12 }}> 
+          <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginLeft: rp(12) }}> 
             Scan Guest Pass 
           </Text> 
         </View> 
@@ -142,15 +143,15 @@ export default function Scanner() {
             {loading ? ( 
               <ActivityIndicator color="#fff" size="large" /> 
             ) : ( 
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14, textAlign: "center", paddingHorizontal: 24 }}> 
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: rs(14), textAlign: "center", paddingHorizontal: rp(24) }}> 
                 Point camera at guest's pre-registration QR code 
               </Text> 
             )} 
             {scanComplete && !loading && (
               <TouchableOpacity
                 onPress={() => { setScanComplete(false); scanned.current = false; lastScannedValue.current = null; }}
-                style={{ marginTop: 16, backgroundColor: "#059669", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32 }}> 
-                <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SCAN AGAIN</Text> 
+                style={{ marginTop: rp(16), backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), paddingHorizontal: rp(32) }}> 
+                <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SCAN AGAIN</Text> 
               </TouchableOpacity> 
             )} 
           </View> 
@@ -167,9 +168,9 @@ const styles = StyleSheet.create({
   bottomOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center" }, 
   sideOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }, 
   scanBox: { width: SCAN_BOX_SIZE, height: SCAN_BOX_SIZE }, 
-  corner: { position: "absolute", width: 24, height: 24, borderColor: "#059669", borderWidth: 3 }, 
-  topLeft: { top: 0, left: 0, borderBottomWidth: 0, borderRightWidth: 0 }, 
-  topRight: { top: 0, right: 0, borderBottomWidth: 0, borderLeftWidth: 0 }, 
-  bottomLeft: { bottom: 0, left: 0, borderTopWidth: 0, borderRightWidth: 0 }, 
-  bottomRight: { bottom: 0, right: 0, borderTopWidth: 0, borderLeftWidth: 0 }, 
+  corner: { position: "absolute", width: rp(24), height: rp(24), borderColor: "#059669", borderWidth: rp(3) }, 
+  topLeft: { top: 0, left: 0, borderBottomWidth: rp(0), borderRightWidth: rp(0) }, 
+  topRight: { top: 0, right: 0, borderBottomWidth: rp(0), borderLeftWidth: rp(0) }, 
+  bottomLeft: { bottom: 0, left: 0, borderTopWidth: rp(0), borderRightWidth: rp(0) }, 
+  bottomRight: { bottom: 0, right: 0, borderTopWidth: rp(0), borderLeftWidth: rp(0) }, 
 }); 

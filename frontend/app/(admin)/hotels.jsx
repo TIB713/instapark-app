@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
@@ -22,8 +24,8 @@ const ACCENT_COLOR = "#1D4ED8";
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -35,8 +37,10 @@ export default function Hotels() {
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
   useEffect(() => {
     if (action === "add_special") {
@@ -58,6 +62,12 @@ export default function Hotels() {
 
   const isHotelOwner = user?.provider_type === "hotel_owner";
   const isValetProvider = !isHotelOwner;
+
+  const fmtTime = (d) => {
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  };
 
   const fetchHotels = useCallback(async () => {
     try {
@@ -110,8 +120,9 @@ export default function Hotels() {
         total_valet_slots: parseInt(totalSlots),
         operating_hours_start: startTime,
         operating_hours_end: endTime,
+        provider_id: user?.provider_id,
       });
-      setShowModal(false);
+      setShowAddModal(false);
       resetForm();
       fetchHotels();
       Alert.alert("Success", "Hotel added successfully");
@@ -155,9 +166,9 @@ export default function Hotels() {
             backgroundColor: ACCENT_COLOR,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 24,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(24),
           }}
         >
           <View
@@ -175,31 +186,31 @@ export default function Hotels() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
               Hotels
             </Text>
-            <View style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99 }}>
-              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 12 }}>{hotels.length}</Text>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99) }}>
+              <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>{hotels.length}</Text>
             </View>
           </View>
         </View>
       </SafeAreaView>
 
-      <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
+      <View style={{ paddingHorizontal: rp(20), paddingVertical: rp(12) }}>
         <View
           style={{
             backgroundColor: "#fff",
-            borderRadius: 16,
-            borderWidth: 1,
+            borderRadius: rp(16),
+            borderWidth: rp(1),
             borderColor: "#E5E7EB",
             flexDirection: "row",
             alignItems: "center",
-            paddingHorizontal: 14,
-            paddingVertical: 2,
+            paddingHorizontal: rp(14),
+            paddingVertical: rp(2),
           }}
         >
           <Ionicons name="search-outline" size={18} color={ACCENT_COLOR} />
@@ -208,7 +219,7 @@ export default function Hotels() {
             onChangeText={setSearch}
             placeholder="Search by name or city"
             placeholderTextColor="#9CA3AF"
-            style={{ flex: 1, marginLeft: 10, paddingVertical: 12, fontSize: 14, color: "#111827" }}
+            style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(12), fontSize: rs(14), color: "#111827" }}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")}>
@@ -218,7 +229,7 @@ export default function Hotels() {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}>
         {loading && <ActivityIndicator color={ACCENT_COLOR} />}
         {filteredHotels.map((h) => {
           const today = new Date().toISOString().split("T")[0];
@@ -231,34 +242,34 @@ export default function Hotels() {
               activeOpacity={0.85}
               style={{
                 backgroundColor: "#fff",
-                borderRadius: 24,
-                padding: 16,
-                marginBottom: 12,
+                borderRadius: rp(24),
+                padding: rp(16),
+                marginBottom: rp(12),
                 ...cardShadow,
               }}
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 17 }}>{h.name}</Text>
-                  <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 2 }}>{h.city}, {h.state}</Text>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(17) }}>{h.name}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(2) }}>{h.city}, {h.state}</Text>
                 </View>
-                <View style={{ backgroundColor: h.is_active ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                  <Text style={{ color: h.is_active ? "#059669" : "#6B7280", fontWeight: "800", fontSize: 10 }}>
+                <View style={{ backgroundColor: h.is_active ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                  <Text style={{ color: h.is_active ? "#059669" : "#6B7280", fontWeight: "800", fontSize: rs(10) }}>
                     {h.is_active ? "ACTIVE" : "INACTIVE"}
                   </Text>
                 </View>
               </View>
 
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12, gap: 10 }}>
-                <View style={{ backgroundColor: "#EFF6FF", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, flexDirection: "row", alignItems: "center" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), gap: rp(10) }}>
+                <View style={{ backgroundColor: "#EFF6FF", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), flexDirection: "row", alignItems: "center" }}>
                   <Ionicons name="time-outline" size={12} color={ACCENT_COLOR} />
-                  <Text style={{ color: ACCENT_COLOR, fontSize: 11, fontWeight: "700", marginLeft: 4 }}>
+                  <Text style={{ color: ACCENT_COLOR, fontSize: rs(11), fontWeight: "700", marginLeft: rp(4) }}>
                     {h.operating_hours_start} — {h.operating_hours_end}
                   </Text>
                 </View>
-                <View style={{ backgroundColor: todayEvent?.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, flexDirection: "row", alignItems: "center" }}>
-                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: todayEvent?.status === "active" ? "#059669" : "#9CA3AF", marginRight: 6 }} />
-                  <Text style={{ color: todayEvent?.status === "active" ? "#059669" : "#6B7280", fontSize: 11, fontWeight: "700" }}>
+                <View style={{ backgroundColor: todayEvent?.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ width: rp(6), height: rp(6), borderRadius: rp(3), backgroundColor: todayEvent?.status === "active" ? "#059669" : "#9CA3AF", marginRight: rp(6) }} />
+                  <Text style={{ color: todayEvent?.status === "active" ? "#059669" : "#6B7280", fontSize: rs(11), fontWeight: "700" }}>
                     {todayEvent ? (todayEvent.status === "active" ? "Active Today" : "Closed Today") : "No Event Today"}
                   </Text>
                 </View>
@@ -268,36 +279,238 @@ export default function Hotels() {
         })}
 
         {!loading && filteredHotels.length === 0 && (
-          <View style={{ alignItems: "center", marginTop: 80 }}>
-            <Text style={{ fontSize: 64 }}>🏢</Text>
-            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 8 }}>No hotels found</Text>
-            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
+          <View style={{ alignItems: "center", marginTop: rp(80) }}>
+            <Text style={{ fontSize: rs(64) }}>🏢</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(8) }}>No hotels found</Text>
+            <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>
               {search ? "Try a different search" : "Tap + to add your first hotel"}
             </Text>
           </View>
         )}
-        <View style={{ height: 100 }} />
+        <View style={{ height: rp(100) }} />
       </ScrollView>
+
+      {isValetProvider && (
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            bottom: 24,
+            right: 24,
+            width: rp(56),
+            height: rp(56),
+            borderRadius: rp(28),
+            backgroundColor: "#7C3AED",
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#7C3AED",
+            shadowOffset: { width: 0, height: rp(4) },
+            shadowOpacity: 0.4,
+            shadowRadius: rp(8),
+            elevation: 8,
+          }}
+          onPress={() => setShowAddModal(true)}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1 }}
+          >
+            <View
+              style={{
+                backgroundColor: ACCENT_COLOR,
+                paddingHorizontal: rp(20),
+                paddingTop: rp(16),
+                paddingBottom: rp(20),
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <TouchableOpacity onPress={() => setShowAddModal(false)} style={{ padding: rp(8), marginLeft: -8 }}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+              <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12) }}>Add Hotel</Text>
+            </View>
+
+            <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(16) }}>
+              <Text style={modalLabel}>HOTEL NAME *</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="Enter hotel name"
+                value={name}
+                onChangeText={setName}
+              />
+
+              <Text style={modalLabel}>ADDRESS *</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="Enter address"
+                value={address}
+                onChangeText={setAddress}
+              />
+
+              <View style={{ flexDirection: "row", gap: rp(12) }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalLabel}>CITY *</Text>
+                  <TextInput
+                    style={modalInput}
+                    placeholder="City"
+                    value={city}
+                    onChangeText={setCity}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalLabel}>STATE *</Text>
+                  <TextInput
+                    style={modalInput}
+                    placeholder="State"
+                    value={state}
+                    onChangeText={setState}
+                  />
+                </View>
+              </View>
+
+              <Text style={modalLabel}>CONTACT NAME *</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="Contact name"
+                value={contactName}
+                onChangeText={setContactName}
+              />
+
+              <Text style={modalLabel}>CONTACT PHONE *</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="Contact phone"
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType="phone-pad"
+              />
+
+              <Text style={modalLabel}>CONTACT EMAIL</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="Contact email (optional)"
+                value={contactEmail}
+                onChangeText={setContactEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={modalLabel}>TOTAL VALET SLOTS *</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="Total slots"
+                value={totalSlots}
+                onChangeText={setTotalSlots}
+                keyboardType="numeric"
+              />
+
+              <View style={{ flexDirection: "row", gap: rp(12) }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalLabel}>OPERATING HOURS START</Text>
+                  <TouchableOpacity
+                    style={modalInput}
+                    onPress={() => setShowStartTimePicker(true)}
+                  >
+                    <Ionicons name="time-outline" size={20} color="#7C3AED" />
+                    <Text style={{ color: startTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
+                      {startTime || "Select start time"}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalLabel}>OPERATING HOURS END</Text>
+                  <TouchableOpacity
+                    style={modalInput}
+                    onPress={() => setShowEndTimePicker(true)}
+                  >
+                    <Ionicons name="time-outline" size={20} color="#7C3AED" />
+                    <Text style={{ color: endTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
+                      {endTime || "Select end time"}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={saveHotel}
+                disabled={saving}
+                style={{
+                  backgroundColor: ACCENT_COLOR,
+                  paddingVertical: rp(16),
+                  borderRadius: rp(16),
+                  alignItems: "center",
+                  marginTop: rp(24),
+                  marginBottom: rp(40),
+                  opacity: saving ? 0.5 : 1,
+                }}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={{ color: "#fff", fontSize: rs(16), fontWeight: "900" }}>Add Hotel</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+
+        {showStartTimePicker && (
+          <DateTimePicker
+            value={new Date(`2024-01-01T${startTime}:00`)}
+            mode="time"
+            is24Hour
+            onChange={(_, d) => {
+              setShowStartTimePicker(false);
+              if (d) setStartTime(fmtTime(d));
+            }}
+          />
+        )}
+        {showEndTimePicker && (
+          <DateTimePicker
+            value={new Date(`2024-01-01T${endTime}:00`)}
+            mode="time"
+            is24Hour
+            onChange={(_, d) => {
+              setShowEndTimePicker(false);
+              if (d) setEndTime(fmtTime(d));
+            }}
+          />
+        )}
+      </Modal>
     </View>
   );
 }
 
 const modalLabel = {
-  fontSize: 10,
+  fontSize: rs(10),
   fontWeight: "800",
   color: "#9CA3AF",
-  letterSpacing: 1.5,
-  marginBottom: 6,
-  marginTop: 12,
+  letterSpacing: rs(1.5),
+  marginBottom: rp(6),
+  marginTop: rp(12),
 };
 
 const modalInput = {
   backgroundColor: "#F9FAF8",
-  borderRadius: 12,
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  fontSize: 15,
+  borderRadius: rp(12),
+  paddingHorizontal: rp(16),
+  paddingVertical: rp(12),
+  fontSize: rs(15),
   color: "#111827",
-  borderWidth: 1,
+  borderWidth: rp(1),
   borderColor: "#E5E7EB",
+  flexDirection: "row",
+  alignItems: "center",
 };

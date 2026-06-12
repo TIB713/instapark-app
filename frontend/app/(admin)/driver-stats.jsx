@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -22,8 +23,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const cardShadow = {
   shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -224,9 +225,9 @@ export default function DriverStats() {
             backgroundColor: "#7C3AED",
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 18,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(18),
           }}
         >
           <View
@@ -244,14 +245,14 @@ export default function DriverStats() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={exportPDF}
               disabled={exportingPDF}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8, marginLeft: 10 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8), marginLeft: rp(10) }}
             >
               {exportingPDF ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -259,59 +260,59 @@ export default function DriverStats() {
                 <Ionicons name="download-outline" size={22} color="#fff" />
               )}
             </TouchableOpacity>
-            <View style={{ marginLeft: 14, flex: 1 }}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, letterSpacing: 1.5 }}>DRIVER</Text>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900" }}>{driverName}</Text>
+            <View style={{ marginLeft: rp(14), flex: 1 }}>
+              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(11), letterSpacing: rs(1.5) }}>DRIVER</Text>
+              <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900" }}>{driverName}</Text>
             </View>
           </View>
         </View>
       </SafeAreaView>
 
       {/* Tabs */}
-      <View style={{ flexDirection: "row", backgroundColor: "#fff", marginHorizontal: 16, marginTop: -22, borderRadius: 20, padding: 4, ...cardShadow }}>
+      <View style={{ flexDirection: "row", backgroundColor: "#fff", marginHorizontal: rp(16), marginTop: -22, borderRadius: rp(20), padding: rp(4), ...cardShadow }}>
         {[["performance", "Lifetime"], ["history", "Events"]].map(([k, l]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
             style={{
               flex: 1,
-              paddingVertical: 10,
-              borderRadius: 16,
+              paddingVertical: rp(10),
+              borderRadius: rp(16),
               backgroundColor: tab === k ? "#7C3AED" : "transparent",
               alignItems: "center",
             }}
           >
-            <Text style={{ fontWeight: "800", fontSize: 13, color: tab === k ? "#fff" : "#6B7280", letterSpacing: 1 }}>{l}</Text>
+            <Text style={{ fontWeight: "800", fontSize: rs(13), color: tab === k ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>{l}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {driver && (
-        <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: "#fff", borderRadius: 20, padding: 14, flexDirection: "row", alignItems: "center", gap: 14, ...cardShadow }}>
+        <View style={{ marginHorizontal: rp(16), marginTop: rp(12), backgroundColor: "#fff", borderRadius: rp(20), padding: rp(14), flexDirection: "row", alignItems: "center", gap: rp(14), ...cardShadow }}>
           {driver.driver_photo ? (
-            <Image source={{ uri: driver.driver_photo }} style={{ width: 56, height: 56, borderRadius: 28 }} />
+            <Image source={{ uri: driver.driver_photo }} style={{ width: rp(56), height: rp(56), borderRadius: rp(28) }} />
           ) : (
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#F3F0FF", alignItems: "center", justifyContent: "center" }}>
+            <View style={{ width: rp(56), height: rp(56), borderRadius: rp(28), backgroundColor: "#F3F0FF", alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="person" size={28} color="#7C3AED" />
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: "900", fontSize: 16, color: "#111827" }}>{driver.name}</Text>
-            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 1 }}>{driver.employee_id}</Text>
-            <View style={{ flexDirection: "row", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+            <Text style={{ fontWeight: "900", fontSize: rs(16), color: "#111827" }}>{driver.name}</Text>
+            <Text style={{ fontSize: rs(12), color: "#6B7280", marginTop: rp(1) }}>{driver.employee_id}</Text>
+            <View style={{ flexDirection: "row", gap: rp(6), marginTop: rp(5), flexWrap: "wrap" }}>
               {driver.is_active ? (
-                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                  <Text style={{ color: "#059669", fontSize: 10, fontWeight: "800" }}>ACTIVE</Text>
+                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
+                  <Text style={{ color: "#059669", fontSize: rs(10), fontWeight: "800" }}>ACTIVE</Text>
                 </View>
               ) : (
-                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                  <Text style={{ color: "#EF4444", fontSize: 10, fontWeight: "800" }}>INACTIVE</Text>
+                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
+                  <Text style={{ color: "#EF4444", fontSize: rs(10), fontWeight: "800" }}>INACTIVE</Text>
                 </View>
               )}
               {driver.phone ? (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: rp(3), backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
                   <Ionicons name="call-outline" size={10} color="#6B7280" />
-                  <Text style={{ color: "#6B7280", fontSize: 10, fontWeight: "700" }}>{driver.phone}</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(10), fontWeight: "700" }}>{driver.phone}</Text>
                 </View>
               ) : null}
             </View>
@@ -321,42 +322,42 @@ export default function DriverStats() {
 
       {tab === "performance" ? (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
-          <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 10 }}>TIME RANGE</Text>
-          <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingBottom: 4 }} showsHorizontalScrollIndicator={false}>
+          <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(10) }}>TIME RANGE</Text>
+          <ScrollView horizontal contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }} showsHorizontalScrollIndicator={false}>
             {[["week", "This Week"], ["month", "This Month"], ["quarter", "Last 3 Months"], ["all", "All Time"]].map(([f, l]) => (
               <TouchableOpacity
                 key={f}
                 onPress={() => setFilter(f)}
                 style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 99,
+                  paddingHorizontal: rp(14),
+                  paddingVertical: rp(8),
+                  borderRadius: rp(99),
                   backgroundColor: filter === f ? "#7C3AED" : "#fff",
-                  borderWidth: 1,
+                  borderWidth: rp(1),
                   borderColor: filter === f ? "#7C3AED" : "#E5E7EB",
                 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: "800", color: filter === f ? "#fff" : "#6B7280", letterSpacing: 1 }}>{l}</Text>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: filter === f ? "#fff" : "#6B7280", letterSpacing: rs(1) }}>{l}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
-            <View style={[{ flex: 1, backgroundColor: "#fff", borderRadius: 24, padding: 16 }, cardShadow]}>
-              <Text style={{ color: "#6B7280", fontSize: 11, fontWeight: "800", letterSpacing: 2 }}>CHECKED IN</Text>
-              <Text style={{ color: "#7C3AED", fontSize: 24, fontWeight: "900", marginTop: 6 }}>{filteredStats.cars_checked_in}</Text>
+          <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(14) }}>
+            <View style={[{ flex: 1, backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16) }, cardShadow]}>
+              <Text style={{ color: "#6B7280", fontSize: rs(11), fontWeight: "800", letterSpacing: rs(2) }}>CHECKED IN</Text>
+              <Text style={{ color: "#7C3AED", fontSize: rs(24), fontWeight: "900", marginTop: rp(6) }}>{filteredStats.cars_checked_in}</Text>
             </View>
-            <View style={[{ flex: 1, backgroundColor: "#fff", borderRadius: 24, padding: 16 }, cardShadow]}>
-              <Text style={{ color: "#6B7280", fontSize: 11, fontWeight: "800", letterSpacing: 2 }}>RETRIEVED</Text>
-              <Text style={{ color: "#059669", fontSize: 24, fontWeight: "900", marginTop: 6 }}>{filteredStats.cars_retrieved}</Text>
+            <View style={[{ flex: 1, backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16) }, cardShadow]}>
+              <Text style={{ color: "#6B7280", fontSize: rs(11), fontWeight: "800", letterSpacing: rs(2) }}>RETRIEVED</Text>
+              <Text style={{ color: "#059669", fontSize: rs(24), fontWeight: "900", marginTop: rp(6) }}>{filteredStats.cars_retrieved}</Text>
             </View>
           </View>
 
-          <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginTop: 24, marginBottom: 10 }}>EDIT DRIVER</Text>
-          <View style={[{ backgroundColor: "#fff", borderRadius: 24, padding: 18 }, cardShadow]}>
+          <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginTop: rp(24), marginBottom: rp(10) }}>EDIT DRIVER</Text>
+          <View style={[{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(18) }, cardShadow]}>
             <Text style={miniLabel}>NAME</Text>
             <View style={miniInput}>
               <Ionicons name="person-outline" size={16} color="#7C3AED" />
@@ -399,41 +400,41 @@ export default function DriverStats() {
             </View>
             <TouchableOpacity
               onPress={saveDriver}
-              style={{ backgroundColor: "#7C3AED", borderRadius: 16, paddingVertical: 14, alignItems: "center", marginTop: 4 }}
+              style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(4) }}
             >
-              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2 }}>SAVE</Text>
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SAVE</Text>
             </TouchableOpacity>
           </View>
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       ) : (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
-          <ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal contentContainerStyle={{ gap: rp(8) }} showsHorizontalScrollIndicator={false}>
             {["all", "active", "closed"].map((f) => (
               <TouchableOpacity
                 key={f}
                 onPress={() => setEvtFilter(f)}
                 style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 99,
+                  paddingHorizontal: rp(14),
+                  paddingVertical: rp(8),
+                  borderRadius: rp(99),
                   backgroundColor: evtFilter === f ? "#7C3AED" : "#fff",
-                  borderWidth: 1,
+                  borderWidth: rp(1),
                   borderColor: evtFilter === f ? "#7C3AED" : "#E5E7EB",
                 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: "800", color: evtFilter === f ? "#fff" : "#6B7280", letterSpacing: 1.5 }}>{f.toUpperCase()}</Text>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: evtFilter === f ? "#fff" : "#6B7280", letterSpacing: rs(1.5) }}>{f.toUpperCase()}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          {loadingEvents && <ActivityIndicator color="#7C3AED" style={{ marginTop: 20 }} />}
+          {loadingEvents && <ActivityIndicator color="#7C3AED" style={{ marginTop: rp(20) }} />}
           {!loadingEvents && filteredEvts.length === 0 && (
-            <View style={{ alignItems: "center", marginTop: 60 }}>
-              <Text style={{ fontSize: 48 }}>📅</Text>
-              <Text style={{ color: "#6B7280", marginTop: 8 }}>No events for this driver</Text>
+            <View style={{ alignItems: "center", marginTop: rp(60) }}>
+              <Text style={{ fontSize: rs(48) }}>📅</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(8) }}>No events for this driver</Text>
             </View>
           )}
           {filteredEvts.map((e) => (
@@ -443,19 +444,19 @@ export default function DriverStats() {
                 activeOpacity={0.85}
                 style={{
                   backgroundColor: "#fff",
-                  borderRadius: 24,
-                  padding: 16,
-                  marginTop: 12,
+                  borderRadius: rp(24),
+                  padding: rp(16),
+                  marginTop: rp(12),
                   flexDirection: "row",
                   alignItems: "center",
-                  borderLeftWidth: 4,
+                  borderLeftWidth: rp(4),
                   borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF",
                   ...cardShadow,
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: 15 }}>{e.name}</Text>
-                  <View style={{ flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                  <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", gap: rp(6), marginTop: rp(6), flexWrap: "wrap" }}>
                     <View style={pillGray}><Ionicons name="calendar-outline" size={10} color="#6B7280" /><Text style={pillGrayText}>{e.date}</Text></View>
                     <View style={pillGray}><Ionicons name="location-outline" size={10} color="#6B7280" /><Text style={pillGrayText}>{e.venue}</Text></View>
                   </View>
@@ -464,15 +465,15 @@ export default function DriverStats() {
               </TouchableOpacity>
             </View>
           ))}
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       )}
     </View>
   );
 }
 
-const miniLabel = { fontSize: 10, fontWeight: "800", color: "#6B7280", letterSpacing: 2, marginBottom: 6 };
-const miniInput = { backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, marginBottom: 12 };
-const miniInputText = { flex: 1, paddingVertical: 10, marginLeft: 8, fontSize: 14, color: "#111827" };
-const pillGray = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, gap: 4 };
-const pillGrayText = { color: "#6B7280", fontSize: 10, fontWeight: "700" };
+const miniLabel = { fontSize: rs(10), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(6) };
+const miniInput = { backgroundColor: "#F9FAFB", borderRadius: rp(12), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: rp(12) };
+const miniInputText = { flex: 1, paddingVertical: rp(10), marginLeft: rp(8), fontSize: rs(14), color: "#111827" };
+const pillGray = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99), gap: rp(4) };
+const pillGrayText = { color: "#6B7280", fontSize: rs(10), fontWeight: "700" };

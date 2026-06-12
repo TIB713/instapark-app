@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -30,8 +31,8 @@ const ACCENT_COLOR = "#0F2044";
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
   shadowOpacity: 0.08,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -162,27 +163,27 @@ export default function SupervisorDashboard() {
             backgroundColor: ACCENT_COLOR,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingBottom: 36,
-            paddingHorizontal: 20,
-            paddingTop: 8,
+            paddingBottom: rp(36),
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
           }}
         >
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{greeting()},</Text>
+              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: rs(13) }}>{greeting()},</Text>
               <View>
-                <Text style={{ color: "#fff", fontSize: 26, fontWeight: "900", marginTop: 4 }}>
+                <Text style={{ color: "#fff", fontSize: rs(26), fontWeight: "900", marginTop: rp(4) }}>
                   {user?.name || "Supervisor"}
                 </Text>
-                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginTop: 4 }}>
-                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>SUPERVISOR</Text>
+                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", alignSelf: "flex-start", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(6), marginTop: rp(4) }}>
+                  <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>SUPERVISOR</Text>
                 </View>
               </View>
             </View>
             <TouchableOpacity
               testID="signout-btn"
               onPress={handleSignOut}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 12 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(12) }}
               activeOpacity={0.7}
             >
               <Ionicons name="log-out-outline" size={22} color="#fff" />
@@ -192,21 +193,21 @@ export default function SupervisorDashboard() {
       </SafeAreaView>
 
       {wsStatus === "disconnected" && (
-        <View style={{ backgroundColor: "#FEF3C7", padding: 8, margin: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ backgroundColor: "#FEF3C7", padding: rp(8), margin: rp(12), borderRadius: rp(12), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
           <Ionicons name="cloud-offline-outline" size={16} color="#92400E" />
-          <Text style={{ color: "#92400E", fontSize: 12 }}>Live updates paused — reconnecting...</Text>
+          <Text style={{ color: "#92400E", fontSize: rs(12) }}>Live updates paused — reconnecting...</Text>
         </View>
       )}
 
       <ScrollView
         style={{ flex: 1, marginTop: -20 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: rp(100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT_COLOR} />}
       >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+          contentContainerStyle={{ paddingHorizontal: rp(16), gap: rp(12) }}
         >
           {statCards.map((s) => (
             <TouchableOpacity
@@ -217,33 +218,33 @@ export default function SupervisorDashboard() {
               activeOpacity={0.85}
               style={{
                 backgroundColor: s.color,
-                borderRadius: 24,
-                paddingHorizontal: 18,
-                paddingVertical: 18,
-                minWidth: 150,
+                borderRadius: rp(24),
+                paddingHorizontal: rp(18),
+                paddingVertical: rp(18),
+                minWidth: rp(150),
                 shadowColor: s.color,
                 shadowOpacity: 0.25,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 6 },
+                shadowRadius: rp(14),
+                shadowOffset: { width: 0, height: rp(6) },
                 elevation: 5,
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Ionicons name={s.id === "guest_qr" ? "information-circle-outline" : s.icon} size={22} color="#fff" />
                 {s.onPress && (
-                  <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 99, padding: 4 }}>
+                  <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: rp(99), padding: rp(4) }}>
                     <Ionicons name="chevron-forward" size={14} color="#fff" />
                   </View>
                 )}
               </View>
               {s.value !== null ? (
-                <Text style={{ color: "#fff", fontSize: 32, fontWeight: "900", marginTop: 10 }}>{s.value}</Text>
+                <Text style={{ color: "#fff", fontSize: rs(32), fontWeight: "900", marginTop: rp(10) }}>{s.value}</Text>
               ) : (
-                <View style={{ marginTop: 10 }}>
+                <View style={{ marginTop: rp(10) }}>
                   <Ionicons name={s.icon} size={32} color="#fff" />
                 </View>
               )}
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: 2 }}>
+              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: rs(10), fontWeight: "700", letterSpacing: rs(2), marginTop: rp(2) }}>
                 {s.label}
               </Text>
             </TouchableOpacity>
@@ -252,32 +253,32 @@ export default function SupervisorDashboard() {
 
         {/* Hotel section */}
         {user?.hotel_id && hotel && (
-          <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <View style={{ paddingHorizontal: rp(16), marginTop: rp(24) }}>
             <Text style={labelStyle}>MY HOTEL</Text>
-            <View style={[cardBase, cardShadow, { flexDirection: "row", alignItems: "center", padding: 16 }]}>
-              <View style={{ backgroundColor: "#EFF6FF", padding: 10, borderRadius: 12, marginRight: 14 }}>
+            <View style={[cardBase, cardShadow, { flexDirection: "row", alignItems: "center", padding: rp(16) }]}>
+              <View style={{ backgroundColor: "#EFF6FF", padding: rp(10), borderRadius: rp(12), marginRight: rp(14) }}>
                 <Ionicons name="business" size={24} color="#1D4ED8" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: "900", color: "#111827" }}>{hotel.name}</Text>
-                <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>Primary Assigned Location</Text>
+                <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827" }}>{hotel.name}</Text>
+                <Text style={{ fontSize: rs(12), color: "#6B7280", marginTop: rp(2) }}>Primary Assigned Location</Text>
               </View>
             </View>
 
             {todayDaily && (
               <TouchableOpacity
                 onPress={() => openEvent(todayDaily)}
-                style={[cardBase, cardShadow, { marginTop: 12, borderLeftWidth: 4, borderLeftColor: "#1D4ED8", padding: 16 }]}
+                style={[cardBase, cardShadow, { marginTop: rp(12), borderLeftWidth: rp(4), borderLeftColor: "#1D4ED8", padding: rp(16) }]}
               >
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "800", color: "#1D4ED8" }}>TODAY'S DAILY EVENT</Text>
-                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
-                        <Text style={{ color: "#059669", fontSize: 9, fontWeight: "800" }}>ACTIVE</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: rp(6) }}>
+                      <Text style={{ fontSize: rs(14), fontWeight: "800", color: "#1D4ED8" }}>TODAY'S DAILY EVENT</Text>
+                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(6), paddingVertical: rp(1), borderRadius: rp(4) }}>
+                        <Text style={{ color: "#059669", fontSize: rs(9), fontWeight: "800" }}>ACTIVE</Text>
                       </View>
                     </View>
-                    <Text style={{ fontSize: 16, fontWeight: "900", color: "#111827", marginTop: 4 }}>{todayDaily.name}</Text>
+                    <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#111827", marginTop: rp(4) }}>{todayDaily.name}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                 </View>
@@ -287,20 +288,20 @@ export default function SupervisorDashboard() {
         )}
 
         {/* Quick Actions */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        <View style={{ paddingHorizontal: rp(16), marginTop: rp(24) }}>
           <Text style={labelStyle}>QUICK ACTIONS</Text>
-          <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
+          <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(4) }}>
             <TouchableOpacity
               testID="quick-manage-employees"
               onPress={() => router.push("/(supervisor)/manage-employees")}
               activeOpacity={0.85}
               style={[quickAction, cardShadow]}
             >
-              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: 99, padding: 10 }}>
+              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(10) }}>
                 <Ionicons name="people-outline" size={22} color={ACCENT_COLOR} />
               </View>
-              <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Employees</Text>
-              <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>View your team</Text>
+              <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Employees</Text>
+              <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>View your team</Text>
             </TouchableOpacity>
             <TouchableOpacity
               testID="quick-guest-qr"
@@ -308,37 +309,37 @@ export default function SupervisorDashboard() {
               activeOpacity={0.85}
               style={[quickAction, cardShadow]}
             >
-              <View style={{ backgroundColor: "rgba(217,119,6,0.1)", borderRadius: 99, padding: 10 }}>
+              <View style={{ backgroundColor: "rgba(217,119,6,0.1)", borderRadius: rp(99), padding: rp(10) }}>
                 <Ionicons name="qr-code-outline" size={22} color="#D97706" />
               </View>
-              <Text style={{ fontWeight: "800", color: "#111827", marginTop: 10, fontSize: 14 }}>Guest QR</Text>
-              <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 2 }}>Share pre-registration</Text>
+              <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Guest QR</Text>
+              <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Share pre-registration</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Active events */}
-        <View style={{ paddingHorizontal: 16, marginTop: 28 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+        <View style={{ paddingHorizontal: rp(16), marginTop: rp(28) }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(12) }}>
             <Text style={labelStyle}>ACTIVE ASSIGNED EVENTS</Text>
-            <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 10, paddingVertical: 2, borderRadius: 99, marginLeft: 8 }}>
-              <Text style={{ color: "#059669", fontWeight: "800", fontSize: 11 }}>{active.length}</Text>
+            <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(10), paddingVertical: rp(2), borderRadius: rp(99), marginLeft: rp(8) }}>
+              <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(11) }}>{active.length}</Text>
             </View>
           </View>
 
           {events.length === 0 ? (
-            <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: 32 }]}>
-              <Text style={{ fontSize: 40 }}>📋</Text>
-              <Text style={{ color: "#111827", fontWeight: "800", marginTop: 12, fontSize: 15 }}>No events assigned yet</Text>
-              <Text style={{ color: "#6B7280", marginTop: 4, fontSize: 13, textAlign: "center", paddingHorizontal: 20 }}>
+            <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: rp(32) }]}>
+              <Text style={{ fontSize: rs(40) }}>📋</Text>
+              <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(12), fontSize: rs(15) }}>No events assigned yet</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(4), fontSize: rs(13), textAlign: "center", paddingHorizontal: rp(20) }}>
                 Your assigned events will appear here once the admin assigns you to one
               </Text>
             </View>
           ) : active.length === 0 ? (
-            <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: 28 }]}>
-              <Text style={{ fontSize: 36 }}>📅</Text>
-              <Text style={{ color: "#111827", fontWeight: "800", marginTop: 8 }}>No active events</Text>
-              <Text style={{ color: "#6B7280", marginTop: 4, fontSize: 13, textAlign: "center", paddingHorizontal: 20 }}>
+            <View style={[cardBase, cardShadow, { alignItems: "center", paddingVertical: rp(28) }]}>
+              <Text style={{ fontSize: rs(36) }}>📅</Text>
+              <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(8) }}>No active events</Text>
+              <Text style={{ color: "#6B7280", marginTop: rp(4), fontSize: rs(13), textAlign: "center", paddingHorizontal: rp(20) }}>
                 Check the "Recent Events" section below for your past assignments
               </Text>
             </View>
@@ -349,75 +350,75 @@ export default function SupervisorDashboard() {
                 testID={`active-event-${e.id}`}
                 onPress={() => openEvent(e)}
                 activeOpacity={0.85}
-                style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#059669", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
+                style={[cardBase, cardShadow, { borderLeftWidth: rp(4), borderLeftColor: "#059669", flexDirection: "row", alignItems: "center", marginBottom: rp(12) }]}
               >
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: 16 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{e.name}</Text>
                     {e.event_type === "hotel_daily" && (
-                      <View style={{ backgroundColor: "#0284C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 AUTO</Text>
+                      <View style={{ backgroundColor: "#0284C7", borderRadius: rp(6), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                        <Text style={{ color: "#fff", fontSize: rs(9), fontWeight: "800" }}>🏨 AUTO</Text>
                       </View>
                     )}
                     {e.event_type === "hotel_special" && (
-                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 SPECIAL</Text>
+                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: rp(6), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                        <Text style={{ color: "#fff", fontSize: rs(9), fontWeight: "800" }}>🏨 SPECIAL</Text>
                       </View>
                     )}
                   </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6), flexWrap: "wrap", gap: rp(12) }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Ionicons name="calendar-outline" size={13} color={ACCENT_COLOR} />
-                      <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 4 }}>{e.date}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(4) }}>{e.date}</Text>
                     </View>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <Ionicons name="time-outline" size={13} color={ACCENT_COLOR} />
-                      <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 4 }}>{e.start_time}—{e.end_time}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(4) }}>{e.start_time}—{e.end_time}</Text>
                     </View>
                   </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(4) }}>
                     <Ionicons name="location-outline" size={13} color={ACCENT_COLOR} />
-                    <Text style={{ color: "#6B7280", fontSize: 12, marginLeft: 4 }}>{e.venue}</Text>
+                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(4) }}>{e.venue}</Text>
                   </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
-                    <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 }}>
-                      <Text style={{ color: "#059669", fontWeight: "800", fontSize: 10, letterSpacing: 1 }}>ACTIVE</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(10) }}>
+                    <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                      <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(1) }}>ACTIVE</Text>
                     </View>
-                    <Text style={{ color: "#9CA3AF", fontSize: 11, marginLeft: 8 }}>Max {e.max_cars} cars</Text>
+                    <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginLeft: rp(8) }}>Max {e.max_cars} cars</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: 8 }} />
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: rp(8) }} />
               </TouchableOpacity>
             ))
           )}
         </View>
 
         {past.length > 0 && (
-          <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <View style={{ paddingHorizontal: rp(16), marginTop: rp(24) }}>
             <Text style={labelStyle}>RECENT EVENTS</Text>
-            <View style={{ height: 12 }} />
+            <View style={{ height: rp(12) }} />
             {past.map((e) => (
               <TouchableOpacity
                 key={e.id}
                 onPress={() => openEvent(e)}
                 activeOpacity={0.85}
-                style={[cardBase, cardShadow, { borderLeftWidth: 4, borderLeftColor: "#D1D5DB", flexDirection: "row", alignItems: "center", marginBottom: 12 }]}
+                style={[cardBase, cardShadow, { borderLeftWidth: rp(4), borderLeftColor: "#D1D5DB", flexDirection: "row", alignItems: "center", marginBottom: rp(12) }]}
               >
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text style={{ fontWeight: "900", color: "#374151", fontSize: 15 }}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+                    <Text style={{ fontWeight: "900", color: "#374151", fontSize: rs(15) }}>{e.name}</Text>
                     {e.event_type === "hotel_daily" && (
-                      <View style={{ backgroundColor: "#0284C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 AUTO</Text>
+                      <View style={{ backgroundColor: "#0284C7", borderRadius: rp(6), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                        <Text style={{ color: "#fff", fontSize: rs(9), fontWeight: "800" }}>🏨 AUTO</Text>
                       </View>
                     )}
                     {e.event_type === "hotel_special" && (
-                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                        <Text style={{ color: "#fff", fontSize: 9, fontWeight: "800" }}>🏨 SPECIAL</Text>
+                      <View style={{ backgroundColor: "#1D4ED8", borderRadius: rp(6), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                        <Text style={{ color: "#fff", fontSize: rs(9), fontWeight: "800" }}>🏨 SPECIAL</Text>
                       </View>
                     )}
                   </View>
-                  <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}>{e.date} · {e.venue}</Text>
+                  <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(4) }}>{e.date} · {e.venue}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </TouchableOpacity>
@@ -425,8 +426,8 @@ export default function SupervisorDashboard() {
           </View>
         )}
 
-        <View style={{ marginTop: 24, paddingBottom: 20, alignItems: "center" }}>
-          <Text style={{ color: "#9CA3AF", fontSize: 12, textAlign: "center", fontStyle: "italic" }}>
+        <View style={{ marginTop: rp(24), paddingBottom: rp(20), alignItems: "center" }}>
+          <Text style={{ color: "#9CA3AF", fontSize: rs(12), textAlign: "center", fontStyle: "italic" }}>
             Drivers are managed by your admin. You can view but cannot add or remove drivers.
           </Text>
         </View>
@@ -436,23 +437,23 @@ export default function SupervisorDashboard() {
 }
 
 const labelStyle = {
-  fontSize: 11,
+  fontSize: rs(11),
   fontWeight: "700",
   color: "#6B7280",
-  letterSpacing: 3,
+  letterSpacing: rs(3),
   textTransform: "uppercase",
-  marginBottom: 8,
+  marginBottom: rp(8),
 };
 
 const cardBase = {
   backgroundColor: "#FFFFFF",
-  borderRadius: 24,
-  padding: 18,
+  borderRadius: rp(24),
+  padding: rp(18),
 };
 
 const quickAction = {
   flex: 1,
   backgroundColor: "#FFFFFF",
-  borderRadius: 24,
-  padding: 16,
+  borderRadius: rp(24),
+  padding: rp(16),
 };

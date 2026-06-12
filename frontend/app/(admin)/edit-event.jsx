@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -131,7 +132,7 @@ export default function EditEvent() {
             <TouchableOpacity onPress={() => router.back()} style={iconBtn}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
               {isHotelDailyEdit ? "Edit Today's Parking" : "Edit Event"}
             </Text>
           </View>
@@ -139,27 +140,27 @@ export default function EditEvent() {
       </SafeAreaView>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 20 }} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
           {!isHotelDailyEdit && (
             <>
               <Label>EVENT NAME</Label>
               <View style={inputRowStyle}>
                 <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                <TextInput value={name} onChangeText={setName} style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
+                <TextInput value={name} onChangeText={setName} style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
               </View>
 
               <Label>VENUE</Label>
               <View style={inputRowStyle}>
                 <Ionicons name="location-outline" size={18} color="#7C3AED" />
-                <TextInput value={venue} onChangeText={setVenue} style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
+                <TextInput value={venue} onChangeText={setVenue} style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
               </View>
 
-              <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>
                   <Label>START DATE</Label>
                   <TouchableOpacity onPress={() => setShowDP(true)} style={inputBoxStyle}>
                     <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                    <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(date, "MMM d, yyyy")}</Text>
+                    <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1, fontSize: rs(14) }}>{format(date, "MMM d, yyyy")}</Text>
                     <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
@@ -167,7 +168,7 @@ export default function EditEvent() {
                   <Label>END DATE</Label>
                   <TouchableOpacity onPress={() => setShowEDP(true)} style={inputBoxStyle}>
                     <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                    <Text style={{ marginLeft: 10, color: "#111827", flex: 1, fontSize: 14 }}>{format(endDate, "MMM d, yyyy")}</Text>
+                    <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1, fontSize: rs(14) }}>{format(endDate, "MMM d, yyyy")}</Text>
                     <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
@@ -175,12 +176,12 @@ export default function EditEvent() {
             </>
           )}
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: rp(12) }}>
             <View style={{ flex: 1 }}>
               <Label>START TIME</Label>
               <TouchableOpacity onPress={() => setShowSTP(true)} style={inputBoxStyle}>
                 <Ionicons name="time-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: 10, color: "#111827", flex: 1 }}>{startTime}</Text>
+                <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1 }}>{startTime}</Text>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
@@ -188,7 +189,7 @@ export default function EditEvent() {
               <Label>END TIME</Label>
               <TouchableOpacity onPress={() => setShowETP(true)} style={inputBoxStyle}>
                 <Ionicons name="time-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: 10, color: "#111827", flex: 1 }}>{endTime}</Text>
+                <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1 }}>{endTime}</Text>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
@@ -197,12 +198,17 @@ export default function EditEvent() {
           <Label>MAX CARS</Label>
           <View style={inputRowStyle}>
             <Ionicons name="car-outline" size={18} color="#7C3AED" />
-            <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }} />
+            <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
           </View>
 
           <Label>PARKING ZONES</Label>
+          {zones.length === 0 && (
+            <Text style={{ color: "#9CA3AF", fontSize: rs(14), textAlign: "center", marginBottom: rp(8) }}>
+              No parking zones added yet. Tap Add Zone to create one.
+            </Text>
+          )}
           {zones.map((z, i) => (
-            <View key={i} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+            <View key={i} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
               <Ionicons name="location" size={18} color="#7C3AED" />
               <TextInput
                 value={z.name}
@@ -213,7 +219,7 @@ export default function EditEvent() {
                 }}
                 placeholder="Zone"
                 placeholderTextColor="#9CA3AF"
-                style={{ flex: 1, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}
+                style={{ flex: 1, borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10) }}
               />
               <TextInput
                 value={String(z.slots)}
@@ -225,10 +231,13 @@ export default function EditEvent() {
                 keyboardType="numeric"
                 placeholder="Slots"
                 placeholderTextColor="#9CA3AF"
-                style={{ width: 70, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, textAlign: "center" }}
+                style={{ width: rp(70), borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center" }}
               />
-              <TouchableOpacity onPress={() => setZones(zones.filter((_, k) => k !== i))}>
-                <Ionicons name="close-circle" size={24} color="#F43F5E" />
+              <TouchableOpacity
+                onPress={() => setZones(zones.filter((_, idx) => idx !== i))}
+                style={{ padding: rp(4) }}
+              >
+                <Ionicons name="remove-circle-outline" size={20} color="#F43F5E" />
               </TouchableOpacity>
             </View>
           ))}
@@ -236,24 +245,24 @@ export default function EditEvent() {
             style={{
               color: totalSlots > maxCarsInt ? "#F43F5E" : "#059669",
               fontWeight: "700",
-              fontSize: 13,
+              fontSize: rs(13),
               textAlign: "right",
-              marginBottom: 8,
+              marginBottom: rp(8),
             }}
           >
             Total slots: {totalSlots} / {maxCarsInt}
           </Text>
           <TouchableOpacity
-            onPress={() => setZones([...zones, { name: "", slots: 10 }])}
-            style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 16, flexDirection: "row", justifyContent: "center" }}
+            onPress={() => setZones([...zones, { name: `Zone ${String.fromCharCode(65 + zones.length)}`, slots: 50 }])}
+            style={{ flexDirection: "row", alignItems: "center", gap: rp(6), paddingVertical: rp(10) }}
           >
-            <Ionicons name="add" size={18} color="#7C3AED" />
-            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD ZONE</Text>
+            <Ionicons name="add-circle-outline" size={20} color="#7C3AED" />
+            <Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: rs(13) }}>Add Zone</Text>
           </TouchableOpacity>
 
           <Label>ENTRY GATES</Label>
           {gates.map((g, i) => (
-            <View key={i} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 12, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+            <View key={i} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
               <Ionicons name="enter-outline" size={18} color="#7C3AED" />
               <TextInput
                 value={g}
@@ -264,7 +273,7 @@ export default function EditEvent() {
                 }}
                 placeholder="Gate name"
                 placeholderTextColor="#9CA3AF"
-                style={{ flex: 1, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}
+                style={{ flex: 1, borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10) }}
               />
               <TouchableOpacity onPress={() => setGates(gates.filter((_, k) => k !== i))}>
                 <Ionicons name="close-circle" size={24} color="#F43F5E" />
@@ -273,10 +282,10 @@ export default function EditEvent() {
           ))}
           <TouchableOpacity
             onPress={() => setGates([...gates, ""])}
-            style={{ backgroundColor: "#EDE9FE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 24, flexDirection: "row", justifyContent: "center" }}
+            style={{ backgroundColor: "#EDE9FE", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(24), flexDirection: "row", justifyContent: "center" }}
           >
             <Ionicons name="add" size={18} color="#7C3AED" />
-            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: 6, letterSpacing: 1 }}>ADD GATE</Text>
+            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
           </TouchableOpacity>
           
           <Label>KEY HOOKS (Total hooks on key board)</Label>
@@ -289,7 +298,7 @@ export default function EditEvent() {
               placeholderTextColor="#9CA3AF"
               keyboardType="number-pad"
               maxLength={4}
-              style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontSize: 15, color: "#111827" }}
+              style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }}
             />
           </View>
 
@@ -299,21 +308,21 @@ export default function EditEvent() {
             activeOpacity={0.85}
             style={{
               backgroundColor: "#7C3AED",
-              borderRadius: 16,
-              paddingVertical: 16,
+              borderRadius: rp(16),
+              paddingVertical: rp(16),
               alignItems: "center",
-              marginTop: 8,
-              marginBottom: 16,
+              marginTop: rp(8),
+              marginBottom: rp(16),
               shadowColor: "#7C3AED",
               shadowOpacity: 0.3,
-              shadowRadius: 16,
-              shadowOffset: { width: 0, height: 6 },
+              shadowRadius: rp(16),
+              shadowOffset: { width: 0, height: rp(6) },
               elevation: 6,
             }}
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: 15, letterSpacing: 2 }}>SAVE CHANGES</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>SAVE CHANGES</Text>}
           </TouchableOpacity>
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -327,7 +336,7 @@ export default function EditEvent() {
 
 function Label({ children }) {
   return (
-    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 8, marginTop: 4 }}>
+    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8), marginTop: rp(4) }}>
       {children}
     </Text>
   );
@@ -337,9 +346,9 @@ const headerWrap = {
   backgroundColor: "#7C3AED",
   borderBottomLeftRadius: 44,
   borderBottomRightRadius: 44,
-  paddingHorizontal: 20,
-  paddingTop: 8,
-  paddingBottom: 24,
+  paddingHorizontal: rp(20),
+  paddingTop: rp(8),
+  paddingBottom: rp(24),
 };
 const headerOverlay = {
   position: "absolute",
@@ -353,27 +362,27 @@ const headerOverlay = {
 };
 const iconBtn = {
   backgroundColor: "rgba(255,255,255,0.15)",
-  borderRadius: 99,
-  padding: 8,
+  borderRadius: rp(99),
+  padding: rp(8),
 };
 const inputRowStyle = {
   backgroundColor: "#fff",
-  borderRadius: 16,
-  borderWidth: 1,
+  borderRadius: rp(16),
+  borderWidth: rp(1),
   borderColor: "#E5E7EB",
   flexDirection: "row",
   alignItems: "center",
-  paddingHorizontal: 16,
-  marginBottom: 16,
+  paddingHorizontal: rp(16),
+  marginBottom: rp(16),
 };
 const inputBoxStyle = {
   backgroundColor: "#fff",
-  borderRadius: 16,
-  borderWidth: 1,
+  borderRadius: rp(16),
+  borderWidth: rp(1),
   borderColor: "#E5E7EB",
   flexDirection: "row",
   alignItems: "center",
-  paddingHorizontal: 14,
-  paddingVertical: 14,
-  marginBottom: 16,
+  paddingHorizontal: rp(14),
+  paddingVertical: rp(14),
+  marginBottom: rp(16),
 };

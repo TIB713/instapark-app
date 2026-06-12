@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"; 
+import { useState, useEffect } from "react";
+import { rs, rp } from '../../utils/responsive'; 
 import { 
   View, Text, ScrollView, ActivityIndicator, 
   TouchableOpacity, Image, Modal 
@@ -38,44 +39,44 @@ function TimelineStep({ color, icon, label, time, driver,
   return ( 
     <View style={{ flexDirection: "row" }}> 
       {/* Line + dot */} 
-      <View style={{ width: 40, alignItems: "center" }}> 
-        <View style={{ width: 36, height: 36, borderRadius: 18, 
+      <View style={{ width: rp(40), alignItems: "center" }}> 
+        <View style={{ width: rp(36), height: rp(36), borderRadius: rp(18), 
           backgroundColor: color, alignItems: "center", 
           justifyContent: "center", zIndex: 1 }}> 
           <Ionicons name={icon} size={18} color="#fff" /> 
         </View> 
         {!isLast && ( 
-          <View style={{ width: 2, flex: 1, minHeight: 24, 
-            backgroundColor: "#E5E7EB", marginTop: 2 }} /> 
+          <View style={{ width: rp(2), flex: 1, minHeight: 24, 
+            backgroundColor: "#E5E7EB", marginTop: rp(2) }} /> 
         )} 
       </View> 
  
       {/* Content */} 
-      <View style={{ flex: 1, paddingLeft: 14, 
+      <View style={{ flex: 1, paddingLeft: rp(14), 
         paddingBottom: isLast ? 0 : 24 }}> 
         <View style={{ flexDirection: "row", 
           justifyContent: "space-between", alignItems: "center" }}> 
-          <Text style={{ fontWeight: "900", fontSize: 15, 
+          <Text style={{ fontWeight: "900", fontSize: rs(15), 
             color: "#111827" }}>{label}</Text> 
-          <Text style={{ fontSize: 11, color: "#9CA3AF", 
+          <Text style={{ fontSize: rs(11), color: "#9CA3AF", 
             fontWeight: "700" }}>{fmt(time)}</Text> 
         </View> 
  
         {driver && ( 
           <View style={{ flexDirection: "row", 
-            alignItems: "center", marginTop: 4 }}> 
+            alignItems: "center", marginTop: rp(4) }}> 
             <Ionicons name="person-outline" size={12} 
               color="#6B7280" /> 
-            <Text style={{ color: "#6B7280", fontSize: 12, 
-              marginLeft: 4, fontWeight: "700" }}>{driver}</Text> 
+            <Text style={{ color: "#6B7280", fontSize: rs(12), 
+              marginLeft: rp(4), fontWeight: "700" }}>{driver}</Text> 
           </View> 
         )} 
  
         {note ? ( 
           <View style={{ backgroundColor: "#FEF9C3", 
-            borderRadius: 10, padding: 10, marginTop: 8, 
-            borderLeftWidth: 3, borderLeftColor: "#FDE047" }}> 
-            <Text style={{ color: "#713F12", fontSize: 12, 
+            borderRadius: rp(10), padding: rp(10), marginTop: rp(8), 
+            borderLeftWidth: rp(3), borderLeftColor: "#FDE047" }}> 
+            <Text style={{ color: "#713F12", fontSize: rs(12), 
               fontStyle: "italic" }}>"{note}"</Text> 
           </View> 
         ) : null} 
@@ -83,14 +84,14 @@ function TimelineStep({ color, icon, label, time, driver,
         {photos && photos.length > 0 && ( 
           <ScrollView horizontal 
             showsHorizontalScrollIndicator={false} 
-            contentContainerStyle={{ gap: 8, marginTop: 10 }}> 
+            contentContainerStyle={{ gap: rp(8), marginTop: rp(10) }}> 
             {photos.map((url, i) => ( 
               <TouchableOpacity key={i} 
                 onPress={() => onPhotoPress(url)}> 
                 <Image source={{ uri: url }} 
-                  style={{ width: 80, height: 80, 
-                    borderRadius: 12, 
-                    borderWidth: 1.5, 
+                  style={{ width: rp(80), height: rp(80), 
+                    borderRadius: rp(12), 
+                    borderWidth: rp(1.5), 
                     borderColor: "#E5E7EB" }} /> 
               </TouchableOpacity> 
             ))} 
@@ -104,51 +105,51 @@ function TimelineStep({ color, icon, label, time, driver,
 function IncidentStep({ incident, isLast, onPhotoPress }) { 
   return ( 
     <View style={{ flexDirection: "row" }}> 
-      <View style={{ width: 40, alignItems: "center" }}> 
-        <View style={{ width: 36, height: 36, borderRadius: 18, 
+      <View style={{ width: rp(40), alignItems: "center" }}> 
+        <View style={{ width: rp(36), height: rp(36), borderRadius: rp(18), 
           backgroundColor: "#EF4444", alignItems: "center", 
           justifyContent: "center", zIndex: 1 }}> 
           <Ionicons name="warning" size={18} color="#fff" /> 
         </View> 
         {!isLast && ( 
-          <View style={{ width: 2, flex: 1, minHeight: 24, 
-            backgroundColor: "#E5E7EB", marginTop: 2 }} /> 
+          <View style={{ width: rp(2), flex: 1, minHeight: 24, 
+            backgroundColor: "#E5E7EB", marginTop: rp(2) }} /> 
         )} 
       </View> 
-      <View style={{ flex: 1, paddingLeft: 14, 
+      <View style={{ flex: 1, paddingLeft: rp(14), 
         paddingBottom: isLast ? 0 : 24 }}> 
         <View style={{ flexDirection: "row", 
           justifyContent: "space-between", alignItems: "center" }}> 
-          <Text style={{ fontWeight: "900", fontSize: 15, 
+          <Text style={{ fontWeight: "900", fontSize: rs(15), 
             color: "#EF4444" }}>Incident Reported</Text> 
-          <Text style={{ fontSize: 11, color: "#9CA3AF", 
+          <Text style={{ fontSize: rs(11), color: "#9CA3AF", 
             fontWeight: "700" }}>{fmt(incident.created_at)}</Text> 
         </View> 
         {incident.driver_name && ( 
           <View style={{ flexDirection: "row", 
-            alignItems: "center", marginTop: 4 }}> 
+            alignItems: "center", marginTop: rp(4) }}> 
             <Ionicons name="person-outline" size={12} 
               color="#6B7280" /> 
-            <Text style={{ color: "#6B7280", fontSize: 12, 
-              marginLeft: 4, fontWeight: "700" }}> 
+            <Text style={{ color: "#6B7280", fontSize: rs(12), 
+              marginLeft: rp(4), fontWeight: "700" }}> 
               {incident.driver_name} 
             </Text> 
           </View> 
         )} 
         <View style={{ backgroundColor: "#FEE2E2", 
-          borderRadius: 10, padding: 10, marginTop: 8, 
-          borderLeftWidth: 3, borderLeftColor: "#EF4444" }}> 
-          <Text style={{ color: "#991B1B", fontSize: 12 }}> 
+          borderRadius: rp(10), padding: rp(10), marginTop: rp(8), 
+          borderLeftWidth: rp(3), borderLeftColor: "#EF4444" }}> 
+          <Text style={{ color: "#991B1B", fontSize: rs(12) }}> 
             {incident.description} 
           </Text> 
         </View> 
         {incident.photo_url && ( 
           <TouchableOpacity 
             onPress={() => onPhotoPress(incident.photo_url)} 
-            style={{ marginTop: 10 }}> 
+            style={{ marginTop: rp(10) }}> 
             <Image source={{ uri: incident.photo_url }} 
-              style={{ width: 80, height: 80, borderRadius: 12, 
-                borderWidth: 1.5, borderColor: "#FECACA" }} /> 
+              style={{ width: rp(80), height: rp(80), borderRadius: rp(12), 
+                borderWidth: rp(1.5), borderColor: "#FECACA" }} /> 
           </TouchableOpacity> 
         )} 
       </View> 
@@ -272,24 +273,24 @@ export default function CarLog() {
       <SafeAreaView edges={["top"]}> 
         {/* Header */} 
         <View style={{ flexDirection: "row", alignItems: "center", 
-          paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }}> 
+          paddingHorizontal: rp(20), paddingTop: rp(8), paddingBottom: rp(16) }}> 
           <TouchableOpacity onPress={() => router.back()} 
             style={{ backgroundColor: "rgba(124,58,237,0.1)", 
-              borderRadius: 99, padding: 10 }}> 
+              borderRadius: rp(99), padding: rp(10) }}> 
             <Ionicons name="chevron-back" size={22} 
               color="#7C3AED" /> 
           </TouchableOpacity> 
-          <View style={{ marginLeft: 14, flex: 1 }}> 
-            <Text style={{ fontSize: 22, fontWeight: "900", 
+          <View style={{ marginLeft: rp(14), flex: 1 }}> 
+            <Text style={{ fontSize: rs(22), fontWeight: "900", 
               color: "#111827" }}>{car.plate}</Text> 
-            <Text style={{ color: "#6B7280", fontSize: 13 }}> 
+            <Text style={{ color: "#6B7280", fontSize: rs(13) }}> 
               {car.color} {car.make} 
             </Text> 
           </View> 
-          <View style={{ paddingHorizontal: 12, paddingVertical: 6, 
-            borderRadius: 99, backgroundColor: cfg.color }}> 
+          <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(6), 
+            borderRadius: rp(99), backgroundColor: cfg.color }}> 
             <Text style={{ color: "#fff", fontWeight: "900", 
-              fontSize: 11, letterSpacing: 1 }}> 
+              fontSize: rs(11), letterSpacing: rs(1) }}> 
               {cfg.label.toUpperCase()} 
             </Text> 
           </View> 
@@ -297,19 +298,19 @@ export default function CarLog() {
       </SafeAreaView> 
  
       <ScrollView contentContainerStyle={{ 
-        paddingHorizontal: 20, paddingBottom: 60 }}> 
+        paddingHorizontal: rp(20), paddingBottom: rp(60) }}> 
  
         {/* Summary card */} 
         <View style={{ backgroundColor: "#7C3AED", 
-          borderRadius: 24, padding: 20, marginBottom: 24, 
+          borderRadius: rp(24), padding: rp(20), marginBottom: rp(24), 
           shadowColor: "#7C3AED", shadowOpacity: 0.3, 
-          shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, 
+          shadowRadius: rp(16), shadowOffset: { width: 0, height: rp(8) }, 
           elevation: 8 }}> 
-          <Text style={{ fontSize: 11, fontWeight: "800", 
-            color: "rgba(255,255,255,0.7)", letterSpacing: 3 }}> 
+          <Text style={{ fontSize: rs(11), fontWeight: "800", 
+            color: "rgba(255,255,255,0.7)", letterSpacing: rs(3) }}> 
             VEHICLE JOURNEY SUMMARY 
           </Text> 
-          <View style={{ flexDirection: "row", marginTop: 16, 
+          <View style={{ flexDirection: "row", marginTop: rp(16), 
             justifyContent: "space-between" }}> 
             {[ 
               { label: "TOTAL TIME", 
@@ -321,25 +322,25 @@ export default function CarLog() {
                 value: incidents.length.toString() }, 
             ].map(s => ( 
               <View key={s.label} style={{ alignItems: "center" }}> 
-                <Text style={{ fontSize: 22, fontWeight: "900", 
+                <Text style={{ fontSize: rs(22), fontWeight: "900", 
                   color: "#fff" }}>{s.value}</Text> 
-                <Text style={{ fontSize: 10, fontWeight: "800", 
+                <Text style={{ fontSize: rs(10), fontWeight: "800", 
                   color: "rgba(255,255,255,0.6)", 
-                  letterSpacing: 2, marginTop: 4 }}> 
+                  letterSpacing: rs(2), marginTop: rp(4) }}> 
                   {s.label} 
                 </Text> 
               </View> 
             ))} 
           </View> 
           {car.guest_name && ( 
-            <View style={{ marginTop: 14, paddingTop: 14, 
-              borderTopWidth: 1, 
+            <View style={{ marginTop: rp(14), paddingTop: rp(14), 
+              borderTopWidth: rp(1), 
               borderTopColor: "rgba(255,255,255,0.2)", 
               flexDirection: "row", alignItems: "center" }}> 
               <Ionicons name="person-circle-outline" size={16} 
                 color="rgba(255,255,255,0.7)" /> 
               <Text style={{ color: "rgba(255,255,255,0.8)", 
-                fontSize: 13, marginLeft: 6 }}> 
+                fontSize: rs(13), marginLeft: rp(6) }}> 
                 {car.guest_name} 
                 {car.guest_phone ? ` · ${car.guest_phone}` : ""} 
               </Text> 
@@ -348,14 +349,14 @@ export default function CarLog() {
         </View> 
  
         {/* Timeline */} 
-        <Text style={{ fontSize: 11, fontWeight: "800", 
-          color: "#6B7280", letterSpacing: 3, marginBottom: 20 }}> 
+        <Text style={{ fontSize: rs(11), fontWeight: "800", 
+          color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(20) }}> 
           VEHICLE TIMELINE 
         </Text> 
  
-        <View style={{ backgroundColor: "#fff", borderRadius: 24, 
-          padding: 20, shadowColor: "#000", shadowOpacity: 0.06, 
-          shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, 
+        <View style={{ backgroundColor: "#fff", borderRadius: rp(24), 
+          padding: rp(20), shadowColor: "#000", shadowOpacity: 0.06, 
+          shadowRadius: rp(12), shadowOffset: { width: 0, height: rp(4) }, 
           elevation: 3 }}> 
           {steps.map((step, i) => { 
             const isLast = i === steps.length - 1; 
@@ -387,17 +388,17 @@ export default function CarLog() {
                   {step.rating_comment && (
                     <View style={{
                       backgroundColor: "#F0FDF4",
-                      borderRadius: 10,
-                      padding: 10,
-                      marginTop: 8,
+                      borderRadius: rp(10),
+                      padding: rp(10),
+                      marginTop: rp(8),
                       marginBottom: isLast ? 0 : 24,
-                      marginLeft: 54,
-                      borderLeftWidth: 3,
+                      marginLeft: rp(54),
+                      borderLeftWidth: rp(3),
                       borderLeftColor: "#059669",
                     }}>
                       <Text style={{
                         color: "#065F46",
-                        fontSize: 12,
+                        fontSize: rs(12),
                         fontStyle: "italic",
                       }}>
                         "{step.rating_comment}"
@@ -424,7 +425,7 @@ export default function CarLog() {
           })} 
         </View> 
  
-        <View style={{ height: 40 }} /> 
+        <View style={{ height: rp(40) }} /> 
       </ScrollView> 
  
       {/* Photo lightbox */} 
@@ -439,11 +440,11 @@ export default function CarLog() {
           {lightboxUrl && ( 
             <Image source={{ uri: lightboxUrl }} 
               style={{ width: "92%", height: "70%", 
-                borderRadius: 20 }} 
+                borderRadius: rp(20) }} 
               resizeMode="contain" /> 
           )} 
           <Text style={{ color: "rgba(255,255,255,0.5)", 
-            marginTop: 16, fontSize: 13 }}> 
+            marginTop: rp(16), fontSize: rs(13) }}> 
             Tap anywhere to close 
           </Text> 
         </TouchableOpacity> 
@@ -495,44 +496,44 @@ export default function CarLog() {
 //   return ( 
 //     <View style={{ flexDirection: "row" }}> 
 //       {/* Line + dot */} 
-//       <View style={{ width: 40, alignItems: "center" }}> 
-//         <View style={{ width: 36, height: 36, borderRadius: 18, 
+//       <View style={{ width: rp(40), alignItems: "center" }}> 
+//         <View style={{ width: rp(36), height: rp(36), borderRadius: rp(18), 
 //           backgroundColor: color, alignItems: "center", 
 //           justifyContent: "center", zIndex: 1 }}> 
 //           <Ionicons name={icon} size={18} color="#fff" /> 
 //         </View> 
 //         {!isLast && ( 
-//           <View style={{ width: 2, flex: 1, minHeight: 24, 
-//             backgroundColor: "#E5E7EB", marginTop: 2 }} /> 
+//           <View style={{ width: rp(2), flex: 1, minHeight: 24, 
+//             backgroundColor: "#E5E7EB", marginTop: rp(2) }} /> 
 //         )} 
 //       </View> 
  
 //       {/* Content */} 
-//       <View style={{ flex: 1, paddingLeft: 14, 
+//       <View style={{ flex: 1, paddingLeft: rp(14), 
 //         paddingBottom: isLast ? 0 : 24 }}> 
 //         <View style={{ flexDirection: "row", 
 //           justifyContent: "space-between", alignItems: "center" }}> 
-//           <Text style={{ fontWeight: "900", fontSize: 15, 
+//           <Text style={{ fontWeight: "900", fontSize: rs(15), 
 //             color: "#111827" }}>{label}</Text> 
-//           <Text style={{ fontSize: 11, color: "#9CA3AF", 
+//           <Text style={{ fontSize: rs(11), color: "#9CA3AF", 
 //             fontWeight: "700" }}>{fmt(time)}</Text> 
 //         </View> 
  
 //         {driver && ( 
 //           <View style={{ flexDirection: "row", 
-//             alignItems: "center", marginTop: 4 }}> 
+//             alignItems: "center", marginTop: rp(4) }}> 
 //             <Ionicons name="person-outline" size={12} 
 //               color="#6B7280" /> 
-//             <Text style={{ color: "#6B7280", fontSize: 12, 
-//               marginLeft: 4, fontWeight: "700" }}>{driver}</Text> 
+//             <Text style={{ color: "#6B7280", fontSize: rs(12), 
+//               marginLeft: rp(4), fontWeight: "700" }}>{driver}</Text> 
 //           </View> 
 //         )} 
  
 //         {note ? ( 
 //           <View style={{ backgroundColor: "#FEF9C3", 
-//             borderRadius: 10, padding: 10, marginTop: 8, 
-//             borderLeftWidth: 3, borderLeftColor: "#FDE047" }}> 
-//             <Text style={{ color: "#713F12", fontSize: 12, 
+//             borderRadius: rp(10), padding: rp(10), marginTop: rp(8), 
+//             borderLeftWidth: rp(3), borderLeftColor: "#FDE047" }}> 
+//             <Text style={{ color: "#713F12", fontSize: rs(12), 
 //               fontStyle: "italic" }}>"{note}"</Text> 
 //           </View> 
 //         ) : null} 
@@ -540,14 +541,14 @@ export default function CarLog() {
 //         {photos && photos.length > 0 && ( 
 //           <ScrollView horizontal 
 //             showsHorizontalScrollIndicator={false} 
-//             contentContainerStyle={{ gap: 8, marginTop: 10 }}> 
+//             contentContainerStyle={{ gap: rp(8), marginTop: rp(10) }}> 
 //             {photos.map((url, i) => ( 
 //               <TouchableOpacity key={i} 
 //                 onPress={() => onPhotoPress(url)}> 
 //                 <Image source={{ uri: url }} 
-//                   style={{ width: 80, height: 80, 
-//                     borderRadius: 12, 
-//                     borderWidth: 1.5, 
+//                   style={{ width: rp(80), height: rp(80), 
+//                     borderRadius: rp(12), 
+//                     borderWidth: rp(1.5), 
 //                     borderColor: "#E5E7EB" }} /> 
 //               </TouchableOpacity> 
 //             ))} 
@@ -561,51 +562,51 @@ export default function CarLog() {
 // function IncidentStep({ incident, isLast, onPhotoPress }) { 
 //   return ( 
 //     <View style={{ flexDirection: "row" }}> 
-//       <View style={{ width: 40, alignItems: "center" }}> 
-//         <View style={{ width: 36, height: 36, borderRadius: 18, 
+//       <View style={{ width: rp(40), alignItems: "center" }}> 
+//         <View style={{ width: rp(36), height: rp(36), borderRadius: rp(18), 
 //           backgroundColor: "#EF4444", alignItems: "center", 
 //           justifyContent: "center", zIndex: 1 }}> 
 //           <Ionicons name="warning" size={18} color="#fff" /> 
 //         </View> 
 //         {!isLast && ( 
-//           <View style={{ width: 2, flex: 1, minHeight: 24, 
-//             backgroundColor: "#E5E7EB", marginTop: 2 }} /> 
+//           <View style={{ width: rp(2), flex: 1, minHeight: 24, 
+//             backgroundColor: "#E5E7EB", marginTop: rp(2) }} /> 
 //         )} 
 //       </View> 
-//       <View style={{ flex: 1, paddingLeft: 14, 
+//       <View style={{ flex: 1, paddingLeft: rp(14), 
 //         paddingBottom: isLast ? 0 : 24 }}> 
 //         <View style={{ flexDirection: "row", 
 //           justifyContent: "space-between", alignItems: "center" }}> 
-//           <Text style={{ fontWeight: "900", fontSize: 15, 
+//           <Text style={{ fontWeight: "900", fontSize: rs(15), 
 //             color: "#EF4444" }}>Incident Reported</Text> 
-//           <Text style={{ fontSize: 11, color: "#9CA3AF", 
+//           <Text style={{ fontSize: rs(11), color: "#9CA3AF", 
 //             fontWeight: "700" }}>{fmt(incident.created_at)}</Text> 
 //         </View> 
 //         {incident.driver_name && ( 
 //           <View style={{ flexDirection: "row", 
-//             alignItems: "center", marginTop: 4 }}> 
+//             alignItems: "center", marginTop: rp(4) }}> 
 //             <Ionicons name="person-outline" size={12} 
 //               color="#6B7280" /> 
-//             <Text style={{ color: "#6B7280", fontSize: 12, 
-//               marginLeft: 4, fontWeight: "700" }}> 
+//             <Text style={{ color: "#6B7280", fontSize: rs(12), 
+//               marginLeft: rp(4), fontWeight: "700" }}> 
 //               {incident.driver_name} 
 //             </Text> 
 //           </View> 
 //         )} 
 //         <View style={{ backgroundColor: "#FEE2E2", 
-//           borderRadius: 10, padding: 10, marginTop: 8, 
-//           borderLeftWidth: 3, borderLeftColor: "#EF4444" }}> 
-//           <Text style={{ color: "#991B1B", fontSize: 12 }}> 
+//           borderRadius: rp(10), padding: rp(10), marginTop: rp(8), 
+//           borderLeftWidth: rp(3), borderLeftColor: "#EF4444" }}> 
+//           <Text style={{ color: "#991B1B", fontSize: rs(12) }}> 
 //             {incident.description} 
 //           </Text> 
 //         </View> 
 //         {incident.photo_url && ( 
 //           <TouchableOpacity 
 //             onPress={() => onPhotoPress(incident.photo_url)} 
-//             style={{ marginTop: 10 }}> 
+//             style={{ marginTop: rp(10) }}> 
 //             <Image source={{ uri: incident.photo_url }} 
-//               style={{ width: 80, height: 80, borderRadius: 12, 
-//                 borderWidth: 1.5, borderColor: "#FECACA" }} /> 
+//               style={{ width: rp(80), height: rp(80), borderRadius: rp(12), 
+//                 borderWidth: rp(1.5), borderColor: "#FECACA" }} /> 
 //           </TouchableOpacity> 
 //         )} 
 //       </View> 
@@ -716,24 +717,24 @@ export default function CarLog() {
 //       <SafeAreaView edges={["top"]}> 
 //         {/* Header */} 
 //         <View style={{ flexDirection: "row", alignItems: "center", 
-//           paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }}> 
+//           paddingHorizontal: rp(20), paddingTop: rp(8), paddingBottom: rp(16) }}> 
 //           <TouchableOpacity onPress={() => router.back()} 
 //             style={{ backgroundColor: "rgba(124,58,237,0.1)", 
-//               borderRadius: 99, padding: 10 }}> 
+//               borderRadius: rp(99), padding: rp(10) }}> 
 //             <Ionicons name="chevron-back" size={22} 
 //               color="#7C3AED" /> 
 //           </TouchableOpacity> 
-//           <View style={{ marginLeft: 14, flex: 1 }}> 
-//             <Text style={{ fontSize: 22, fontWeight: "900", 
+//           <View style={{ marginLeft: rp(14), flex: 1 }}> 
+//             <Text style={{ fontSize: rs(22), fontWeight: "900", 
 //               color: "#111827" }}>{car.plate}</Text> 
-//             <Text style={{ color: "#6B7280", fontSize: 13 }}> 
+//             <Text style={{ color: "#6B7280", fontSize: rs(13) }}> 
 //               {car.color} {car.make} 
 //             </Text> 
 //           </View> 
-//           <View style={{ paddingHorizontal: 12, paddingVertical: 6, 
-//             borderRadius: 99, backgroundColor: cfg.color }}> 
+//           <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(6), 
+//             borderRadius: rp(99), backgroundColor: cfg.color }}> 
 //             <Text style={{ color: "#fff", fontWeight: "900", 
-//               fontSize: 11, letterSpacing: 1 }}> 
+//               fontSize: rs(11), letterSpacing: rs(1) }}> 
 //               {cfg.label.toUpperCase()} 
 //             </Text> 
 //           </View> 
@@ -741,19 +742,19 @@ export default function CarLog() {
 //       </SafeAreaView> 
  
 //       <ScrollView contentContainerStyle={{ 
-//         paddingHorizontal: 20, paddingBottom: 60 }}> 
+//         paddingHorizontal: rp(20), paddingBottom: rp(60) }}> 
  
 //         {/* Summary card */} 
 //         <View style={{ backgroundColor: "#7C3AED", 
-//           borderRadius: 24, padding: 20, marginBottom: 24, 
+//           borderRadius: rp(24), padding: rp(20), marginBottom: rp(24), 
 //           shadowColor: "#7C3AED", shadowOpacity: 0.3, 
-//           shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, 
+//           shadowRadius: rp(16), shadowOffset: { width: 0, height: rp(8) }, 
 //           elevation: 8 }}> 
-//           <Text style={{ fontSize: 11, fontWeight: "800", 
-//             color: "rgba(255,255,255,0.7)", letterSpacing: 3 }}> 
+//           <Text style={{ fontSize: rs(11), fontWeight: "800", 
+//             color: "rgba(255,255,255,0.7)", letterSpacing: rs(3) }}> 
 //             VEHICLE JOURNEY SUMMARY 
 //           </Text> 
-//           <View style={{ flexDirection: "row", marginTop: 16, 
+//           <View style={{ flexDirection: "row", marginTop: rp(16), 
 //             justifyContent: "space-between" }}> 
 //             {[ 
 //               { label: "TOTAL TIME", 
@@ -765,25 +766,25 @@ export default function CarLog() {
 //                 value: incidents.length.toString() }, 
 //             ].map(s => ( 
 //               <View key={s.label} style={{ alignItems: "center" }}> 
-//                 <Text style={{ fontSize: 22, fontWeight: "900", 
+//                 <Text style={{ fontSize: rs(22), fontWeight: "900", 
 //                   color: "#fff" }}>{s.value}</Text> 
-//                 <Text style={{ fontSize: 10, fontWeight: "800", 
+//                 <Text style={{ fontSize: rs(10), fontWeight: "800", 
 //                   color: "rgba(255,255,255,0.6)", 
-//                   letterSpacing: 2, marginTop: 4 }}> 
+//                   letterSpacing: rs(2), marginTop: rp(4) }}> 
 //                   {s.label} 
 //                 </Text> 
 //               </View> 
 //             ))} 
 //           </View> 
 //           {car.guest_name && ( 
-//             <View style={{ marginTop: 14, paddingTop: 14, 
-//               borderTopWidth: 1, 
+//             <View style={{ marginTop: rp(14), paddingTop: rp(14), 
+//               borderTopWidth: rp(1), 
 //               borderTopColor: "rgba(255,255,255,0.2)", 
 //               flexDirection: "row", alignItems: "center" }}> 
 //               <Ionicons name="person-circle-outline" size={16} 
 //                 color="rgba(255,255,255,0.7)" /> 
 //               <Text style={{ color: "rgba(255,255,255,0.8)", 
-//                 fontSize: 13, marginLeft: 6 }}> 
+//                 fontSize: rs(13), marginLeft: rp(6) }}> 
 //                 {car.guest_name} 
 //                 {car.guest_phone ? ` · ${car.guest_phone}` : ""} 
 //               </Text> 
@@ -792,14 +793,14 @@ export default function CarLog() {
 //         </View> 
  
 //         {/* Timeline */} 
-//         <Text style={{ fontSize: 11, fontWeight: "800", 
-//           color: "#6B7280", letterSpacing: 3, marginBottom: 20 }}> 
+//         <Text style={{ fontSize: rs(11), fontWeight: "800", 
+//           color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(20) }}> 
 //           VEHICLE TIMELINE 
 //         </Text> 
  
-//         <View style={{ backgroundColor: "#fff", borderRadius: 24, 
-//           padding: 20, shadowColor: "#000", shadowOpacity: 0.06, 
-//           shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, 
+//         <View style={{ backgroundColor: "#fff", borderRadius: rp(24), 
+//           padding: rp(20), shadowColor: "#000", shadowOpacity: 0.06, 
+//           shadowRadius: rp(12), shadowOffset: { width: 0, height: rp(4) }, 
 //           elevation: 3 }}> 
 //           {steps.map((step, i) => { 
 //             const isLast = i === steps.length - 1; 
@@ -831,7 +832,7 @@ export default function CarLog() {
 //           })} 
 //         </View> 
  
-//         <View style={{ height: 40 }} /> 
+//         <View style={{ height: rp(40) }} /> 
 //       </ScrollView> 
  
 //       {/* Photo lightbox */} 
@@ -846,11 +847,11 @@ export default function CarLog() {
 //           {lightboxUrl && ( 
 //             <Image source={{ uri: lightboxUrl }} 
 //               style={{ width: "92%", height: "70%", 
-//                 borderRadius: 20 }} 
+//                 borderRadius: rp(20) }} 
 //               resizeMode="contain" /> 
 //           )} 
 //           <Text style={{ color: "rgba(255,255,255,0.5)", 
-//             marginTop: 16, fontSize: 13 }}> 
+//             marginTop: rp(16), fontSize: rs(13) }}> 
 //             Tap anywhere to close 
 //           </Text> 
 //         </TouchableOpacity> 

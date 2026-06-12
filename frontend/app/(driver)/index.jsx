@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -20,8 +21,8 @@ import { useAppStore } from "../../lib/store";
 const cardShadow = {
   shadowColor: "#059669",
   shadowOpacity: 0.1,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: rp(16),
+  shadowOffset: { width: 0, height: rp(4) },
   elevation: 4,
 };
 
@@ -81,9 +82,9 @@ export default function DriverHome() {
             backgroundColor: "#059669",
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 32,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(32),
           }}
         >
           <View
@@ -100,14 +101,14 @@ export default function DriverHome() {
           />
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, letterSpacing: 1.5, fontWeight: "700" }}>WELCOME</Text>
-              <Text style={{ color: "#fff", fontSize: 26, fontWeight: "900", marginTop: 2 }}>{driver?.name || "Driver"}</Text>
-              <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 4 }}>My assigned events</Text>
+              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: rs(12), letterSpacing: rs(1.5), fontWeight: "700" }}>WELCOME</Text>
+              <Text style={{ color: "#fff", fontSize: rs(26), fontWeight: "900", marginTop: rp(2) }}>{driver?.name || "Driver"}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: rs(13), marginTop: rp(4) }}>My assigned events</Text>
             </View>
             <TouchableOpacity
               onPress={handleSignOut}
               testID="driver-signout"
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 12 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(12) }}
             >
               <Ionicons name="log-out-outline" size={22} color="#fff" />
             </TouchableOpacity>
@@ -116,8 +117,8 @@ export default function DriverHome() {
       </SafeAreaView>
 
       <ScrollView
-        style={{ flex: 1, paddingHorizontal: 16, marginTop: -14 }}
-        contentContainerStyle={{ paddingTop: 14, paddingBottom: 40 }}
+        style={{ flex: 1, paddingHorizontal: rp(16), marginTop: -14 }}
+        contentContainerStyle={{ paddingTop: rp(14), paddingBottom: rp(40) }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -131,12 +132,12 @@ export default function DriverHome() {
       >
         {loading && <ActivityIndicator color="#059669" />}
         {!loading && events.length === 0 && (
-          <View style={{ alignItems: "center", marginTop: 60, paddingHorizontal: 32 }}>
-            <Text style={{ fontSize: 64 }}>📅</Text>
-            <Text style={{ color: "#111827", fontWeight: "900", fontSize: 16, marginTop: 12, textAlign: "center" }}>
+          <View style={{ alignItems: "center", marginTop: rp(60), paddingHorizontal: rp(32) }}>
+            <Text style={{ fontSize: rs(64) }}>📅</Text>
+            <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12), textAlign: "center" }}>
               No active events assigned
             </Text>
-            <Text style={{ color: "#6B7280", textAlign: "center", marginTop: 6, fontSize: 13 }}>
+            <Text style={{ color: "#6B7280", textAlign: "center", marginTop: rp(6), fontSize: rs(13) }}>
               Contact your admin to get assigned
             </Text>
           </View>
@@ -148,19 +149,19 @@ export default function DriverHome() {
             activeOpacity={0.85}
             style={{
               backgroundColor: "#fff",
-              borderRadius: 24,
-              padding: 18,
-              marginBottom: 12,
+              borderRadius: rp(24),
+              padding: rp(18),
+              marginBottom: rp(12),
               flexDirection: "row",
               alignItems: "center",
-              borderLeftWidth: 4,
+              borderLeftWidth: rp(4),
               borderLeftColor: "#059669",
               ...cardShadow,
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: "900", color: "#111827", fontSize: 17 }}>{e.name}</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+              <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(17) }}>{e.name}</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6), marginTop: rp(8) }}>
                 <View style={chipStyle}>
                   <Ionicons name="calendar-outline" size={11} color="#6B7280" />
                   <Text style={chipText}>{e.date}</Text>
@@ -170,8 +171,8 @@ export default function DriverHome() {
                   <Text style={chipText}>{e.venue}</Text>
                 </View>
               </View>
-              <View style={{ backgroundColor: "#D1FAE5", alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, marginTop: 10 }}>
-                <Text style={{ color: "#059669", fontSize: 10, fontWeight: "800", letterSpacing: 1 }}>ACTIVE</Text>
+              <View style={{ backgroundColor: "#D1FAE5", alignSelf: "flex-start", paddingHorizontal: rp(10), paddingVertical: rp(3), borderRadius: rp(99), marginTop: rp(10) }}>
+                <Text style={{ color: "#059669", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>ACTIVE</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={22} color="#059669" />
@@ -182,5 +183,5 @@ export default function DriverHome() {
   );
 }
 
-const chipStyle = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, gap: 4 };
-const chipText = { color: "#6B7280", fontSize: 11, fontWeight: "600" };
+const chipStyle = { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(99), gap: rp(4) };
+const chipText = { color: "#6B7280", fontSize: rs(11), fontWeight: "600" };

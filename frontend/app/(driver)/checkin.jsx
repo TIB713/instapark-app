@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { rs, rp } from '../../utils/responsive';
 import {
   View,
   Text,
@@ -32,7 +33,7 @@ const validatePlate = (plate) => {
 
 function Lbl({ children }) {
   return (
-    <Text style={{ fontSize: 11, fontWeight: "800", color: "#6B7280", letterSpacing: 3, marginBottom: 8, marginTop: 4 }}>
+    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8), marginTop: rp(4) }}>
       {children}
     </Text>
   );
@@ -109,7 +110,7 @@ export default function CheckIn() {
       const asset = result.assets[0];
       const compressed = await ImageManipulator.manipulateAsync(
         asset.uri,
-        [{ resize: { width: 1280 } }],
+        [{ resize: { width: rp(1280) } }],
         { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
       );
       const finalUri = compressed.uri;
@@ -258,9 +259,9 @@ export default function CheckIn() {
             backgroundColor: "#059669",
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 24,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(24),
           }}
         >
           <View
@@ -278,16 +279,16 @@ export default function CheckIn() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginLeft: 12, flex: 1 }}>
+            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
               Check In Vehicle
             </Text>
             <TouchableOpacity 
               onPress={() => router.push("/(driver)/scanner")} 
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, padding: 8, marginLeft: "auto" }} 
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8), marginLeft: "auto" }} 
             > 
               <Ionicons name="qr-code-outline" size={22} color="#fff" /> 
             </TouchableOpacity>
@@ -297,23 +298,23 @@ export default function CheckIn() {
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 20, paddingTop: 18 }}
+          style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: rp(100) }}
         >
           {isPreRegistered && ( 
             <View style={{ 
-              backgroundColor: "#ECFDF5", borderWidth: 1, borderColor: "#6EE7B7", 
-              borderRadius: 16, padding: 12, marginBottom: 16, 
-              flexDirection: "row", alignItems: "center", gap: 10 
+              backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", 
+              borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), 
+              flexDirection: "row", alignItems: "center", gap: rp(10) 
             }}> 
               <Ionicons name="checkmark-circle" size={20} color="#059669" /> 
               <View style={{ flex: 1 }}> 
-                <Text style={{ fontSize: 12, fontWeight: "900", color: "#059669" }}> 
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}> 
                   PRE-REGISTERED GUEST 
                 </Text> 
                 {guestName ? ( 
-                  <Text style={{ fontSize: 11, color: "#065F46", marginTop: 1 }}> 
+                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}> 
                     {guestName} — details pre-filled, please verify 
                   </Text> 
                 ) : null} 
@@ -323,25 +324,25 @@ export default function CheckIn() {
           {isPreRegistered && guestNotes ? (
             <View style={{
               backgroundColor: "#FEF3C7",
-              borderWidth: 1,
+              borderWidth: rp(1),
               borderColor: "#FDE68A",
-              borderRadius: 16,
-              padding: 12,
-              marginBottom: 16,
+              borderRadius: rp(16),
+              padding: rp(12),
+              marginBottom: rp(16),
               flexDirection: "row",
               alignItems: "flex-start",
-              gap: 10,
+              gap: rp(10),
             }}>
               <Ionicons name="information-circle"
                 size={20} color="#D97706"
-                style={{ marginTop: 1 }} />
+                style={{ marginTop: rp(1) }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "900",
+                <Text style={{ fontSize: rs(12), fontWeight: "900",
                   color: "#92400E" }}>
                   GUEST INSTRUCTIONS
                 </Text>
-                <Text style={{ fontSize: 13, color: "#78350F",
-                  marginTop: 4, lineHeight: 18 }}>
+                <Text style={{ fontSize: rs(13), color: "#78350F",
+                  marginTop: rp(4), lineHeight: 18 }}>
                   {guestNotes}
                 </Text>
               </View>
@@ -372,7 +373,7 @@ export default function CheckIn() {
             <TextInput value={make} onChangeText={setMake} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
           <Lbl>NOTES</Lbl>
-          <View style={[inputRow, { alignItems: "flex-start", paddingTop: 12 }]}>
+          <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
             <Ionicons name="document-text-outline" size={20} color="#059669" />
             <TextInput
               value={notes}
@@ -400,21 +401,21 @@ export default function CheckIn() {
           {eventGates.length > 0 && (
             <>
               <Lbl>ENTRY GATE</Lbl>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }} style={{ marginBottom: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }} style={{ marginBottom: rp(12) }}>
                 {eventGates.map((g) => (
                   <TouchableOpacity
                     key={g}
                     onPress={() => setSelectedGate(g)}
                     style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 99,
+                      paddingHorizontal: rp(14),
+                      paddingVertical: rp(8),
+                      borderRadius: rp(99),
                       backgroundColor: selectedGate === g ? "#059669" : "#fff",
-                      borderWidth: 1,
+                      borderWidth: rp(1),
                       borderColor: "#059669",
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: "800", color: selectedGate === g ? "#fff" : "#059669", letterSpacing: 0.5 }}>{g}</Text>
+                    <Text style={{ fontSize: rs(12), fontWeight: "800", color: selectedGate === g ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{g}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -422,13 +423,13 @@ export default function CheckIn() {
           )}
 
           <Lbl>VEHICLE PHOTOS * (MIN 1, MAX 5)</Lbl>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: rp(16) }}>
             {photos.map((u, i) => (
-              <View key={i} style={{ width: 80, height: 80 }}>
-                <Image source={{ uri: u }} style={{ width: 80, height: 80, borderRadius: 16 }} />
+              <View key={i} style={{ width: rp(80), height: rp(80) }}>
+                <Image source={{ uri: u }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
                 <TouchableOpacity
                   onPress={() => setPhotos(photos.filter((_, k) => k !== i))}
-                  style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#F43F5E", borderRadius: 99, padding: 4 }}
+                  style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#F43F5E", borderRadius: rp(99), padding: rp(4) }}
                 >
                   <Ionicons name="close" size={14} color="#fff" />
                 </TouchableOpacity>
@@ -439,10 +440,10 @@ export default function CheckIn() {
                 onPress={takePhoto}
                 testID="add-photo-btn"
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 16,
-                  borderWidth: 2,
+                  width: rp(80),
+                  height: rp(80),
+                  borderRadius: rp(16),
+                  borderWidth: rp(2),
                   borderColor: "#059669",
                   borderStyle: "dashed",
                   alignItems: "center",
@@ -451,7 +452,7 @@ export default function CheckIn() {
                 }}
               >
                 <Ionicons name="camera-outline" size={24} color="#059669" />
-                <Text style={{ fontSize: 10, color: "#059669", marginTop: 2, fontWeight: "800" }}>Add Photo</Text>
+                <Text style={{ fontSize: rs(10), color: "#059669", marginTop: rp(2), fontWeight: "800" }}>Add Photo</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -462,20 +463,20 @@ export default function CheckIn() {
             testID="submit-checkin"
             style={{
               backgroundColor: "#059669",
-              borderRadius: 16,
-              paddingVertical: 16,
+              borderRadius: rp(16),
+              paddingVertical: rp(16),
               alignItems: "center",
-              marginBottom: 16,
+              marginBottom: rp(16),
               shadowColor: "#059669",
               shadowOpacity: 0.3,
-              shadowRadius: 14,
-              shadowOffset: { width: 0, height: 6 },
+              shadowRadius: rp(14),
+              shadowOffset: { width: 0, height: rp(6) },
               elevation: 6,
             }}
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: 15, letterSpacing: 2 }}>CHECK IN VEHICLE</Text>}
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE</Text>}
           </TouchableOpacity>
-          <View style={{ height: 40 }} />
+          <View style={{ height: rp(40) }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -484,18 +485,18 @@ export default function CheckIn() {
 
 const inputRow = {
   backgroundColor: "#fff",
-  borderRadius: 16,
-  borderWidth: 1,
+  borderRadius: rp(16),
+  borderWidth: rp(1),
   borderColor: "#E5E7EB",
   flexDirection: "row",
   alignItems: "center",
-  paddingHorizontal: 14,
-  marginBottom: 16,
+  paddingHorizontal: rp(14),
+  marginBottom: rp(16),
 };
 const textInput = {
   flex: 1,
-  paddingVertical: 14,
-  marginLeft: 10,
-  fontSize: 15,
+  paddingVertical: rp(14),
+  marginLeft: rp(10),
+  fontSize: rs(15),
   color: "#111827",
 };
