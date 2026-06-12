@@ -1788,6 +1788,13 @@ export default function EventDetail() {
               {/* Summary card */}
               {keyStats && (
                 <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+                  {event?.key_hook_start != null && event?.key_hook_end != null && (
+                    <View style={{ backgroundColor: "#EFF6FF", borderRadius: rp(99), paddingHorizontal: rp(12), paddingVertical: rp(6), marginBottom: rp(12), alignSelf: "flex-start" }}>
+                      <Text style={{ color: "#1D4ED8", fontSize: rs(12), fontWeight: "800" }}>
+                        Hook range for this event: {event.key_hook_start} – {event.key_hook_end}
+                      </Text>
+                    </View>
+                  )}
                   <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(14) }}>
                     KEY BOARD STATUS
                   </Text>

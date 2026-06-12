@@ -62,6 +62,8 @@ export default function Tasks() {
   const [addingKeyTagCarId, setAddingKeyTagCarId] = useState(null);
   const [keyTagInput, setKeyTagInput] = useState("");
   const [savingKeyTag, setSavingKeyTag] = useState(false);
+  const [eventKeyHookStart, setEventKeyHookStart] = useState(null);
+  const [eventKeyHookEnd, setEventKeyHookEnd] = useState(null);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -104,6 +106,7 @@ export default function Tasks() {
   useEffect(() => {
     if (!currentEventId) return;
     api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {});
+    fetchEvent();
     fetchMyCars();
     fetchRetrievals();
     refreshPending();
@@ -125,7 +128,7 @@ export default function Tasks() {
       disconnectWS(`/retrievals/${currentEventId}`);
       unsub();
     };
-  }, [currentEventId, fetchMyCars, fetchRetrievals]);
+  }, [currentEventId, fetchEvent, fetchMyCars, fetchRetrievals]);
 
   useEffect(() => {
     (async () => {
@@ -138,6 +141,16 @@ export default function Tasks() {
       }
     })();
   }, [retrievals]);
+
+  const fetchEvent = useCallback(async () => {
+    try {
+      const evRes = await api.get(`/events/${currentEventId}`);
+      setEventZones(evRes.data.zones || []);
+      if (evRes.data.zones?.[0]) setSelectedZone(evRes.data.zones[0].name);
+      setEventKeyHookStart(evRes.data.key_hook_start || null);
+      setEventKeyHookEnd(evRes.data.key_hook_end || null);
+    } catch {}
+  }, [currentEventId]);
 
   const fetchSlots = async () => {
     try {
@@ -152,11 +165,7 @@ export default function Tasks() {
     setSelectedSlot(null);
     setSlots([]);
     setShowParkModal(true);
-    try {
-      const evRes = await api.get(`/events/${currentEventId}`);
-      setEventZones(evRes.data.zones || []);
-      if (evRes.data.zones?.[0]) setSelectedZone(evRes.data.zones[0].name);
-    } catch {}
+    await fetchEvent();
     await fetchSlots();
     setOpeningParkModal(null);
   };
@@ -303,8 +312,8 @@ export default function Tasks() {
       setAddingKeyTagCarId(null);
       setKeyTagInput("");
       fetchMyCars();
-    } catch {
-      Alert.alert("Error", "Failed to save key tag");
+    } catch (e) {
+      Alert.alert("Hook Unavailable", e.response?.data?.detail || "Failed to save key tag. Please try a different hook number.");
     } finally {
       setSavingKeyTag(false);
     }
@@ -358,27 +367,27 @@ export default function Tasks() {
     <View style={{ flex: 1, backgroundColor: "#ECFDF5" }} testID="tasks-screen">
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#059669" }}>
         <View
-          style={{
-            backgroundColor: "#059669",
-            borderBottomLeftRadius: 44,
-            borderBottomRightRadius: 44,
-            paddingHorizontal: rp(20),
-            paddingTop: rp(8),
-            paddingBottom: rp(18),
-          }}
-        >
-          <View
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(8,145,178,0.5)",
-              borderBottomLeftRadius: 44,
-              borderBottomRightRadius: 44,
+              backgroundColor: "#059669",
+              borderBottomLeftRadius: rp(44),
+              borderBottomRightRadius: rp(44),
+              paddingHorizontal: rp(20),
+              paddingTop: rp(8),
+              paddingBottom: rp(18),
             }}
-          />
+          >
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(8,145,178,0.5)",
+                borderBottomLeftRadius: rp(44),
+                borderBottomRightRadius: rp(44),
+              }}
+            />
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
@@ -406,7 +415,7 @@ export default function Tasks() {
           flexDirection: "row",
           backgroundColor: "#fff",
           marginHorizontal: rp(16),
-          marginTop: -18,
+                  marginTop: -rp(18),
           borderRadius: rp(20),
           padding: rp(4),
           ...cardShadow,
@@ -623,9 +632,19 @@ export default function Tasks() {
                           </View>
                           <TouchableOpacity
                             onPress={() => saveKeyTag(car.id)}
-                            disabled={savingKeyTag || !keyTagInput.trim()}
+                            disabled={savingKeyTag || !keyTagInput.trim() || (
+                              eventKeyHookStart !== null && eventKeyHookEnd !== null &&
+                              (isNaN(parseInt(keyTagInput)) ||
+                               parseInt(keyTagInput) < eventKeyHookStart ||
+                               parseInt(keyTagInput) > eventKeyHookEnd)
+                            )}
                             style={{ backgroundColor:
-                              keyTagInput.trim() ? "#7C3AED" : "#D1D5DB",
+                              (keyTagInput.trim() && !(
+                                eventKeyHookStart !== null && eventKeyHookEnd !== null &&
+                                (isNaN(parseInt(keyTagInput)) ||
+                                 parseInt(keyTagInput) < eventKeyHookStart ||
+                                 parseInt(keyTagInput) > eventKeyHookEnd)
+                              )) ? "#7C3AED" : "#D1D5DB",
                               borderRadius: rp(12), paddingHorizontal: rp(14),
                               justifyContent: "center" }}
                           >
@@ -649,6 +668,22 @@ export default function Tasks() {
                               color="#6B7280" />
                           </TouchableOpacity>
                         </View>
+
+                        {/* Helper text and warnings */}
+                        {eventKeyHookStart !== null && eventKeyHookEnd !== null && (
+                          <>
+                            <Text style={{ color: "#6B7280", fontSize: rs(11), marginTop: rp(4) }}>
+                              Allowed range: {eventKeyHookStart} – {eventKeyHookEnd}
+                            </Text>
+                            {keyTagInput.trim() && !isNaN(parseInt(keyTagInput)) && (
+                              (parseInt(keyTagInput) < eventKeyHookStart || parseInt(keyTagInput) > eventKeyHookEnd) && (
+                                <Text style={{ color: "#EF4444", fontSize: rs(12), fontWeight: "800", marginTop: rp(4) }}>
+                                  ⚠️ Hook #{keyTagInput} is outside your event's range ({eventKeyHookStart}–{eventKeyHookEnd})
+                                </Text>
+                              )
+                            )}
+                          </>
+                        )}
                       </View>
                     ) : (
                       <TouchableOpacity
@@ -809,7 +844,7 @@ export default function Tasks() {
                         size={13} color="#D97706"
                         style={{ marginTop: rp(1) }} />
                       <Text style={{ color: "#92400E", fontSize: rs(11),
-                        flex: 1, lineHeight: 16 }}>
+                        flex: 1, lineHeight: rp(16) }}>
                         {car.notes}
                       </Text>
                     </View>
@@ -866,7 +901,7 @@ export default function Tasks() {
 
       <Modal visible={showParkModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
             </View>
@@ -946,7 +981,7 @@ export default function Tasks() {
                     );
                   }}
                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
-                  style={{ maxHeight: 280 }}
+                  style={{ maxHeight: rp(280) }}
                 />
                 {/* Parking Photos */}
                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>
@@ -1549,7 +1584,7 @@ export default function Tasks() {
 
 //       <Modal visible={showParkModal} transparent animationType="slide">
 //         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
 //             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
 //               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
 //             </View>
@@ -1624,7 +1659,7 @@ export default function Tasks() {
 //                     );
 //                   }}
 //                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
-//                   style={{ maxHeight: 280 }}
+//                   style={{ maxHeight: rp(280) }}
 //                 />
 //                 <TouchableOpacity
 //                   onPress={confirmPark}
@@ -2192,7 +2227,7 @@ export default function Tasks() {
 
 //       <Modal visible={showParkModal} transparent animationType="slide">
 //         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
 //             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
 //               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
 //             </View>
@@ -2267,7 +2302,7 @@ export default function Tasks() {
 //                     );
 //                   }}
 //                   ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
-//                   style={{ maxHeight: 280 }}
+//                   style={{ maxHeight: rp(280) }}
 //                 />
 //                 <TouchableOpacity
 //                   onPress={confirmPark}

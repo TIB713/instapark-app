@@ -59,6 +59,10 @@ export default function Hotels() {
   const [totalSlots, setTotalSlots] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
+  const [zones, setZones] = useState([{ name: "A", slots: "" }]);
+  const [gates, setGates] = useState(["Main Gate"]);
+  const [keyHookStart, setKeyHookStart] = useState("1");
+  const [keyHookEnd, setKeyHookEnd] = useState("50");
 
   const isHotelOwner = user?.provider_type === "hotel_owner";
   const isValetProvider = !isHotelOwner;
@@ -88,6 +92,13 @@ export default function Hotels() {
     fetchHotels();
   }, [fetchHotels]);
 
+  // Auto-update single zone's slots when totalSlots changes
+  useEffect(() => {
+    if (zones.length === 1 && totalSlots) {
+      setZones([{ ...zones[0], slots: totalSlots }]);
+    }
+  }, [totalSlots]);
+
   const resetForm = () => {
     setName("");
     setAddress("");
@@ -99,6 +110,10 @@ export default function Hotels() {
     setTotalSlots("");
     setStartTime("09:00");
     setEndTime("18:00");
+    setZones([{ name: "A", slots: "" }]);
+    setGates(["Main Gate"]);
+    setKeyHookStart("1");
+    setKeyHookEnd("50");
   };
 
   const saveHotel = async () => {
@@ -121,6 +136,11 @@ export default function Hotels() {
         operating_hours_start: startTime,
         operating_hours_end: endTime,
         provider_id: user?.provider_id,
+        zones: zones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
+        gates: gates.filter(g => g.trim()),
+        key_hook_start: parseInt(keyHookStart) || 1,
+        key_hook_end: parseInt(keyHookEnd) || 50,
+        key_hooks: (parseInt(keyHookEnd) || 50) - (parseInt(keyHookStart) || 1) + 1,
       });
       setShowAddModal(false);
       resetForm();
@@ -162,33 +182,33 @@ export default function Hotels() {
     <View style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: ACCENT_COLOR }}>
         <View
-          style={{
-            backgroundColor: ACCENT_COLOR,
-            borderBottomLeftRadius: 44,
-            borderBottomRightRadius: 44,
-            paddingHorizontal: rp(20),
-            paddingTop: rp(8),
-            paddingBottom: rp(24),
-          }}
-        >
+                style={{
+                  backgroundColor: ACCENT_COLOR,
+                  borderBottomLeftRadius: rp(44),
+                  borderBottomRightRadius: rp(44),
+                  paddingHorizontal: rp(20),
+                  paddingTop: rp(8),
+                  paddingBottom: rp(24),
+                }}
+              >
           <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(255,255,255,0.1)",
-              borderBottomLeftRadius: 44,
-              borderBottomRightRadius: 44,
-            }}
-          />
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderBottomLeftRadius: rp(44),
+                  borderBottomRightRadius: rp(44),
+                }}
+              />
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}
               style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
             >
-              <Ionicons name="chevron-back" size={22} color="#fff" />
+              <Ionicons name="chevron-back" size={rs(22)} color="#fff" />
             </TouchableOpacity>
             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
               Hotels
@@ -213,7 +233,7 @@ export default function Hotels() {
             paddingVertical: rp(2),
           }}
         >
-          <Ionicons name="search-outline" size={18} color={ACCENT_COLOR} />
+          <Ionicons name="search-outline" size={rs(18)} color={ACCENT_COLOR} />
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -223,7 +243,7 @@ export default function Hotels() {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+              <Ionicons name="close-circle" size={rs(18)} color="#9CA3AF" />
             </TouchableOpacity>
           )}
         </View>
@@ -262,7 +282,7 @@ export default function Hotels() {
 
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), gap: rp(10) }}>
                 <View style={{ backgroundColor: "#EFF6FF", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), flexDirection: "row", alignItems: "center" }}>
-                  <Ionicons name="time-outline" size={12} color={ACCENT_COLOR} />
+                  <Ionicons name="time-outline" size={rs(12)} color={ACCENT_COLOR} />
                   <Text style={{ color: ACCENT_COLOR, fontSize: rs(11), fontWeight: "700", marginLeft: rp(4) }}>
                     {h.operating_hours_start} — {h.operating_hours_end}
                   </Text>
@@ -294,8 +314,8 @@ export default function Hotels() {
         <TouchableOpacity
           style={{
             position: "absolute",
-            bottom: 24,
-            right: 24,
+            bottom: rp(24),
+            right: rp(24),
             width: rp(56),
             height: rp(56),
             borderRadius: rp(28),
@@ -310,7 +330,7 @@ export default function Hotels() {
           }}
           onPress={() => setShowAddModal(true)}
         >
-          <Ionicons name="add" size={28} color="#fff" />
+          <Ionicons name="add" size={rs(28)} color="#fff" />
         </TouchableOpacity>
       )}
 
@@ -334,8 +354,8 @@ export default function Hotels() {
                 alignItems: "center",
               }}
             >
-              <TouchableOpacity onPress={() => setShowAddModal(false)} style={{ padding: rp(8), marginLeft: -8 }}>
-                <Ionicons name="close" size={24} color="#fff" />
+              <TouchableOpacity onPress={() => setShowAddModal(false)} style={{ padding: rp(8), marginLeft: -rp(8) }}>
+                <Ionicons name="close" size={rs(24)} color="#fff" />
               </TouchableOpacity>
               <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12) }}>Add Hotel</Text>
             </View>
@@ -414,6 +434,33 @@ export default function Hotels() {
                 keyboardType="numeric"
               />
 
+              <Text style={modalLabel}>KEY HOOKS</Text>
+              <View style={{ flexDirection: "row", gap: rp(12) }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[modalLabel, { marginTop: 0 }]}>FROM</Text>
+                  <TextInput
+                    style={modalInput}
+                    placeholder="1"
+                    value={keyHookStart}
+                    onChangeText={setKeyHookStart}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[modalLabel, { marginTop: 0 }]}>TO</Text>
+                  <TextInput
+                    style={modalInput}
+                    placeholder="50"
+                    value={keyHookEnd}
+                    onChangeText={setKeyHookEnd}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+              <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>
+                Drivers can only assign hook numbers {keyHookStart} to {keyHookEnd} for this hotel's daily events
+              </Text>
+
               <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>
                   <Text style={modalLabel}>OPERATING HOURS START</Text>
@@ -421,11 +468,11 @@ export default function Hotels() {
                     style={modalInput}
                     onPress={() => setShowStartTimePicker(true)}
                   >
-                    <Ionicons name="time-outline" size={20} color="#7C3AED" />
+                    <Ionicons name="time-outline" size={rs(20)} color="#7C3AED" />
                     <Text style={{ color: startTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
                       {startTime || "Select start time"}
                     </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                    <Ionicons name="chevron-forward" size={rs(16)} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -434,14 +481,93 @@ export default function Hotels() {
                     style={modalInput}
                     onPress={() => setShowEndTimePicker(true)}
                   >
-                    <Ionicons name="time-outline" size={20} color="#7C3AED" />
+                    <Ionicons name="time-outline" size={rs(20)} color="#7C3AED" />
                     <Text style={{ color: endTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
                       {endTime || "Select end time"}
                     </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                    <Ionicons name="chevron-forward" size={rs(16)} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {/* Gates Section */}
+              <Text style={modalLabel}>GATES</Text>
+              {gates.map((gate, index) => (
+                <View key={index} style={{ flexDirection: "row", alignItems: "center", gap: rp(8), marginBottom: rp(8) }}>
+                  <TextInput
+                    style={[modalInput, { flex: 1 }]}
+                    placeholder="Gate name"
+                    value={gate}
+                    onChangeText={(text) => {
+                      const newGates = [...gates];
+                      newGates[index] = text;
+                      setGates(newGates);
+                    }}
+                  />
+                  {gates.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newGates = gates.filter((_, i) => i !== index);
+                        setGates(newGates);
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={rs(24)} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              <TouchableOpacity
+                onPress={() => setGates([...gates, ""])}
+                style={{ flexDirection: "row", alignItems: "center", gap: rp(6), paddingVertical: rp(8) }}
+              >
+                <Ionicons name="add-circle-outline" size={rs(20)} color="#7C3AED" />
+                <Text style={{ color: "#7C3AED", fontSize: rs(14), fontWeight: "700" }}>Add Gate</Text>
+              </TouchableOpacity>
+
+              {/* Zones Section */}
+              <Text style={modalLabel}>PARKING ZONES</Text>
+              {zones.map((zone, index) => (
+                <View key={index} style={{ flexDirection: "row", alignItems: "center", gap: rp(8), marginBottom: rp(8) }}>
+                  <TextInput
+                    style={[modalInput, { flex: 1 }]}
+                    placeholder="Zone name"
+                    value={zone.name}
+                    onChangeText={(text) => {
+                      const newZones = [...zones];
+                      newZones[index] = { ...zone, name: text };
+                      setZones(newZones);
+                    }}
+                  />
+                  <TextInput
+                    style={[modalInput, { width: rp(100) }]}
+                    placeholder="Slots"
+                    value={zone.slots}
+                    onChangeText={(text) => {
+                      const newZones = [...zones];
+                      newZones[index] = { ...zone, slots: text };
+                      setZones(newZones);
+                    }}
+                    keyboardType="numeric"
+                  />
+                  {zones.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newZones = zones.filter((_, i) => i !== index);
+                        setZones(newZones);
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={rs(24)} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              <TouchableOpacity
+                onPress={() => setZones([...zones, { name: "", slots: "" }])}
+                style={{ flexDirection: "row", alignItems: "center", gap: rp(6), paddingVertical: rp(8) }}
+              >
+                <Ionicons name="add-circle-outline" size={rs(20)} color="#7C3AED" />
+                <Text style={{ color: "#7C3AED", fontSize: rs(14), fontWeight: "700" }}>Add Zone</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={saveHotel}

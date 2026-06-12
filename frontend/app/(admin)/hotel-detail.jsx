@@ -65,7 +65,9 @@ export default function HotelDetail() {
   const [newEventStartTime, setNewEventStartTime] = useState("18:00");
   const [newEventEndTime, setNewEventEndTime] = useState("23:00");
   const [newEventMaxCars, setNewEventMaxCars] = useState("100");
-  const [newEventKeyHooks, setNewEventKeyHooks] = useState("50");
+  const [newEventKeyHookStart, setNewEventKeyHookStart] = useState("51");
+  const [newEventKeyHookEnd, setNewEventKeyHookEnd] = useState("100");
+  const [newEventGates, setNewEventGates] = useState(["Main Gate"]);
   const [newEventZones, setNewEventZones] = useState([{ name: "Zone A", slots: "50" }]);
   const [showEventDatePicker, setShowEventDatePicker] = useState(false);
   const [showEventStartTimePicker, setShowEventStartTimePicker] = useState(false);
@@ -90,6 +92,10 @@ export default function HotelDetail() {
 
   // Info tab state (editable)
   const [editHotel, setEditHotel] = useState(null);
+  const [editZones, setEditZones] = useState([]);
+  const [editGates, setEditGates] = useState([]);
+  const [editKeyHookStart, setEditKeyHookStart] = useState("1");
+  const [editKeyHookEnd, setEditKeyHookEnd] = useState("50");
 
   const today = new Date().toISOString().split("T")[0];
   const todayEvents = allEvents
@@ -123,6 +129,11 @@ export default function HotelDetail() {
       const { data } = await api.get(`/hotels/${hid}`);
       setHotel(data);
       setEditHotel(data);
+      // Initialize edit state from hotel data
+      setEditZones(data.zones || [{ name: "A", slots: data.total_valet_slots || 50 }]);
+      setEditGates(data.gates || ["Main Gate"]);
+      setEditKeyHookStart(String(data.key_hook_start || 1));
+      setEditKeyHookEnd(String(data.key_hook_end || 50));
     } catch (e) {
       console.error("Error fetching hotel:", e);
     }
@@ -308,22 +319,32 @@ export default function HotelDetail() {
         start_time: newEventStartTime,
         end_time: newEventEndTime,
         max_cars: maxCarsNum,
-        key_hooks: parseInt(newEventKeyHooks) || 50,
-        zones: newEventZones.map(z => ({ name: z.name, slots: parseInt(z.slots) || 50 })),
-        gates: ["Main Gate"],
+        key_hook_start: parseInt(newEventKeyHookStart) || 51,
+        key_hook_end: parseInt(newEventKeyHookEnd) || 100,
+        key_hooks:
+          (parseInt(newEventKeyHookEnd) || 100) -
+            (parseInt(newEventKeyHookStart) || 51) +
+          1,
+        zones: newEventZones.map((z) => ({
+          name: z.name,
+          slots: parseInt(z.slots) || 50,
+        })),
+        gates: newEventGates.filter((g) => g.trim()),
         event_type: "hotel_special",
         venue: hotel?.name,
       });
       setShowAddEventModal(false);
       setNewEventName("");
-      setNewEventKeyHooks("50");
+      setNewEventKeyHookStart("51");
+      setNewEventKeyHookEnd("100");
+      setNewEventGates(["Main Gate"]);
       setNewEventZones([{ name: "Zone A", slots: "50" }]);
       fetchEvents();
       Alert.alert("Success", "Special event created");
     } catch (e) {
       const detail = e.response?.data?.detail;
       const message = Array.isArray(detail)
-        ? detail.map(d => d.msg || JSON.stringify(d)).join(", ")
+        ? detail.map((d) => d.msg || JSON.stringify(d)).join(", ")
         : typeof detail === "string"
         ? detail
         : "Failed to create special event";
@@ -360,8 +381,8 @@ export default function HotelDetail() {
           <View
             style={{
               backgroundColor: ACCENT_COLOR,
-              borderBottomLeftRadius: 44,
-              borderBottomRightRadius: 44,
+              borderBottomLeftRadius: rp(44),
+                  borderBottomRightRadius: rp(44),
               paddingHorizontal: rp(20),
               paddingTop: rp(8),
               paddingBottom: rp(24),
@@ -421,7 +442,7 @@ export default function HotelDetail() {
           backgroundColor: "#fff",
           flexDirection: "row",
           marginHorizontal: rp(16),
-          marginTop: -20,
+          marginTop: -rp(20),
           borderRadius: rp(20),
           padding: rp(4),
           ...cardShadow,
@@ -700,6 +721,242 @@ export default function HotelDetail() {
                 </View>
               </View>
 
+              {/* Key Hook Range */}
+              <View style={{ marginTop: rp(12) }}>
+                <Text style={modalLabel}>KEY HOOK RANGE</Text>
+                <View style={{ flexDirection: "row", gap: rp(12) }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[modalLabel, { marginTop: 0 }]}>FROM</Text>
+                    <TextInput
+                      value={editKeyHookStart}
+                      onChangeText={setEditKeyHookStart}
+                      keyboardType="numeric"
+                      style={modalTextInput}
+                      onEndEditing={() =>
+                        updateHotel({
+                          key_hook_start: parseInt(editKeyHookStart) || 1,
+                          key_hook_end: parseInt(editKeyHookEnd) || 50,
+                          key_hooks:
+                            (parseInt(editKeyHookEnd) || 50) -
+                              (parseInt(editKeyHookStart) || 1) +
+                            1,
+                        })
+                      }
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[modalLabel, { marginTop: 0 }]}>TO</Text>
+                    <TextInput
+                      value={editKeyHookEnd}
+                      onChangeText={setEditKeyHookEnd}
+                      keyboardType="numeric"
+                      style={modalTextInput}
+                      onEndEditing={() =>
+                        updateHotel({
+                          key_hook_start: parseInt(editKeyHookStart) || 1,
+                          key_hook_end: parseInt(editKeyHookEnd) || 50,
+                          key_hooks:
+                            (parseInt(editKeyHookEnd) || 50) -
+                              (parseInt(editKeyHookStart) || 1) +
+                            1,
+                        })
+                      }
+                    />
+                  </View>
+                </View>
+                <Text
+                  style={{
+                    color: "#6B7280",
+                    fontSize: rs(11),
+                    marginTop: rp(4),
+                  }}
+                >
+                  Drivers can only assign hook numbers {editKeyHookStart} to{" "}
+                  {editKeyHookEnd} for this hotel's daily events
+                </Text>
+              </View>
+
+              {/* Gates */}
+              <View style={{ marginTop: rp(12) }}>
+                <Text style={modalLabel}>GATES</Text>
+                {editGates.map((gate, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: rp(8),
+                      marginBottom: rp(8),
+                    }}
+                  >
+                    <TextInput
+                      style={[modalTextInput, { flex: 1 }]}
+                      placeholder="Gate name"
+                      value={gate}
+                      onChangeText={(text) => {
+                        const newGates = [...editGates];
+                        newGates[index] = text;
+                        setEditGates(newGates);
+                      }}
+                      onEndEditing={() =>
+                        updateHotel({ gates: editGates.filter((g) => g.trim()) })
+                      }
+                    />
+                    {editGates.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const newGates = editGates.filter(
+                            (_, i) => i !== index
+                          );
+                          setEditGates(newGates);
+                          updateHotel({
+                            gates: newGates.filter((g) => g.trim()),
+                          });
+                        }}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={rs(24)}
+                          color="#F43F5E"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setEditGates([...editGates, ""])}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: rp(6),
+                    paddingVertical: rp(8),
+                  }}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={rs(20)}
+                    color="#7C3AED"
+                  />
+                  <Text
+                    style={{
+                      color: "#7C3AED",
+                      fontSize: rs(14),
+                      fontWeight: "700",
+                    }}
+                  >
+                    Add Gate
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Parking Zones */}
+              <View style={{ marginTop: rp(12) }}>
+                <Text style={modalLabel}>PARKING ZONES</Text>
+                {editZones.map((zone, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: rp(8),
+                      marginBottom: rp(8),
+                    }}
+                  >
+                    <TextInput
+                      style={[modalTextInput, { flex: 1 }]}
+                      placeholder="Zone name"
+                      value={zone.name}
+                      onChangeText={(text) => {
+                        const newZones = [...editZones];
+                        newZones[index] = { ...zone, name: text };
+                        setEditZones(newZones);
+                      }}
+                      onEndEditing={() =>
+                        updateHotel({
+                          zones: editZones
+                            .map((z) => ({
+                              name: z.name.trim(),
+                              slots: parseInt(z.slots) || 0,
+                            }))
+                            .filter((z) => z.name),
+                        })
+                      }
+                    />
+                    <TextInput
+                      style={[modalTextInput, { width: rp(100) }]}
+                      placeholder="Slots"
+                      value={zone.slots.toString()}
+                      onChangeText={(text) => {
+                        const newZones = [...editZones];
+                        newZones[index] = { ...zone, slots: text };
+                        setEditZones(newZones);
+                      }}
+                      keyboardType="numeric"
+                      onEndEditing={() =>
+                        updateHotel({
+                          zones: editZones
+                            .map((z) => ({
+                              name: z.name.trim(),
+                              slots: parseInt(z.slots) || 0,
+                            }))
+                            .filter((z) => z.name),
+                        })
+                      }
+                    />
+                    {editZones.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const newZones = editZones.filter(
+                            (_, i) => i !== index
+                          );
+                          setEditZones(newZones);
+                          updateHotel({
+                            zones: newZones
+                              .map((z) => ({
+                                name: z.name.trim(),
+                                slots: parseInt(z.slots) || 0,
+                              }))
+                              .filter((z) => z.name),
+                          });
+                        }}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={rs(24)}
+                          color="#F43F5E"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() =>
+                    setEditZones([...editZones, { name: "", slots: "" }])
+                  }
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: rp(6),
+                    paddingVertical: rp(8),
+                  }}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={rs(20)}
+                    color="#7C3AED"
+                  />
+                  <Text
+                    style={{
+                      color: "#7C3AED",
+                      fontSize: rs(14),
+                      fontWeight: "700",
+                    }}
+                  >
+                    Add Zone
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: rp(12) }}>
                 <View>
                   <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5) }}>HOTEL STATUS</Text>
@@ -829,7 +1086,7 @@ export default function HotelDetail() {
       <Modal visible={showCreateDriverModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(24) }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
               <View style={{ alignItems: "center", marginBottom: rp(16) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
               <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#059669", marginBottom: rp(20) }}>Add Driver</Text>
               <Text style={modalLabel}>NAME</Text>
@@ -855,7 +1112,7 @@ export default function HotelDetail() {
       <Modal visible={showCreateSupervisorModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(24) }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
               <View style={{ alignItems: "center", marginBottom: rp(16) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
               <Text style={{ fontSize: rs(20), fontWeight: "900", color: ACCENT_COLOR, marginBottom: rp(20) }}>Add Supervisor</Text>
               <Text style={modalLabel}>NAME</Text>
@@ -881,7 +1138,7 @@ export default function HotelDetail() {
       <Modal visible={showAddEventModal} transparent animationType="slide" onRequestClose={() => setShowAddEventModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(24) }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
               <View style={{ alignItems: "center", marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
@@ -933,26 +1190,173 @@ export default function HotelDetail() {
                 <Text style={modalLabel}>MAX CARS</Text>
                 <TextInput value={newEventMaxCars} onChangeText={setNewEventMaxCars} keyboardType="numeric" placeholder="100" style={modalTextInput} />
 
-                <Text style={modalLabel}>KEY HOOKS</Text>
-                <TextInput value={newEventKeyHooks} onChangeText={setNewEventKeyHooks} keyboardType="numeric" placeholder="50" style={modalTextInput} />
-
-                <Text style={modalLabel}>PARKING ZONE</Text>
-                <View style={{ flexDirection: "row", gap: rp(8) }}>
-                  <TextInput
-                    value={newEventZones[0]?.name}
-                    onChangeText={(v) => setNewEventZones([{ ...newEventZones[0], name: v }])}
-                    placeholder="Zone A"
-                    style={[modalTextInput, { flex: 1 }]}
-                  />
-                  <TextInput
-                    value={newEventZones[0]?.slots}
-                    onChangeText={(v) => setNewEventZones([{ ...newEventZones[0], slots: v }])}
-                    placeholder="Slots"
-                    keyboardType="numeric"
-                    style={[modalTextInput, { width: rp(80) }]}
-                  />
+                <Text style={modalLabel}>KEY HOOK RANGE</Text>
+                <View style={{ flexDirection: "row", gap: rp(12) }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[modalLabel, { marginTop: 0 }]}>FROM</Text>
+                    <TextInput
+                      value={newEventKeyHookStart}
+                      onChangeText={setNewEventKeyHookStart}
+                      keyboardType="numeric"
+                      placeholder="51"
+                      style={modalTextInput}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[modalLabel, { marginTop: 0 }]}>TO</Text>
+                    <TextInput
+                      value={newEventKeyHookEnd}
+                      onChangeText={setNewEventKeyHookEnd}
+                      keyboardType="numeric"
+                      placeholder="100"
+                      style={modalTextInput}
+                    />
+                  </View>
                 </View>
-                <Text style={{ fontSize: rs(10), color: "#9CA3AF", marginTop: rp(4) }}>Zone name and number of parking slots</Text>
+                <Text style={{ fontSize: rs(10), color: "#9CA3AF", marginTop: rp(4) }}>
+                  Use a range that does not overlap with the daily event hooks
+                </Text>
+
+                <Text style={modalLabel}>GATES</Text>
+                {newEventGates.map((gate, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: rp(8),
+                      marginBottom: rp(8),
+                    }}
+                  >
+                    <TextInput
+                      style={[modalTextInput, { flex: 1 }]}
+                      placeholder="Gate name"
+                      value={gate}
+                      onChangeText={(text) => {
+                        const newGates = [...newEventGates];
+                        newGates[index] = text;
+                        setNewEventGates(newGates);
+                      }}
+                    />
+                    {newEventGates.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const newGates = newEventGates.filter(
+                            (_, i) => i !== index
+                          );
+                          setNewEventGates(newGates);
+                        }}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={rs(24)}
+                          color="#F43F5E"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setNewEventGates([...newEventGates, ""])}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: rp(6),
+                    paddingVertical: rp(8),
+                  }}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={rs(20)}
+                    color="#7C3AED"
+                  />
+                  <Text
+                    style={{
+                      color: "#7C3AED",
+                      fontSize: rs(14),
+                      fontWeight: "700",
+                    }}
+                  >
+                    Add Gate
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={modalLabel}>PARKING ZONES</Text>
+                {newEventZones.map((zone, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: rp(8),
+                      marginBottom: rp(8),
+                    }}
+                  >
+                    <TextInput
+                      style={[modalTextInput, { flex: 1 }]}
+                      placeholder="Zone name"
+                      value={zone.name}
+                      onChangeText={(text) => {
+                        const newZones = [...newEventZones];
+                        newZones[index] = { ...zone, name: text };
+                        setNewEventZones(newZones);
+                      }}
+                    />
+                    <TextInput
+                      style={[modalTextInput, { width: rp(100) }]}
+                      placeholder="Slots"
+                      value={zone.slots}
+                      onChangeText={(text) => {
+                        const newZones = [...newEventZones];
+                        newZones[index] = { ...zone, slots: text };
+                        setNewEventZones(newZones);
+                      }}
+                      keyboardType="numeric"
+                    />
+                    {newEventZones.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const newZones = newEventZones.filter(
+                            (_, i) => i !== index
+                          );
+                          setNewEventZones(newZones);
+                        }}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={rs(24)}
+                          color="#F43F5E"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() =>
+                    setNewEventZones([...newEventZones, { name: "", slots: "" }])
+                  }
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: rp(6),
+                    paddingVertical: rp(8),
+                  }}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={rs(20)}
+                    color="#7C3AED"
+                  />
+                  <Text
+                    style={{
+                      color: "#7C3AED",
+                      fontSize: rs(14),
+                      fontWeight: "700",
+                    }}
+                  >
+                    Add Zone
+                  </Text>
+                </TouchableOpacity>
 
                 <Text style={{ fontSize: rs(11), color: "#9CA3AF", marginTop: rp(12), fontStyle: "italic" }}>
                   Venue: {hotel?.name}
@@ -970,7 +1374,9 @@ export default function HotelDetail() {
                   onPress={() => {
                     setShowAddEventModal(false);
                     setNewEventName("");
-                    setNewEventKeyHooks("50");
+                    setNewEventKeyHookStart("51");
+                    setNewEventKeyHookEnd("100");
+                    setNewEventGates(["Main Gate"]);
                     setNewEventZones([{ name: "Zone A", slots: "50" }]);
                   }}
                   style={{ paddingVertical: rp(12), alignItems: "center" }}
