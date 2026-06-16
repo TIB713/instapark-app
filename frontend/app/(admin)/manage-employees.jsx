@@ -13,7 +13,7 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -29,7 +29,8 @@ const cardShadow = {
 
 export default function ManageEmployees() {
   const router = useRouter();
-  const [tab, setTab] = useState("supervisors"); // "supervisors" or "drivers"
+  const { tab: initialTab } = useLocalSearchParams();
+  const [tab, setTab] = useState(initialTab === "drivers" ? "drivers" : "supervisors");
   const [supervisors, setSupervisors] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -193,6 +194,14 @@ export default function ManageEmployees() {
       Alert.alert("Required", "Name, email and PIN are required");
       return;
     }
+    if (drvPassword.length !== 4 || !/^\d{4}$/.test(drvPassword)) {
+      Alert.alert("Invalid PIN", "PIN must be exactly 4 digits");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
     setSavingDrv(true);
     try {
       let photoUrl;
@@ -208,7 +217,7 @@ export default function ManageEmployees() {
         email: drvEmail.trim().toLowerCase(),
         phone: drvPhone.trim() || undefined,
         pin: drvPassword,
-        photo_url: photoUrl || undefined,
+        driver_photo: photoUrl || undefined,
         pan_number: drvPan.trim() || undefined,
         bank_account_number: drvBankAccount.trim() || undefined,
         bank_ifsc: drvBankIfsc.trim() || undefined,

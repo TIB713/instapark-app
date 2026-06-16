@@ -102,6 +102,12 @@ export default function PreRegisterQR() {
                 </Text> 
               </View> 
  
+              {!isHotelOwner && (
+                <Text style={{ color: "#D1D5DB", fontSize: rs(10), marginTop: rp(12), textAlign: "center", paddingHorizontal: rp(24) }}>
+                  Note: For hotel valet events, please use the specific hotel QR code instead of this general provider QR.
+                </Text>
+              )}
+
               <TouchableOpacity 
                 onPress={handleShare} 
                 style={{ backgroundColor: "rgba(255,255,255,0.15)", borderWidth: rp(1.5), borderColor: "#fff", borderRadius: rp(16), paddingVertical: rp(14), marginTop: rp(24), width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center" }} 

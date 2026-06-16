@@ -203,6 +203,7 @@ export default function CheckIn() {
           make: make.trim(), 
           color: color.trim(), 
           notes: notes.trim(), 
+          plate: plate.trim().toUpperCase(), 
         }); 
         car = data; 
       } else { 
@@ -358,7 +359,7 @@ export default function CheckIn() {
               placeholder="GJ01AB1234"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="characters"
-              maxLength={13}
+              maxLength={10}
               style={textInput}
             />
           </View>

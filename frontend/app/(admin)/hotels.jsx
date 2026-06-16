@@ -18,6 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import CityStatePicker from "../../components/CityStatePicker";
+import { State } from "country-state-city";
 
 const ACCENT_COLOR = "#1D4ED8";
 
@@ -117,18 +119,19 @@ export default function Hotels() {
   };
 
   const saveHotel = async () => {
-    if (!name || !address || !city || !state || !contactName || !contactPhone || !totalSlots) {
-      Alert.alert("Required Fields", "Please fill all required fields");
+    if (!name || !address || !city || !state || !contactName || !contactPhone || !totalSlots || !startTime || !endTime) {
+      Alert.alert("Required Fields", "Please fill all required fields including operating hours");
       return;
     }
 
     setSaving(true);
     try {
+      const stateFullName = State.getStatesOfCountry("IN").find(s => s.isoCode === state.trim())?.name || state.trim();
       await api.post("/hotels", {
         name: name.trim(),
         address: address.trim(),
         city: city.trim(),
-        state: state.trim(),
+        state: stateFullName,
         contact_person_name: contactName.trim(),
         contact_person_phone: contactPhone.trim(),
         contact_person_email: contactEmail.trim() || undefined,
@@ -377,25 +380,14 @@ export default function Hotels() {
                 onChangeText={setAddress}
               />
 
-              <View style={{ flexDirection: "row", gap: rp(12) }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={modalLabel}>CITY *</Text>
-                  <TextInput
-                    style={modalInput}
-                    placeholder="City"
-                    value={city}
-                    onChangeText={setCity}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={modalLabel}>STATE *</Text>
-                  <TextInput
-                    style={modalInput}
-                    placeholder="State"
-                    value={state}
-                    onChangeText={setState}
-                  />
-                </View>
+              <View style={{ marginBottom: rp(12) }}>
+                <Text style={modalLabel}>STATE & CITY *</Text>
+                <CityStatePicker
+                  state={state}
+                  city={city}
+                  onStateChange={val => { setState(val); setCity(""); }}
+                  onCityChange={val => setCity(val)}
+                />
               </View>
 
               <Text style={modalLabel}>CONTACT NAME *</Text>

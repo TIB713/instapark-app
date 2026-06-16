@@ -33,9 +33,10 @@ export default function CreateEvent() {
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
   const [maxCars, setMaxCars] = useState("200");
-  const [keyHooks, setKeyHooks] = useState("50");
+  const [keyHookStart, setKeyHookStart] = useState(isHotelOwner ? "51" : "1");
+  const [keyHookEnd, setKeyHookEnd] = useState(isHotelOwner ? "100" : "50");
   const [zones, setZones] = useState([{ name: "A", slots: 20 }]);
-  const [gates, setGates] = useState(["Main Entrance"]);
+  const [gates, setGates] = useState(["Main Gate"]);
   const [showDP, setShowDP] = useState(false);
   const [showEDP, setShowEDP] = useState(false);
   const [showSTP, setShowSTP] = useState(false);
@@ -99,7 +100,9 @@ export default function CreateEvent() {
         end_time: endTime,
         venue: venue.trim(),
         max_cars: parseInt(maxCars) || 200,
-        key_hooks: parseInt(keyHooks) || 50,
+        key_hook_start: parseInt(keyHookStart) || 1,
+        key_hook_end: parseInt(keyHookEnd) || 50,
+        key_hooks: (parseInt(keyHookEnd) || 50) - (parseInt(keyHookStart) || 1) + 1,
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
         is_template: false,
@@ -329,18 +332,41 @@ export default function CreateEvent() {
             <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
           </TouchableOpacity>
 
-          <Label>KEY HOOKS (Total hooks on key board)</Label>
-          <InputRow icon="key-outline">
-            <TextInput
-              value={keyHooks}
-              onChangeText={setKeyHooks}
-              placeholder="50"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              maxLength={4}
-              style={textInputStyle}
-            />
-          </InputRow>
+          <View style={{ flexDirection: "row", gap: rp(12) }}>
+            <View style={{ flex: 1 }}>
+              <Label>KEY HOOKS FROM</Label>
+              <InputRow icon="key-outline">
+                <TextInput
+                  value={keyHookStart}
+                  onChangeText={setKeyHookStart}
+                  placeholder={isHotelOwner ? "51" : "1"}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  style={textInputStyle}
+                />
+              </InputRow>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Label>KEY HOOKS TO</Label>
+              <InputRow icon="key-outline">
+                <TextInput
+                  value={keyHookEnd}
+                  onChangeText={setKeyHookEnd}
+                  placeholder={isHotelOwner ? "100" : "50"}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  style={textInputStyle}
+                />
+              </InputRow>
+            </View>
+          </View>
+          {isHotelOwner && (
+            <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
+              Hotel's daily events use 1-50 by default — pick a different range for this special event to avoid overlap
+            </Text>
+          )}
 
           <TouchableOpacity
             testID="save-event-btn"

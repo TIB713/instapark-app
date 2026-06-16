@@ -51,7 +51,17 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "InstaPark needs your location to track driver activity during active events.",
+          "locationAlwaysPermission": "InstaPark needs background location to track driver activity.",
+          "locationWhenInUsePermission": "InstaPark needs your location during active events.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

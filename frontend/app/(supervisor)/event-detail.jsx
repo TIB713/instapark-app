@@ -80,6 +80,11 @@ export default function SupervisorEventDetail() {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  const [sosAlerts, setSOSAlerts] = useState([]);
+  const [sosCount, setSOSCount] = useState(0);
+  const [showSOSPanel, setShowSOSPanel] = useState(false);
+  const [resolvingSOSId, setResolvingSOSId] = useState(null);
+
   const fetchEvent = useCallback(async () => {
     try {
       const { data } = await api.get(`/events/${currentEventId}`);
@@ -141,14 +146,41 @@ export default function SupervisorEventDetail() {
     } catch {}
   }, [currentEventId]);
 
+  const fetchSOSAlerts = useCallback(async () => {
+    if (!currentEventId) return;
+    try {
+      const { data } = await api.get(`/sos/event/${currentEventId}`);
+      setSOSAlerts(data || []);
+      setSOSCount((data || []).filter(a => a.status === "ACTIVE").length);
+    } catch {}
+  }, [currentEventId]);
+
+  const resolveSOSAlert = async (alertId) => {
+    setResolvingSOSId(alertId);
+    try {
+      await api.patch(`/sos/${alertId}/resolve`);
+      fetchSOSAlerts();
+    } catch {
+      Alert.alert("Error", "Failed to resolve alert.");
+    } finally {
+      setResolvingSOSId(null);
+    }
+  };
+
   useEffect(() => {
     if (!currentEventId) return;
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents(), fetchKeys()]);
+    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents(), fetchKeys(), fetchSOSAlerts()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
     });
-    return () => disconnectWS(`/event/${currentEventId}`);
+    connectWS(`/sos/${currentEventId}`, (msg) => {
+      if (msg.type === "sos_alert" || msg.type === "sos_resolved") fetchSOSAlerts();
+    });
+    return () => {
+      disconnectWS(`/event/${currentEventId}`);
+      disconnectWS(`/sos/${currentEventId}`);
+    };
   }, [currentEventId]);
 
   const filteredCars = useMemo(() => {
@@ -369,6 +401,29 @@ export default function SupervisorEventDetail() {
                 </View>
               )}
             </View>
+            <TouchableOpacity
+              onPress={() => setShowSOSPanel(true)}
+              style={{ position: "relative", padding: 8 }}
+            >
+              <Ionicons
+                name="warning"
+                size={24}
+                color={sosCount > 0 ? "#DC2626" : "rgba(255,255,255,0.5)"}
+              />
+              {sosCount > 0 && (
+                <View style={{
+                  position: "absolute", top: 4, right: 4,
+                  backgroundColor: "#DC2626",
+                  borderRadius: 8, minWidth: 16, height: 16,
+                  alignItems: "center", justifyContent: "center",
+                  borderWidth: 1.5, borderColor: "white",
+                }}>
+                  <Text style={{ color: "white", fontSize: 9, fontWeight: "700" }}>
+                    {sosCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={[iconBtn, { marginRight: rp(8) }]}>
               <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
             </TouchableOpacity>
@@ -1189,12 +1244,88 @@ export default function SupervisorEventDetail() {
                 <TouchableOpacity onPress={pickIncidentPhoto} style={{ borderWidth: rp(1.5), borderColor: incidentPhoto ? "#059669" : "#E5E7EB", borderStyle: "dashed", borderRadius: rp(14), padding: rp(16), alignItems: "center", marginBottom: rp(20) }}>
                   <Text style={{ color: incidentPhoto ? "#059669" : "#9CA3AF", fontWeight: "700" }}>{incidentPhoto ? "Photo Added ✓" : "Add Photo (Optional)"}</Text>
                 </TouchableOpacity>
+                {incidentPhoto && (
+                  <TouchableOpacity
+                    onPress={() => setIncidentPhoto(null)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: rp(6), marginBottom: rp(8) }}
+                  >
+                    <Ionicons name="close-circle" size={14} color="#EF4444" />
+                    <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600" }}>Remove Photo</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: rp(18), paddingVertical: rp(18), alignItems: "center", marginBottom: rp(24) }}>
                   {submittingIncident ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SUBMIT INCIDENT</Text>}
                 </TouchableOpacity>
               </ScrollView>
             </View>
           </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      <Modal visible={showSOSPanel} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: "80%" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F2044" }}>
+                🚨 SOS Alerts {sosCount > 0 ? `(${sosCount} active)` : ""}
+              </Text>
+              <TouchableOpacity onPress={() => setShowSOSPanel(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {sosAlerts.length === 0 ? (
+                <Text style={{ color: "#6B7280", textAlign: "center", marginTop: 32 }}>
+                  No SOS alerts for this event
+                </Text>
+              ) : (
+                [...sosAlerts]
+                  .sort((a, b) => (a.status === "ACTIVE" ? -1 : 1))
+                  .map((alert) => (
+                    <View key={alert.id} style={{
+                      borderRadius: 12,
+                      borderWidth: 1.5,
+                      borderColor: alert.status === "ACTIVE" ? "#FCA5A5" : "#E5E7EB",
+                      backgroundColor: alert.status === "ACTIVE" ? "#FEF2F2" : "#F9FAFB",
+                      padding: 14,
+                      marginBottom: 10,
+                    }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <Text style={{ fontWeight: "700", color: alert.status === "ACTIVE" ? "#DC2626" : "#6B7280", fontSize: 14 }}>
+                          {alert.alert_type.replace(/_/g, " ")}
+                        </Text>
+                        {alert.status === "RESOLVED" && (
+                          <Text style={{ color: "#059669", fontSize: 12, fontWeight: "600" }}>Resolved ✓</Text>
+                        )}
+                      </View>
+                      <Text style={{ color: "#374151", fontSize: 13 }}>Driver: {alert.driver_name}</Text>
+                      {alert.car_number ? <Text style={{ color: "#374151", fontSize: 13 }}>Car: {alert.car_number}</Text> : null}
+                      {alert.note ? <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>{alert.note}</Text> : null}
+                      <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 6 }}>{alert.created_at}</Text>
+                      {alert.status === "ACTIVE" && (
+                        <TouchableOpacity
+                          onPress={() => resolveSOSAlert(alert.id)}
+                          disabled={resolvingSOSId === alert.id}
+                          style={{
+                            marginTop: 10,
+                            backgroundColor: "#059669",
+                            borderRadius: 8,
+                            padding: 10,
+                            alignItems: "center",
+                          }}
+                        >
+                          {resolvingSOSId === alert.id
+                            ? <ActivityIndicator color="white" size="small" />
+                            : <Text style={{ color: "white", fontWeight: "600", fontSize: 13 }}>Mark Resolved</Text>
+                          }
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))
+              )}
+            </ScrollView>
+          </View>
         </View>
       </Modal>
     </View>

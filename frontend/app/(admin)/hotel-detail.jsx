@@ -17,6 +17,8 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import CityStatePicker from "../../components/CityStatePicker";
+import { State } from "country-state-city";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -699,13 +701,14 @@ export default function HotelDetail() {
             <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), ...cardShadow }}>
               <InfoField label="HOTEL NAME" value={editHotel?.name} onSave={(v) => updateHotel({ name: v })} />
               <InfoField label="ADDRESS" value={editHotel?.address} onSave={(v) => updateHotel({ address: v })} />
-              <View style={{ flexDirection: "row", gap: rp(12) }}>
-                <View style={{ flex: 1 }}>
-                  <InfoField label="CITY" value={editHotel?.city} onSave={(v) => updateHotel({ city: v })} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <InfoField label="STATE" value={editHotel?.state} onSave={(v) => updateHotel({ state: v })} />
-                </View>
+              <View style={{ marginBottom: rp(16) }}>
+                <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5), marginBottom: rp(8) }}>STATE & CITY</Text>
+                <CityStatePicker
+                  state={State.getStatesOfCountry("IN").find(s => s.name === editHotel?.state)?.isoCode || editHotel?.state}
+                  city={editHotel?.city}
+                  onStateChange={val => updateHotel({ state: State.getStatesOfCountry("IN").find(s => s.isoCode === val)?.name || val, city: "" })}
+                  onCityChange={val => updateHotel({ city: val })}
+                />
               </View>
               <InfoField label="CONTACT PERSON" value={editHotel?.contact_person_name} onSave={(v) => updateHotel({ contact_person_name: v })} />
               <InfoField label="PHONE" value={editHotel?.contact_person_phone} onSave={(v) => updateHotel({ contact_person_phone: v })} />
@@ -1457,7 +1460,7 @@ export default function HotelDetail() {
                 </View>
               ) : eventQRToken ? (
                 <QRCode
-                  value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${eventQRToken}`}
+                  value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${eventQRToken}`}
                   size={220}
                   color={ACCENT_COLOR}
                 />
@@ -1472,7 +1475,7 @@ export default function HotelDetail() {
 
             <TouchableOpacity
               onPress={() => {
-                const url = `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${eventQRToken}`;
+                const url = `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${eventQRToken}`;
                 Share.share({
                   message: `Pre-register for ${selectedEventForQR?.name} at ${hotel?.name}: ${url}`,
                 });

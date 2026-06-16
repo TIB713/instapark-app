@@ -164,6 +164,8 @@ export default function Login() {
         ? detail
         : "Failed to send OTP. Please try again.";
       setForgotError(msg);
+      setForgotEmail("");
+      setForgotEmpId("");
     } finally {
       setForgotLoading(false);
     }
@@ -176,6 +178,18 @@ export default function Login() {
         (tab === "driver" ? "PIN" : "password") +
         " are required");
       return;
+    }
+    if (tab === "admin" || tab === "supervisor") {
+      if (forgotNewSecret.trim().length < 8) {
+        setForgotError("Password must be at least 8 characters");
+        return;
+      }
+    }
+    if (tab === "driver") {
+      if (forgotNewSecret.trim().length !== 4 || !/^\d{4}$/.test(forgotNewSecret.trim())) {
+        setForgotError("Driver PIN must be exactly 4 digits");
+        return;
+      }
     }
     setForgotLoading(true);
     try {

@@ -1,4 +1,7 @@
 // version 3
+import * as Location from "expo-location";
+import * as TaskManager from "expo-task-manager";
+import { Linking } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -36,6 +39,34 @@ const cardShadow = {
   elevation: 4,
 };
 
+const LOCATION_TASK_NAME = "driver-location-tracking";
+
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+  if (error || !data) return;
+  const { locations } = data;
+  const loc = locations[0];
+  if (!loc) return;
+  try {
+    const { getItem } = require("../../lib/secure");
+    const { useAppStore } = require("../../lib/store");
+    const token = await getItem("auth_token");
+    const eventId = useAppStore.getState().currentEventId;
+    if (!token || !eventId) return;
+    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/v1/drivers/location`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        event_id: eventId,
+        lat: loc.coords.latitude,
+        lng: loc.coords.longitude,
+      }),
+    });
+  } catch {}
+});
+
 export default function Tasks() {
   const router = useRouter();
   const { driver, currentEventId } = useAppStore();
@@ -64,6 +95,16 @@ export default function Tasks() {
   const [savingKeyTag, setSavingKeyTag] = useState(false);
   const [eventKeyHookStart, setEventKeyHookStart] = useState(null);
   const [eventKeyHookEnd, setEventKeyHookEnd] = useState(null);
+
+  const [showSOSModal, setShowSOSModal] = useState(false);
+  const [sosAlertType, setSOSAlertType] = useState("NEED_HELP");
+  const [sosNote, setSosNote] = useState("");
+  const [sosCarId, setSosCarId] = useState(null);
+  const [sosCarNumber, setSosCarNumber] = useState("");
+  const [sendingSOS, setSendingSOS] = useState(false);
+
+  const [capturedGPS, setCapturedGPS] = useState(null);
+  const [capturingGPS, setCapturingGPS] = useState(false);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -105,6 +146,7 @@ export default function Tasks() {
 
   useEffect(() => {
     if (!currentEventId) return;
+    startLocationTracking();
     api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {});
     fetchEvent();
     fetchMyCars();
@@ -124,6 +166,7 @@ export default function Tasks() {
       }
     });
     return () => {
+      stopLocationTracking();
       disconnectWS(`/event/${currentEventId}`);
       disconnectWS(`/retrievals/${currentEventId}`);
       unsub();
@@ -156,6 +199,93 @@ export default function Tasks() {
     try {
       const { data } = await api.get(`/slots/event/${currentEventId}`);
       setSlots(data || []);
+    } catch {}
+  };
+
+  const sendSOS = async () => {
+    if (!currentEventId) return;
+    setSendingSOS(true);
+    try {
+      await api.post(`/sos/event/${currentEventId}`, {
+        alert_type: sosAlertType,
+        note: sosNote,
+        car_id: sosCarId,
+        car_number: sosCarNumber,
+      });
+      setShowSOSModal(false);
+      setSosNote("");
+      setSosCarId(null);
+      setSosCarNumber("");
+      Alert.alert("SOS Sent", "Your supervisor has been notified.");
+    } catch {
+      Alert.alert("Error", "Failed to send SOS. Please try again.");
+    } finally {
+      setSendingSOS(false);
+    }
+  };
+
+  const captureGPSPin = async () => {
+    setCapturingGPS(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Denied", "Location permission is needed to save GPS pin.");
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setCapturedGPS({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+    } catch {
+      Alert.alert("Error", "Could not get GPS location. You can still park without it.");
+    } finally {
+      setCapturingGPS(false);
+    }
+  };
+
+  const navigateToCar = async (carId) => {
+    try {
+      const { data } = await api.get(`/cars/${carId}/gps-pin`);
+      if (!data.gps_lat || !data.gps_lng) {
+        Alert.alert("No GPS Pin", "This car does not have a GPS pin saved.");
+        return;
+      }
+      const url = `https://www.google.com/maps?q=${data.gps_lat},${data.gps_lng}`;
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Error", "Could not open Google Maps.");
+      }
+    } catch {
+      Alert.alert("Error", "Failed to get car location.");
+    }
+  };
+
+  const startLocationTracking = async () => {
+    try {
+      const { status: fg } = await Location.requestForegroundPermissionsAsync();
+      if (fg !== "granted") return;
+      const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+      if (bg !== "granted") return;
+      const already = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+      if (already) return;
+      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 5000,
+        distanceInterval: 0,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: {
+          notificationTitle: "InstaPark",
+          notificationBody: "Tracking your location for active event",
+          notificationColor: "#059669",
+        },
+      });
+    } catch {}
+  };
+
+  const stopLocationTracking = async () => {
+    try {
+      const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+      if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     } catch {}
   };
 
@@ -210,6 +340,8 @@ export default function Tasks() {
         zone: selectedZone,
         slot: selectedSlot,
         parked_driver_id: resolvedDriverId,
+        gps_lat: capturedGPS?.lat || null,
+        gps_lng: capturedGPS?.lng || null,
       });
 
       const carId = selectedCar.id;
@@ -217,6 +349,7 @@ export default function Tasks() {
       setParkPhotos([]);
       setParkingPhotoStep(false);
       fetchMyCars();
+      setCapturedGPS(null);
 
       // Use the locally copied photos for background upload as well
       uploadParkPhotosInBackground(carId, photoLocalPaths);
@@ -398,13 +531,26 @@ export default function Tasks() {
             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", flex: 1, textAlign: "center", marginRight: rp(40) }}>
               My Tasks
             </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(driver)/checkin")}
-              testID="add-checkin-btn"
-              style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
-            >
-              <Ionicons name="add" size={24} color="#059669" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <TouchableOpacity
+                onPress={() => router.push("/(driver)/checkin")}
+                testID="add-checkin-btn"
+                style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
+              >
+                <Ionicons name="add" size={24} color="#059669" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowSOSModal(true)}
+                style={{
+                  backgroundColor: "#DC2626",
+                  borderRadius: 20,
+                  padding: 8,
+                  marginLeft: 8,
+                }}
+              >
+                <Ionicons name="warning" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -864,29 +1010,65 @@ export default function Tasks() {
                 </View>
               </View>
               {car.status === "RETRIEVAL_REQUESTED" && (
-                <TouchableOpacity
-                  onPress={() => pickup(car)}
-                  style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
-                >
-                  <Ionicons name="hand-right" size={14} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    onPress={() => pickup(car)}
+                    style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
+                  >
+                    <Ionicons name="hand-right" size={14} color="#fff" />
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigateToCar(car.id)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      backgroundColor: "#EFF6FF",
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      marginTop: 6,
+                    }}
+                  >
+                    <Ionicons name="navigate" size={16} color="#1D4ED8" />
+                    <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: 13 }}>Navigate to Car</Text>
+                  </TouchableOpacity>
+                </>
               )}
               {car.status === "BEING_FETCHED" && isMine && (
-                <TouchableOpacity
-                  onPress={() => handleHandover(car)}
-                  disabled={handoverUploading}
-                  style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
-                >
-                  {handoverUploading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="camera" size={14} color="#fff" />
-                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>HANDED TO GUEST</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    onPress={() => handleHandover(car)}
+                    disabled={handoverUploading}
+                    style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
+                  >
+                    {handoverUploading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="camera" size={14} color="#fff" />
+                        <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>HANDED TO GUEST</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigateToCar(car.id)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      backgroundColor: "#EFF6FF",
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      marginTop: 6,
+                    }}
+                  >
+                    <Ionicons name="navigate" size={16} color="#1D4ED8" />
+                    <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: 13 }}>Navigate to Car</Text>
+                  </TouchableOpacity>
+                </>
               )}
               {car.status === "BEING_FETCHED" && !isMine && (
                 <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(10), fontStyle: "italic" }}>
@@ -1013,6 +1195,28 @@ export default function Tasks() {
                 </ScrollView>
 
                 <TouchableOpacity
+                  onPress={captureGPSPin}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: capturedGPS ? "#DCFCE7" : "#F3F4F6",
+                    borderRadius: 8,
+                    padding: 10,
+                    marginBottom: 12,
+                  }}
+                >
+                  {capturingGPS
+                    ? <ActivityIndicator size="small" color="#059669" />
+                    : <Ionicons name={capturedGPS ? "location" : "location-outline"} size={18} color={capturedGPS ? "#059669" : "#6B7280"} />
+                  }
+                  <Text style={{ color: capturedGPS ? "#059669" : "#6B7280", fontSize: 14 }}>
+                    {capturedGPS
+                      ? `GPS Saved ✓ (${capturedGPS.lat.toFixed(5)}, ${capturedGPS.lng.toFixed(5)})`
+                      : "Save GPS Pin (Open Ground Only)"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   onPress={confirmPark}
                   disabled={!selectedSlot || confirmingPark}
                   activeOpacity={0.7}
@@ -1043,6 +1247,90 @@ export default function Tasks() {
             >
               <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showSOSModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 }}>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: "#DC2626", marginBottom: 4 }}>
+              🚨 Send SOS Alert
+            </Text>
+            <Text style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>
+              Your supervisor will be notified immediately
+            </Text>
+
+            {/* Alert Type Chips */}
+            <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 10 }}>
+              What do you need help with?
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+              {[
+                { key: "NEED_HELP", label: "Need Help" },
+                { key: "BLOCKED_CAR", label: "Blocked Car" },
+                { key: "DAMAGE_CLAIM", label: "Damage Claim" },
+                { key: "MEDICAL", label: "Medical" },
+                { key: "OTHER", label: "Other" },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => setSOSAlertType(item.key)}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: sosAlertType === item.key ? "#DC2626" : "#D1D5DB",
+                    backgroundColor: sosAlertType === item.key ? "#FEE2E2" : "white",
+                  }}
+                >
+                  <Text style={{ color: sosAlertType === item.key ? "#DC2626" : "#6B7280", fontWeight: "600", fontSize: 13 }}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Optional Note */}
+            <TextInput
+              placeholder="Add details (optional)..."
+              value={sosNote}
+              onChangeText={setSosNote}
+              multiline
+              numberOfLines={3}
+              style={{
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                borderRadius: 10,
+                padding: 12,
+                fontSize: 14,
+                color: "#111827",
+                textAlignVertical: "top",
+                marginBottom: 20,
+                minHeight: 80,
+              }}
+            />
+
+            {/* Buttons */}
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => { setShowSOSModal(false); setSosNote(""); }}
+                style={{ flex: 1, backgroundColor: "#F3F4F6", borderRadius: 10, padding: 14, alignItems: "center" }}
+              >
+                <Text style={{ color: "#374151", fontWeight: "600" }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={sendSOS}
+                disabled={sendingSOS}
+                style={{ flex: 1, backgroundColor: "#DC2626", borderRadius: 10, padding: 14, alignItems: "center" }}
+              >
+                {sendingSOS
+                  ? <ActivityIndicator color="white" size="small" />
+                  : <Text style={{ color: "white", fontWeight: "700" }}>Send SOS</Text>
+                }
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

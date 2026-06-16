@@ -66,6 +66,7 @@ export default function Scanner() {
           prefill_phone: pass.guest_phone || "",
           prefill_name: pass.guest_name || "",
           prefill_event_id: pass.event_id,
+          prefill_guest_notes: pass.guest_notes || "",
         },
       });
     } catch (err) {

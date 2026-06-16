@@ -111,14 +111,16 @@ export default function EventDetail() {
     try {
       const { data } = await api.get(`/events/${currentEventId}`);
       setEvent(data);
-      if (data.event_type === "hotel_special" && data.hotel_id) {
+      if ((data.event_type === "hotel_special" || data.event_type === "hotel_daily") && data.hotel_id) {
         try {
           const [hotelRes, qrRes] = await Promise.all([
             api.get(`/hotels/${data.hotel_id}`),
-            api.get(`/hotels/${data.hotel_id}/events/${data.id}/qr-token`)
+            data.event_type === "hotel_special" ? api.get(`/hotels/${data.hotel_id}/events/${data.id}/qr-token`) : Promise.resolve({ data: {} })
           ]);
           setSpecialEventHotel(hotelRes.data);
-          setSpecialEventQRToken(qrRes.data.event_qr_token);
+          if (data.event_type === "hotel_special") {
+            setSpecialEventQRToken(qrRes.data.event_qr_token);
+          }
         } catch (err) {
           console.error("Error fetching hotel info/QR for special event:", err);
         }
@@ -878,7 +880,7 @@ export default function EventDetail() {
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => {
                     setShowMenu(false);
-                    if (event?.event_type === "hotel_special") {
+                    if (event?.event_type === "hotel_special" || event?.event_type === "hotel_daily") {
                       setShowSpecialEventQRModal(true);
                     } else {
                       router.push("/(admin)/pre-register-qr");
@@ -1980,7 +1982,7 @@ export default function EventDetail() {
               }}
             >
               <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#1D4ED8", letterSpacing: rs(3) }}>
-                SPECIAL EVENT GUEST QR
+                {event?.event_type === "hotel_daily" ? "HOTEL DAILY VALET QR" : "SPECIAL EVENT GUEST QR"}
               </Text>
               <TouchableOpacity onPress={() => setShowSpecialEventQRModal(false)}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
@@ -2018,21 +2020,26 @@ export default function EventDetail() {
                 marginBottom: rp(20),
               }}
             >
-              {specialEventQRToken ? (
+              {event?.event_type === "hotel_daily" ? (
+                specialEventHotel?.hotel_qr_token ? (
+                  <QRCode
+                    value={`${process.env.EXPO_PUBLIC_GUEST_URL}/hotel-register/${specialEventHotel.hotel_qr_token}`}
+                    size={220}
+                    color="#1D4ED8"
+                  />
+                ) : (
+                  <View style={{ width: rp(220), height: rp(220), justifyContent: "center", alignItems: "center" }}>
+                    <ActivityIndicator color="#1D4ED8" size="large" />
+                  </View>
+                )
+              ) : specialEventQRToken ? (
                 <QRCode
-                  value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${specialEventQRToken}`}
+                  value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${specialEventQRToken}`}
                   size={220}
                   color="#1D4ED8"
                 />
               ) : (
-                <View
-                  style={{
-                    width: rp(220),
-                    height: rp(220),
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
+                <View style={{ width: rp(220), height: rp(220), justifyContent: "center", alignItems: "center" }}>
                   <ActivityIndicator color="#1D4ED8" size="large" />
                 </View>
               )}
@@ -2047,12 +2054,14 @@ export default function EventDetail() {
                 textAlign: "center",
               }}
             >
-              Guest scans this to pre-register their vehicle
+              {event?.event_type === "hotel_daily" ? "Guests scan this to pre-register for today's valet" : "Guest scans this to pre-register their vehicle"}
             </Text>
 
             <TouchableOpacity
               onPress={() => {
-                const url = `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${specialEventQRToken}`;
+                const url = event?.event_type === "hotel_daily"
+                  ? `${process.env.EXPO_PUBLIC_GUEST_URL}/hotel-register/${specialEventHotel?.hotel_qr_token}`
+                  : `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${specialEventQRToken}`;
                 Sharing.shareAsync(null, {
                   dialogTitle: `Guest QR for ${event?.name}`,
                   UTI: "public.plain-text",
@@ -2524,6 +2533,15 @@ export default function EventDetail() {
                       : "Add Photo (Optional)"} 
                   </Text> 
                 </TouchableOpacity> 
+                {incidentPhoto && (
+                  <TouchableOpacity
+                    onPress={() => setIncidentPhoto(null)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: rp(6), marginBottom: rp(8) }}
+                  >
+                    <Ionicons name="close-circle" size={14} color="#EF4444" />
+                    <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600" }}>Remove Photo</Text>
+                  </TouchableOpacity>
+                )}
       
                 {/* Submit */} 
                 <TouchableOpacity 
