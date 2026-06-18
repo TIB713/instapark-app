@@ -430,9 +430,9 @@ export default function CheckIn() {
                 <Image source={{ uri: u }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
                 <TouchableOpacity
                   onPress={() => setPhotos(photos.filter((_, k) => k !== i))}
-                  style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#F43F5E", borderRadius: rp(99), padding: rp(4) }}
+                  style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
                 >
-                  <Ionicons name="close" size={14} color="#fff" />
+                  <Ionicons name="close-circle" size={24} color="#EF4444" />
                 </TouchableOpacity>
               </View>
             ))}

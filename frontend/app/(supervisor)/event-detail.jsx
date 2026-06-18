@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -49,6 +50,18 @@ const cardShadow = {
 
 export default function SupervisorEventDetail() {
   const router = useRouter();
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showIncidentModal) { setShowIncidentModal(false); return true; }
+      if (showCarModal) { setShowCarModal(false); return true; }
+      if (showSOSPanel) { setShowSOSPanel(false); return true; }
+      router.back(); return true;
+    };
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => backHandler.remove();
+  }, [showIncidentModal, showCarModal, showSOSPanel]);
+
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
   const isClosed = event?.status === "closed";
@@ -1181,7 +1194,8 @@ export default function SupervisorEventDetail() {
 
       {/* Modals same as admin but with ACCENT_COLOR */}
       <Modal visible={showCarModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
             <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
             <ScrollView>
@@ -1205,55 +1219,68 @@ export default function SupervisorEventDetail() {
                   </TouchableOpacity> 
                   <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
                     <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </ScrollView>
+                                      </TouchableOpacity>
+                  </>
+                )}
+              </ScrollView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showIncidentModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "92%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%" }}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
                 <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827", flex: 1 }}>Report Incident</Text>
                 <TouchableOpacity onPress={() => setShowIncidentModal(false)}><Ionicons name="close-circle" size={26} color="#D1D5DB" /></TouchableOpacity>
               </View>
-              <ScrollView showsVerticalScrollIndicator={false}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <Text style={modalLabel}>SELECT CAR *</Text>
-                <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: rp(6) }}>
-                  <Ionicons name="search" size={16} color={ACCENT_COLOR} />
-                  <TextInput value={incidentCarSearch} onChangeText={setIncidentCarSearch} placeholder="Search plate..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
-                </View>
-                {incidentCarSearch.length > 1 && !incidentCar && (
-                  <View style={{ backgroundColor: "#fff", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", marginBottom: rp(12), overflow: "hidden" }}>
-                    {cars.filter(c => c.plate.toLowerCase().includes(incidentCarSearch.toLowerCase())).slice(0, 5).map(c => (
-                      <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); }} style={{ padding: rp(14), borderBottomWidth: rp(1), borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
-                        <Text style={{ fontWeight: "900", color: "#111827" }}>{c.plate}</Text>
-                      </TouchableOpacity>
-                    ))}
+                {!incidentCar && (
+                  <>
+                    <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: rp(6) }}>
+                      <Ionicons name="search" size={16} color={ACCENT_COLOR} />
+                      <TextInput value={incidentCarSearch} onChangeText={setIncidentCarSearch} placeholder="Search plate..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
+                    </View>
+                    {incidentCarSearch.length > 1 && (
+                      <View style={{ backgroundColor: "#fff", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", marginBottom: rp(12), overflow: "hidden" }}>
+                        {cars.filter(c => c.plate.toLowerCase().includes(incidentCarSearch.toLowerCase())).slice(0, 5).map(c => (
+                          <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); }} style={{ padding: rp(14), borderBottomWidth: rp(1), borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
+                            <Text style={{ fontWeight: "900", color: "#111827" }}>{c.plate}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
+                {incidentCar && (
+                  <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                      <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                      <Text style={{ color: "#059669", fontWeight: "800", marginLeft: rp(8) }}>{incidentCar.plate} selected</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => { setIncidentCar(null); setIncidentCarSearch(""); }}>
+                      <Ionicons name="close-circle" size={20} color="#059669" />
+                    </TouchableOpacity>
                   </View>
                 )}
-                {incidentCar && <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), padding: rp(12), marginBottom: rp(16) }}><Text style={{ color: "#059669", fontWeight: "800" }}>{incidentCar.plate} selected</Text></View>}
                 <Text style={modalLabel}>DESCRIPTION *</Text>
                 <TextInput value={incidentDesc} onChangeText={setIncidentDesc} placeholder="Describe what happened..." multiline numberOfLines={4} style={[modalInput, { height: rp(100), textAlignVertical: "top" }]} />
-                <TouchableOpacity onPress={pickIncidentPhoto} style={{ borderWidth: rp(1.5), borderColor: incidentPhoto ? "#059669" : "#E5E7EB", borderStyle: "dashed", borderRadius: rp(14), padding: rp(16), alignItems: "center", marginBottom: rp(20) }}>
+                                <View style={{ position: "relative" }}>
+                  <TouchableOpacity onPress={pickIncidentPhoto} style={{ borderWidth: rp(1.5), borderColor: incidentPhoto ? "#059669" : "#E5E7EB", borderStyle: "dashed", borderRadius: rp(14), padding: rp(16), alignItems: "center", marginBottom: rp(20) }}>
                   <Text style={{ color: incidentPhoto ? "#059669" : "#9CA3AF", fontWeight: "700" }}>{incidentPhoto ? "Photo Added ✓" : "Add Photo (Optional)"}</Text>
                 </TouchableOpacity>
-                {incidentPhoto && (
-                  <TouchableOpacity
-                    onPress={() => setIncidentPhoto(null)}
-                    style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: rp(6), marginBottom: rp(8) }}
-                  >
-                    <Ionicons name="close-circle" size={14} color="#EF4444" />
-                    <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600" }}>Remove Photo</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: rp(18), paddingVertical: rp(18), alignItems: "center", marginBottom: rp(24) }}>
+                  {incidentPhoto && (
+                    <TouchableOpacity onPress={() => setIncidentPhoto(null)} style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}>
+                      <Ionicons name="close-circle" size={20} color="#059669" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: rp(18), paddingVertical: rp(18), alignItems: "center" }}>
                   {submittingIncident ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SUBMIT INCIDENT</Text>}
                 </TouchableOpacity>
               </ScrollView>
@@ -1263,7 +1290,8 @@ export default function SupervisorEventDetail() {
       </Modal>
 
       <Modal visible={showSOSPanel} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: "80%" }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F2044" }}>
@@ -1324,9 +1352,10 @@ export default function SupervisorEventDetail() {
                     </View>
                   ))
               )}
-            </ScrollView>
+                          </ScrollView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

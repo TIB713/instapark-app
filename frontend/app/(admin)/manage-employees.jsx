@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  BackHandler,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -65,6 +66,16 @@ export default function ManageEmployees() {
   const [drvBankAccount, setDrvBankAccount] = useState("");
   const [drvBankIfsc, setDrvBankIfsc] = useState("");
   const [savingDrv, setSavingDrv] = useState(false);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showSupModal) { resetSupForm(); setShowSupModal(false); return true; }
+      if (showDrvModal) { resetDrvForm(); setShowDrvModal(false); return true; }
+      router.back(); return true;
+    };
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => backHandler.remove();
+  }, [showSupModal, showDrvModal]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -157,6 +168,14 @@ export default function ManageEmployees() {
       Alert.alert("Required", "Name, email and password are required");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
+    if (supPhone.trim() && !/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) {
+      Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
+      return;
+    }
     setSavingSup(true);
     try {
       let photoUrl;
@@ -200,6 +219,10 @@ export default function ManageEmployees() {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) {
       Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
+    if (drvPhone.trim() && !/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) {
+      Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
       return;
     }
     setSavingDrv(true);
@@ -405,8 +428,8 @@ export default function ManageEmployees() {
 
       {/* Supervisor Modal */}
       <Modal visible={showSupModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
@@ -429,7 +452,15 @@ export default function ManageEmployees() {
                 }} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Supervisor Photo (optional)</Text>
                   {supPhotoUri ? (
-                    <Image source={{ uri: supPhotoUri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(40), borderWidth: rp(2), borderColor: "#7C3AED" }} />
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: supPhotoUri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(40), borderWidth: rp(2), borderColor: "#7C3AED" }} />
+                      <TouchableOpacity 
+                        onPress={() => { setSupPhotoUri(null); setSupPhoto(null); }} 
+                        style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <View style={{ width: rp(80), height: rp(80), borderRadius: rp(40), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="person" size={32} color="#9CA3AF" />
@@ -460,14 +491,14 @@ export default function ManageEmployees() {
                 </TouchableOpacity>
               </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Driver Modal */}
       <Modal visible={showDrvModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
@@ -476,7 +507,15 @@ export default function ManageEmployees() {
                 <TouchableOpacity onPress={pickDriverPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Driver Photo (optional)</Text>
                   {drvPhotoUri ? (
-                    <Image source={{ uri: drvPhotoUri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(40), borderWidth: rp(2), borderColor: "#059669" }} />
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: drvPhotoUri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(40), borderWidth: rp(2), borderColor: "#059669" }} />
+                      <TouchableOpacity 
+                        onPress={() => { setDrvPhotoUri(null); setDrvPhoto(null); }} 
+                        style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <View style={{ width: rp(80), height: rp(80), borderRadius: rp(40), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="person" size={32} color="#9CA3AF" />
@@ -504,7 +543,15 @@ export default function ManageEmployees() {
                 <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo (optional)</Text>
                   {drvLicensePhotoUri ? (
-                    <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                      <TouchableOpacity 
+                        onPress={() => { setDrvLicensePhotoUri(null); setDrvLicensePhoto(null); }} 
+                        style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
@@ -520,8 +567,8 @@ export default function ManageEmployees() {
                 </TouchableOpacity>
               </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

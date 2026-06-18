@@ -14,6 +14,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Share,
+  BackHandler,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -41,15 +42,28 @@ const cardBase = {
 
 export default function HotelDetail() {
   const router = useRouter();
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showCreateDriverModal) { setShowCreateDriverModal(false); return true; }
+      if (showCreateSupervisorModal) { setShowCreateSupervisorModal(false); return true; }
+      if (showAddEventModal) { setShowAddEventModal(false); return true; }
+      if (showEventQRModal) { setShowEventQRModal(false); return true; }
+      router.back(); return true;
+    };
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => backHandler.remove();
+  }, [showCreateDriverModal, showCreateSupervisorModal, showAddEventModal, showEventQRModal]);
+
   const { hid } = useLocalSearchParams();
   const { setCurrentEventId } = useAppStore();
-  
+
   const [hotel, setHotel] = useState(null);
   const [tab, setTab] = useState("today");
   const [teamTab, setTeamTab] = useState("drivers");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Events state
   const [allEvents, setAllEvents] = useState([]);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
@@ -325,7 +339,7 @@ export default function HotelDetail() {
         key_hook_end: parseInt(newEventKeyHookEnd) || 100,
         key_hooks:
           (parseInt(newEventKeyHookEnd) || 100) -
-            (parseInt(newEventKeyHookStart) || 51) +
+          (parseInt(newEventKeyHookStart) || 51) +
           1,
         zones: newEventZones.map((z) => ({
           name: z.name,
@@ -348,8 +362,8 @@ export default function HotelDetail() {
       const message = Array.isArray(detail)
         ? detail.map((d) => d.msg || JSON.stringify(d)).join(", ")
         : typeof detail === "string"
-        ? detail
-        : "Failed to create special event";
+          ? detail
+          : "Failed to create special event";
       Alert.alert("Error", message);
     } finally {
       setSavingEvent(false);
@@ -384,7 +398,7 @@ export default function HotelDetail() {
             style={{
               backgroundColor: ACCENT_COLOR,
               borderBottomLeftRadius: rp(44),
-                  borderBottomRightRadius: rp(44),
+              borderBottomRightRadius: rp(44),
               paddingHorizontal: rp(20),
               paddingTop: rp(8),
               paddingBottom: rp(24),
@@ -529,9 +543,9 @@ export default function HotelDetail() {
                     </View>
                     <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
                   </View>
-                  
+
                   <View style={{ height: rp(1), backgroundColor: "#F3F4F6", marginVertical: rp(16) }} />
-                  
+
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <View>
                       <Text style={{ color: "#9CA3AF", fontSize: rs(11), fontWeight: "700" }}>TOTAL CARS</Text>
@@ -714,7 +728,7 @@ export default function HotelDetail() {
               <InfoField label="PHONE" value={editHotel?.contact_person_phone} onSave={(v) => updateHotel({ contact_person_phone: v })} />
               <InfoField label="EMAIL" value={editHotel?.contact_person_email} onSave={(v) => updateHotel({ contact_person_email: v })} />
               <InfoField label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ total_valet_slots: parseInt(v) })} />
-              
+
               <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>
                   <InfoField label="START HOURS" value={editHotel?.operating_hours_start} onSave={(v) => updateHotel({ operating_hours_start: v })} />
@@ -741,7 +755,7 @@ export default function HotelDetail() {
                           key_hook_end: parseInt(editKeyHookEnd) || 50,
                           key_hooks:
                             (parseInt(editKeyHookEnd) || 50) -
-                              (parseInt(editKeyHookStart) || 1) +
+                            (parseInt(editKeyHookStart) || 1) +
                             1,
                         })
                       }
@@ -760,7 +774,7 @@ export default function HotelDetail() {
                           key_hook_end: parseInt(editKeyHookEnd) || 50,
                           key_hooks:
                             (parseInt(editKeyHookEnd) || 50) -
-                              (parseInt(editKeyHookStart) || 1) +
+                            (parseInt(editKeyHookStart) || 1) +
                             1,
                         })
                       }
@@ -1146,7 +1160,7 @@ export default function HotelDetail() {
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
               <Text style={{ fontSize: rs(20), fontWeight: "900", color: ACCENT_COLOR, marginBottom: rp(20) }}>Add Special Event</Text>
-              
+
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={modalLabel}>EVENT NAME</Text>
                 <TextInput value={newEventName} onChangeText={setNewEventName} placeholder="Wedding Reception" style={modalTextInput} />

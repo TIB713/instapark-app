@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,6 +49,20 @@ const cardShadow = {
 
 export default function EventDetail() {
   const router = useRouter();
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showCarModal) { setShowCarModal(false); return true; }
+      if (showAddDriverModal) { setShowAddDriverModal(false); return true; }
+      if (showAddSupervisorModal) { setShowAddSupervisorModal(false); return true; }
+      if (showIncidentModal) { setShowIncidentModal(false); return true; }
+      if (showSpecialEventQRModal) { setShowSpecialEventQRModal(false); return true; }
+        router.back(); return true;
+    };
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => backHandler.remove();
+  }, [showCarModal, showAddDriverModal, showAddSupervisorModal, showIncidentModal, showSpecialEventQRModal]);
+
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
   const isClosed = event?.status === "closed";
@@ -88,6 +103,10 @@ export default function EventDetail() {
   const [supEmail, setSupEmail] = useState("");
   const [supPhone, setSupPhone] = useState("");
   const [supPassword, setSupPassword] = useState("");
+  const [supPanNumber, setSupPanNumber] = useState("");
+  const [supBankAccountNumber, setSupBankAccountNumber] = useState("");
+  const [supBankIfsc, setSupBankIfsc] = useState("");
+  const [supPhoto, setSupPhoto] = useState(null);
   const [savingSupervisor, setSavingSupervisor] = useState(false);
 
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
@@ -231,6 +250,18 @@ export default function EventDetail() {
     } finally {
       setSubmittingIncident(false);
     }
+  };
+
+  const pickSupPhoto = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Camera access required");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.75,
+    });
+    if (!result.canceled) setSupPhoto(result.assets[0].uri);
   };
 
   const pickIncidentPhoto = async () => {
@@ -593,6 +624,7 @@ export default function EventDetail() {
 
   const resetSupForm = () => {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
+    setSupPanNumber(""); setSupBankAccountNumber(""); setSupBankIfsc(""); setSupPhoto(null);
   };
 
   const saveSupervisor = async () => {
@@ -614,11 +646,26 @@ export default function EventDetail() {
     }
     setSavingSupervisor(true);
     try {
+      let uploadedPhotoUrl;
+      if (supPhoto) {
+        const formData = new FormData();
+        formData.append("file", { uri: supPhoto, type: "image/jpeg", name: "photo.jpg" });
+        formData.append("folder", "supervisors");
+        const up = await api.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        uploadedPhotoUrl = up.data.url;
+      }
+
       await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
         phone: phoneToSave || undefined,
         password: supPassword,
+        pan_number: supPanNumber.trim() || undefined,
+        bank_account_number: supBankAccountNumber.trim() || undefined,
+        bank_ifsc: supBankIfsc.trim().toUpperCase() || undefined,
+        supervisor_photo: uploadedPhotoUrl || undefined,
       });
       setShowAddSupervisorModal(false);
       resetSupForm();
@@ -1718,7 +1765,7 @@ export default function EventDetail() {
                       const zOcc = zSlots.filter(s => s.is_occupied).length;
                       return (
                         <TouchableOpacity
-                          key={z}
+                          key={typeof z === "object" ? JSON.stringify(z) : z}
                           onPress={() => setSelectedZone(z)}
                           style={{
                             backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
@@ -1726,11 +1773,13 @@ export default function EventDetail() {
                             paddingHorizontal: rp(16),
                             paddingVertical: rp(10),
                             marginRight: rp(10),
+                            borderWidth: selectedZone === z ? 0 : 1,
+                            borderColor: "#E5E7EB",
                             ...cardShadow,
                           }}
                         >
                           <Text style={{ fontWeight: "800", fontSize: rs(13), color: selectedZone === z ? "#fff" : "#111827" }}>
-                            Zone {z}
+                            {typeof z === "object" ? z.zone_name || z.name || z.label || JSON.stringify(z) : `Zone ${z}`}
                           </Text>
                           <Text style={{ fontSize: rs(11), color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: rp(2) }}>
                             {zOcc}/{zSlots.length} occupied
@@ -2094,103 +2143,106 @@ export default function EventDetail() {
       </Modal>
 
       <Modal visible={showCarModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
-            <View style={{ alignItems: "center", marginBottom: rp(12) }}>
-              <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+              <View style={{ alignItems: "center", marginBottom: rp(12) }}>
+                <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
+              </View>
+              <ScrollView>
+                {selectedCar && (
+                  <>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#7C3AED" }}>{selectedCar.plate}</Text>
+                        <Text style={{ color: "#6B7280", marginTop: rp(4) }}>{selectedCar.color} {selectedCar.make}</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(13), marginTop: rp(4) }}>
+                          {selectedCar.zone ? `Zone ${selectedCar.zone} · Slot ${selectedCar.slot}` : "Not parked"}
+                        </Text>
+                      </View>
+                      <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
+                        <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(11) }}>
+                          {STATUS_CONFIG[selectedCar.status]?.label}
+                        </Text>
+                      </View>
+                    </View>
+                    {selectedCar.notes ? (
+                      <Text style={{ color: "#6B7280", marginTop: rp(12), fontStyle: "italic" }}>"{selectedCar.notes}"</Text>
+                    ) : null}
+
+                    <Text style={[modalLabel, { marginTop: rp(16) }]}>CHECK-IN PHOTOS</Text>
+                    {carPhotos.filter((p) => p.type === "checkin").length === 0 ? (
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}>No photos available</Text>
+                    ) : (
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
+                        {carPhotos.filter((p) => p.type === "checkin").map((p, i) => (
+                          <Image key={i} source={{ uri: p.url }} style={{ width: rp(120), height: rp(120), borderRadius: rp(14) }} />
+                        ))}
+                      </ScrollView>
+                    )}
+
+                    {carPhotos.find((p) => p.type === "handover") && (
+                      <>
+                        <Text style={[modalLabel, { marginTop: rp(16) }]}>HANDOVER PHOTO</Text>
+                        <Image
+                          source={{ uri: carPhotos.find((p) => p.type === "handover").url }}
+                          style={{ width: "100%", height: rp(200), borderRadius: rp(14) }}
+                        />
+                      </>
+                    )}
+
+                    <TouchableOpacity 
+                      onPress={() => { 
+                        setShowCarModal(false); 
+                        router.push({ 
+                          pathname: "/(admin)/car-log", 
+                          params: { car_id: selectedCar.id } 
+                        }); 
+                      }} 
+                      style={{ backgroundColor: "#111827", borderRadius: rp(16), 
+                      paddingVertical: rp(14), alignItems: "center", 
+                      marginTop: rp(20), flexDirection: "row", 
+                      justifyContent: "center" }} 
+                    > 
+                      <Ionicons name="time-outline" size={18} color="#fff" /> 
+                      <Text style={{ color: "#fff", fontWeight: "900", 
+                      letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text> 
+                    </TouchableOpacity> 
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowCarModal(false);
+                        router.push({ pathname: "/(admin)/qr-display", params: { token: selectedCar.qr_token, plate: selectedCar.plate } });
+                      }}
+                      style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20) }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>VIEW QR</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => removeCar(selectedCar)}
+                      style={{ borderWidth: rp(1.5), borderColor: "#F43F5E", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(8), marginBottom: rp(16) }}
+                    >
+                      <Text style={{ color: "#F43F5E", fontWeight: "900", letterSpacing: rs(2) }}>REMOVE VEHICLE</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
+                      <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </ScrollView>
             </View>
-            <ScrollView>
-              {selectedCar && (
-                <>
-                  <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#7C3AED" }}>{selectedCar.plate}</Text>
-                      <Text style={{ color: "#6B7280", marginTop: rp(4) }}>{selectedCar.color} {selectedCar.make}</Text>
-                      <Text style={{ color: "#9CA3AF", fontSize: rs(13), marginTop: rp(4) }}>
-                        {selectedCar.zone ? `Zone ${selectedCar.zone} · Slot ${selectedCar.slot}` : "Not parked"}
-                      </Text>
-                    </View>
-                    <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
-                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(11) }}>
-                        {STATUS_CONFIG[selectedCar.status]?.label}
-                      </Text>
-                    </View>
-                  </View>
-                  {selectedCar.notes ? (
-                    <Text style={{ color: "#6B7280", marginTop: rp(12), fontStyle: "italic" }}>"{selectedCar.notes}"</Text>
-                  ) : null}
-
-                  <Text style={[modalLabel, { marginTop: rp(16) }]}>CHECK-IN PHOTOS</Text>
-                  {carPhotos.filter((p) => p.type === "checkin").length === 0 ? (
-                    <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}>No photos available</Text>
-                  ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
-                      {carPhotos.filter((p) => p.type === "checkin").map((p, i) => (
-                        <Image key={i} source={{ uri: p.url }} style={{ width: rp(120), height: rp(120), borderRadius: rp(14) }} />
-                      ))}
-                    </ScrollView>
-                  )}
-
-                  {carPhotos.find((p) => p.type === "handover") && (
-                    <>
-                      <Text style={[modalLabel, { marginTop: rp(16) }]}>HANDOVER PHOTO</Text>
-                      <Image
-                        source={{ uri: carPhotos.find((p) => p.type === "handover").url }}
-                        style={{ width: "100%", height: rp(200), borderRadius: rp(14) }}
-                      />
-                    </>
-                  )}
-
-                  <TouchableOpacity 
-                    onPress={() => { 
-                      setShowCarModal(false); 
-                      router.push({ 
-                        pathname: "/(admin)/car-log", 
-                        params: { car_id: selectedCar.id } 
-                      }); 
-                    }} 
-                    style={{ backgroundColor: "#111827", borderRadius: rp(16), 
-                    paddingVertical: rp(14), alignItems: "center", 
-                    marginTop: rp(20), flexDirection: "row", 
-                    justifyContent: "center" }} 
-                  > 
-                    <Ionicons name="time-outline" size={18} color="#fff" /> 
-                    <Text style={{ color: "#fff", fontWeight: "900", 
-                    letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text> 
-                  </TouchableOpacity> 
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowCarModal(false);
-                      router.push({ pathname: "/(admin)/qr-display", params: { token: selectedCar.qr_token, plate: selectedCar.plate } });
-                    }}
-                    style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20) }}
-                  >
-                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>VIEW QR</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => removeCar(selectedCar)}
-                    style={{ borderWidth: rp(1.5), borderColor: "#F43F5E", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(8), marginBottom: rp(16) }}
-                  >
-                    <Text style={{ color: "#F43F5E", fontWeight: "900", letterSpacing: rs(2) }}>REMOVE VEHICLE</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
-                    <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showAddSupervisorModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20) }}>
-              <View style={{ alignItems: "center", marginBottom: rp(14) }}>
-                <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
-              </View>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
+              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+                <View style={{ alignItems: "center", marginBottom: rp(14) }}>
+                  <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
+                </View>
               <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#0F2044", marginBottom: rp(20) }}>Add Supervisor</Text>
 
               <Text style={modalLabel}>NAME</Text>
@@ -2204,6 +2256,28 @@ export default function EventDetail() {
 
               <Text style={modalLabel}>PASSWORD</Text>
               <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
+
+              <Text style={modalLabel}>PAN NUMBER (OPTIONAL)</Text>
+              <TextInput value={supPanNumber} onChangeText={setSupPanNumber} placeholder="ABCDE1234F" autoCapitalize="characters" style={modalInput} />
+
+              <Text style={modalLabel}>BANK ACCOUNT NUMBER (OPTIONAL)</Text>
+              <TextInput value={supBankAccountNumber} onChangeText={setSupBankAccountNumber} placeholder="Account Number" keyboardType="numeric" style={modalInput} />
+
+              <Text style={modalLabel}>BANK IFSC (OPTIONAL)</Text>
+              <TextInput value={supBankIfsc} onChangeText={setSupBankIfsc} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+
+              <Text style={modalLabel}>SUPERVISOR PHOTO (OPTIONAL)</Text>
+              <TouchableOpacity onPress={pickSupPhoto} style={{ flexDirection: "row", alignItems: "center", gap: rp(8), paddingVertical: rp(12), paddingHorizontal: rp(16), backgroundColor: "#F3F4F6", borderRadius: rp(12), marginBottom: rp(8) }}>
+                <Ionicons name="camera" size={20} color="#6B7280" />
+                <Text style={{ color: "#4B5563", fontSize: rs(13), fontWeight: "600", flex: 1 }}>
+                  {supPhoto ? "Photo Added ✓" : "Take Photo"}
+                </Text>
+                {supPhoto && (
+                  <TouchableOpacity onPress={() => setSupPhoto(null)} style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}>
+                    <Ionicons name="close-circle" size={24} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={saveSupervisor}
@@ -2222,15 +2296,16 @@ export default function EventDetail() {
               >
                 <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
               </TouchableOpacity>
+                            </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Driver Modal */}
       <Modal visible={showAddDriverModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(14) }}>
@@ -2293,10 +2368,10 @@ export default function EventDetail() {
                 >
                   <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
                 </TouchableOpacity>
-              </ScrollView>
+                            </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal 
@@ -2304,11 +2379,8 @@ export default function EventDetail() {
         animationType="slide" 
         transparent 
       > 
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", 
-        justifyContent: "flex-end" }}> 
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"} 
-          > 
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}> 
             <View style={{ backgroundColor: "#fff", 
             borderTopLeftRadius: 36, borderTopRightRadius: 36, 
             padding: rp(20), maxHeight: "92%" }}> 
@@ -2349,88 +2421,86 @@ export default function EventDetail() {
                 color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) }}> 
                   SELECT CAR * 
                 </Text> 
-                <View style={{ backgroundColor: "#F9FAFB", 
-                borderRadius: rp(14), borderWidth: rp(1), 
-                borderColor: "#E5E7EB", flexDirection: "row", 
-                alignItems: "center", paddingHorizontal: rp(12), 
-                marginBottom: rp(6) }}> 
-                  <Ionicons name="search" size={16} color="#7C3AED" /> 
-                  <TextInput 
-                    value={incidentCarSearch} 
-                    onChangeText={setIncidentCarSearch} 
-                    placeholder="Search plate number..." 
-                    placeholderTextColor="#9CA3AF" 
-                    autoCapitalize="characters" 
-                    style={{ flex: 1, paddingVertical: rp(13), 
-                    paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} 
-                  /> 
-                  {incidentCar && ( 
-                    <TouchableOpacity onPress={() => { 
-                      setIncidentCar(null); 
-                      setIncidentCarSearch(""); 
-                    }}> 
-                      <Ionicons name="close-circle" size={18} 
-                      color="#D1D5DB" /> 
-                    </TouchableOpacity> 
-                  )} 
-                </View> 
-      
-                {incidentCarSearch.length > 1 && !incidentCar && ( 
-                  <View style={{ backgroundColor: "#fff", 
-                  borderRadius: rp(14), borderWidth: rp(1), 
-                  borderColor: "#E5E7EB", marginBottom: rp(12), 
-                  overflow: "hidden" }}> 
-                    {cars 
-                      .filter(c => 
-                        c.plate.toLowerCase().includes( 
-                          incidentCarSearch.toLowerCase() 
-                        ) 
-                      ) 
-                      .slice(0, 5) 
-                      .map(c => ( 
-                        <TouchableOpacity 
-                          key={c.id} 
-                          onPress={() => { 
-                            setIncidentCar(c); 
-                            setIncidentCarSearch(c.plate); 
-                          }} 
-                          style={{ padding: rp(14), borderBottomWidth: rp(1), 
-                          borderBottomColor: "#F3F4F6", 
-                          flexDirection: "row", 
-                          alignItems: "center" }} 
-                        > 
-                          <View style={{ backgroundColor: "#F3F4F6", 
-                          borderRadius: rp(8), padding: rp(6), 
-                          marginRight: rp(10) }}> 
-                            <Ionicons name="car-outline" size={16} 
-                            color="#374151" /> 
-                          </View> 
-                          <View> 
-                            <Text style={{ fontWeight: "900", 
-                            color: "#111827" }}>{c.plate}</Text> 
-                            <Text style={{ color: "#6B7280", 
-                            fontSize: rs(12) }}> 
-                              {c.color} {c.make} 
+                {!incidentCar ? (
+                  <>
+                    <View style={{ backgroundColor: "#F9FAFB", 
+                    borderRadius: rp(14), borderWidth: rp(1), 
+                    borderColor: "#E5E7EB", flexDirection: "row", 
+                    alignItems: "center", paddingHorizontal: rp(12), 
+                    marginBottom: rp(6) }}> 
+                      <Ionicons name="search" size={16} color="#7C3AED" /> 
+                      <TextInput 
+                        value={incidentCarSearch} 
+                        onChangeText={setIncidentCarSearch} 
+                        placeholder="Search plate number..." 
+                        placeholderTextColor="#9CA3AF" 
+                        autoCapitalize="characters" 
+                        style={{ flex: 1, paddingVertical: rp(13), 
+                        paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} 
+                      /> 
+                      {incidentCarSearch.length > 0 && ( 
+                        <TouchableOpacity onPress={() => setIncidentCarSearch("")}> 
+                          <Ionicons name="close-circle" size={18} color="#D1D5DB" /> 
+                        </TouchableOpacity> 
+                      )} 
+                    </View> 
+          
+                    {incidentCarSearch.length > 1 && ( 
+                      <View style={{ backgroundColor: "#fff", 
+                      borderRadius: rp(14), borderWidth: rp(1), 
+                      borderColor: "#E5E7EB", marginBottom: rp(12), 
+                      overflow: "hidden" }}> 
+                        {cars 
+                          .filter(c => 
+                            c.plate.toLowerCase().includes( 
+                              incidentCarSearch.toLowerCase() 
+                            ) 
+                          ) 
+                          .slice(0, 5) 
+                          .map(c => ( 
+                            <TouchableOpacity 
+                              key={c.id} 
+                              onPress={() => { 
+                                setIncidentCar(c); 
+                                setIncidentCarSearch(c.plate); 
+                              }} 
+                              style={{ padding: rp(14), borderBottomWidth: rp(1), 
+                              borderBottomColor: "#F3F4F6", 
+                              flexDirection: "row", 
+                              alignItems: "center" }} 
+                            > 
+                              <View style={{ backgroundColor: "#F3F4F6", 
+                              borderRadius: rp(8), padding: rp(6), 
+                              marginRight: rp(10) }}> 
+                                <Ionicons name="car-outline" size={16} 
+                                color="#374151" /> 
+                              </View> 
+                              <View> 
+                                <Text style={{ fontWeight: "900", 
+                                color: "#111827" }}>{c.plate}</Text> 
+                                <Text style={{ color: "#6B7280", 
+                                fontSize: rs(12) }}> 
+                                  {c.color} {c.make} 
+                                </Text> 
+                              </View> 
+                            </TouchableOpacity> 
+                          )) 
+                        } 
+                        {cars.filter(c => 
+                          c.plate.toLowerCase().includes( 
+                            incidentCarSearch.toLowerCase() 
+                          ) 
+                        ).length === 0 && ( 
+                          <View style={{ padding: rp(16), alignItems: "center" }}> 
+                            <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}> 
+                              No cars found 
                             </Text> 
                           </View> 
-                        </TouchableOpacity> 
-                      )) 
-                    } 
-                    {cars.filter(c => 
-                      c.plate.toLowerCase().includes( 
-                        incidentCarSearch.toLowerCase() 
-                      ) 
-                    ).length === 0 && ( 
-                      <View style={{ padding: rp(16), alignItems: "center" }}> 
-                        <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}> 
-                          No cars found 
-                        </Text> 
+                        )} 
                       </View> 
                     )} 
-                  </View> 
-                )} 
-      
-                {incidentCar && ( 
+                  </>
+                ) : ( 
                   <View style={{ backgroundColor: "#D1FAE5", 
                   borderRadius: rp(12), padding: rp(12), marginBottom: rp(16), 
                   flexDirection: "row", alignItems: "center" }}> 
@@ -2438,11 +2508,13 @@ export default function EventDetail() {
                     color="#059669" /> 
                     <Text style={{ color: "#059669", fontWeight: "800", 
                     marginLeft: rp(8), flex: 1 }}> 
-                      {incidentCar.plate} · {incidentCar.color}{" "} 
-                      {incidentCar.make} 
+                      {incidentCar.plate} · {incidentCar.color} {incidentCar.make} 
                     </Text> 
+                    <TouchableOpacity onPress={() => { setIncidentCar(null); setIncidentCarSearch(""); }}>
+                      <Ionicons name="close-circle" size={20} color="#059669" />
+                    </TouchableOpacity>
                   </View> 
-                )} 
+                )}
       
                 {/* Driver select */} 
                 <Text style={{ fontSize: rs(11), fontWeight: "800", 
@@ -2532,16 +2604,12 @@ export default function EventDetail() {
                       ? "Photo Added ✓ (tap to retake)" 
                       : "Add Photo (Optional)"} 
                   </Text> 
+                  {incidentPhoto && (
+                    <TouchableOpacity onPress={() => setIncidentPhoto(null)} style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}>
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
                 </TouchableOpacity> 
-                {incidentPhoto && (
-                  <TouchableOpacity
-                    onPress={() => setIncidentPhoto(null)}
-                    style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: rp(6), marginBottom: rp(8) }}
-                  >
-                    <Ionicons name="close-circle" size={14} color="#EF4444" />
-                    <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600" }}>Remove Photo</Text>
-                  </TouchableOpacity>
-                )}
       
                 {/* Submit */} 
                 <TouchableOpacity 
@@ -2569,8 +2637,8 @@ export default function EventDetail() {
       
               </ScrollView> 
             </View> 
-          </KeyboardAvoidingView> 
-        </View> 
+          </View> 
+        </KeyboardAvoidingView> 
       </Modal> 
     </View> 
   ); 

@@ -123,6 +123,14 @@ export default function Hotels() {
       Alert.alert("Required Fields", "Please fill all required fields including operating hours");
       return;
     }
+    if (!/^\d{10}$/.test(contactPhone.trim().replace(/\D/g, ""))) {
+      Alert.alert("Invalid Phone", "Please enter a valid 10-digit contact phone number");
+      return;
+    }
+    if (contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid contact email address");
+      return;
+    }
 
     setSaving(true);
     try {

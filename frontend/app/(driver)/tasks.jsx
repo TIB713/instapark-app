@@ -17,6 +17,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  BackHandler,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -69,6 +71,16 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 
 export default function Tasks() {
   const router = useRouter();
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showSOSModal) { setShowSOSModal(false); return true; }
+      if (showParkModal) { setShowParkModal(false); return true; }
+      router.back(); return true;
+    };
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => backHandler.remove();
+  }, [showSOSModal, showParkModal]);
   const { driver, currentEventId } = useAppStore();
   const resolvedDriverId = driver?.id;
   const [tab, setTab] = useState("mycars");
@@ -1082,173 +1094,191 @@ export default function Tasks() {
       </ScrollView>
 
       <Modal visible={showParkModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
-            <View style={{ alignItems: "center", marginBottom: rp(12) }}>
-              <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
-            </View>
-            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}>PARK VEHICLE</Text>
-            <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(2) }}>{selectedCar?.plate}</Text>
-            {eventZones.length === 0 ? (
-              <View style={{ alignItems: "center", paddingVertical: rp(40) }}>
-                <Ionicons name="map-outline" size={64} color="#9CA3AF" />
-                <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(12) }}>No Parking Zones Configured</Text>
-                <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>Please ask your admin to set up zones</Text>
-              </View>
-            ) : !slots.length ? (
-              <View style={{ alignItems: "center", padding: rp(32) }}>
-                <ActivityIndicator size="large" color="#059669" />
-                <Text style={{ color: "#6B7280", marginTop: rp(8) }}>Loading parking slots...</Text>
-              </View>
-            ) : (
-              <>
-                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(18), marginBottom: rp(8) }}>SELECT ZONE</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }}>
-                  {eventZones.map((z) => {
-                    const zoneSlots = slots.filter((s) => s.zone_name === z.name);
-                    const free = zoneSlots.filter((s) => !s.is_occupied).length;
-                    const isFull = zoneSlots.length > 0 && free === 0;
-                    return (
-                      <TouchableOpacity
-                        key={z.name}
-                        onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
-                        style={{
-                          paddingHorizontal: rp(14),
-                          paddingVertical: rp(10),
-                          borderRadius: rp(99),
-                          backgroundColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#fff",
-                          borderWidth: rp(1),
-                          borderColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#E5E7EB",
-                        }}
-                      >
-                        <Text style={{ fontSize: rs(12), fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: rs(0.5) }}>
-                          {z.name} — {isFull ? "FULL" : `${free} free`}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>SELECT SLOT</Text>
-                <FlatList
-                  data={slots.filter((s) => s.zone_name === selectedZone)}
-                  numColumns={5}
-                  keyExtractor={(item, idx) => `${item.zone_name}-${item.slot_number}-${idx}`}
-                  columnWrapperStyle={{ gap: rp(6), marginBottom: rp(6) }}
-                  renderItem={({ item }) => {
-                    const isSel = selectedSlot === item.slot_number;
-                    let bg = "#D1FAE5";
-                    if (item.is_occupied) bg = "#FECACA";
-                    else if (isSel) bg = "#7C3AED";
-                    return (
-                      <TouchableOpacity
-                        disabled={item.is_occupied}
-                        onPress={() => setSelectedSlot(item.slot_number)}
-                        style={{
-                          width: rp(56),
-                          height: rp(56),
-                          borderRadius: rp(14),
-                          backgroundColor: bg,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {item.is_occupied ? (
-                          <Ionicons name="close" size={18} color="#991B1B" />
-                        ) : (
-                          <Text style={{ fontWeight: "900", color: isSel ? "#fff" : "#065F46" }}>
-                            {item.slot_number}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  }}
-                  ListEmptyComponent={<Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>No slots in this zone</Text>}
-                  style={{ maxHeight: rp(280) }}
-                />
-                {/* Parking Photos */}
-                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>
-                  PARKING PHOTOS * (MIN 1, MAX 5)
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingTop: rp(20) }}>
+  {/* Fixed Header */}
+  <View style={{ paddingHorizontal: rp(20) }}>
+    <View style={{ alignItems: "center", marginBottom: rp(12) }}>
+      <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
+    </View>
+    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}>PARK VEHICLE</Text>
+    <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(2) }}>{selectedCar?.plate}</Text>
+  </View>
+
+  {eventZones.length === 0 ? (
+    <View style={{ alignItems: "center", paddingVertical: rp(40) }}>
+      <Ionicons name="map-outline" size={64} color="#9CA3AF" />
+      <Text style={{ color: "#111827", fontWeight: "800", marginTop: rp(12) }}>No Parking Zones Configured</Text>
+      <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>Please ask your admin to set up zones</Text>
+    </View>
+  ) : !slots.length ? (
+    <View style={{ alignItems: "center", padding: rp(32) }}>
+      <ActivityIndicator size="large" color="#059669" />
+      <Text style={{ color: "#6B7280", marginTop: rp(8) }}>Loading parking slots...</Text>
+    </View>
+  ) : (
+    <>
+      {/* Zone Selector - Fixed */}
+      <View style={{ paddingHorizontal: rp(20) }}>
+        <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(18), marginBottom: rp(8) }}>SELECT ZONE</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }}>
+          {eventZones.map((z) => {
+            const zoneSlots = slots.filter((s) => s.zone_name === z.name);
+            const free = zoneSlots.filter((s) => !s.is_occupied).length;
+            const isFull = zoneSlots.length > 0 && free === 0;
+            return (
+              <TouchableOpacity
+                key={z.name}
+                onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
+                style={{
+                  paddingHorizontal: rp(14),
+                  paddingVertical: rp(10),
+                  borderRadius: rp(99),
+                  backgroundColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#fff",
+                  borderWidth: rp(1),
+                  borderColor: isFull ? "#F43F5E" : selectedZone === z.name ? "#7C3AED" : "#E5E7EB",
+                }}
+              >
+                <Text style={{ fontSize: rs(12), fontWeight: "800", color: isFull || selectedZone === z.name ? "#fff" : "#374151", letterSpacing: rs(0.5) }}>
+                  {z.name} — {isFull ? "FULL" : `${free} free`}
                 </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(10), marginBottom: rp(14) }}>
-                  {parkPhotos.map((uri, i) => (
-                    <View key={i} style={{ position: "relative" }}>
-                      <Image source={{ uri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderColor: "#E5E7EB" }} />
-                      <TouchableOpacity
-                        onPress={() => setParkPhotos(parkPhotos.filter((_, k) => k !== i))}
-                        style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: rp(99), width: rp(22), height: rp(22), alignItems: "center", justifyContent: "center" }}
-                      >
-                        <Ionicons name="close" size={13} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-
-                  {parkPhotos.length < 5 && (
-                    <TouchableOpacity
-                      onPress={takeParkPhoto}
-                      style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderStyle: "dashed", borderColor: "#7C3AED", backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}
-                    >
-                      <Ionicons name="camera-outline" size={26} color="#7C3AED" />
-                      <Text style={{ color: "#7C3AED", fontSize: rs(10), fontWeight: "800", marginTop: rp(4) }}>{parkPhotos.length === 0 ? "ADD" : "MORE"}</Text>
-                    </TouchableOpacity>
-                  )}
-                </ScrollView>
-
-                <TouchableOpacity
-                  onPress={captureGPSPin}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    backgroundColor: capturedGPS ? "#DCFCE7" : "#F3F4F6",
-                    borderRadius: 8,
-                    padding: 10,
-                    marginBottom: 12,
-                  }}
-                >
-                  {capturingGPS
-                    ? <ActivityIndicator size="small" color="#059669" />
-                    : <Ionicons name={capturedGPS ? "location" : "location-outline"} size={18} color={capturedGPS ? "#059669" : "#6B7280"} />
-                  }
-                  <Text style={{ color: capturedGPS ? "#059669" : "#6B7280", fontSize: 14 }}>
-                    {capturedGPS
-                      ? `GPS Saved ✓ (${capturedGPS.lat.toFixed(5)}, ${capturedGPS.lng.toFixed(5)})`
-                      : "Save GPS Pin (Open Ground Only)"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={confirmPark}
-                  disabled={!selectedSlot || confirmingPark}
-                  activeOpacity={0.7}
-                  style={{
-                    borderRadius: rp(16),
-                    paddingVertical: rp(16),
-                    alignItems: "center",
-                    marginTop: rp(14),
-                    backgroundColor: selectedSlot && !confirmingPark ? "#7C3AED" : "#D1D5DB",
-                  }}
-                >
-                  {confirmingPark ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>CONFIRM PARKING</Text>
-                  )}
-                </TouchableOpacity>
-              </>
+      {/* Slot Grid - Fixed height with its own scroll */}
+      <View style={{ paddingHorizontal: rp(20) }}>
+        <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>SELECT SLOT</Text>
+        <ScrollView
+          style={{ maxHeight: rp(200) }}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+        >
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6), marginBottom: rp(6) }}>
+            {slots.filter((s) => s.zone_name === selectedZone).length === 0 ? (
+              <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24), width: "100%" }}>No slots in this zone</Text>
+            ) : (
+              slots.filter((s) => s.zone_name === selectedZone).map((item, idx) => {
+                const isSel = selectedSlot === item.slot_number;
+                let bg = "#D1FAE5";
+                if (item.is_occupied) bg = "#FECACA";
+                else if (isSel) bg = "#7C3AED";
+                return (
+                  <TouchableOpacity
+                    key={`${item.zone_name}-${item.slot_number}-${idx}`}
+                    disabled={item.is_occupied}
+                    onPress={() => setSelectedSlot(item.slot_number)}
+                    style={{
+                      width: rp(56),
+                      height: rp(56),
+                      borderRadius: rp(14),
+                      backgroundColor: bg,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {item.is_occupied ? (
+                      <Ionicons name="close" size={18} color="#991B1B" />
+                    ) : (
+                      <Text style={{ fontWeight: "900", color: isSel ? "#fff" : "#065F46" }}>
+                        {item.slot_number}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })
             )}
-            <TouchableOpacity
-              onPress={() => {
-                setShowParkModal(false);
-                setParkPhotos([]);
-                setParkingPhotoStep(false);
-                setKeyTag("");
-              }}
-              style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}
-            >
-              <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
+      </View>
+
+      {/* Bottom section - Photos, GPS, Confirm - scrollable */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingHorizontal: rp(20), paddingBottom: rp(32) }}
+      >
+        <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginTop: rp(14), marginBottom: rp(8) }}>
+          PARKING PHOTOS * (MIN 1, MAX 5)
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(10), marginBottom: rp(14) }}>
+          {parkPhotos.map((uri, i) => (
+            <View key={i} style={{ position: "relative" }}>
+              <Image source={{ uri }} style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderColor: "#E5E7EB" }} />
+              <TouchableOpacity
+                onPress={() => setParkPhotos(parkPhotos.filter((_, k) => k !== i))}
+                style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: rp(99), width: rp(22), height: rp(22), alignItems: "center", justifyContent: "center" }}
+              >
+                <Ionicons name="close" size={13} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {parkPhotos.length < 5 && (
+            <TouchableOpacity
+              onPress={takeParkPhoto}
+              style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderStyle: "dashed", borderColor: "#7C3AED", backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}
+            >
+              <Ionicons name="camera-outline" size={26} color="#7C3AED" />
+              <Text style={{ color: "#7C3AED", fontSize: rs(10), fontWeight: "800", marginTop: rp(4) }}>{parkPhotos.length === 0 ? "ADD" : "MORE"}</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+        <TouchableOpacity
+          onPress={captureGPSPin}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            backgroundColor: capturedGPS ? "#DCFCE7" : "#F3F4F6",
+            borderRadius: 8,
+            padding: 10,
+            marginBottom: 12,
+          }}
+        >
+          {capturingGPS
+            ? <ActivityIndicator size="small" color="#059669" />
+            : <Ionicons name={capturedGPS ? "location" : "location-outline"} size={18} color={capturedGPS ? "#059669" : "#6B7280"} />
+          }
+          <Text style={{ color: capturedGPS ? "#059669" : "#6B7280", fontSize: 14 }}>
+            {capturedGPS
+              ? `GPS Saved ✓ (${capturedGPS.lat.toFixed(5)}, ${capturedGPS.lng.toFixed(5)})`
+              : "Save GPS Pin (Open Ground Only)"}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={confirmPark}
+          disabled={!selectedSlot || confirmingPark}
+          activeOpacity={0.7}
+          style={{
+            borderRadius: rp(16),
+            paddingVertical: rp(16),
+            alignItems: "center",
+            marginTop: rp(14),
+            backgroundColor: selectedSlot && !confirmingPark ? "#7C3AED" : "#D1D5DB",
+          }}
+        >
+          {confirmingPark ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>CONFIRM PARKING</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { setShowParkModal(false); setParkPhotos([]); setParkingPhotoStep(false); setKeyTag(""); }}
+          style={{ paddingVertical: rp(12), alignItems: "center", marginTop: rp(4) }}
+        >
+          <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </>
+  )}
+</View>
+
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showSOSModal} transparent animationType="slide">
@@ -1368,7 +1398,7 @@ export default function Tasks() {
 // import * as ImagePicker from "expo-image-picker";
 // import * as FileSystem from "expo-file-system";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
-// import NetInfo from "@react-native-community/netinfo";
+// import NetInfo from "@react-native-community/netinf✓;
 // import api from "../../lib/api";
 // import { useAppStore } from "../../lib/store";
 // import { connectWS, disconnectWS } from "../../lib/websocket";
@@ -1872,7 +1902,7 @@ export default function Tasks() {
 
 //       <Modal visible={showParkModal} transparent animationType="slide">
 //         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
+//         <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
 //             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
 //               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
 //             </View>
@@ -1995,7 +2025,7 @@ export default function Tasks() {
 // import * as ImagePicker from "expo-image-picker";
 // import * as FileSystem from "expo-file-system";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
-// import NetInfo from "@react-native-community/netinfo";
+// import NetInfo from "@react-native-community/netinf✓;
 // import api from "../../lib/api";
 // import { useAppStore } from "../../lib/store";
 // import { connectWS, disconnectWS } from "../../lib/websocket";
@@ -2515,7 +2545,7 @@ export default function Tasks() {
 
 //       <Modal visible={showParkModal} transparent animationType="slide">
 //         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-//           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
+//         <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
 //             <View style={{ alignItems: "center", marginBottom: rp(12) }}>
 //               <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
 //             </View>
