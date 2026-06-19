@@ -48,6 +48,7 @@ export default function ManageEmployees() {
   const [supPan, setSupPan] = useState("");
   const [supBankAccount, setSupBankAccount] = useState("");
   const [supBankIfsc, setSupBankIfsc] = useState("");
+  const [supAadharNumber, setSupAadharNumber] = useState("");
   const [supPhoto, setSupPhoto] = useState(null);
   const [supPhotoUri, setSupPhotoUri] = useState(null);
 
@@ -65,6 +66,8 @@ export default function ManageEmployees() {
   const [drvPan, setDrvPan] = useState("");
   const [drvBankAccount, setDrvBankAccount] = useState("");
   const [drvBankIfsc, setDrvBankIfsc] = useState("");
+  const [drvAadharNumber, setDrvAadharNumber] = useState("");
+  const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
   const [savingDrv, setSavingDrv] = useState(false);
 
   useEffect(() => {
@@ -102,7 +105,7 @@ export default function ManageEmployees() {
 
   const resetSupForm = () => {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
-    setSupPan(""); setSupBankAccount(""); setSupBankIfsc("");
+    setSupPan(""); setSupBankAccount(""); setSupBankIfsc(""); setSupAadharNumber("");
     setSupPhoto(null); setSupPhotoUri(null);
   };
 
@@ -119,6 +122,8 @@ export default function ManageEmployees() {
     setDrvPan("");
     setDrvBankAccount("");
     setDrvBankIfsc("");
+    setDrvAadharNumber("");
+    setDrvAadharPhotoUri(null);
   };
 
   const pickDriverPhoto = async () => {
@@ -150,6 +155,21 @@ export default function ManageEmployees() {
     if (!result.canceled) {
       setDrvLicensePhotoUri(result.assets[0].uri);
       setDrvLicensePhoto(result.assets[0].uri);
+    }
+  };
+
+  const pickAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setDrvAadharPhotoUri(result.assets[0].uri);
     }
   };
 
@@ -196,6 +216,7 @@ export default function ManageEmployees() {
         pan_number: supPan.trim() || undefined,
         bank_account_number: supBankAccount.trim() || undefined,
         bank_ifsc: supBankIfsc.trim() || undefined,
+        aadhar_number: supAadharNumber.trim() || undefined,
         supervisor_photo: photoUrl || undefined,
       });
       setShowSupModal(false);
@@ -235,6 +256,10 @@ export default function ManageEmployees() {
       if (drvLicensePhotoUri) {
         licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
       }
+      let aadharPhotoUrl;
+      if (drvAadharPhotoUri) {
+        aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
+      }
       await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
@@ -246,6 +271,8 @@ export default function ManageEmployees() {
         bank_ifsc: drvBankIfsc.trim() || undefined,
         driving_license_number: drvLicenseNumber.trim() || undefined,
         driving_license_photo: licensePhotoUrl || undefined,
+        aadhar_number: drvAadharNumber.trim() || undefined,
+        aadhar_photo: aadharPhotoUrl || undefined,
       });
       setShowDrvModal(false);
       resetDrvForm();
@@ -482,6 +509,8 @@ export default function ManageEmployees() {
                 <TextInput value={supBankAccount} onChangeText={setSupBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
                 <Text style={modalLabel}>BANK IFSC CODE (OPTIONAL)</Text>
                 <TextInput value={supBankIfsc} onChangeText={(v) => setSupBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+                <Text style={modalLabel}>AADHAR NUMBER (OPTIONAL)</Text>
+                <TextInput value={supAadharNumber} onChangeText={(v) => setSupAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
 
                 <TouchableOpacity onPress={saveSupervisor} disabled={savingSup} style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginTop: rp(8) }}>
                   {savingSup ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE SUPERVISOR</Text>}
@@ -547,6 +576,28 @@ export default function ManageEmployees() {
                       <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                       <TouchableOpacity 
                         onPress={() => { setDrvLicensePhotoUri(null); setDrvLicensePhoto(null); }} 
+                        style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                      <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={modalLabel}>AADHAR NUMBER (OPTIONAL)</Text>
+                <TextInput value={drvAadharNumber} onChangeText={(v) => setDrvAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+
+                <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo (optional)</Text>
+                  {drvAadharPhotoUri ? (
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                      <TouchableOpacity 
+                        onPress={() => { setDrvAadharPhotoUri(null); }} 
                         style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
                       >
                         <Ionicons name="close-circle" size={24} color="#EF4444" />

@@ -41,8 +41,7 @@ export default function Hotels() {
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
 
   useEffect(() => {
     if (action === "add_special") {
@@ -59,8 +58,7 @@ export default function Hotels() {
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
+
   const [zones, setZones] = useState([{ name: "A", slots: "" }]);
   const [gates, setGates] = useState(["Main Gate"]);
   const [keyHookStart, setKeyHookStart] = useState("1");
@@ -110,8 +108,7 @@ export default function Hotels() {
     setContactPhone("");
     setContactEmail("");
     setTotalSlots("");
-    setStartTime("09:00");
-    setEndTime("18:00");
+
     setZones([{ name: "A", slots: "" }]);
     setGates(["Main Gate"]);
     setKeyHookStart("1");
@@ -119,8 +116,8 @@ export default function Hotels() {
   };
 
   const saveHotel = async () => {
-    if (!name || !address || !city || !state || !contactName || !contactPhone || !totalSlots || !startTime || !endTime) {
-      Alert.alert("Required Fields", "Please fill all required fields including operating hours");
+    if (!name || !address || !city || !state || !contactName || !contactPhone || !totalSlots) {
+      Alert.alert("Required Fields", "Please fill all required fields");
       return;
     }
     if (!/^\d{10}$/.test(contactPhone.trim().replace(/\D/g, ""))) {
@@ -144,8 +141,7 @@ export default function Hotels() {
         contact_person_phone: contactPhone.trim(),
         contact_person_email: contactEmail.trim() || undefined,
         total_valet_slots: parseInt(totalSlots),
-        operating_hours_start: startTime,
-        operating_hours_end: endTime,
+
         provider_id: user?.provider_id,
         zones: zones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
         gates: gates.filter(g => g.trim()),
@@ -292,12 +288,6 @@ export default function Hotels() {
               </View>
 
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), gap: rp(10) }}>
-                <View style={{ backgroundColor: "#EFF6FF", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), flexDirection: "row", alignItems: "center" }}>
-                  <Ionicons name="time-outline" size={rs(12)} color={ACCENT_COLOR} />
-                  <Text style={{ color: ACCENT_COLOR, fontSize: rs(11), fontWeight: "700", marginLeft: rp(4) }}>
-                    {h.operating_hours_start} — {h.operating_hours_end}
-                  </Text>
-                </View>
                 <View style={{ backgroundColor: todayEvent?.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(99), flexDirection: "row", alignItems: "center" }}>
                   <View style={{ width: rp(6), height: rp(6), borderRadius: rp(3), backgroundColor: todayEvent?.status === "active" ? "#059669" : "#9CA3AF", marginRight: rp(6) }} />
                   <Text style={{ color: todayEvent?.status === "active" ? "#059669" : "#6B7280", fontSize: rs(11), fontWeight: "700" }}>
@@ -461,34 +451,7 @@ export default function Hotels() {
                 Drivers can only assign hook numbers {keyHookStart} to {keyHookEnd} for this hotel's daily events
               </Text>
 
-              <View style={{ flexDirection: "row", gap: rp(12) }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={modalLabel}>OPERATING HOURS START</Text>
-                  <TouchableOpacity
-                    style={modalInput}
-                    onPress={() => setShowStartTimePicker(true)}
-                  >
-                    <Ionicons name="time-outline" size={rs(20)} color="#7C3AED" />
-                    <Text style={{ color: startTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
-                      {startTime || "Select start time"}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={rs(16)} color="#9CA3AF" />
-                  </TouchableOpacity>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={modalLabel}>OPERATING HOURS END</Text>
-                  <TouchableOpacity
-                    style={modalInput}
-                    onPress={() => setShowEndTimePicker(true)}
-                  >
-                    <Ionicons name="time-outline" size={rs(20)} color="#7C3AED" />
-                    <Text style={{ color: endTime ? "#111827" : "#9CA3AF", flex: 1, marginLeft: rp(10) }}>
-                      {endTime || "Select end time"}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={rs(16)} color="#9CA3AF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
+
 
               {/* Gates Section */}
               <Text style={modalLabel}>GATES</Text>
@@ -592,28 +555,7 @@ export default function Hotels() {
           </KeyboardAvoidingView>
         </SafeAreaView>
 
-        {showStartTimePicker && (
-          <DateTimePicker
-            value={new Date(`2024-01-01T${startTime}:00`)}
-            mode="time"
-            is24Hour
-            onChange={(_, d) => {
-              setShowStartTimePicker(false);
-              if (d) setStartTime(fmtTime(d));
-            }}
-          />
-        )}
-        {showEndTimePicker && (
-          <DateTimePicker
-            value={new Date(`2024-01-01T${endTime}:00`)}
-            mode="time"
-            is24Hour
-            onChange={(_, d) => {
-              setShowEndTimePicker(false);
-              if (d) setEndTime(fmtTime(d));
-            }}
-          />
-        )}
+
       </Modal>
     </View>
   );

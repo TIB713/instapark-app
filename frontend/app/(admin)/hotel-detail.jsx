@@ -729,14 +729,7 @@ export default function HotelDetail() {
               <InfoField label="EMAIL" value={editHotel?.contact_person_email} onSave={(v) => updateHotel({ contact_person_email: v })} />
               <InfoField label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ total_valet_slots: parseInt(v) })} />
 
-              <View style={{ flexDirection: "row", gap: rp(12) }}>
-                <View style={{ flex: 1 }}>
-                  <InfoField label="START HOURS" value={editHotel?.operating_hours_start} onSave={(v) => updateHotel({ operating_hours_start: v })} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <InfoField label="END HOURS" value={editHotel?.operating_hours_end} onSave={(v) => updateHotel({ operating_hours_end: v })} />
-                </View>
-              </View>
+
 
               {/* Key Hook Range */}
               <View style={{ marginTop: rp(12) }}>

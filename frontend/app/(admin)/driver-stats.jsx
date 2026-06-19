@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as ImagePicker from "expo-image-picker";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -45,6 +46,8 @@ export default function DriverStats() {
   const [bankAccount, setBankAccount] = useState("");
   const [bankIfsc, setBankIfsc] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [aadharNumber, setAadharNumber] = useState("");
+  const [aadharPhoto, setAadharPhoto] = useState(null);
   const [events, setEvents] = useState([]);
   const [evtFilter, setEvtFilter] = useState("active");
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -66,6 +69,8 @@ export default function DriverStats() {
         setBankAccount(data.bank_account_number || "");
         setBankIfsc(data.bank_ifsc || "");
         setLicenseNumber(data.driving_license_number || "");
+        setAadharNumber(data.aadhar_number || "");
+        setAadharPhoto(data.aadhar_photo || null);
       } catch {}
     })();
   }, [driverId]);
@@ -108,11 +113,40 @@ export default function DriverStats() {
       if (bankAccount.trim()) body.bank_account_number = bankAccount.trim();
       if (bankIfsc.trim()) body.bank_ifsc = bankIfsc.trim();
       if (licenseNumber.trim()) body.driving_license_number = licenseNumber.trim();
+      if (aadharNumber.trim()) body.aadhar_number = aadharNumber.trim();
+      if (aadharPhoto) body.aadhar_photo = aadharPhoto;
       await api.patch(`/drivers/${driverId}`, body);
       Alert.alert("Updated", "Driver updated successfully");
       setPin("");
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Failed");
+    }
+  };
+
+  const pickAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      try {
+        const formData = new FormData();
+        formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+        formData.append("folder", "aadhar_photos");
+        const up = await api.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setAadharPhoto(up.data.url);
+        Alert.alert("Success", "Aadhar photo uploaded");
+      } catch (e) {
+        Alert.alert("Error", "Failed to upload photo");
+      }
     }
   };
 
@@ -398,6 +432,29 @@ export default function DriverStats() {
               <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
               <TextInput value={licenseNumber} onChangeText={setLicenseNumber} autoCapitalize="characters" placeholder="DL number" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
+            <Text style={miniLabel}>AADHAR NUMBER</Text>
+            <View style={miniInput}>
+              <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+              <TextInput value={aadharNumber} onChangeText={setAadharNumber} autoCapitalize="none" placeholder="Aadhar number" placeholderTextColor="#9CA3AF" style={miniInputText} />
+            </View>
+            <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16), marginTop: rp(8) }}>
+              <Text style={miniLabel}>AADHAR PHOTO</Text>
+              {aadharPhoto ? (
+                <View style={{ position: "relative", marginTop: rp(8) }}>
+                  <Image source={{ uri: aadharPhoto }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#7C3AED" }} />
+                  <TouchableOpacity 
+                    onPress={() => setAadharPhoto(null)} 
+                    style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.9)", borderRadius: rp(99), padding: rp(2) }}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
+                  <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                </View>
+              )}
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={saveDriver}
               style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(4) }}

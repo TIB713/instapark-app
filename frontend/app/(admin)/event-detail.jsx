@@ -106,6 +106,7 @@ export default function EventDetail() {
   const [supPanNumber, setSupPanNumber] = useState("");
   const [supBankAccountNumber, setSupBankAccountNumber] = useState("");
   const [supBankIfsc, setSupBankIfsc] = useState("");
+  const [supAadharNumber, setSupAadharNumber] = useState("");
   const [supPhoto, setSupPhoto] = useState(null);
   const [savingSupervisor, setSavingSupervisor] = useState(false);
 
@@ -122,6 +123,8 @@ export default function EventDetail() {
   const [drvPan, setDrvPan] = useState("");
   const [drvBankAccount, setDrvBankAccount] = useState("");
   const [drvBankIfsc, setDrvBankIfsc] = useState("");
+  const [drvAadharNumber, setDrvAadharNumber] = useState("");
+  const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
   const [savingDriver, setSavingDriver] = useState(false);
 
   const [employeeTab, setEmployeeTab] = useState("supervisors");
@@ -624,7 +627,7 @@ export default function EventDetail() {
 
   const resetSupForm = () => {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
-    setSupPanNumber(""); setSupBankAccountNumber(""); setSupBankIfsc(""); setSupPhoto(null);
+    setSupPanNumber(""); setSupBankAccountNumber(""); setSupBankIfsc(""); setSupAadharNumber(""); setSupPhoto(null);
   };
 
   const saveSupervisor = async () => {
@@ -691,6 +694,8 @@ export default function EventDetail() {
     setDrvPan("");
     setDrvBankAccount("");
     setDrvBankIfsc("");
+    setDrvAadharNumber("");
+    setDrvAadharPhotoUri(null);
   };
 
   const pickDriverPhoto = async () => {
@@ -722,6 +727,21 @@ export default function EventDetail() {
     if (!result.canceled) {
       setDrvLicensePhotoUri(result.assets[0].uri);
       setDrvLicensePhoto(result.assets[0].uri);
+    }
+  };
+
+  const pickAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setDrvAadharPhotoUri(result.assets[0].uri);
     }
   };
 
@@ -766,6 +786,10 @@ export default function EventDetail() {
       if (drvLicensePhotoUri) {
         licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
       }
+      let aadharPhotoUrl;
+      if (drvAadharPhotoUri) {
+        aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
+      }
       await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
@@ -777,6 +801,8 @@ export default function EventDetail() {
         bank_ifsc: drvBankIfsc.trim() || undefined,
         driving_license_number: drvLicenseNumber.trim() || undefined,
         driving_license_photo: licensePhotoUrl || undefined,
+        aadhar_number: drvAadharNumber.trim() || undefined,
+        aadhar_photo: aadharPhotoUrl || undefined,
       });
       setShowAddDriverModal(false);
       resetDrvForm();
@@ -2345,6 +2371,20 @@ export default function EventDetail() {
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo (optional)</Text>
                   {drvLicensePhotoUri ? (
                     <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                  ) : (
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                      <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={modalLabel}>AADHAR NUMBER (OPTIONAL)</Text>
+                <TextInput value={drvAadharNumber} onChangeText={(v) => setDrvAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+
+                <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo (optional)</Text>
+                  {drvAadharPhotoUri ? (
+                    <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
                     <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
