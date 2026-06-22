@@ -49,6 +49,7 @@ export default function ManageEmployees() {
   const [supBankAccount, setSupBankAccount] = useState("");
   const [supBankIfsc, setSupBankIfsc] = useState("");
   const [supAadharNumber, setSupAadharNumber] = useState("");
+  const [supAadharPhotoUri, setSupAadharPhotoUri] = useState(null);
   const [supPhoto, setSupPhoto] = useState(null);
   const [supPhotoUri, setSupPhotoUri] = useState(null);
 
@@ -106,7 +107,7 @@ export default function ManageEmployees() {
   const resetSupForm = () => {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
     setSupPan(""); setSupBankAccount(""); setSupBankIfsc(""); setSupAadharNumber("");
-    setSupPhoto(null); setSupPhotoUri(null);
+    setSupAadharPhotoUri(null); setSupPhoto(null); setSupPhotoUri(null);
   };
 
   const resetDrvForm = () => {
@@ -173,6 +174,21 @@ export default function ManageEmployees() {
     }
   };
 
+  const pickSupAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setSupAadharPhotoUri(result.assets[0].uri);
+    }
+  };
+
   const uploadDriverImage = async (uri, folder) => {
     const formData = new FormData();
     formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
@@ -196,6 +212,38 @@ export default function ManageEmployees() {
       Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
       return;
     }
+    if (!supPan.trim()) {
+      Alert.alert("Required", "PAN Number is required");
+      return;
+    }
+    if (!supBankAccount.trim()) {
+      Alert.alert("Required", "Bank Account Number is required");
+      return;
+    }
+    if (!supBankIfsc.trim()) {
+      Alert.alert("Required", "Bank IFSC is required");
+      return;
+    }
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPan.trim().toUpperCase())) {
+      Alert.alert("Invalid PAN", "Expected format: ABCDE1234F"); return;
+    }
+    if (!/^\d{9,18}$/.test(supBankAccount.trim())) {
+      Alert.alert("Invalid Bank Account", "Must be 9–18 digits"); return;
+    }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) {
+      Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
+    }
+    if (!supAadharNumber.trim()) {
+      Alert.alert("Required", "Aadhar Number is required");
+      return;
+    }
+    if (!/^\d{12}$/.test(supAadharNumber.trim())) {
+      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
+    }
+    if (!supAadharPhotoUri) {
+      Alert.alert("Required", "Aadhar Photo is required");
+      return;
+    }
     setSavingSup(true);
     try {
       let photoUrl;
@@ -208,15 +256,20 @@ export default function ManageEmployees() {
         });
         photoUrl = up.data.url;
       }
+      let aadharPhotoUrl;
+      if (supAadharPhotoUri) {
+        aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
+      }
       await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
         phone: supPhone.trim() || undefined,
         password: supPassword,
-        pan_number: supPan.trim() || undefined,
-        bank_account_number: supBankAccount.trim() || undefined,
-        bank_ifsc: supBankIfsc.trim() || undefined,
-        aadhar_number: supAadharNumber.trim() || undefined,
+        pan_number: supPan.trim(),
+        bank_account_number: supBankAccount.trim(),
+        bank_ifsc: supBankIfsc.trim(),
+        aadhar_number: supAadharNumber.trim(),
+        aadhar_photo: aadharPhotoUrl,
         supervisor_photo: photoUrl || undefined,
       });
       setShowSupModal(false);
@@ -246,6 +299,49 @@ export default function ManageEmployees() {
       Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
       return;
     }
+    if (!drvPan.trim()) {
+      Alert.alert("Required", "PAN Number is required");
+      return;
+    }
+    if (!drvBankAccount.trim()) {
+      Alert.alert("Required", "Bank Account Number is required");
+      return;
+    }
+    if (!drvBankIfsc.trim()) {
+      Alert.alert("Required", "Bank IFSC is required");
+      return;
+    }
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(drvPan.trim().toUpperCase())) {
+      Alert.alert("Invalid PAN", "Expected format: ABCDE1234F"); return;
+    }
+    if (!/^\d{9,18}$/.test(drvBankAccount.trim())) {
+      Alert.alert("Invalid Bank Account", "Must be 9–18 digits"); return;
+    }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(drvBankIfsc.trim().toUpperCase())) {
+      Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
+    }
+    if (!drvLicenseNumber.trim()) {
+      Alert.alert("Required", "Driving License Number is required");
+      return;
+    }
+    if (!/^[A-Z0-9]{10,16}$/.test(drvLicenseNumber.trim().toUpperCase())) {
+      Alert.alert("Invalid License", "Must be 10–16 alphanumeric characters"); return;
+    }
+    if (!drvLicensePhotoUri) {
+      Alert.alert("Required", "License Photo is required");
+      return;
+    }
+    if (!drvAadharNumber.trim()) {
+      Alert.alert("Required", "Aadhar Number is required");
+      return;
+    }
+    if (!/^\d{12}$/.test(drvAadharNumber.trim())) {
+      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
+    }
+    if (!drvAadharPhotoUri) {
+      Alert.alert("Required", "Aadhar Photo is required");
+      return;
+    }
     setSavingDrv(true);
     try {
       let photoUrl;
@@ -266,13 +362,13 @@ export default function ManageEmployees() {
         phone: drvPhone.trim() || undefined,
         pin: drvPassword,
         driver_photo: photoUrl || undefined,
-        pan_number: drvPan.trim() || undefined,
-        bank_account_number: drvBankAccount.trim() || undefined,
-        bank_ifsc: drvBankIfsc.trim() || undefined,
-        driving_license_number: drvLicenseNumber.trim() || undefined,
-        driving_license_photo: licensePhotoUrl || undefined,
-        aadhar_number: drvAadharNumber.trim() || undefined,
-        aadhar_photo: aadharPhotoUrl || undefined,
+        pan_number: drvPan.trim(),
+        bank_account_number: drvBankAccount.trim(),
+        bank_ifsc: drvBankIfsc.trim(),
+        driving_license_number: drvLicenseNumber.trim(),
+        driving_license_photo: licensePhotoUrl,
+        aadhar_number: drvAadharNumber.trim(),
+        aadhar_photo: aadharPhotoUrl,
       });
       setShowDrvModal(false);
       resetDrvForm();
@@ -503,14 +599,33 @@ export default function ManageEmployees() {
                 <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
                 <Text style={modalLabel}>PASSWORD</Text>
                 <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
-                <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={supPan} onChangeText={(v) => setSupPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
-                <Text style={modalLabel}>BANK ACCOUNT NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
                 <TextInput value={supBankAccount} onChangeText={setSupBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
-                <Text style={modalLabel}>BANK IFSC CODE (OPTIONAL)</Text>
+                <Text style={modalLabel}>BANK IFSC CODE</Text>
                 <TextInput value={supBankIfsc} onChangeText={(v) => setSupBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
-                <Text style={modalLabel}>AADHAR NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>AADHAR NUMBER</Text>
                 <TextInput value={supAadharNumber} onChangeText={(v) => setSupAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+
+                <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
+                  {supAadharPhotoUri ? (
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                      <TouchableOpacity 
+                        onPress={() => { setSupAadharPhotoUri(null); }} 
+                        style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                      <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
 
                 <TouchableOpacity onPress={saveSupervisor} disabled={savingSup} style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginTop: rp(8) }}>
                   {savingSup ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE SUPERVISOR</Text>}
@@ -560,17 +675,17 @@ export default function ManageEmployees() {
                 <TextInput value={drvPassword} onChangeText={setDrvPassword} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} style={modalInput} />
                 <Text style={modalLabel}>EMAIL</Text>
                 <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalInput} />
-                <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={drvPan} onChangeText={(v) => setDrvPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
-                <Text style={modalLabel}>BANK ACCOUNT NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
                 <TextInput value={drvBankAccount} onChangeText={setDrvBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
-                <Text style={modalLabel}>BANK IFSC CODE (OPTIONAL)</Text>
+                <Text style={modalLabel}>BANK IFSC CODE</Text>
                 <TextInput value={drvBankIfsc} onChangeText={(v) => setDrvBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
-                <Text style={modalLabel}>DRIVING LICENCE NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>DRIVING LICENCE NUMBER</Text>
                 <TextInput value={drvLicenseNumber} onChangeText={(v) => setDrvLicenseNumber(v.toUpperCase())} placeholder="DL number" autoCapitalize="characters" style={modalInput} />
 
                 <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
-                  <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo (optional)</Text>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo *</Text>
                   {drvLicensePhotoUri ? (
                     <View style={{ position: "relative" }}>
                       <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
@@ -588,11 +703,11 @@ export default function ManageEmployees() {
                   )}
                 </TouchableOpacity>
 
-                <Text style={modalLabel}>AADHAR NUMBER (OPTIONAL)</Text>
+                <Text style={modalLabel}>AADHAR NUMBER</Text>
                 <TextInput value={drvAadharNumber} onChangeText={(v) => setDrvAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
 
                 <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
-                  <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo (optional)</Text>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
                   {drvAadharPhotoUri ? (
                     <View style={{ position: "relative" }}>
                       <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />

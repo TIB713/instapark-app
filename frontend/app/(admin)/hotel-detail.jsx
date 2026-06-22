@@ -15,8 +15,10 @@ import {
   KeyboardAvoidingView,
   Share,
   BackHandler,
+  Image,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import CityStatePicker from "../../components/CityStatePicker";
 import { State } from "country-state-city";
@@ -99,12 +101,46 @@ export default function HotelDetail() {
   const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
   const [drvPin, setDrvPin] = useState("");
+  const [drvAadharNumber, setDrvAadharNumber] = useState("");
+  const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
   const [savingDrv, setSavingDrv] = useState(false);
+
+  const pickDrvAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setDrvAadharPhotoUri(result.assets[0].uri);
+    }
+  };
   const [supName, setSupName] = useState("");
   const [supEmail, setSupEmail] = useState("");
   const [supPhone, setSupPhone] = useState("");
   const [supPassword, setSupPassword] = useState("");
+  const [supAadharNumber, setSupAadharNumber] = useState("");
+  const [supAadharPhotoUri, setSupAadharPhotoUri] = useState(null);
   const [savingSup, setSavingSup] = useState(false);
+
+  const pickSupAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setSupAadharPhotoUri(result.assets[0].uri);
+    }
+  };
 
   // Info tab state (editable)
   const [editHotel, setEditHotel] = useState(null);
@@ -213,6 +249,8 @@ export default function HotelDetail() {
     setDrvEmail("");
     setDrvPhone("");
     setDrvPin("");
+    setDrvAadharNumber("");
+    setDrvAadharPhotoUri(null);
   };
 
   const resetSupForm = () => {
@@ -220,6 +258,8 @@ export default function HotelDetail() {
     setSupEmail("");
     setSupPhone("");
     setSupPassword("");
+    setSupAadharNumber("");
+    setSupAadharPhotoUri(null);
   };
 
   const addMember = async (memberId) => {
@@ -251,18 +291,53 @@ export default function HotelDetail() {
     ]);
   };
 
+  const uploadDriverImage = async (uri, folder) => {
+    const formData = new FormData();
+    formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+    formData.append("folder", folder);
+    const up = await api.post("/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return up.data.url;
+  };
+
   const saveDriver = async () => {
     if (!drvName.trim() || !drvEmail.trim() || !drvPin.trim()) {
       Alert.alert("Required", "Name, email, and PIN are required");
       return;
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid email address"); return;
+    }
+    if (drvPhone.trim() && !/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) {
+      Alert.alert("Invalid Phone", "Phone must be exactly 10 digits"); return;
+    }
+    if (drvAadharNumber.trim() && !/^\d{12}$/.test(drvAadharNumber.trim())) {
+      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
+    }
+
+    if (!drvAadharNumber.trim()) {
+      Alert.alert("Required", "Aadhar Number is required");
+      return;
+    }
+    if (!drvAadharPhotoUri) {
+      Alert.alert("Required", "Aadhar Photo is required");
+      return;
+    }
     setSavingDrv(true);
     try {
+      let aadharPhotoUrl;
+      if (drvAadharPhotoUri) {
+        aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
+      }
       const { data: newDriver } = await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
         phone: drvPhone.trim() || undefined,
         pin: drvPin,
+        aadhar_number: drvAadharNumber.trim(),
+        aadhar_photo: aadharPhotoUrl,
       });
       setShowCreateDriverModal(false);
       resetDrvForm();
@@ -280,13 +355,38 @@ export default function HotelDetail() {
       Alert.alert("Required", "Name, email, and password are required");
       return;
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid email address"); return;
+    }
+    if (supPhone.trim() && !/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) {
+      Alert.alert("Invalid Phone", "Phone must be exactly 10 digits"); return;
+    }
+    if (supAadharNumber.trim() && !/^\d{12}$/.test(supAadharNumber.trim())) {
+      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
+    }
+
+    if (!supAadharNumber.trim()) {
+      Alert.alert("Required", "Aadhar Number is required");
+      return;
+    }
+    if (!supAadharPhotoUri) {
+      Alert.alert("Required", "Aadhar Photo is required");
+      return;
+    }
     setSavingSup(true);
     try {
+      let aadharPhotoUrl;
+      if (supAadharPhotoUri) {
+        aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
+      }
       const { data: newSupervisor } = await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
         phone: supPhone.trim() || undefined,
         password: supPassword,
+        aadhar_number: supAadharNumber.trim(),
+        aadhar_photo: aadharPhotoUrl,
       });
       setShowCreateSupervisorModal(false);
       resetSupForm();
@@ -1107,6 +1207,26 @@ export default function HotelDetail() {
               <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
               <Text style={modalLabel}>4-DIGIT PIN</Text>
               <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} secureTextEntry style={modalTextInput} />
+              <Text style={modalLabel}>AADHAR NUMBER</Text>
+              <TextInput value={drvAadharNumber} onChangeText={setDrvAadharNumber} placeholder="Aadhar number" autoCapitalize="characters" style={modalTextInput} />
+              <TouchableOpacity onPress={pickDrvAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
+                {drvAadharPhotoUri ? (
+                  <View style={{ position: "relative" }}>
+                    <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                    <TouchableOpacity 
+                      onPress={() => { setDrvAadharPhotoUri(null); }} 
+                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                  </View>
+                )}
+              </TouchableOpacity>
               <TouchableOpacity onPress={saveDriver} disabled={savingDrv} style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}>
                 {savingDrv ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE DRIVER</Text>}
               </TouchableOpacity>
@@ -1133,6 +1253,26 @@ export default function HotelDetail() {
               <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
               <Text style={modalLabel}>PASSWORD</Text>
               <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalTextInput} />
+              <Text style={modalLabel}>AADHAR NUMBER</Text>
+              <TextInput value={supAadharNumber} onChangeText={setSupAadharNumber} placeholder="Aadhar number" autoCapitalize="characters" style={modalTextInput} />
+              <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
+                {supAadharPhotoUri ? (
+                  <View style={{ position: "relative" }}>
+                    <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
+                    <TouchableOpacity 
+                      onPress={() => { setSupAadharPhotoUri(null); }} 
+                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                  </View>
+                )}
+              </TouchableOpacity>
               <TouchableOpacity onPress={saveSupervisor} disabled={savingSup} style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}>
                 {savingSup ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE SUPERVISOR</Text>}
               </TouchableOpacity>
