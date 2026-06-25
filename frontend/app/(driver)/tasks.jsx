@@ -1,6 +1,5 @@
 // version 3
 import * as Location from "expo-location";
-import * as TaskManager from "expo-task-manager";
 import { Linking } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
@@ -32,6 +31,7 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
 import { enqueueHandover, getQueueCount, processPendingQueue, enqueueParkAction, getQueueSummary, getFailedQueue } from "../../lib/offline";
+import { stopLocationTracking, updateJourney, checkEventStatusAndStop } from "../../lib/locationTracking";
 
 const cardShadow = {
   shadowColor: "#059669",
@@ -41,33 +41,7 @@ const cardShadow = {
   elevation: 4,
 };
 
-const LOCATION_TASK_NAME = "driver-location-tracking";
 
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
-  if (error || !data) return;
-  const { locations } = data;
-  const loc = locations[0];
-  if (!loc) return;
-  try {
-    const { getItem } = require("../../lib/secure");
-    const { useAppStore } = require("../../lib/store");
-    const token = await getItem("auth_token");
-    const eventId = useAppStore.getState().currentEventId;
-    if (!token || !eventId) return;
-    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/v1/drivers/location`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        event_id: eventId,
-        lat: loc.coords.latitude,
-        lng: loc.coords.longitude,
-      }),
-    });
-  } catch {}
-});
 
 export default function Tasks() {
   const router = useRouter();
@@ -158,7 +132,6 @@ export default function Tasks() {
 
   useEffect(() => {
     if (!currentEventId) return;
-    startLocationTracking();
     api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {});
     fetchEvent();
     fetchMyCars();
@@ -177,8 +150,21 @@ export default function Tasks() {
         refreshPending();
       }
     });
+
+    const eventStatusInterval = setInterval(async () => {
+      const stillActive = await checkEventStatusAndStop();
+      if (!stillActive) {
+        clearInterval(eventStatusInterval);
+        Alert.alert(
+          "Event Closed",
+          "This event has been closed. Location tracking has stopped.",
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+      }
+    }, 60000);
+
     return () => {
-      stopLocationTracking();
+      clearInterval(eventStatusInterval);
       disconnectWS(`/event/${currentEventId}`);
       disconnectWS(`/retrievals/${currentEventId}`);
       unsub();
@@ -272,34 +258,7 @@ export default function Tasks() {
     }
   };
 
-  const startLocationTracking = async () => {
-    try {
-      const { status: fg } = await Location.requestForegroundPermissionsAsync();
-      if (fg !== "granted") return;
-      const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-      if (bg !== "granted") return;
-      const already = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
-      if (already) return;
-      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-        accuracy: Location.Accuracy.Balanced,
-        timeInterval: 5000,
-        distanceInterval: 0,
-        showsBackgroundLocationIndicator: true,
-        foregroundService: {
-          notificationTitle: "InstaPark",
-          notificationBody: "Tracking your location for active event",
-          notificationColor: "#059669",
-        },
-      });
-    } catch {}
-  };
 
-  const stopLocationTracking = async () => {
-    try {
-      const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
-      if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    } catch {}
-  };
 
   const openParkModal = async (car) => {
     setOpeningParkModal(car.id);
@@ -307,6 +266,7 @@ export default function Tasks() {
     setSelectedSlot(null);
     setSlots([]);
     setShowParkModal(true);
+    await updateJourney(car.id, "checkin");
     await fetchEvent();
     await fetchSlots();
     setOpeningParkModal(null);
@@ -355,6 +315,7 @@ export default function Tasks() {
         gps_lat: capturedGPS?.lat || null,
         gps_lng: capturedGPS?.lng || null,
       });
+      await updateJourney(selectedCar.id, "parked");
 
       const carId = selectedCar.id;
       setShowParkModal(false);
@@ -375,6 +336,7 @@ export default function Tasks() {
   const pickup = async (car) => {
     try {
       await api.patch(`/cars/${car.id}/pickup`, { retrieval_driver_id: resolvedDriverId });
+      await updateJourney(car.id, "retrieval");
       fetchRetrievals();
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Failed");
@@ -498,6 +460,7 @@ export default function Tasks() {
       const photoUrl = up.data.url;
 
       await api.patch(`/cars/${car.id}/deliver`, { delivery_photo_url: photoUrl });
+      await updateJourney(null, "idle");
       fetchRetrievals();
     } catch (e) {
       Alert.alert("Handover Failed", e.response?.data?.detail || "Could not complete handover. Try again.");

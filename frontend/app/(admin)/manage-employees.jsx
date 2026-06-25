@@ -37,6 +37,7 @@ export default function ManageEmployees() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [processingId, setProcessingId] = useState(null);
+  const [resendingInviteId, setResendingInviteId] = useState(null);
 
   // Supervisor Form State
   const [showSupModal, setShowSupModal] = useState(false);
@@ -380,6 +381,18 @@ export default function ManageEmployees() {
     }
   };
 
+  const handleResendInvite = async (s) => {
+    setResendingInviteId(s.id);
+    try {
+      await api.post(`/supervisors/${s.id}/resend-invite`);
+      Alert.alert("Invite Sent", `Verification email resent to ${s.email}`);
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Failed to resend invite");
+    } finally {
+      setResendingInviteId(null);
+    }
+  };
+
   const handleSupervisorLongPress = (s) => {
     Alert.alert("Supervisor Options", s.name, [
       { text: "Cancel", style: "cancel" },
@@ -495,8 +508,57 @@ export default function ManageEmployees() {
                     <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(18) }}>{s.name?.[0]?.toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1, marginLeft: rp(14) }}>
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{s.name}</Text>
-                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{s.email}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: rp(6) }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>
+                        {s.name}
+                      </Text>
+                      {!s.is_verified && (
+                        <View style={{
+                          backgroundColor: "#FEF3C7",
+                          borderRadius: rp(99),
+                          paddingHorizontal: rp(6),
+                          paddingVertical: rp(2),
+                        }}>
+                          <Text style={{ color: "#D97706", fontSize: rs(9), fontWeight: "800" }}>
+                            UNVERIFIED
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>
+                      {s.email}
+                    </Text>
+                    {!s.is_verified && (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          handleResendInvite(s);
+                        }}
+                        disabled={resendingInviteId === s.id}
+                        style={{
+                          marginTop: rp(6),
+                          alignSelf: "flex-start",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: rp(4),
+                          backgroundColor: "#FEF3C7",
+                          borderWidth: 1,
+                          borderColor: "#F59E0B",
+                          borderRadius: rp(8),
+                          paddingHorizontal: rp(10),
+                          paddingVertical: rp(4),
+                        }}
+                      >
+                        {resendingInviteId === s.id ? (
+                          <ActivityIndicator size="small" color="#D97706" />
+                        ) : (
+                          <Ionicons name="mail-outline" size={12} color="#D97706" />
+                        )}
+                        <Text style={{ color: "#D97706", fontSize: rs(11), fontWeight: "700" }}>
+                          {resendingInviteId === s.id ? "Sending..." : "Resend Invite"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                   {processingId === s.id ? (
                     <ActivityIndicator size="small" color="#7C3AED" />

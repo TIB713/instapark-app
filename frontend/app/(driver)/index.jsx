@@ -17,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteItem as secureDelete } from "../../lib/secure";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import { startLocationTracking, stopLocationTracking, updateJourney } from "../../lib/locationTracking";
 
 const cardShadow = {
   shadowColor: "#059669",
@@ -53,6 +54,7 @@ export default function DriverHome() {
 
   const handleSignOut = () => {
     const doSignOut = async () => {
+      await stopLocationTracking();
       await secureDelete("auth_token");
       await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
       signOut();
@@ -71,6 +73,10 @@ export default function DriverHome() {
   const openEvent = async (e) => {
     setCurrentEventId(e.id);
     await AsyncStorage.setItem("current_event_id", e.id);
+    // Reset journey to idle for new event session
+    await updateJourney(null, "idle");
+    // Start tracking — survives screen changes, lock, minimize
+    await startLocationTracking();
     router.push("/(driver)/tasks");
   };
 

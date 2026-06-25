@@ -6,6 +6,8 @@ export const useAppStore = create((set) => ({
   driver: null,
   token: null,
   currentEventId: null,
+  currentCarId: null,
+  currentJourneyType: "idle",
   setUser: (user) => set({ user }),
   setDriver: (driver) => set({ driver }),
   setToken: (token) => set({ token }),
@@ -13,6 +15,14 @@ export const useAppStore = create((set) => ({
     set({ currentEventId: id });
     AsyncStorage.setItem("current_event_id", id || "").catch(() => {});
   },
+  setCurrentCarId: (id) => {
+    set({ currentCarId: id });
+    AsyncStorage.setItem("current_car_id", id || "").catch(() => {});
+  },
+  setCurrentJourneyType: (type) => {
+    set({ currentJourneyType: type });
+    AsyncStorage.setItem("current_journey_type", type || "idle").catch(() => {});
+  },
   signOut: () =>
-    set({ user: null, driver: null, token: null, currentEventId: null }),
+    set({ user: null, driver: null, token: null, currentEventId: null, currentCarId: null, currentJourneyType: "idle" }),
 }));

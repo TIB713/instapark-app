@@ -4,6 +4,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getItem } from "../lib/secure";
 import { useAppStore } from "../lib/store";
+import { AppState } from "react-native";
+import { checkEventStatusAndStop } from "../lib/locationTracking";
 import { cleanupOldOfflinePhotos } from "../lib/offline";
 import "../global.css";
 
@@ -23,6 +25,16 @@ export default function RootLayout() {
     };
     hydrate();
     cleanupOldOfflinePhotos();
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", async (nextState) => {
+      if (nextState === "active") {
+        // App came to foreground — check if event is still open
+        await checkEventStatusAndStop();
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   return (
