@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import CityStatePicker from "../../components/CityStatePicker";
 import { State } from "country-state-city";
@@ -65,6 +66,11 @@ export default function HotelDetail() {
   const [teamTab, setTeamTab] = useState("drivers");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Guests state
+  const [guests, setGuests] = useState([]);
+  const [loadingGuests, setLoadingGuests] = useState(false);
+  const [uploadingGuests, setUploadingGuests] = useState(false);
 
   // Events state
   const [allEvents, setAllEvents] = useState([]);
@@ -201,6 +207,18 @@ export default function HotelDetail() {
     }
   }, [hid]);
 
+  const fetchGuests = useCallback(async () => {
+    try {
+      setLoadingGuests(true);
+      const { data } = await api.get(`/hotels/${hid}/guest-list`);
+      setGuests(data.guests || []);
+    } catch (e) {
+      console.error("Error fetching guests:", e);
+    } finally {
+      setLoadingGuests(false);
+    }
+  }, [hid]);
+
   const fetchAllMembers = useCallback(async () => {
     try {
       const [drvRes, supRes] = await Promise.all([
@@ -216,9 +234,9 @@ export default function HotelDetail() {
 
   const init = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchHotel(), fetchEvents(), fetchAllMembers()]);
+    await Promise.all([fetchHotel(), fetchEvents(), fetchAllMembers(), fetchGuests()]);
     setLoading(false);
-  }, [fetchHotel, fetchEvents, fetchAllMembers]);
+  }, [fetchHotel, fetchEvents, fetchAllMembers, fetchGuests]);
 
   useEffect(() => {
     init();
@@ -230,7 +248,7 @@ export default function HotelDetail() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchHotel(), fetchEvents(), fetchAllMembers()]);
+    await Promise.all([fetchHotel(), fetchEvents(), fetchAllMembers(), fetchGuests()]);
     setRefreshing(false);
   };
 
@@ -289,6 +307,36 @@ export default function HotelDetail() {
         },
       },
     ]);
+  };
+
+  const uploadGuests = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"],
+        copyToCacheDirectory: true,
+      });
+      if (res.canceled) return;
+      const file = res.assets[0];
+
+      setUploadingGuests(true);
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const { data } = await api.post(`/hotels/${hid}/guest-list/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      Alert.alert("Success", `Uploaded! SMS sent to ${data.sms_sent_count} guests.`);
+      fetchGuests();
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Failed to upload guests");
+    } finally {
+      setUploadingGuests(false);
+    }
   };
 
   const uploadDriverImage = async (uri, folder) => {
@@ -555,6 +603,7 @@ export default function HotelDetail() {
           ["today", "Today"],
           ["events", "Events"],
           ["team", "Team"],
+          ["guests", "Guests"],
           ["info", "Info"],
           ["qr", "QR"],
         ].map(([k, l]) => {
@@ -793,6 +842,62 @@ export default function HotelDetail() {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {tab === "guests" && (
+          <View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
+              <Text style={sectionTitle}>GUEST LIST</Text>
+              <TouchableOpacity
+                onPress={uploadGuests}
+                disabled={uploadingGuests}
+                style={{ backgroundColor: ACCENT_COLOR, paddingHorizontal: rp(12), paddingVertical: rp(6), borderRadius: rp(10), flexDirection: "row", alignItems: "center", gap: rp(4), opacity: uploadingGuests ? 0.7 : 1 }}
+              >
+                {uploadingGuests ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="cloud-upload" size={16} color="#fff" />}
+                <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11) }}>{uploadingGuests ? "UPLOADING..." : "UPLOAD EXCEL"}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {loadingGuests ? (
+              <ActivityIndicator size="large" color={ACCENT_COLOR} style={{ marginTop: rp(40) }} />
+            ) : guests.length > 0 ? (
+              guests.map((g) => (
+                <View key={g.id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(16), marginBottom: rp(12), ...cardShadow }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{g.name}</Text>
+                      <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{g.contact}</Text>
+                      {g.expected_arrival && (
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(4) }}>Arrival: {new Date(g.expected_arrival).toLocaleString()}</Text>
+                      )}
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: rp(6) }}>
+                      {g.sms_sent && (
+                        <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6) }}>
+                          <Text style={{ color: "#059669", fontSize: rs(9), fontWeight: "800" }}>SMS SENT</Text>
+                        </View>
+                      )}
+                      {g.pre_registered ? (
+                        <View style={{ backgroundColor: "#E0E7FF", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6) }}>
+                          <Text style={{ color: "#4338CA", fontSize: rs(9), fontWeight: "800" }}>PRE-REGISTERED</Text>
+                        </View>
+                      ) : (
+                        <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6) }}>
+                          <Text style={{ color: "#9CA3AF", fontSize: rs(9), fontWeight: "800" }}>PENDING</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(24), padding: rp(32), alignItems: "center", borderStyle: "dashed", borderWidth: rp(2), borderColor: "#D1D5DB" }}>
+                <Text style={{ fontSize: rs(40) }}>👥</Text>
+                <Text style={{ color: "#6B7280", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>No guests added</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(4), textAlign: "center" }}>Upload an Excel file to invite guests.</Text>
+              </View>
+            )}
           </View>
         )}
 

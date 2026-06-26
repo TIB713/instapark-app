@@ -71,6 +71,7 @@ export default function EventDetail() {
   const [cars, setCars] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [stats, setStats] = useState(null);
+  const [guestCount, setGuestCount] = useState(null);
   const [keys, setKeys] = useState([]);
   const [keyStats, setKeyStats] = useState(null);
   const [search, setSearch] = useState("");
@@ -186,6 +187,13 @@ export default function EventDetail() {
     } catch {}
   }, [currentEventId]);
 
+  const fetchGuestCount = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/events/${currentEventId}/guest-count`);
+      setGuestCount(data.guest_count || 0);
+    } catch {}
+  }, [currentEventId]);
+
   const fetchIncidents = useCallback(async () => {
     try {
       const { data } = await api.get(`/incidents/event/${currentEventId}`);
@@ -283,7 +291,7 @@ export default function EventDetail() {
   useEffect(() => {
     if (!currentEventId) return;
     // Run all fetches in parallel instead of sequentially
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchSlots(), fetchIncidents(), fetchKeys()]);
+    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchGuestCount(), fetchSlots(), fetchIncidents(), fetchKeys()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
@@ -976,7 +984,7 @@ export default function EventDetail() {
                 )}
               </View>
               {event?.status && (
-                <View style={{ flexDirection: "row", marginTop: rp(4) }}>
+                <View style={{ flexDirection: "row", marginTop: rp(4), alignItems: "center", gap: rp(8) }}>
                   <View
                     style={{
                       backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)",
@@ -989,6 +997,20 @@ export default function EventDetail() {
                       {event.status === "closed" ? "CLOSED" : event.status.toUpperCase()}
                     </Text>
                   </View>
+                  {guestCount != null && (
+                    <View
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.18)",
+                        paddingHorizontal: rp(8),
+                        paddingVertical: rp(2),
+                        borderRadius: rp(99),
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1.5) }}>
+                        {guestCount} GUESTS INVITED
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
