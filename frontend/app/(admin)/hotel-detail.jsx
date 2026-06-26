@@ -71,6 +71,7 @@ export default function HotelDetail() {
   const [guests, setGuests] = useState([]);
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [uploadingGuests, setUploadingGuests] = useState(false);
+  const [guestUploadTarget, setGuestUploadTarget] = useState("daily");
 
   // Events state
   const [allEvents, setAllEvents] = useState([]);
@@ -325,6 +326,10 @@ export default function HotelDetail() {
         name: file.name,
         type: file.mimeType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
+
+      if (guestUploadTarget !== "daily") {
+        formData.append("event_id", guestUploadTarget);
+      }
 
       const { data } = await api.post(`/hotels/${hid}/guest-list/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -847,6 +852,37 @@ export default function HotelDetail() {
 
         {tab === "guests" && (
           <View>
+            <View style={{ marginBottom: rp(16) }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#6B7280", marginBottom: rp(8) }}>Upload for:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
+                <TouchableOpacity
+                  onPress={() => setGuestUploadTarget("daily")}
+                  style={{
+                    backgroundColor: guestUploadTarget === "daily" ? ACCENT_COLOR : "#F3F4F6",
+                    paddingHorizontal: rp(16),
+                    paddingVertical: rp(8),
+                    borderRadius: rp(99),
+                  }}
+                >
+                  <Text style={{ color: guestUploadTarget === "daily" ? "#fff" : "#6B7280", fontWeight: "800", fontSize: rs(12) }}>Daily Valet</Text>
+                </TouchableOpacity>
+                {allEvents.filter(e => e.status === "active" && e.event_type === "hotel_special").map(e => (
+                  <TouchableOpacity
+                    key={e.id}
+                    onPress={() => setGuestUploadTarget(e.id)}
+                    style={{
+                      backgroundColor: guestUploadTarget === e.id ? ACCENT_COLOR : "#F3F4F6",
+                      paddingHorizontal: rp(16),
+                      paddingVertical: rp(8),
+                      borderRadius: rp(99),
+                    }}
+                  >
+                    <Text style={{ color: guestUploadTarget === e.id ? "#fff" : "#6B7280", fontWeight: "800", fontSize: rs(12) }}>{e.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
               <Text style={sectionTitle}>GUEST LIST</Text>
               <TouchableOpacity
