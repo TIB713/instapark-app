@@ -26,6 +26,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import NetInfo from "@react-native-community/netinfo";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
@@ -151,6 +152,14 @@ export default function Tasks() {
       }
     });
 
+    const notifSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data?.screen === 'retrievals') {
+        setTab('retrievals');
+        fetchRetrievals();
+      }
+    });
+
     const eventStatusInterval = setInterval(async () => {
       const stillActive = await checkEventStatusAndStop();
       if (!stillActive) {
@@ -168,6 +177,7 @@ export default function Tasks() {
       disconnectWS(`/event/${currentEventId}`);
       disconnectWS(`/retrievals/${currentEventId}`);
       unsub();
+      notifSub.remove();
     };
   }, [currentEventId, fetchEvent, fetchMyCars, fetchRetrievals]);
 

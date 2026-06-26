@@ -18,6 +18,7 @@ import { setItem } from "../../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import api from "../../lib/api";
+import { registerForPushNotifications } from "../../lib/notifications";
 import { useAppStore } from "../../lib/store";
 import { rs, rp } from "../../utils/responsive";
 
@@ -96,7 +97,7 @@ export default function Login() {
         setToken(data.token);
         setUser(data.user);
         await setItem("last_known_role", "supervisor");
-        await requestPushPermissions("supervisor");
+        try { registerForPushNotifications(api); } catch {}
         router.replace("/(supervisor)/dashboard");
         return;
       } else {
@@ -117,7 +118,7 @@ export default function Login() {
         setToken(data.token);
         setDriver(data.driver);
         await setItem("last_known_role", "driver");
-        await requestPushPermissions("driver");
+        try { registerForPushNotifications(api); } catch {}
         router.replace("/(driver)");
       }
     } catch (e) {

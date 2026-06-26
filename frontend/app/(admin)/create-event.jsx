@@ -69,10 +69,9 @@ export default function CreateEvent() {
   };
 
   const save = async () => {
-    if (!name.trim() || !venue.trim()) {
-      Alert.alert("Required", "Name and venue required");
-      return;
-    }
+    if (!name.trim()) { Alert.alert("Required", "Event name is required"); return; }
+    if (!venue.trim()) { Alert.alert("Required", "Venue is required"); return; }
+    if (!maxCars || parseInt(maxCars) < 1) { Alert.alert("Invalid", "Max cars must be at least 1"); return; }
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (startDT < new Date()) {
       Alert.alert("Invalid", "Start date and time has already passed");

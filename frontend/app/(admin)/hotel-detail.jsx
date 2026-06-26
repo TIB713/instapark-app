@@ -302,29 +302,16 @@ export default function HotelDetail() {
   };
 
   const saveDriver = async () => {
-    if (!drvName.trim() || !drvEmail.trim() || !drvPin.trim()) {
-      Alert.alert("Required", "Name, email, and PIN are required");
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) {
-      Alert.alert("Invalid Email", "Please enter a valid email address"); return;
-    }
-    if (drvPhone.trim() && !/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) {
-      Alert.alert("Invalid Phone", "Phone must be exactly 10 digits"); return;
-    }
-    if (drvAadharNumber.trim() && !/^\d{12}$/.test(drvAadharNumber.trim())) {
-      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
-    }
-
-    if (!drvAadharNumber.trim()) {
-      Alert.alert("Required", "Aadhar Number is required");
-      return;
-    }
-    if (!drvAadharPhotoUri) {
-      Alert.alert("Required", "Aadhar Photo is required");
-      return;
-    }
+    if (!drvName.trim()) { Alert.alert("Required", "Name is required"); return; }
+    if (!drvEmail.trim()) { Alert.alert("Required", "Email is required"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) { Alert.alert("Invalid Email", "Please enter a valid email address"); return; }
+    if (!drvPhone.trim()) { Alert.alert("Required", "Phone is required"); return; }
+    if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) { Alert.alert("Invalid Phone", "Phone must be exactly 10 digits"); return; }
+    if (!drvPin.trim()) { Alert.alert("Required", "PIN is required"); return; }
+    if (!/^\d{4}$/.test(drvPin.trim())) { Alert.alert("Invalid PIN", "PIN must be exactly 4 numeric digits"); return; }
+    if (!drvAadharNumber.trim()) { Alert.alert("Required", "Aadhar Number is required"); return; }
+    if (!/^\d{12}$/.test(drvAadharNumber.trim())) { Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return; }
+    if (!drvAadharPhotoUri) { Alert.alert("Required", "Aadhar Photo is required"); return; }
     setSavingDrv(true);
     try {
       let aadharPhotoUrl;

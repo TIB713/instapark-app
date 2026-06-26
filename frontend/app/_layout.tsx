@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getItem } from "../lib/secure";
@@ -10,6 +11,33 @@ import { cleanupOldOfflinePhotos } from "../lib/offline";
 import "../global.css";
 
 export default function RootLayout() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Handle notification tap when app is in background or closed
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (!data?.screen) return;
+      switch (data.screen) {
+        case 'retrievals':
+          router.push('/(driver)/tasks');
+          break;
+        case 'sos':
+          router.push('/(supervisor)/event-detail');
+          break;
+        case 'incidents':
+          router.push('/(supervisor)/event-detail');
+          break;
+        case 'event_detail':
+          router.push('/(admin)/event-detail');
+          break;
+        default:
+          break;
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     const hydrate = async () => {
       try {
