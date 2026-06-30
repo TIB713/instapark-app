@@ -8,26 +8,6 @@ export const LOCATION_TASK_NAME = "driver-location-tracking";
 // Must be defined at module level (top-level) before any component uses it.
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error || !data) return;
-  try {
-    const [dbgToken, dbgEventId, dbgApiUrl] = await Promise.all([
-      AsyncStorage.getItem("auth_token"),
-      AsyncStorage.getItem("current_event_id"),
-      AsyncStorage.getItem("api_url"),
-    ]);
-    await fetch("https://instapark.docusafe.ai/api/v1/debug-ping", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source: "gps_task",
-        time: new Date().toISOString(),
-        has_token: !!dbgToken,
-        has_event_id: !!dbgEventId,
-        event_id_value: dbgEventId,
-        has_api_url: !!dbgApiUrl,
-        api_url_value: dbgApiUrl,
-      }),
-    });
-  } catch (e) {}
   const { locations } = data;
   const loc = locations?.[0];
   if (!loc) return;
@@ -62,19 +42,6 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         journey_type: journeyType || "idle",
       }),
     });
-
-    // Temporary debug — report real fetch result
-    try {
-      await fetch("https://instapark.docusafe.ai/api/v1/debug-ping", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source: "gps_task_real_fetch",
-          status: resp.status,
-          url_used: `${apiUrl}/drivers/location`,
-        }),
-      });
-    } catch (e) {}
     console.log("[GPS_TASK] response status:", resp.status);
     if (!resp.ok) {
       const text = await resp.text();
