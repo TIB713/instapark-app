@@ -9,10 +9,23 @@ export const LOCATION_TASK_NAME = "driver-location-tracking";
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error || !data) return;
   try {
+    const [dbgToken, dbgEventId, dbgApiUrl] = await Promise.all([
+      AsyncStorage.getItem("auth_token"),
+      AsyncStorage.getItem("current_event_id"),
+      AsyncStorage.getItem("api_url"),
+    ]);
     await fetch("https://instapark.docusafe.ai/api/v1/debug-ping", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: "gps_task", time: new Date().toISOString() }),
+      body: JSON.stringify({
+        source: "gps_task",
+        time: new Date().toISOString(),
+        has_token: !!dbgToken,
+        has_event_id: !!dbgEventId,
+        event_id_value: dbgEventId,
+        has_api_url: !!dbgApiUrl,
+        api_url_value: dbgApiUrl,
+      }),
     });
   } catch (e) {}
   const { locations } = data;
