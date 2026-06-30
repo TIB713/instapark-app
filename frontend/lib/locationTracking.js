@@ -8,12 +8,18 @@ export const LOCATION_TASK_NAME = "driver-location-tracking";
 // Must be defined at module level (top-level) before any component uses it.
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error || !data) return;
+  try {
+    await fetch("https://instapark.docusafe.ai/api/v1/debug-ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "gps_task", time: new Date().toISOString() }),
+    });
+  } catch (e) {}
   const { locations } = data;
   const loc = locations?.[0];
   if (!loc) return;
 
   try {
-    // Read all needed values from AsyncStorage (survives app kills)
     const [token, eventId, carId, journeyType, apiUrl] = await Promise.all([
       AsyncStorage.getItem("auth_token"),
       AsyncStorage.getItem("current_event_id"),
@@ -22,9 +28,14 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       AsyncStorage.getItem("api_url"),
     ]);
 
-    if (!token || !eventId || !apiUrl) return;
+    console.log("[GPS_TASK] token:", token ? "present" : "MISSING", "eventId:", eventId, "apiUrl:", apiUrl);
 
-    await fetch(`${apiUrl}/api/v1/drivers/location`, {
+    if (!token || !eventId || !apiUrl) {
+      console.log("[GPS_TASK] aborted, missing required value");
+      return;
+    }
+
+    const resp = await fetch(`${apiUrl}/api/v1/drivers/location`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,7 +49,14 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         journey_type: journeyType || "idle",
       }),
     });
-  } catch {}
+    console.log("[GPS_TASK] response status:", resp.status);
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.log("[GPS_TASK] error body:", text);
+    }
+  } catch (e) {
+    console.log("[GPS_TASK] fetch threw error:", e.message);
+  }
 });
 
 // ── Start tracking ───────────────────────────────────────────────────────────
