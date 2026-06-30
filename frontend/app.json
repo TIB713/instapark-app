@@ -32,7 +32,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0F2044",
+          "defaultChannel": "default"
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -50,7 +57,6 @@
           "cameraPermission": "Allow InstaPark to use your camera."
         }
       ],
-      "@react-native-community/datetimepicker",
       "expo-font",
       "expo-secure-store",
       [

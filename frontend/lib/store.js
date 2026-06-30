@@ -23,6 +23,15 @@ export const useAppStore = create((set) => ({
     set({ currentJourneyType: type });
     AsyncStorage.setItem("current_journey_type", type || "idle").catch(() => {});
   },
-  signOut: () =>
-    set({ user: null, driver: null, token: null, currentEventId: null, currentCarId: null, currentJourneyType: "idle" }),
+  signOut: () => {
+    // Clear AsyncStorage keys that the background task reads
+    AsyncStorage.multiRemove([
+      "auth_token",
+      "api_url",
+      "current_event_id",
+      "current_car_id",
+      "current_journey_type",
+    ]).catch(() => {});
+    set({ user: null, driver: null, token: null, currentEventId: null, currentCarId: null, currentJourneyType: "idle" });
+  },
 }));

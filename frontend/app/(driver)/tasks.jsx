@@ -470,12 +470,12 @@ export default function Tasks() {
       const photoUrl = up.data.url;
 
       await api.patch(`/cars/${car.id}/deliver`, { delivery_photo_url: photoUrl });
-      await updateJourney(null, "idle");
       fetchRetrievals();
     } catch (e) {
       Alert.alert("Handover Failed", e.response?.data?.detail || "Could not complete handover. Try again.");
     } finally {
       setHandoverUploading(false);
+      await updateJourney(null, "idle"); // always clear journey context, even if delivery fails
     }
   };
 

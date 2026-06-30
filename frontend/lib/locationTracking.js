@@ -14,16 +14,17 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 
   try {
     // Read all needed values from AsyncStorage (survives app kills)
-    const [token, eventId, carId, journeyType] = await Promise.all([
+    const [token, eventId, carId, journeyType, apiUrl] = await Promise.all([
       AsyncStorage.getItem("auth_token"),
       AsyncStorage.getItem("current_event_id"),
       AsyncStorage.getItem("current_car_id"),
       AsyncStorage.getItem("current_journey_type"),
+      AsyncStorage.getItem("api_url"),
     ]);
 
-    if (!token || !eventId) return;
+    if (!token || !eventId || !apiUrl) return;
 
-    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/v1/drivers/location`, {
+    await fetch(`${apiUrl}/api/v1/drivers/location`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -56,7 +57,6 @@ export const startLocationTracking = async () => {
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy: Location.Accuracy.Balanced,
       timeInterval: 5000,
-      distanceInterval: 10,          // only ping when moved 10+ metres
       showsBackgroundLocationIndicator: true,
       foregroundService: {
         notificationTitle: "InstaPark",
@@ -101,26 +101,30 @@ export const updateJourney = async (carId, journeyType) => {
 // Call this on app foreground resume and on a timer.
 // Returns true if event is still active, false if closed (and tracking stopped).
 export const checkEventStatusAndStop = async () => {
-  try {
-    const [token, eventId] = await Promise.all([
-      AsyncStorage.getItem("auth_token"),
-      AsyncStorage.getItem("current_event_id"),
-    ]);
-    if (!token || !eventId) return false;
+  const [token, eventId, apiUrl] = await Promise.all([
+    AsyncStorage.getItem("auth_token"),
+    AsyncStorage.getItem("current_event_id"),
+    AsyncStorage.getItem("api_url"),
+  ]);
+  if (!token || !eventId || !apiUrl) return true; // don't stop tracking if we can't check
 
+  try {
     const resp = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL}/api/v1/events/${eventId}`,
+      `${apiUrl}/api/v1/events/${eventId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (!resp.ok) return false;
+    if (!resp.ok) return true; // don't stop tracking on network error
+
     const event = await resp.json();
 
-    if (event.status === "closed") {
+    // Only stop for explicitly closed valet events
+    // Hotel daily events have no open/close lifecycle — never stop them this way
+    if (event.event_type !== "hotel_daily" && event.status === "closed") {
       await stopLocationTracking();
       return false;
     }
     return true;
   } catch {
-    return false;
+    return true; // network failure → keep tracking, try again next interval
   }
 };

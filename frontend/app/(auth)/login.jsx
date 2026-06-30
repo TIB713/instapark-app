@@ -111,6 +111,8 @@ export default function Login() {
           pin,
         });
         await setItem("auth_token", data.token);
+        await AsyncStorage.setItem("auth_token", data.token);
+        await AsyncStorage.setItem("api_url", process.env.EXPO_PUBLIC_API_URL || "");
         await AsyncStorage.setItem(
           "driver_session",
           JSON.stringify(data.driver)
