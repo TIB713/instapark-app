@@ -48,7 +48,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       return;
     }
 
-    const resp = await fetch(`${apiUrl}/api/v1/drivers/location`, {
+    const resp = await fetch(`${apiUrl}/drivers/location`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -62,6 +62,19 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         journey_type: journeyType || "idle",
       }),
     });
+
+    // Temporary debug — report real fetch result
+    try {
+      await fetch("https://instapark.docusafe.ai/api/v1/debug-ping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "gps_task_real_fetch",
+          status: resp.status,
+          url_used: `${apiUrl}/drivers/location`,
+        }),
+      });
+    } catch (e) {}
     console.log("[GPS_TASK] response status:", resp.status);
     if (!resp.ok) {
       const text = await resp.text();
