@@ -113,7 +113,15 @@ export const processPendingQueue = async () => {
             const res = await api.patch(`/cars/${item.prefilledCarId}/complete-checkin`, {
               check_in_driver_id: item.checkInDriverId,
               gate: item.gate,
-              notes: item.notes
+              notes: item.notes,
+              make: item.make,
+              color: item.color,
+              plate: item.plate,
+              car_type: item.carType,
+              alt_guest_phone: item.altGuestPhone,
+              has_damage: item.hasDamage,
+              damage_notes: item.damageNotes,
+              guest_name: item.guestName
             });
             carId = res.data.id;
           } else {
@@ -125,14 +133,21 @@ export const processPendingQueue = async () => {
               gate: item.gate,
               event_id: item.eventId,
               check_in_driver_id: item.checkInDriverId,
-              guest_phone: item.guestPhone
+              guest_phone: item.guestPhone,
+              car_type: item.carType,
+              alt_guest_phone: item.altGuestPhone,
+              has_damage: item.hasDamage,
+              damage_notes: item.damageNotes,
+              guest_name: item.guestName
             });
             carId = res.data.id;
           }
 
           // Upload photos
           const urls = [];
-          for (const path of item.photoLocalPaths) {
+          const labels = [];
+          for (const [label, path] of Object.entries(item.photoLocalPaths)) {
+            if (!path) continue;
             const fileInfo = await FileSystem.getInfoAsync(path);
             if (!fileInfo.exists) continue;
             const formData = new FormData();
@@ -140,17 +155,19 @@ export const processPendingQueue = async () => {
             formData.append("folder", `checkin/${carId}`);
             const up = await api.post("/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
             urls.push(up.data.url);
+            labels.push(label);
           }
 
           if (urls.length > 0) {
-            await api.post(`/cars/${carId}/photos`, { urls, type: "checkin" });
+            await api.post(`/cars/${carId}/photos`, { urls, type: "checkin", labels });
           }
 
           // Initialize slots (ignore errors as per instructions)
           try { await api.post(`/slots/event/${item.eventId}/initialize`); } catch {}
 
           // Success - delete local files
-          for (const path of item.photoLocalPaths) {
+          for (const path of Object.values(item.photoLocalPaths)) {
+            if (!path) continue;
             try { await FileSystem.deleteAsync(path); } catch {}
           }
         } catch (error) {

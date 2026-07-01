@@ -27,6 +27,18 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
 
+const INCIDENT_TYPES = [
+  { key: "DAMAGE", label: "Damage", icon: "🚗" },
+  { key: "THEFT", label: "Theft", icon: "🔓" },
+  { key: "WRONG_CAR", label: "Wrong Car", icon: "🔄" },
+  { key: "DELAY", label: "Delay", icon: "⏱️" },
+  { key: "KEY_LOST", label: "Key Lost", icon: "🔑" },
+  { key: "ACCIDENT", label: "Accident", icon: "💥" },
+  { key: "MISCONDUCT", label: "Misconduct", icon: "⚠️" },
+  { key: "GUEST_COMPLAINT", label: "Guest Complaint", icon: "👤" },
+  { key: "OTHER", label: "Other", icon: "📝" },
+];
+
 const ACCENT_COLOR = "#0F2044";
 
 const STATUS_CONFIG = {
@@ -76,6 +88,7 @@ export default function SupervisorEventDetail() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedCar, setSelectedCar] = useState(null);
+
   const [showCarModal, setShowCarModal] = useState(false);
   const [carPhotos, setCarPhotos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -84,6 +97,7 @@ export default function SupervisorEventDetail() {
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentCar, setIncidentCar] = useState(null);
   const [incidentDriver, setIncidentDriver] = useState(null);
+  const [incidentType, setIncidentType] = useState("");
   const [incidentDesc, setIncidentDesc] = useState("");
   const [incidentPhoto, setIncidentPhoto] = useState(null);
   const [submittingIncident, setSubmittingIncident] = useState(false);
@@ -220,6 +234,10 @@ export default function SupervisorEventDetail() {
       Alert.alert("Required", "Please select a car");
       return;
     }
+    if (!incidentType) {
+      Alert.alert("Required", "Please select an incident type");
+      return;
+    }
     if (!incidentDesc.trim()) {
       Alert.alert("Required", "Please add a description");
       return;
@@ -244,12 +262,14 @@ export default function SupervisorEventDetail() {
         event_id: currentEventId,
         car_id: incidentCar.id,
         driver_id: incidentDriver?.id || null,
+        incident_type: incidentType,
         description: incidentDesc.trim(),
         photo_url: photoUrl,
       });
       setShowIncidentModal(false);
       setIncidentCar(null);
       setIncidentDriver(null);
+      setIncidentType("");
       setIncidentDesc("");
       setIncidentPhoto(null);
       setIncidentCarSearch("");
@@ -1268,6 +1288,40 @@ export default function SupervisorEventDetail() {
                     </TouchableOpacity>
                   </View>
                 )}
+                {/* Incident Type Picker */}
+                <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#0F2044", marginBottom: rp(8) }}>
+                  Incident Type <Text style={{ color: "#EF4444" }}>*</Text>
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(12) }}>
+                  <View style={{ flexDirection: "row", gap: rp(8), paddingRight: rp(16) }}>
+                    {INCIDENT_TYPES.map(t => (
+                      <TouchableOpacity
+                        key={t.key}
+                        onPress={() => setIncidentType(t.key)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: rp(4),
+                          paddingHorizontal: rp(12),
+                          paddingVertical: rp(8),
+                          borderRadius: rp(20),
+                          borderWidth: 1.5,
+                          borderColor: incidentType === t.key ? "#0F2044" : "#E5E7EB",
+                          backgroundColor: incidentType === t.key ? "#0F2044" : "#F9FAFB",
+                        }}
+                      >
+                        <Text style={{ fontSize: rs(14) }}>{t.icon}</Text>
+                        <Text style={{
+                          fontSize: rs(11),
+                          fontWeight: "700",
+                          color: incidentType === t.key ? "#FFFFFF" : "#6B7280",
+                        }}>
+                          {t.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
                 <Text style={modalLabel}>DESCRIPTION *</Text>
                 <TextInput value={incidentDesc} onChangeText={setIncidentDesc} placeholder="Describe what happened..." multiline numberOfLines={4} style={[modalInput, { height: rp(100), textAlignVertical: "top" }]} />
                                 <View style={{ position: "relative" }}>
@@ -1360,7 +1414,6 @@ export default function SupervisorEventDetail() {
     </View>
   );
 }
-
 const iconBtn = { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(10) };
 const modalLabel = { fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) };
 const modalInput = { backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", padding: rp(14), color: "#111827", marginBottom: rp(16), fontSize: rs(14) };

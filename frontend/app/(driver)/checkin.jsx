@@ -51,7 +51,13 @@ export default function CheckIn() {
   const [guestPhone, setGuestPhone] = useState("");
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
-  const [photos, setPhotos] = useState([]);
+  const [carType, setCarType] = useState("normal");
+  const [altGuestPhone, setAltGuestPhone] = useState("");
+  const [hasDamage, setHasDamage] = useState(false);
+  const [damageNotes, setDamageNotes] = useState("");
+  const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
+  const [lookupBanner, setLookupBanner] = useState(null);
+  const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [prefilledCarId, setPrefilledCarId] = useState(null); 
   const [passToken, setPassToken] = useState(null); 
@@ -91,18 +97,39 @@ export default function CheckIn() {
           setNotes(d.notes || "");
           setGuestPhone(d.guestPhone || "");
           setSelectedGate(d.selectedGate || "");
+          if (d.carType) setCarType(d.carType);
+          if (d.altGuestPhone) setAltGuestPhone(d.altGuestPhone);
+          if (d.hasDamage) setHasDamage(d.hasDamage);
+          if (d.damageNotes) setDamageNotes(d.damageNotes);
+          if (d.guestName) setGuestName(d.guestName);
         }
         if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
       } catch {}
     })();
   }, [currentEventId]);
 
-  const takePhoto = async () => {
-    if (photos.length >= 5) { Alert.alert("Max 5 photos"); return; }
+  const lookupPlate = async (plateValue) => {
+    if (!validatePlate(plateValue) || plateValue === plateLookedUp) return;
+    setPlateLookedUp(plateValue);
+    try {
+      const { data } = await api.get(`/cars/plate-lookup/${plateValue}`, { params: { event_id: currentEventId } });
+      if (data.found) {
+        setMake(prev => prev || data.make || "");
+        setColor(prev => prev || data.color || "");
+        setGuestPhone(prev => prev || data.guest_phone || "");
+        setAltGuestPhone(prev => prev || data.alt_guest_phone || "");
+        setCarType(prev => (prev === "normal" && data.car_type ? data.car_type : prev));
+        setLookupBanner(data);
+        setGuestName(prev => prev || data.guest_name || "");
+      }
+    } catch {}
+  };
+
+  const takePhoto = async (label) => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
     try {
-      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate }));
+      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, guestName }));
       await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
     } catch {}
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
@@ -114,17 +141,19 @@ export default function CheckIn() {
         { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
       );
       const finalUri = compressed.uri;
-      const np = [...photos, finalUri];
+      const np = { ...photos, [label]: finalUri };
       setPhotos(np);
       try { await AsyncStorage.setItem("checkin_photos", JSON.stringify(np)); } catch {}
     }
     try { await AsyncStorage.removeItem("checkin_draft"); } catch {}
   };
 
-  const uploadPhotosInBackground = async (carId, photoUris) => {
+  const uploadPhotosInBackground = async (carId, photosObj) => {
     try {
       const urls = [];
-      for (const uri of photoUris) {
+      const labels = [];
+      for (const [label, uri] of Object.entries(photosObj)) {
+        if (!uri) continue;
         try {
           const fd = new FormData();
           fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
@@ -133,10 +162,11 @@ export default function CheckIn() {
             headers: { "Content-Type": "multipart/form-data" },
           });
           urls.push(up.data.url);
+          labels.push(label);
         } catch {}
       }
       if (urls.length > 0) {
-        await api.post(`/cars/${carId}/photos`, { urls, type: "checkin" });
+        await api.post(`/cars/${carId}/photos`, { urls, type: "checkin", labels });
       }
     } catch {}
   };
@@ -149,6 +179,7 @@ export default function CheckIn() {
     } 
     if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; } 
     if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; } 
+    if (!guestName.trim()) { Alert.alert("Required", "Guest name is required"); return; }
     let phoneToSave = "";
     if (guestPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
@@ -161,15 +192,28 @@ export default function CheckIn() {
       }
       phoneToSave = isValidIndian ? normalized : guestPhone.trim();
     }
-    if (photos.length === 0) { Alert.alert("Required", "Take at least one photo"); return; } 
+    let altPhoneToSave = "";
+    if (altGuestPhone.trim()) {
+      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
+      const normalized = normalizeIndianPhone(altGuestPhone.trim());
+      const isValidIndian = /^\d{10}$/.test(normalized);
+      const isValidIntl = /^\+\d{10,15}$/.test(altGuestPhone.trim());
+      if (!isValidIndian && !isValidIntl) {
+        Alert.alert("Invalid Alternate Phone", "Enter a 10-digit Indian number, or an international number starting with +");
+        return;
+      }
+      altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
+    }
+    if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; } 
     setSubmitting(true); 
     try { 
       // 1. Copy photos to local storage first for safety
-      const photoLocalPaths = [];
-      for (let i = 0; i < photos.length; i++) {
-        const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${i}_${Date.now()}.jpg`;
-        await FileSystem.copyAsync({ from: photos[i], to: localPath });
-        photoLocalPaths.push(localPath);
+      const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
+      for (const [label, uri] of Object.entries(photos)) {
+        if (!uri) continue;
+        const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
+        await FileSystem.copyAsync({ from: uri, to: localPath });
+        photoLocalPaths[label] = localPath;
       }
 
       const net = await NetInfo.fetch();
@@ -186,6 +230,11 @@ export default function CheckIn() {
           photoLocalPaths,
           isPreRegistered,
           prefilledCarId,
+          carType,
+          altGuestPhone: altPhoneToSave || null,
+          hasDamage,
+          damageNotes: damageNotes.trim() || null,
+          guestName: guestName.trim(),
         });
         await AsyncStorage.removeItem("checkin_draft");
         await AsyncStorage.removeItem("checkin_photos");
@@ -204,6 +253,11 @@ export default function CheckIn() {
           color: color.trim(), 
           notes: notes.trim(), 
           plate: plate.trim().toUpperCase(), 
+          car_type: carType,
+          alt_guest_phone: altPhoneToSave || null,
+          has_damage: hasDamage,
+          damage_notes: damageNotes.trim() || null,
+          guest_name: guestName.trim(),
         }); 
         car = data; 
       } else { 
@@ -216,6 +270,11 @@ export default function CheckIn() {
           gate: selectedGate || "", 
           event_id: currentEventId, 
           check_in_driver_id: resolvedDriverId, 
+          car_type: carType,
+          alt_guest_phone: altPhoneToSave || null,
+          has_damage: hasDamage,
+          damage_notes: damageNotes.trim() || null,
+          guest_name: guestName.trim(),
           ...(phoneToSave ? { guest_phone: phoneToSave } : {}), 
         }); 
         car = data; 
@@ -239,8 +298,8 @@ export default function CheckIn() {
       }); 
       // Use original photo URIs for online background upload
       uploadPhotosInBackground(car.id, photos).finally(() => { 
-        photoLocalPaths.forEach(path => { 
-          FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {}); 
+        Object.values(photoLocalPaths).forEach(path => { 
+          if (path) FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {}); 
         }); 
       }); 
     } catch (err) { 
@@ -349,6 +408,22 @@ export default function CheckIn() {
               </View>
             </View>
           ) : null}
+          {lookupBanner && lookupBanner.guest_name && (
+            <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
+                <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>PREVIOUS VISIT FOUND</Text>
+                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>{lookupBanner.guest_name} — details pre-filled below</Text>
+                </View>
+              </View>
+            </View>
+          )}
+          <Lbl>GUEST NAME *</Lbl>
+          <View style={inputRow}>
+            <Ionicons name="person-outline" size={20} color="#059669" />
+            <TextInput value={guestName} onChangeText={setGuestName} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
+          </View>
           <Lbl>LICENSE PLATE *</Lbl>
           <View style={inputRow}>
             <Ionicons name="car-outline" size={20} color="#059669" />
@@ -356,6 +431,7 @@ export default function CheckIn() {
               testID="plate-input"
               value={plate}
               onChangeText={(v) => setPlate(v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase())}
+              onBlur={() => lookupPlate(plate.trim().toUpperCase())}
               placeholder="GJ01AB1234"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="characters"
@@ -373,6 +449,25 @@ export default function CheckIn() {
             <Ionicons name="construct-outline" size={20} color="#059669" />
             <TextInput value={make} onChangeText={setMake} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
+          <Lbl>CAR TYPE *</Lbl>
+          <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
+            {["normal", "premium"].map((ct) => (
+              <TouchableOpacity
+                key={ct}
+                onPress={() => setCarType(ct)}
+                style={{
+                  paddingHorizontal: rp(14),
+                  paddingVertical: rp(8),
+                  borderRadius: rp(99),
+                  backgroundColor: carType === ct ? "#059669" : "#fff",
+                  borderWidth: rp(1),
+                  borderColor: "#059669",
+                }}
+              >
+                <Text style={{ fontSize: rs(12), fontWeight: "800", color: carType === ct ? "#fff" : "#059669", letterSpacing: rs(0.5), textTransform: "capitalize" }}>{ct}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <Lbl>NOTES</Lbl>
           <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
             <Ionicons name="document-text-outline" size={20} color="#059669" />
@@ -380,17 +475,55 @@ export default function CheckIn() {
               value={notes}
               onChangeText={setNotes}
               multiline
-              placeholder="Existing damage, special notes..."
+              placeholder="Special notes..."
               placeholderTextColor="#9CA3AF"
               style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
             />
           </View>
+          <Lbl>EXISTING SCRATCH / DAMAGE?</Lbl>
+          <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
+            <TouchableOpacity onPress={() => setHasDamage(true)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Yes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setHasDamage(false)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: !hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: !hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>No</Text>
+            </TouchableOpacity>
+          </View>
+          {hasDamage && (
+            <>
+              <Lbl>DAMAGE DESCRIPTION (OPTIONAL)</Lbl>
+              <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
+                <Ionicons name="alert-circle-outline" size={20} color="#059669" />
+                <TextInput
+                  value={damageNotes}
+                  onChangeText={setDamageNotes}
+                  multiline
+                  placeholder="Describe scratches, dents, etc..."
+                  placeholderTextColor="#9CA3AF"
+                  style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
+                />
+              </View>
+            </>
+          )}
           <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
           <View style={inputRow}>
             <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
             <TextInput
               value={guestPhone}
               onChangeText={setGuestPhone}
+              placeholder="10-digit mobile number"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="phone-pad"
+              maxLength={10}
+              style={textInput}
+            />
+          </View>
+          <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
+          <View style={inputRow}>
+            <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
+            <TextInput
+              value={altGuestPhone}
+              onChangeText={setAltGuestPhone}
               placeholder="10-digit mobile number"
               placeholderTextColor="#9CA3AF"
               keyboardType="phone-pad"
@@ -423,39 +556,41 @@ export default function CheckIn() {
             </>
           )}
 
-          <Lbl>VEHICLE PHOTOS * (MIN 1, MAX 5)</Lbl>
+          <Lbl>VEHICLE PHOTOS * (ALL REQUIRED EXCEPT EXTRA)</Lbl>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: rp(16) }}>
-            {photos.map((u, i) => (
-              <View key={i} style={{ width: rp(80), height: rp(80) }}>
-                <Image source={{ uri: u }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
-                <TouchableOpacity
-                  onPress={() => setPhotos(photos.filter((_, k) => k !== i))}
-                  style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
-                >
-                  <Ionicons name="close-circle" size={24} color="#EF4444" />
-                </TouchableOpacity>
+            {["front", "back", "left", "right", "extra"].map((label) => (
+              <View key={label} style={{ width: rp(80), height: rp(80) }}>
+                {photos[label] ? (
+                  <>
+                    <Image source={{ uri: photos[label] }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
+                    <TouchableOpacity
+                      onPress={() => setPhotos({ ...photos, [label]: null })}
+                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => takePhoto(label)}
+                    style={{
+                      width: rp(80),
+                      height: rp(80),
+                      borderRadius: rp(16),
+                      borderWidth: rp(2),
+                      borderColor: "#059669",
+                      borderStyle: "dashed",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#fff",
+                    }}
+                  >
+                    <Ionicons name="camera-outline" size={24} color="#059669" />
+                    <Text style={{ fontSize: rs(9), color: "#059669", marginTop: rp(2), fontWeight: "900", textTransform: "uppercase" }}>{label}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
-            {photos.length < 5 && (
-              <TouchableOpacity
-                onPress={takePhoto}
-                testID="add-photo-btn"
-                style={{
-                  width: rp(80),
-                  height: rp(80),
-                  borderRadius: rp(16),
-                  borderWidth: rp(2),
-                  borderColor: "#059669",
-                  borderStyle: "dashed",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "#fff",
-                }}
-              >
-                <Ionicons name="camera-outline" size={24} color="#059669" />
-                <Text style={{ fontSize: rs(10), color: "#059669", marginTop: rp(2), fontWeight: "800" }}>Add Photo</Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           <TouchableOpacity

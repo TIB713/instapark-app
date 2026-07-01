@@ -123,6 +123,38 @@ export default function DriverStats() {
     }
   };
 
+  const toggleActive = async () => {
+    try {
+      await api.patch(`/drivers/${driverId}`, { is_active: !driver.is_active });
+      setDriver({ ...driver, is_active: !driver.is_active });
+    } catch {
+      Alert.alert("Error", "Failed to update driver status");
+    }
+  };
+
+  const handleDelete = async () => {
+    Alert.alert(
+      "Delete Driver",
+      "WARNING: This will permanently delete this driver and cannot be undone. Are you sure?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/superadmin/drivers/${driverId}/permanent`);
+              Alert.alert("Deleted", "Driver permanently deleted");
+              router.back();
+            } catch {
+              Alert.alert("Error", "Failed to delete driver");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const pickAadharPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
@@ -334,15 +366,30 @@ export default function DriverStats() {
             <Text style={{ fontWeight: "900", fontSize: rs(16), color: "#111827" }}>{driver.name}</Text>
             <Text style={{ fontSize: rs(12), color: "#6B7280", marginTop: rp(1) }}>{driver.employee_id}</Text>
             <View style={{ flexDirection: "row", gap: rp(6), marginTop: rp(5), flexWrap: "wrap" }}>
-              {driver.is_active ? (
-                <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
-                  <Text style={{ color: "#059669", fontSize: rs(10), fontWeight: "800" }}>ACTIVE</Text>
-                </View>
-              ) : (
-                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
-                  <Text style={{ color: "#EF4444", fontSize: rs(10), fontWeight: "800" }}>INACTIVE</Text>
-                </View>
-              )}
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    driver.is_active ? "Deactivate Driver" : "Activate Driver",
+                    driver.is_active
+                      ? "This driver will be marked inactive. Continue?"
+                      : "This driver will be marked active again. Continue?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Confirm", onPress: toggleActive },
+                    ]
+                  );
+                }}
+                style={{
+                  backgroundColor: driver.is_active ? "#D1FAE5" : "#FEE2E2",
+                  paddingHorizontal: rp(8),
+                  paddingVertical: rp(2),
+                  borderRadius: rp(99),
+                }}
+              >
+                <Text style={{ color: driver.is_active ? "#059669" : "#EF4444", fontSize: rs(10), fontWeight: "800" }}>
+                  {driver.is_active ? "ACTIVE ✓" : "INACTIVE ✗"}
+                </Text>
+              </TouchableOpacity>
               {driver.phone ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: rp(3), backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}>
                   <Ionicons name="call-outline" size={10} color="#6B7280" />
@@ -460,6 +507,22 @@ export default function DriverStats() {
               style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(4) }}
             >
               <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SAVE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: rp(6),
+                backgroundColor: "#FEE2E2",
+                borderRadius: rp(12),
+                paddingVertical: rp(12),
+                marginTop: rp(8),
+              }}
+            >
+              <Ionicons name="trash-outline" size={16} color="#EF4444" />
+              <Text style={{ color: "#EF4444", fontWeight: "800", fontSize: rs(13) }}>Delete Driver</Text>
             </TouchableOpacity>
           </View>
           <View style={{ height: rp(40) }} />

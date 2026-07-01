@@ -17,6 +17,19 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+
+const INCIDENT_TYPES = [
+  { key: "DAMAGE", label: "Damage", icon: "🚗" },
+  { key: "THEFT", label: "Theft", icon: "🔓" },
+  { key: "WRONG_CAR", label: "Wrong Car", icon: "🔄" },
+  { key: "DELAY", label: "Delay", icon: "⏱️" },
+  { key: "KEY_LOST", label: "Key Lost", icon: "🔑" },
+  { key: "ACCIDENT", label: "Accident", icon: "💥" },
+  { key: "MISCONDUCT", label: "Misconduct", icon: "⚠️" },
+  { key: "GUEST_COMPLAINT", label: "Guest Complaint", icon: "👤" },
+  { key: "OTHER", label: "Other", icon: "📝" },
+];
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -86,6 +99,7 @@ export default function EventDetail() {
   const [incidentCar, setIncidentCar] = useState(null);
   const [incidentDriver, setIncidentDriver] = useState(null);
   const [incidentDesc, setIncidentDesc] = useState("");
+  const [incidentType, setIncidentType] = useState("");
   const [incidentPhoto, setIncidentPhoto] = useState(null);
   const [submittingIncident, setSubmittingIncident] = useState(false);
   const [incidentCarSearch, setIncidentCarSearch] = useState("");
@@ -251,8 +265,10 @@ export default function EventDetail() {
       });
       setShowIncidentModal(false);
       setIncidentCar(null);
+      setIncidentType("");
       setIncidentDriver(null);
       setIncidentDesc("");
+      setIncidentType("");
       setIncidentPhoto(null);
       setIncidentCarSearch("");
       fetchIncidents();
@@ -2695,7 +2711,8 @@ export default function EventDetail() {
                     marginLeft: rp(8), flex: 1 }}> 
                       {incidentCar.plate} · {incidentCar.color} {incidentCar.make} 
                     </Text> 
-                    <TouchableOpacity onPress={() => { setIncidentCar(null); setIncidentCarSearch(""); }}>
+                    <TouchableOpacity onPress={() => { setIncidentCar(null);
+      setIncidentType(""); setIncidentCarSearch(""); }}>
                       <Ionicons name="close-circle" size={20} color="#059669" />
                     </TouchableOpacity>
                   </View> 

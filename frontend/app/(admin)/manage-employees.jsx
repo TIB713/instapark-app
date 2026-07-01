@@ -44,6 +44,7 @@ export default function ManageEmployees() {
   const [supName, setSupName] = useState("");
   const [supEmail, setSupEmail] = useState("");
   const [supPhone, setSupPhone] = useState("");
+  const [supGender, setSupGender] = useState("");
   const [supPassword, setSupPassword] = useState("");
   const [savingSup, setSavingSup] = useState(false);
   const [supPan, setSupPan] = useState("");
@@ -59,6 +60,7 @@ export default function ManageEmployees() {
   const [drvName, setDrvName] = useState("");
   const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
+  const [drvGender, setDrvGender] = useState("");
   const [drvPassword, setDrvPassword] = useState("");
   const [drvPhoto, setDrvPhoto] = useState(null);
   const [drvPhotoUri, setDrvPhotoUri] = useState(null);
@@ -106,7 +108,7 @@ export default function ManageEmployees() {
   );
 
   const resetSupForm = () => {
-    setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
+    setSupName(""); setSupEmail(""); setSupPhone(""); setSupGender(""); setSupPassword("");
     setSupPan(""); setSupBankAccount(""); setSupBankIfsc(""); setSupAadharNumber("");
     setSupAadharPhotoUri(null); setSupPhoto(null); setSupPhotoUri(null);
   };
@@ -115,6 +117,7 @@ export default function ManageEmployees() {
     setDrvName("");
     setDrvEmail("");
     setDrvPhone("");
+    setDrvGender("");
     setDrvPassword("");
     setDrvPhoto(null);
     setDrvPhotoUri(null);
@@ -205,6 +208,10 @@ export default function ManageEmployees() {
       Alert.alert("Required", "Name, email and password are required");
       return;
     }
+    if (!supGender) {
+      Alert.alert("Required", "Please select gender");
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
       Alert.alert("Invalid Email", "Please enter a valid email address");
       return;
@@ -265,6 +272,7 @@ export default function ManageEmployees() {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
         phone: supPhone.trim() || undefined,
+        gender: supGender,
         password: supPassword,
         pan_number: supPan.trim(),
         bank_account_number: supBankAccount.trim(),
@@ -286,6 +294,10 @@ export default function ManageEmployees() {
   const saveDriver = async () => {
     if (!drvName.trim() || !drvEmail.trim() || !drvPassword.trim()) {
       Alert.alert("Required", "Name, email and PIN are required");
+      return;
+    }
+    if (!drvGender) {
+      Alert.alert("Required", "Please select gender");
       return;
     }
     if (drvPassword.length !== 4 || !/^\d{4}$/.test(drvPassword)) {
@@ -361,6 +373,7 @@ export default function ManageEmployees() {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
         phone: drvPhone.trim() || undefined,
+        gender: drvGender,
         pin: drvPassword,
         driver_photo: photoUrl || undefined,
         pan_number: drvPan.trim(),
@@ -659,6 +672,21 @@ export default function ManageEmployees() {
                 <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" autoCapitalize="none" style={modalInput} />
                 <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
                 <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <Text style={modalLabel}>GENDER</Text>
+                <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: supGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setSupGender('male')}
+                  >
+                    <Text style={{ fontWeight: '600', color: supGender === 'male' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Male</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: supGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setSupGender('female')}
+                  >
+                    <Text style={{ fontWeight: '600', color: supGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
+                  </TouchableOpacity>
+                </View>
                 <Text style={modalLabel}>PASSWORD</Text>
                 <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
                 <Text style={modalLabel}>PAN CARD NUMBER</Text>
@@ -733,6 +761,21 @@ export default function ManageEmployees() {
                 <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
                 <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
                 <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <Text style={modalLabel}>GENDER</Text>
+                <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: drvGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setDrvGender('male')}
+                  >
+                    <Text style={{ fontWeight: '600', color: drvGender === 'male' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Male</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: drvGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setDrvGender('female')}
+                  >
+                    <Text style={{ fontWeight: '600', color: drvGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
+                  </TouchableOpacity>
+                </View>
                 <Text style={modalLabel}>4-DIGIT PIN</Text>
                 <TextInput value={drvPassword} onChangeText={setDrvPassword} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} style={modalInput} />
                 <Text style={modalLabel}>EMAIL</Text>
