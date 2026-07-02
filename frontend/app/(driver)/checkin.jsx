@@ -23,6 +23,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { enqueueCheckinAction } from "../../lib/offline";
+import { updateJourney } from "../../lib/locationTracking";
 
 const validatePlate = (plate) => {
   const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
@@ -287,6 +288,8 @@ export default function CheckIn() {
       try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {} 
       try { await AsyncStorage.removeItem("checkin_photos"); } catch {} 
       try { await AsyncStorage.removeItem("checkin_draft"); } catch {} 
+      // Start GPS journey tracking from this moment — driver now walks to park the car
+      try { await updateJourney(car.id, "checkin"); } catch {}
       router.replace({ 
         pathname: "/(driver)/qr-display", 
         params: { 

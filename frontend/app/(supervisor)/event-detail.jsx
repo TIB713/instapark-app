@@ -102,6 +102,11 @@ export default function SupervisorEventDetail() {
   const [incidentPhoto, setIncidentPhoto] = useState(null);
   const [submittingIncident, setSubmittingIncident] = useState(false);
   const [incidentCarSearch, setIncidentCarSearch] = useState("");
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [resolvingIncident, setResolvingIncident] = useState(null);
+  const [resolveStatus, setResolveStatus] = useState("IN_REVIEW");
+  const [resolveRemark, setResolveRemark] = useState("");
+  const [submittingResolve, setSubmittingResolve] = useState(false);
   const [incidents, setIncidents] = useState([]);
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -226,6 +231,31 @@ export default function SupervisorEventDetail() {
       setCarPhotos(data || []);
     } catch {
       setCarPhotos([]);
+    }
+  };
+
+  const submitResolve = async () => {
+    if ((resolveStatus === "RESOLVED" || resolveStatus === "DISMISSED") && !resolveRemark.trim()) {
+      Alert.alert("Required", "Please provide a remark when resolving or dismissing.");
+      return;
+    }
+    setSubmittingResolve(true);
+    try {
+      await api.patch(`/incidents/${resolvingIncident.id}`, {
+        status: resolveStatus,
+        remark: resolveRemark
+      });
+      setShowResolveModal(false);
+      setResolvingIncident(null);
+      setResolveStatus("IN_REVIEW");
+      setResolveRemark("");
+      fetchIncidents();
+      Alert.alert("Success", "Incident status updated successfully");
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Failed to update incident status");
+    } finally {
+      setSubmittingResolve(false);
     }
   };
 
@@ -918,25 +948,17 @@ export default function SupervisorEventDetail() {
                   ...cardShadow,
                 }}
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: rp(12),
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: "#111827",
-                      paddingHorizontal: rp(10),
-                      paddingVertical: rp(4),
-                      borderRadius: rp(8),
-                    }}
-                  >
-                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(13) }}>
-                      {i.plate}
-                    </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: rp(12) }}>
+                  <View style={{ flexDirection: "column", gap: rp(4) }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+                      <View style={{ backgroundColor: "#111827", paddingHorizontal: rp(10), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                        <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(13) }}>{i.plate}</Text>
+                      </View>
+                      <View style={{ paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(6), backgroundColor: i.status === "OPEN" ? "#FEE2E2" : i.status === "IN_REVIEW" ? "#FEF3C7" : i.status === "RESOLVED" ? "#D1FAE5" : "#F3F4F6" }}>
+                        <Text style={{ color: i.status === "OPEN" ? "#991B1B" : i.status === "IN_REVIEW" ? "#92400E" : i.status === "RESOLVED" ? "#065F46" : "#4B5563", fontSize: rs(10), fontWeight: "800" }}>{i.status}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ color: "#6B7280", fontSize: rs(11), fontWeight: "700" }}>{(i.incident_type || "UNKNOWN").replace(/_/g, " ").replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase())}</Text>
                   </View>
                   <Text style={{ color: "#9CA3AF", fontSize: rs(11), fontWeight: "700" }}>
                     {new Date(i.created_at).toLocaleString("en-IN", {
@@ -951,20 +973,43 @@ export default function SupervisorEventDetail() {
                 <Text style={{ color: "#374151", fontSize: rs(14), lineHeight: rp(20), marginBottom: rp(12) }}>
                   {i.description}
                 </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderTopWidth: rp(1),
-                    borderTopColor: "#F3F4F6",
-                    paddingTop: rp(12),
-                  }}
-                >
-                  <Ionicons name="person-outline" size={14} color="#6B7280" />
-                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(6), fontWeight: "600" }}>
-                    Driver: {i.driver_name || "—"}
-                  </Text>
+
+                {(i.status === "RESOLVED" || i.status === "DISMISSED") && i.remark && (
+                  <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), padding: rp(12), marginBottom: rp(12) }}>
+                    <Text style={{ color: "#374151", fontSize: rs(13), lineHeight: 18 }}>{i.remark}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6) }}>
+                      <Ionicons name="checkmark-done-circle" size={14} color="#6B7280" />
+                      <Text style={{ color: "#6B7280", fontSize: rs(11), marginLeft: rp(4) }}>
+                        Resolved by {i.resolved_by || "Unknown"} on {i.resolved_at ? new Date(i.resolved_at).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short", timeZone: 'Asia/Kolkata' }) : "Unknown"}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: rp(1), borderTopColor: "#F3F4F6", paddingTop: rp(12) }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons name="person-outline" size={14} color="#6B7280" />
+                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(6), fontWeight: "600" }}>
+                      Driver: {i.driver_name || "—"}
+                    </Text>
+                  </View>
+                  {(i.status === "OPEN" || i.status === "IN_REVIEW") && (
+                    <TouchableOpacity
+                      onPress={() => { setResolvingIncident(i); setResolveStatus(i.status === "OPEN" ? "IN_REVIEW" : i.status); setResolveRemark(""); setShowResolveModal(true); }}
+                      style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(10), paddingVertical: rp(6), borderRadius: rp(12) }}
+                    >
+                      <Text style={{ color: "#111827", fontWeight: "700", fontSize: rs(12) }}>Update Status</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
+
+                {i.photo_url && (
+                  <Image
+                    source={{ uri: i.photo_url }}
+                    style={{ width: "100%", height: rp(200), borderRadius: rp(16), marginTop: rp(12) }}
+                    resizeMode="cover"
+                  />
+                )}
               </View>
             ))
           )}
@@ -1288,6 +1333,39 @@ export default function SupervisorEventDetail() {
                     </TouchableOpacity>
                   </View>
                 )}
+                <Text style={modalLabel}>DRIVER INVOLVED (OPTIONAL)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
+                  <View style={{ flexDirection: "row", gap: rp(8), paddingRight: rp(16) }}>
+                    {[{ id: null, name: "None" }, ...drivers.filter(d => d.assigned)].map((d, idx) => (
+                      <TouchableOpacity
+                        key={d.id || `none-${idx}`}
+                        onPress={() => setIncidentDriver(d.id ? d : null)}
+                        style={{
+                          paddingHorizontal: rp(14),
+                          paddingVertical: rp(8),
+                          borderRadius: rp(12),
+                          borderWidth: rp(1),
+                          backgroundColor:
+                            (incidentDriver?.id ?? null) === d.id
+                              ? ACCENT_COLOR : "#fff",
+                          borderColor:
+                            (incidentDriver?.id ?? null) === d.id
+                              ? ACCENT_COLOR : "#E5E7EB",
+                        }}
+                      >
+                        <Text style={{
+                          fontWeight: "800",
+                          fontSize: rs(13),
+                          color:
+                            (incidentDriver?.id ?? null) === d.id
+                              ? "#fff" : "#374151",
+                        }}>
+                          {d.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
                 {/* Incident Type Picker */}
                 <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#0F2044", marginBottom: rp(8) }}>
                   Incident Type <Text style={{ color: "#EF4444" }}>*</Text>
@@ -1410,6 +1488,69 @@ export default function SupervisorEventDetail() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* RESOLVE INCIDENT MODAL */}
+      <Modal visible={showResolveModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%" }}>
+              <View style={{ alignItems: "center", marginBottom: rp(14) }}>
+                <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(16), paddingHorizontal: rp(20) }}>
+                <View style={{ backgroundColor: "#DBEAFE", borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}>
+                  <Ionicons name="shield-checkmark" size={20} color={ACCENT_COLOR} />
+                </View>
+                <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827", flex: 1 }}>Update Status</Text>
+                <TouchableOpacity onPress={() => setShowResolveModal(false)}>
+                  <Ionicons name="close-circle" size={26} color="#D1D5DB" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+                <Text style={modalLabel}>STATUS</Text>
+                <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16), flexWrap: "wrap" }}>
+                  {["IN_REVIEW", "RESOLVED", "DISMISSED"].map(statusVal => (
+                    <TouchableOpacity
+                      key={statusVal}
+                      onPress={() => setResolveStatus(statusVal)}
+                      style={{
+                        paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(12), borderWidth: rp(1),
+                        backgroundColor: resolveStatus === statusVal ? ACCENT_COLOR : "#fff",
+                        borderColor: resolveStatus === statusVal ? ACCENT_COLOR : "#E5E7EB"
+                      }}
+                    >
+                      <Text style={{ fontWeight: "800", fontSize: rs(13), color: resolveStatus === statusVal ? "#fff" : "#374151" }}>
+                        {statusVal === "IN_REVIEW" ? "Mark In Review" : statusVal === "RESOLVED" ? "Resolve" : "Dismiss"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={modalLabel}>HOW WAS THIS RESOLVED?</Text>
+                <TextInput
+                  value={resolveRemark}
+                  onChangeText={setResolveRemark}
+                  placeholder="Details about the resolution..."
+                  multiline
+                  style={[modalInput, { minHeight: rp(100), textAlignVertical: "top" }]}
+                />
+                <TouchableOpacity
+                  onPress={submitResolve}
+                  disabled={submittingResolve}
+                  style={{
+                    backgroundColor: ACCENT_COLOR,
+                    paddingVertical: rp(16),
+                    borderRadius: rp(16),
+                    alignItems: "center",
+                    marginTop: rp(8)
+                  }}
+                >
+                  {submittingResolve ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(14), letterSpacing: rs(1) }}>UPDATE INCIDENT</Text>}
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );

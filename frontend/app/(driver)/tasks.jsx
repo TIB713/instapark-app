@@ -276,7 +276,6 @@ export default function Tasks() {
     setSelectedSlot(null);
     setSlots([]);
     setShowParkModal(true);
-    await updateJourney(car.id, "checkin");
     await fetchEvent();
     await fetchSlots();
     setOpeningParkModal(null);
