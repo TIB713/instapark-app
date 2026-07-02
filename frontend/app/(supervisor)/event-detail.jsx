@@ -1294,16 +1294,16 @@ export default function SupervisorEventDetail() {
       </Modal>
 
       <Modal visible={showIncidentModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%" }}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "92%" }}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
                 <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827", flex: 1 }}>Report Incident</Text>
                 <TouchableOpacity onPress={() => setShowIncidentModal(false)}><Ionicons name="close-circle" size={26} color="#D1D5DB" /></TouchableOpacity>
               </View>
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={modalLabel}>SELECT CAR *</Text>
                 {!incidentCar && (
                   <>
@@ -1412,13 +1412,13 @@ export default function SupervisorEventDetail() {
                     </TouchableOpacity>
                   )}
                 </View>
-                <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: rp(18), paddingVertical: rp(18), alignItems: "center" }}>
+                <TouchableOpacity onPress={submitIncident} disabled={submittingIncident} style={{ backgroundColor: "#F59E0B", borderRadius: rp(18), paddingVertical: rp(18), alignItems: "center", marginBottom: rp(24) }}>
                   {submittingIncident ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SUBMIT INCIDENT</Text>}
                 </TouchableOpacity>
               </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showSOSPanel} transparent animationType="slide">

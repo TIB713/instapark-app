@@ -121,6 +121,7 @@ export const processPendingQueue = async () => {
               alt_guest_phone: item.altGuestPhone,
               has_damage: item.hasDamage,
               damage_notes: item.damageNotes,
+              damage_types: item.damageTypes,
               guest_name: item.guestName
             });
             carId = res.data.id;
@@ -138,6 +139,7 @@ export const processPendingQueue = async () => {
               alt_guest_phone: item.altGuestPhone,
               has_damage: item.hasDamage,
               damage_notes: item.damageNotes,
+              damage_types: item.damageTypes,
               guest_name: item.guestName
             });
             carId = res.data.id;

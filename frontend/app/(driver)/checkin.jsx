@@ -32,6 +32,20 @@ const validatePlate = (plate) => {
   return standard || bharat;
 };
 
+const DAMAGE_OPTIONS = [
+  "Front Bumper Scratch",
+  "Rear Bumper Scratch",
+  "Front Bumper Dent",
+  "Rear Bumper Dent",
+  "Left Door Scratch",
+  "Right Door Scratch",
+  "Side Mirror Damage",
+  "Windshield Crack",
+  "Headlight Damage",
+  "Taillight Damage",
+  "Wheel Rim Scratch",
+];
+
 function Lbl({ children }) {
   return (
     <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8), marginTop: rp(4) }}>
@@ -56,6 +70,8 @@ export default function CheckIn() {
   const [altGuestPhone, setAltGuestPhone] = useState("");
   const [hasDamage, setHasDamage] = useState(false);
   const [damageNotes, setDamageNotes] = useState("");
+  const [damageTypes, setDamageTypes] = useState([]);
+  const [showOtherDamage, setShowOtherDamage] = useState(false);
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
   const [lookupBanner, setLookupBanner] = useState(null);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
@@ -102,6 +118,7 @@ export default function CheckIn() {
           if (d.altGuestPhone) setAltGuestPhone(d.altGuestPhone);
           if (d.hasDamage) setHasDamage(d.hasDamage);
           if (d.damageNotes) setDamageNotes(d.damageNotes);
+          if (d.damageTypes) setDamageTypes(d.damageTypes);
           if (d.guestName) setGuestName(d.guestName);
         }
         if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
@@ -130,7 +147,7 @@ export default function CheckIn() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
     try {
-      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, guestName }));
+      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName }));
       await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
     } catch {}
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
@@ -181,6 +198,7 @@ export default function CheckIn() {
     if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; } 
     if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; } 
     if (!guestName.trim()) { Alert.alert("Required", "Guest name is required"); return; }
+    if (!guestPhone.trim() && !altGuestPhone.trim()) { Alert.alert("Required", "Please enter at least one mobile number (guest or alternate)"); return; }
     let phoneToSave = "";
     if (guestPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
@@ -235,6 +253,7 @@ export default function CheckIn() {
           altGuestPhone: altPhoneToSave || null,
           hasDamage,
           damageNotes: damageNotes.trim() || null,
+          damageTypes,
           guestName: guestName.trim(),
         });
         await AsyncStorage.removeItem("checkin_draft");
@@ -258,6 +277,7 @@ export default function CheckIn() {
           alt_guest_phone: altPhoneToSave || null,
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
+          damage_types: damageTypes,
           guest_name: guestName.trim(),
         }); 
         car = data; 
@@ -275,6 +295,7 @@ export default function CheckIn() {
           alt_guest_phone: altPhoneToSave || null,
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
+          damage_types: damageTypes,
           guest_name: guestName.trim(),
           ...(phoneToSave ? { guest_phone: phoneToSave } : {}), 
         }); 
@@ -494,21 +515,47 @@ export default function CheckIn() {
           </View>
           {hasDamage && (
             <>
-              <Lbl>DAMAGE DESCRIPTION (OPTIONAL)</Lbl>
-              <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
-                <Ionicons name="alert-circle-outline" size={20} color="#059669" />
-                <TextInput
-                  value={damageNotes}
-                  onChangeText={setDamageNotes}
-                  multiline
-                  placeholder="Describe scratches, dents, etc..."
-                  placeholderTextColor="#9CA3AF"
-                  style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
-                />
+              <Lbl>SELECT DAMAGE TYPE (TAP ALL THAT APPLY)</Lbl>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8), marginBottom: rp(16) }}>
+                {DAMAGE_OPTIONS.map((opt) => {
+                  const selected = damageTypes.includes(opt);
+                  return (
+                    <TouchableOpacity
+                      key={opt}
+                      onPress={() => setDamageTypes(prev => selected ? prev.filter(t => t !== opt) : [...prev, opt])}
+                      style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: selected ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
+                    >
+                      <Text style={{ fontSize: rs(12), fontWeight: "800", color: selected ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{opt}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity
+                  onPress={() => setShowOtherDamage(!showOtherDamage)}
+                  style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: showOtherDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
+                >
+                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: showOtherDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Other</Text>
+                </TouchableOpacity>
               </View>
+              {showOtherDamage && (
+                <>
+                  <Lbl>OTHER DAMAGE (DESCRIBE)</Lbl>
+                  <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
+                    <Ionicons name="alert-circle-outline" size={20} color="#059669" />
+                    <TextInput
+                      value={damageNotes}
+                      onChangeText={setDamageNotes}
+                      multiline
+                      placeholder="Describe scratches, dents, etc..."
+                      placeholderTextColor="#9CA3AF"
+                      style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
+                    />
+                  </View>
+                </>
+              )}
             </>
           )}
-          <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
+          <Text style={{ fontSize: rs(11), color: "#EF4444", fontWeight: "700", marginBottom: rp(6) }}>* At least one mobile number is required</Text>
+          <Lbl>GUEST MOBILE</Lbl>
           <View style={inputRow}>
             <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
             <TextInput
