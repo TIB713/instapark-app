@@ -35,6 +35,7 @@ export default function EditEvent() {
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
   const [maxCars, setMaxCars] = useState("200");
+  const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [keyHooks, setKeyHooks] = useState("50");
   const [zones, setZones] = useState([]);
   const [gates, setGates] = useState([]);
@@ -60,6 +61,7 @@ export default function EditEvent() {
         setName(data.name || "");
         setVenue(data.venue || "");
         setMaxCars(String(data.max_cars || 200));
+        setGateTimerMinutes(String(data.gate_timer_minutes || 5));
         setKeyHooks(String(data.key_hooks || 50));
         setStartTime(data.start_time || "18:00");
         setEndTime(data.end_time || "23:00");
@@ -95,18 +97,25 @@ export default function EditEvent() {
     }
     setSaving(true);
     try {
-      await api.patch(`/events/${eventId}`, {
-        name: name.trim(),
-        date: format(date, "yyyy-MM-dd"),
-        end_date: format(endDate, "yyyy-MM-dd"),
-        start_time: startTime,
-        end_time: endTime,
-        venue: venue.trim(),
-        max_cars: parseInt(maxCars) || 200,
-        key_hooks: parseInt(keyHooks) || 50,
-        zones: zones.filter((z) => z.name?.trim()),
-        gates: gates.filter((g) => g?.trim()),
-      });
+      if (isHotelDailyEdit) {
+        await api.patch(`/events/${eventId}`, {
+          gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
+        });
+      } else {
+        await api.patch(`/events/${eventId}`, {
+          name: name.trim(),
+          date: format(date, "yyyy-MM-dd"),
+          end_date: format(endDate, "yyyy-MM-dd"),
+          start_time: startTime,
+          end_time: endTime,
+          venue: venue.trim(),
+          max_cars: parseInt(maxCars) || 200,
+          key_hooks: parseInt(keyHooks) || 50,
+          zones: zones.filter((z) => z.name?.trim()),
+          gates: gates.filter((g) => g?.trim()),
+          gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
+        });
+      }
       router.back();
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Save failed");
@@ -199,6 +208,11 @@ export default function EditEvent() {
           <View style={inputRowStyle}>
             <Ionicons name="car-outline" size={18} color="#7C3AED" />
             <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
+          </View>
+          <Label>GATE WAIT TIMER (MINUTES)</Label>
+          <View style={inputRowStyle}>
+            <Ionicons name="timer-outline" size={18} color="#7C3AED" />
+            <TextInput value={gateTimerMinutes} onChangeText={setGateTimerMinutes} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
           </View>
 
           <Label>PARKING ZONES</Label>

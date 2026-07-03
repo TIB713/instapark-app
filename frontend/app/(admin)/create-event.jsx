@@ -33,6 +33,7 @@ export default function CreateEvent() {
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
   const [maxCars, setMaxCars] = useState("200");
+  const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [keyHookStart, setKeyHookStart] = useState(isHotelOwner ? "51" : "1");
   const [keyHookEnd, setKeyHookEnd] = useState(isHotelOwner ? "100" : "50");
   const [zones, setZones] = useState([{ name: "A", slots: 20 }]);
@@ -99,6 +100,7 @@ export default function CreateEvent() {
         end_time: endTime,
         venue: venue.trim(),
         max_cars: parseInt(maxCars) || 200,
+        gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
         key_hook_start: parseInt(keyHookStart) || 1,
         key_hook_end: parseInt(keyHookEnd) || 50,
         key_hooks: (parseInt(keyHookEnd) || 50) - (parseInt(keyHookStart) || 1) + 1,
@@ -361,6 +363,21 @@ export default function CreateEvent() {
               </InputRow>
             </View>
           </View>
+          <Label>GATE WAIT TIMER (MINUTES)</Label>
+          <InputRow icon="timer-outline">
+            <TextInput
+              value={gateTimerMinutes}
+              onChangeText={setGateTimerMinutes}
+              placeholder="5"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              maxLength={2}
+              style={textInputStyle}
+            />
+          </InputRow>
+          <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
+            How long a guest has to reach the gate before the car is sent back to parking.
+          </Text>
           {isHotelOwner && (
             <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
               Hotel's daily events use 1-50 by default — pick a different range for this special event to avoid overlap

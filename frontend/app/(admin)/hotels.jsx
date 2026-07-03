@@ -58,6 +58,7 @@ export default function Hotels() {
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
+  const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
 
   const [zones, setZones] = useState([{ name: "A", slots: "" }]);
   const [gates, setGates] = useState(["Main Gate"]);
@@ -108,6 +109,7 @@ export default function Hotels() {
     setContactPhone("");
     setContactEmail("");
     setTotalSlots("");
+    setGateTimerMinutes("5");
 
     setZones([{ name: "A", slots: "" }]);
     setGates(["Main Gate"]);
@@ -141,6 +143,7 @@ export default function Hotels() {
         contact_person_phone: contactPhone.trim(),
         contact_person_email: contactEmail.trim() || undefined,
         total_valet_slots: parseInt(totalSlots),
+        gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
 
         provider_id: user?.provider_id,
         zones: zones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
@@ -421,6 +424,14 @@ export default function Hotels() {
                 placeholder="Total slots"
                 value={totalSlots}
                 onChangeText={setTotalSlots}
+                keyboardType="numeric"
+              />
+              <Text style={modalLabel}>GATE WAIT TIMER (MINUTES)</Text>
+              <TextInput
+                style={modalInput}
+                placeholder="5"
+                value={gateTimerMinutes}
+                onChangeText={setGateTimerMinutes}
                 keyboardType="numeric"
               />
 

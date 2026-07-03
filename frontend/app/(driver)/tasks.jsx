@@ -92,6 +92,9 @@ export default function Tasks() {
 
   const [capturedGPS, setCapturedGPS] = useState(null);
   const [capturingGPS, setCapturingGPS] = useState(false);
+  const [otpInput, setOtpInput] = useState({});
+  const [verifyingOtp, setVerifyingOtp] = useState({});
+  const [arrivingAtGate, setArrivingAtGate] = useState(null);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -349,6 +352,32 @@ export default function Tasks() {
       fetchRetrievals();
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Failed");
+    }
+  };
+
+  const arriveAtGate = async (car) => {
+    setArrivingAtGate(car.id);
+    try {
+      await api.patch(`/cars/${car.id}/arrive-at-gate`);
+      fetchRetrievals();
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.detail || "Could not mark arrived at gate");
+    } finally {
+      setArrivingAtGate(null);
+    }
+  };
+
+  const verifyDeliveryOtp = async (car) => {
+    const code = (otpInput[car.id] || "").trim();
+    if (!code) { Alert.alert("Enter the code", "Ask the guest for their code and enter it."); return; }
+    setVerifyingOtp((prev) => ({ ...prev, [car.id]: true }));
+    try {
+      await api.post(`/cars/${car.id}/verify-delivery-otp`, { otp: code });
+      fetchRetrievals();
+    } catch (e) {
+      Alert.alert("Incorrect Code", e.response?.data?.detail || "Could not verify code");
+    } finally {
+      setVerifyingOtp((prev) => ({ ...prev, [car.id]: false }));
     }
   };
 
@@ -917,6 +946,7 @@ export default function Tasks() {
           let borderColor = "#9CA3AF";
           if (car.status === "RETRIEVAL_REQUESTED") borderColor = "#F59E0B";
           else if (car.status === "BEING_FETCHED" && isMine) borderColor = "#F97316";
+          else if (car.status === "ARRIVED_AT_GATE" && isMine) borderColor = "#7C3AED";
           return (
             <View
               key={car.id}
@@ -989,7 +1019,7 @@ export default function Tasks() {
                   }}
                 >
                   <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>
-                    {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : isMine ? "YOURS" : "OTHER"}
+                    {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : car.status === "ARRIVED_AT_GATE" && isMine ? "AT GATE" : isMine ? "YOURS" : "OTHER"}
                   </Text>
                 </View>
               </View>
@@ -1023,16 +1053,16 @@ export default function Tasks() {
               {car.status === "BEING_FETCHED" && isMine && (
                 <>
                   <TouchableOpacity
-                    onPress={() => handleHandover(car)}
-                    disabled={handoverUploading}
-                    style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
+                    onPress={() => arriveAtGate(car)}
+                    disabled={arrivingAtGate === car.id}
+                    style={{ backgroundColor: "#F97316", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center", opacity: arrivingAtGate === car.id ? 0.7 : 1 }}
                   >
-                    {handoverUploading ? (
+                    {arrivingAtGate === car.id ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
                       <>
-                        <Ionicons name="camera" size={14} color="#fff" />
-                        <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>HANDED TO GUEST</Text>
+                        <Ionicons name="flag" size={14} color="#fff" />
+                        <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>ARRIVED AT GATE</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -1053,6 +1083,51 @@ export default function Tasks() {
                     <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: 13 }}>Navigate to Car</Text>
                   </TouchableOpacity>
                 </>
+              )}
+              {car.status === "ARRIVED_AT_GATE" && isMine && (
+                <View style={{ marginTop: rp(12) }}>
+                  {!car.otp_verified ? (
+                    <>
+                      <Text style={{ color: "#6B7280", fontSize: rs(12), fontWeight: "700", marginBottom: rp(6) }}>
+                        Ask the guest for their code:
+                      </Text>
+                      <TextInput
+                        value={otpInput[car.id] || ""}
+                        onChangeText={(v) => setOtpInput((prev) => ({ ...prev, [car.id]: v }))}
+                        placeholder="Enter 6-digit code"
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(14), paddingVertical: rp(10), fontSize: rs(16), fontWeight: "700", textAlign: "center", letterSpacing: rs(4), marginBottom: rp(8) }}
+                      />
+                      <TouchableOpacity
+                        onPress={() => verifyDeliveryOtp(car)}
+                        disabled={verifyingOtp[car.id]}
+                        style={{ backgroundColor: "#7C3AED", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", flexDirection: "row", justifyContent: "center", opacity: verifyingOtp[car.id] ? 0.7 : 1 }}
+                      >
+                        {verifyingOtp[car.id] ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), letterSpacing: rs(1.5) }}>VERIFY CODE</Text>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => handleHandover(car)}
+                      disabled={handoverUploading}
+                      style={{ backgroundColor: "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", flexDirection: "row", justifyContent: "center", opacity: handoverUploading ? 0.7 : 1 }}
+                    >
+                      {handoverUploading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Ionicons name="camera" size={14} color="#fff" />
+                          <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>TAKE PHOTO & DELIVER</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
               {car.status === "BEING_FETCHED" && !isMine && (
                 <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(10), fontStyle: "italic" }}>

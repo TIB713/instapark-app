@@ -73,7 +73,8 @@ export default function CheckIn() {
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
-  const [lookupBanner, setLookupBanner] = useState(null);
+  const [pendingLookup, setPendingLookup] = useState(null);
+  const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [prefilledCarId, setPrefilledCarId] = useState(null); 
@@ -132,15 +133,45 @@ export default function CheckIn() {
     try {
       const { data } = await api.get(`/cars/plate-lookup/${plateValue}`, { params: { event_id: currentEventId } });
       if (data.found) {
-        setMake(prev => prev || data.make || "");
-        setColor(prev => prev || data.color || "");
-        setGuestPhone(prev => prev || data.guest_phone || "");
-        setAltGuestPhone(prev => prev || data.alt_guest_phone || "");
-        setCarType(prev => (prev === "normal" && data.car_type ? data.car_type : prev));
-        setLookupBanner(data);
-        setGuestName(prev => prev || data.guest_name || "");
+        setPendingLookup(data);
       }
     } catch {}
+  };
+
+  const confirmLookup = () => {
+    if (!pendingLookup) return;
+    setMake(prev => prev || pendingLookup.make || "");
+    setColor(prev => prev || pendingLookup.color || "");
+    setGuestPhone(prev => prev || pendingLookup.guest_phone || "");
+    setAltGuestPhone(prev => prev || pendingLookup.alt_guest_phone || "");
+    setCarType(prev => (prev === "normal" && pendingLookup.car_type ? pendingLookup.car_type : prev));
+    setGuestName(prev => prev || pendingLookup.guest_name || "");
+    setLookupApplied(true);
+    setPendingLookup(null);
+  };
+
+  const rejectLookup = () => {
+    setPendingLookup(null);
+    setLookupApplied(false);
+  };
+
+  const clearGuestOnly = () => {
+    Alert.alert(
+      "Clear Guest Details?",
+      "This will remove the guest name and phone number. The car details will stay the same.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes, Clear",
+          style: "destructive",
+          onPress: () => {
+            setGuestName("");
+            setGuestPhone("");
+            setAltGuestPhone("");
+          },
+        },
+      ]
+    );
   };
 
   const takePhoto = async (label) => {
@@ -432,29 +463,29 @@ export default function CheckIn() {
               </View>
             </View>
           ) : null}
-          {lookupBanner && lookupBanner.guest_name && (
-            <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
-                <Ionicons name="checkmark-circle" size={20} color="#059669" />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>PREVIOUS VISIT FOUND</Text>
-                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>{lookupBanner.guest_name} — details pre-filled below</Text>
-                </View>
-              </View>
-            </View>
-          )}
-          <Lbl>GUEST NAME *</Lbl>
-          <View style={inputRow}>
-            <Ionicons name="person-outline" size={20} color="#059669" />
-            <TextInput value={guestName} onChangeText={setGuestName} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
-          </View>
           <Lbl>LICENSE PLATE *</Lbl>
           <View style={inputRow}>
             <Ionicons name="car-outline" size={20} color="#059669" />
             <TextInput
               testID="plate-input"
               value={plate}
-              onChangeText={(v) => setPlate(v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase())}
+              onChangeText={(v) => {
+                const cleaned = v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+                setPlate(cleaned);
+                if (cleaned === "") {
+                  setPendingLookup(null);
+                  setPlateLookedUp(false);
+                  if (lookupApplied) {
+                    setMake("");
+                    setColor("");
+                    setGuestName("");
+                    setGuestPhone("");
+                    setAltGuestPhone("");
+                    setCarType("normal");
+                    setLookupApplied(false);
+                  }
+                }
+              }}
               onBlur={() => lookupPlate(plate.trim().toUpperCase())}
               placeholder="GJ01AB1234"
               placeholderTextColor="#9CA3AF"
@@ -462,6 +493,59 @@ export default function CheckIn() {
               maxLength={10}
               style={textInput}
             />
+          </View>
+          {pendingLookup && (
+            <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
+                <Ionicons name="help-circle" size={20} color="#059669" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>PREVIOUS VISIT FOUND</Text>
+                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>
+                    {pendingLookup.guest_name ? `${pendingLookup.guest_name} — ` : ""}Use these saved details?
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(10) }}>
+                <TouchableOpacity onPress={confirmLookup} style={{ backgroundColor: "#059669", borderRadius: rp(10), paddingVertical: rp(6), paddingHorizontal: rp(14) }}>
+                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#fff" }}>Use These Details</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={rejectLookup} style={{ paddingVertical: rp(6), paddingHorizontal: rp(4) }}>
+                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#6B7280" }}>Not This Guest</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {lookupApplied && !pendingLookup && (
+            <View style={{ marginBottom: rp(16) }}>
+              <Text style={{ fontSize: rs(11), color: "#059669", marginBottom: rp(8) }}>
+                ✓ Details filled from previous visit
+              </Text>
+              <TouchableOpacity
+                onPress={clearGuestOnly}
+                style={{
+                  borderWidth: rp(1),
+                  borderColor: "#FCA5A5",
+                  backgroundColor: "#FEF2F2",
+                  borderRadius: rp(10),
+                  paddingVertical: rp(8),
+                  paddingHorizontal: rp(14),
+                  alignSelf: "flex-start",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: rp(6),
+                }}
+              >
+                <Ionicons name="person-remove-outline" size={14} color="#DC2626" />
+                <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#DC2626" }}>
+                  Not this guest? Clear name &amp; phone
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <Lbl>GUEST NAME *</Lbl>
+          <View style={inputRow}>
+            <Ionicons name="person-outline" size={20} color="#059669" />
+            <TextInput value={guestName} onChangeText={setGuestName} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
           <Lbl>COLOR</Lbl>
           <View style={inputRow}>

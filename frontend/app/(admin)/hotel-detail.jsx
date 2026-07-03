@@ -956,6 +956,7 @@ export default function HotelDetail() {
               <InfoField label="PHONE" value={editHotel?.contact_person_phone} onSave={(v) => updateHotel({ contact_person_phone: v })} />
               <InfoField label="EMAIL" value={editHotel?.contact_person_email} onSave={(v) => updateHotel({ contact_person_email: v })} />
               <InfoField label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ total_valet_slots: parseInt(v) })} />
+              <InfoField label="GATE WAIT TIMER (MIN)" value={editHotel?.gate_timer_minutes?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ gate_timer_minutes: parseInt(v) })} />
 
 
 

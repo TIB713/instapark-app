@@ -91,6 +91,9 @@ export default function SupervisorEventDetail() {
 
   const [showCarModal, setShowCarModal] = useState(false);
   const [carPhotos, setCarPhotos] = useState([]);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
+  const [assignSuggestion, setAssignSuggestion] = useState(null);
+  const [assigningDriver, setAssigningDriver] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [slots, setSlots] = useState([]);
   const [selectedZone, setSelectedZone] = useState(null);
@@ -231,6 +234,35 @@ export default function SupervisorEventDetail() {
       setCarPhotos(data || []);
     } catch {
       setCarPhotos([]);
+    }
+  };
+
+  const openAssignPicker = async () => {
+    setShowAssignPicker(true);
+    setAssignSuggestion(null);
+    if (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") {
+      try {
+        const { data } = await api.get(`/cars/${selectedCar.id}/suggest-retrieval-driver`);
+        setAssignSuggestion(data.suggestion || null);
+      } catch {
+        setAssignSuggestion(null);
+      }
+    }
+  };
+
+  const handleAssignDriver = async (driverId) => {
+    const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
+    setAssigningDriver(true);
+    try {
+      await api.patch(`/cars/${selectedCar.id}/reassign-driver`, { driver_id: driverId, stage });
+      setShowAssignPicker(false);
+      setShowCarModal(false);
+      fetchCars();
+      fetchDrivers();
+    } catch (err) {
+      Alert.alert("Error", err.response?.data?.detail || "Failed to assign driver");
+    } finally {
+      setAssigningDriver(false);
     }
   };
 
@@ -1275,14 +1307,68 @@ export default function SupervisorEventDetail() {
                       <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(11) }}>{STATUS_CONFIG[selectedCar.status]?.label}</Text>
                     </View>
                   </View>
+                  {["CHECKED_IN", "RETRIEVAL_REQUESTED", "BEING_FETCHED"].includes(selectedCar.status) && !showAssignPicker && (
+                    <TouchableOpacity
+                      onPress={openAssignPicker}
+                      style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20), flexDirection: "row", justifyContent: "center" }}
+                    >
+                      <Ionicons name="person-add-outline" size={18} color="#fff" />
+                      <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>
+                        {(selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED")
+                          ? (selectedCar.retrieval_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")
+                          : (selectedCar.check_in_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {showAssignPicker && (
+                    <View style={{ marginTop: rp(16), backgroundColor: "#F9FAFB", borderRadius: rp(20), padding: rp(16) }}>
+                      {assignSuggestion && (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(10), gap: rp(6) }}>
+                          <Ionicons name="star" size={14} color="#059669" />
+                          <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(12) }}>Suggested: {assignSuggestion.name}</Text>
+                        </View>
+                      )}
+                      {drivers.filter(d => d.assigned && d.duty_status === "available").length === 0 ? (
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(13), textAlign: "center", paddingVertical: rp(12) }}>No available drivers right now</Text>
+                      ) : (
+                        drivers.filter(d => d.assigned && d.duty_status === "available").map(d => (
+                          <TouchableOpacity
+                            key={d.id}
+                            disabled={assigningDriver}
+                            onPress={() => handleAssignDriver(d.id)}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(12), borderBottomWidth: rp(1), borderBottomColor: "#E5E7EB" }}
+                          >
+                            <Text style={{ fontWeight: "700", color: "#111827" }}>{d.name}</Text>
+                            {assignSuggestion?.id === d.id && <Ionicons name="star" size={14} color="#059669" />}
+                          </TouchableOpacity>
+                        ))
+                      )}
+                      <TouchableOpacity onPress={() => setShowAssignPicker(false)} style={{ paddingVertical: rp(10), alignItems: "center" }}>
+                        <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
                   <TouchableOpacity 
                     onPress={() => { setShowCarModal(false); router.push({ pathname: "/(admin)/car-log", params: { car_id: selectedCar.id } }); }} 
-                    style={{ backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20), flexDirection: "row", justifyContent: "center" }} 
+                    style={{ backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }} 
                   > 
                     <Ionicons name="time-outline" size={18} color="#fff" /> 
                     <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text> 
                   </TouchableOpacity> 
-                  <TouchableOpacity onPress={() => setShowCarModal(false)} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
+                  {selectedCar.qr_token && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowCarModal(false);
+                        router.push({ pathname: "/(admin)/qr-display", params: { token: selectedCar.qr_token, plate: selectedCar.plate, carId: selectedCar.id, guestPhone: selectedCar.guest_phone || "" } });
+                      }}
+                      style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(12) }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>VIEW QR</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity onPress={() => { setShowCarModal(false); setShowAssignPicker(false); }} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
                     <Text style={{ color: "#6B7280", fontWeight: "700" }}>Close</Text>
                                       </TouchableOpacity>
                   </>
