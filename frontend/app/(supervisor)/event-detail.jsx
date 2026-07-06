@@ -608,6 +608,15 @@ export default function SupervisorEventDetail() {
       </View>
 
       {tab === "cars" && (
+        <TouchableOpacity
+          onPress={() => router.push("/(supervisor)/add-car")}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: ACCENT_COLOR, borderRadius: rp(14), paddingVertical: rp(14), marginHorizontal: rp(16), marginTop: rp(16) }}
+        >
+          <Ionicons name="add-circle-outline" size={18} color="#fff" />
+          <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(1.5), marginLeft: rp(8) }}>ADD CAR & ASSIGN DRIVER</Text>
+        </TouchableOpacity>
+      )}
+      {tab === "cars" && (
         <ScrollView
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}

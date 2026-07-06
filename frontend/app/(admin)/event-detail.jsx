@@ -92,6 +92,9 @@ export default function EventDetail() {
   const [selectedCar, setSelectedCar] = useState(null);
   const [showCarModal, setShowCarModal] = useState(false);
   const [carPhotos, setCarPhotos] = useState([]);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
+  const [assignSuggestion, setAssignSuggestion] = useState(null);
+  const [assigningDriver, setAssigningDriver] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [slots, setSlots] = useState([]);
   const [selectedZone, setSelectedZone] = useState(null);
@@ -367,6 +370,49 @@ export default function EventDetail() {
     } catch {
       setCarPhotos([]);
     }
+  };
+
+  const openAssignPicker = async () => {
+    setShowAssignPicker(true);
+    setAssignSuggestion(null);
+    if (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") {
+      try {
+        const { data } = await api.get(`/cars/${selectedCar.id}/suggest-retrieval-driver`);
+        setAssignSuggestion(data.suggestion || null);
+      } catch {
+        setAssignSuggestion(null);
+      }
+    }
+  };
+
+  const handleAssignDriver = async (driverId, isBusy, busyPlate) => {
+    const doAssign = async () => {
+      const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
+      setAssigningDriver(true);
+      try {
+        await api.patch(`/cars/${selectedCar.id}/reassign-driver`, { driver_id: driverId, stage });
+        setShowAssignPicker(false);
+        setShowCarModal(false);
+        fetchCars();
+        fetchDrivers();
+      } catch (err) {
+        Alert.alert("Error", err.response?.data?.detail || "Failed to assign driver");
+      } finally {
+        setAssigningDriver(false);
+      }
+    };
+    if (isBusy) {
+      Alert.alert(
+        "Driver is busy",
+        `This driver is currently busy${busyPlate ? ` with car ${busyPlate}` : ""}. Assign this car to them anyway?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Assign Anyway", onPress: doAssign },
+        ]
+      );
+      return;
+    }
+    doAssign();
   };
 
   const exportCSV = async () => {
@@ -2430,6 +2476,54 @@ export default function EventDetail() {
                       </>
                     )}
 
+                    {["CHECKED_IN", "RETRIEVAL_REQUESTED", "BEING_FETCHED"].includes(selectedCar.status) && !showAssignPicker && (
+                      <TouchableOpacity
+                        onPress={openAssignPicker}
+                        style={{ backgroundColor: "#0F2044", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20), flexDirection: "row", justifyContent: "center" }}
+                      >
+                        <Ionicons name="person-add-outline" size={18} color="#fff" />
+                        <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>
+                          {(selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED")
+                            ? (selectedCar.retrieval_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")
+                            : (selectedCar.check_in_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {showAssignPicker && (
+                      <View style={{ marginTop: rp(16), backgroundColor: "#F9FAFB", borderRadius: rp(20), padding: rp(16) }}>
+                        {assignSuggestion && (
+                          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(10), gap: rp(6) }}>
+                            <Ionicons name="star" size={14} color="#059669" />
+                            <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(12) }}>Suggested: {assignSuggestion.name}</Text>
+                          </View>
+                        )}
+                        {drivers.filter(d => d.assigned).length === 0 ? (
+                          <Text style={{ color: "#9CA3AF", fontSize: rs(13), textAlign: "center", paddingVertical: rp(12) }}>No drivers rostered on this event</Text>
+                        ) : (
+                          drivers.filter(d => d.assigned).map(d => (
+                            <TouchableOpacity
+                              key={d.id}
+                              disabled={assigningDriver}
+                              onPress={() => handleAssignDriver(d.id, d.duty_status === "busy", d.current_car_plate)}
+                              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(12), borderBottomWidth: rp(1), borderBottomColor: "#E5E7EB" }}
+                            >
+                              <View>
+                                <Text style={{ fontWeight: "700", color: "#111827" }}>{d.name}</Text>
+                                {d.duty_status === "busy" && d.current_car_plate && (
+                                  <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>Busy with {d.current_car_plate}</Text>
+                                )}
+                              </View>
+                              {assignSuggestion?.id === d.id && <Ionicons name="star" size={14} color="#059669" />}
+                            </TouchableOpacity>
+                          ))
+                        )}
+                        <TouchableOpacity onPress={() => setShowAssignPicker(false)} style={{ paddingVertical: rp(10), alignItems: "center" }}>
+                          <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
                     <TouchableOpacity
                       onPress={() => {
                         setShowCarModal(false);
@@ -2441,7 +2535,7 @@ export default function EventDetail() {
                       style={{
                         backgroundColor: "#111827", borderRadius: rp(16),
                         paddingVertical: rp(14), alignItems: "center",
-                        marginTop: rp(20), flexDirection: "row",
+                        marginTop: rp(12), flexDirection: "row",
                         justifyContent: "center"
                       }}
                     >

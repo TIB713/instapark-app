@@ -32,7 +32,7 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
 import { enqueueHandover, getQueueCount, processPendingQueue, enqueueParkAction, getQueueSummary, getFailedQueue } from "../../lib/offline";
-import { stopLocationTracking, updateJourney, checkEventStatusAndStop } from "../../lib/locationTracking";
+import { stopLocationTracking, updateJourney, checkEventStatusAndStop, isJourneyAccepted, markJourneyAccepted } from "../../lib/locationTracking";
 
 const cardShadow = {
   shadowColor: "#059669",
@@ -60,6 +60,8 @@ export default function Tasks() {
   const resolvedDriverId = driver?.id;
   const [tab, setTab] = useState("mycars");
   const [cars, setCars] = useState([]);
+  const [acceptedCarIds, setAcceptedCarIds] = useState(new Set());
+  const [acceptingCarId, setAcceptingCarId] = useState(null);
   const [retrievals, setRetrievals] = useState([]);
   const [showParkModal, setShowParkModal] = useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
@@ -95,6 +97,12 @@ export default function Tasks() {
   const [otpInput, setOtpInput] = useState({});
   const [verifyingOtp, setVerifyingOtp] = useState({});
   const [arrivingAtGate, setArrivingAtGate] = useState(null);
+  const [nowTick, setNowTick] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -105,11 +113,17 @@ export default function Tasks() {
         },
       });
       // TODO: remove client-side filter once backend supports driver_id + status query params
-      setCars(
-        (data || []).filter(
-          (c) => c.check_in_driver_id === resolvedDriverId && ["CHECKED_IN", "PARKED"].includes(c.status)
-        )
+      const myCars = (data || []).filter(
+        (c) => c.check_in_driver_id === resolvedDriverId && ["CHECKED_IN", "PARKED"].includes(c.status)
       );
+      setCars(myCars);
+      const checkedInIds = myCars.filter(c => c.status === "CHECKED_IN").map(c => c.id);
+      const accepted = await Promise.all(checkedInIds.map(id => isJourneyAccepted(id)));
+      setAcceptedCarIds(prev => {
+        const next = new Set(prev);
+        checkedInIds.forEach((id, i) => { if (accepted[i]) next.add(id); });
+        return next;
+      });
     } catch {}
   }, [currentEventId, resolvedDriverId]);
 
@@ -334,6 +348,7 @@ export default function Tasks() {
       setParkPhotos([]);
       setParkingPhotoStep(false);
       fetchMyCars();
+      fetchRetrievals();
       setCapturedGPS(null);
 
       // Use the locally copied photos for background upload as well
@@ -887,6 +902,38 @@ export default function Tasks() {
                   </View>
                 ) : null}
               </View>
+            ) : !acceptedCarIds.has(car.id) ? (
+              <TouchableOpacity
+                onPress={async () => {
+                  setAcceptingCarId(car.id);
+                  try {
+                    await updateJourney(car.id, "checkin");
+                    await markJourneyAccepted(car.id);
+                    setAcceptedCarIds(prev => new Set(prev).add(car.id));
+                  } finally {
+                    setAcceptingCarId(null);
+                  }
+                }}
+                disabled={acceptingCarId === car.id}
+                style={{
+                  backgroundColor: "#0F2044",
+                  borderRadius: rp(14),
+                  paddingVertical: rp(14),
+                  alignItems: "center",
+                  marginTop: rp(12),
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                {acceptingCarId === car.id ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>ACCEPT</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             ) : (
               <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(12) }}>
                 <TouchableOpacity
@@ -934,20 +981,29 @@ export default function Tasks() {
           </View>
         ))}
 
-        {tab === "retrievals" && retrievals.length === 0 && (
-          <View style={{ alignItems: "center", marginTop: rp(60) }}>
-            <Text style={{ fontSize: rs(64) }}>🔔</Text>
-            <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No retrieval requests</Text>
-            <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>You're all caught up!</Text>
-          </View>
-        )}
-        {tab === "retrievals" && retrievals.map((car) => {
-          const isMine = car.retrieval_driver_id === resolvedDriverId;
-          let borderColor = "#9CA3AF";
-          if (car.status === "RETRIEVAL_REQUESTED") borderColor = "#F59E0B";
-          else if (car.status === "BEING_FETCHED" && isMine) borderColor = "#F97316";
-          else if (car.status === "ARRIVED_AT_GATE" && isMine) borderColor = "#7C3AED";
+        {(() => {
+          // Once a car is claimed (self-service or supervisor-assigned), it's no longer
+          // anyone else's business — only show it to the driver actually handling it.
+          const visibleRetrievals = retrievals.filter(
+            (car) => car.status === "RETRIEVAL_REQUESTED" || car.retrieval_driver_id === resolvedDriverId
+          );
           return (
+            <>
+              {tab === "retrievals" && visibleRetrievals.length === 0 && (
+                <View style={{ alignItems: "center", marginTop: rp(60) }}>
+                  <Text style={{ fontSize: rs(64) }}>🔔</Text>
+                  <Text style={{ color: "#111827", fontWeight: "900", fontSize: rs(16), marginTop: rp(12) }}>No retrieval requests</Text>
+                  <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: rp(4) }}>You're all caught up!</Text>
+                </View>
+              )}
+              {tab === "retrievals" && visibleRetrievals.map((car) => {
+                const isMine = car.retrieval_driver_id === resolvedDriverId;
+                let borderColor = "#9CA3AF";
+                if (car.status === "RETRIEVAL_REQUESTED") borderColor = "#F59E0B";
+                else if (car.status === "BEING_FETCHED" && isMine) borderColor = "#F97316";
+                else if (car.status === "ARRIVED_AT_GATE" && isMine) borderColor = "#7C3AED";
+                else if (car.status === "AWAITING_REPARK" && isMine) borderColor = "#DC2626";
+                return (
             <View
               key={car.id}
               style={{
@@ -1019,7 +1075,7 @@ export default function Tasks() {
                   }}
                 >
                   <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800", letterSpacing: rs(1) }}>
-                    {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : car.status === "ARRIVED_AT_GATE" && isMine ? "AT GATE" : isMine ? "YOURS" : "OTHER"}
+                    {car.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : car.status === "ARRIVED_AT_GATE" && isMine ? "AT GATE" : car.status === "AWAITING_REPARK" && isMine ? "RE-PARK NEEDED" : isMine ? "YOURS" : "OTHER"}
                   </Text>
                 </View>
               </View>
@@ -1086,6 +1142,26 @@ export default function Tasks() {
               )}
               {car.status === "ARRIVED_AT_GATE" && isMine && (
                 <View style={{ marginTop: rp(12) }}>
+                  {car.gate_timer_expires_at && (() => {
+                    const secondsLeft = Math.max(0, Math.floor((new Date(car.gate_timer_expires_at) - nowTick) / 1000));
+                    return (
+                      <View style={{ backgroundColor: secondsLeft <= 60 ? "#FEE2E2" : "#FEF3C7", borderRadius: rp(12), padding: rp(10), marginBottom: rp(10), alignItems: "center" }}>
+                        <Text style={{ color: secondsLeft <= 60 ? "#DC2626" : "#B45309", fontSize: rs(11), fontWeight: "800", letterSpacing: rs(0.5) }}>
+                          TIME LEFT FOR GUEST
+                        </Text>
+                        <Text style={{ color: secondsLeft <= 60 ? "#DC2626" : "#92400E", fontSize: rs(22), fontWeight: "900", marginTop: rp(2) }}>
+                          {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+                        </Text>
+                      </View>
+                    );
+                  })()}
+                  <TouchableOpacity
+                    onPress={() => Alert.alert("Coming Soon", "In-app masked calling will be available in a future update.")}
+                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#EFF6FF", borderRadius: rp(14), paddingVertical: rp(10), marginBottom: rp(10), borderWidth: rp(1), borderColor: "#BFDBFE" }}
+                  >
+                    <Ionicons name="call" size={16} color="#1D4ED8" />
+                    <Text style={{ color: "#1D4ED8", fontWeight: "800", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(0.5) }}>CALL GUEST</Text>
+                  </TouchableOpacity>
                   {!car.otp_verified ? (
                     <>
                       <Text style={{ color: "#6B7280", fontSize: rs(12), fontWeight: "700", marginBottom: rp(6) }}>
@@ -1129,14 +1205,35 @@ export default function Tasks() {
                   )}
                 </View>
               )}
-              {car.status === "BEING_FETCHED" && !isMine && (
-                <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(10), fontStyle: "italic" }}>
-                  Being fetched by another driver
-                </Text>
-              )}
+            {car.status === "AWAITING_REPARK" && isMine && (
+              <View style={{ marginTop: rp(12) }}>
+                <View style={{ backgroundColor: "#FEF2F2", borderRadius: rp(12), padding: rp(10), marginBottom: rp(10) }}>
+                  <Text style={{ color: "#B91C1C", fontSize: rs(12), fontWeight: "700" }}>
+                    Guest didn't arrive in time. Please park this car in any available slot.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => openParkModal(car)}
+                  disabled={openingParkModal === car.id}
+                  style={{ backgroundColor: openingParkModal === car.id ? "#047857" : "#059669", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", flexDirection: "row", justifyContent: "center", opacity: openingParkModal === car.id ? 0.8 : 1 }}
+                >
+                  {openingParkModal === car.id ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="location" size={14} color="#fff" />
+                      <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>RE-PARK CAR</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
             </View>
           );
-        })}
+              })}
+            </>
+          );
+        })()}
         <View style={{ height: rp(40) }} />
       </ScrollView>
 

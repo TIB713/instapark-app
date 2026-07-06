@@ -86,6 +86,7 @@ export default function RootLayout() {
         <Stack.Screen name="(driver)/scanner" />
         <Stack.Screen name="(supervisor)/dashboard" />
         <Stack.Screen name="(supervisor)/event-detail" />
+        <Stack.Screen name="(supervisor)/add-car" />
         <Stack.Screen name="(supervisor)/manage-employees" />
         <Stack.Screen name="(driver)/index" />
         <Stack.Screen name="(driver)/checkin" />

@@ -108,6 +108,31 @@ export const updateJourney = async (carId, journeyType) => {
   } catch {}
 };
 
+// ── Track which cars this driver has explicitly acknowledged ────────────────
+// A car checked in by a supervisor/admin needs the driver to actively tap
+// "Accept" before GPS journey tracking starts for it — we don't want to guess.
+export const isJourneyAccepted = async (carId) => {
+  try {
+    const raw = await AsyncStorage.getItem("accepted_journey_cars");
+    const list = raw ? JSON.parse(raw) : [];
+    return list.includes(carId);
+  } catch {
+    return false;
+  }
+};
+
+export const markJourneyAccepted = async (carId) => {
+  try {
+    const raw = await AsyncStorage.getItem("accepted_journey_cars");
+    const list = raw ? JSON.parse(raw) : [];
+    if (!list.includes(carId)) {
+      list.push(carId);
+      // Keep this list from growing forever — 200 recent cars is plenty
+      await AsyncStorage.setItem("accepted_journey_cars", JSON.stringify(list.slice(-200)));
+    }
+  } catch {}
+};
+
 // ── Poll event status and auto-stop ─────────────────────────────────────────
 // Call this on app foreground resume and on a timer.
 // Returns true if event is still active, false if closed (and tracking stopped).

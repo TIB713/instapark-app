@@ -2,13 +2,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive'; 
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native"; 
 import { CameraView, useCameraPermissions } from "expo-camera"; 
-import { useRouter } from "expo-router"; 
+import { useRouter, useLocalSearchParams } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import api from "../../lib/api"; 
  
 export default function Scanner() { 
   const router = useRouter(); 
+  const { returnTo } = useLocalSearchParams();
+  const targetScreen = returnTo || "/(driver)/checkin"; 
   const [permission, requestPermission] = useCameraPermissions(); 
   const [scanComplete, setScanComplete] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export default function Scanner() {
       }
 
       router.replace({
-        pathname: "/(driver)/checkin",
+        pathname: targetScreen,
         params: {
           prefill_car_id: pass.car_id,
           prefill_pass_token: passToken,

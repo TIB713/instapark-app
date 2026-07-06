@@ -54,6 +54,10 @@ export default function DriverHome() {
 
   const handleSignOut = () => {
     const doSignOut = async () => {
+      const driverId = driver?.id || driver?.user_id;
+      if (driverId) {
+        await api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "offline" }).catch(() => {});
+      }
       await stopLocationTracking();
       await secureDelete("auth_token");
       await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
@@ -77,6 +81,12 @@ export default function DriverHome() {
     await updateJourney(null, "idle");
     // Start tracking — survives screen changes, lock, minimize
     await startLocationTracking();
+    // Mark this driver available for dispatch — automatic, no manual toggle.
+    // Safe to call even if already available or mid-task; a busy driver simply won't flip.
+    const driverId = driver?.id || driver?.user_id;
+    if (driverId) {
+      api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "available" }).catch(() => {});
+    }
     router.push("/(driver)/tasks");
   };
 
