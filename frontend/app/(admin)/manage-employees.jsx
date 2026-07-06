@@ -52,6 +52,8 @@ export default function ManageEmployees() {
   const [supBankIfsc, setSupBankIfsc] = useState("");
   const [supAadharNumber, setSupAadharNumber] = useState("");
   const [supAadharPhotoUri, setSupAadharPhotoUri] = useState(null);
+  const [supIfscInfo, setSupIfscInfo] = useState(null);
+  const [supIfscChecking, setSupIfscChecking] = useState(false);
   const [supPhoto, setSupPhoto] = useState(null);
   const [supPhotoUri, setSupPhotoUri] = useState(null);
 
@@ -72,6 +74,8 @@ export default function ManageEmployees() {
   const [drvBankIfsc, setDrvBankIfsc] = useState("");
   const [drvAadharNumber, setDrvAadharNumber] = useState("");
   const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
+  const [drvIfscInfo, setDrvIfscInfo] = useState(null);
+  const [drvIfscChecking, setDrvIfscChecking] = useState(false);
   const [savingDrv, setSavingDrv] = useState(false);
 
   useEffect(() => {
@@ -111,6 +115,7 @@ export default function ManageEmployees() {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupGender(""); setSupPassword("");
     setSupPan(""); setSupBankAccount(""); setSupBankIfsc(""); setSupAadharNumber("");
     setSupAadharPhotoUri(null); setSupPhoto(null); setSupPhotoUri(null);
+    setSupIfscInfo(null); setSupIfscChecking(false);
   };
 
   const resetDrvForm = () => {
@@ -129,6 +134,7 @@ export default function ManageEmployees() {
     setDrvBankIfsc("");
     setDrvAadharNumber("");
     setDrvAadharPhotoUri(null);
+    setDrvIfscInfo(null); setDrvIfscChecking(false);
   };
 
   const pickDriverPhoto = async () => {
@@ -241,6 +247,9 @@ export default function ManageEmployees() {
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) {
       Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
     }
+    if (supBankIfsc.trim().length === 11 && !supIfscInfo) {
+      Alert.alert("Invalid IFSC", "Please enter a valid IFSC code"); return;
+    }
     if (!supAadharNumber.trim()) {
       Alert.alert("Required", "Aadhar Number is required");
       return;
@@ -332,6 +341,9 @@ export default function ManageEmployees() {
     }
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(drvBankIfsc.trim().toUpperCase())) {
       Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
+    }
+    if (drvBankIfsc.trim().length === 11 && !drvIfscInfo) {
+      Alert.alert("Invalid IFSC", "Please enter a valid IFSC code"); return;
     }
     if (!drvLicenseNumber.trim()) {
       Alert.alert("Required", "Driving License Number is required");
@@ -692,11 +704,32 @@ export default function ManageEmployees() {
                 <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={supPan} onChangeText={(v) => setSupPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={supBankAccount} onChangeText={setSupBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
+                <TextInput value={supBankAccount} onChangeText={setSupBankAccount} placeholder="Account number" keyboardType="numeric" maxLength={18} style={modalInput} />
                 <Text style={modalLabel}>BANK IFSC CODE</Text>
-                <TextInput value={supBankIfsc} onChangeText={(v) => setSupBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+                <TextInput value={supBankIfsc} onChangeText={(v) => {
+                  const upper = v.toUpperCase();
+                  setSupBankIfsc(upper);
+                  if (upper !== supBankIfsc) setSupIfscInfo(null);
+                  if (upper.length === 11) {
+                    setSupIfscChecking(true);
+                    api.get(`/utils/ifsc/${upper}`)
+                      .then(res => { setSupIfscInfo(res.data); setSupIfscChecking(false); })
+                      .catch(() => { setSupIfscInfo("error"); setSupIfscChecking(false); });
+                  }
+                }} placeholder="SBIN0001234" autoCapitalize="characters" maxLength={11} style={modalInput} />
+                {supIfscChecking && <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>Checking IFSC...</Text>}
+                {supIfscInfo && supIfscInfo !== "error" && (
+                  <Text style={{ color: "#059669", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    {supIfscInfo.bank} — {supIfscInfo.branch}, {supIfscInfo.city}
+                  </Text>
+                )}
+                {supIfscInfo === "error" && (
+                  <Text style={{ color: "#EF4444", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    IFSC code not found
+                  </Text>
+                )}
                 <Text style={modalLabel}>AADHAR NUMBER</Text>
-                <TextInput value={supAadharNumber} onChangeText={(v) => setSupAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+                <TextInput value={supAadharNumber} onChangeText={setSupAadharNumber} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={modalInput} />
 
                 <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
@@ -783,9 +816,30 @@ export default function ManageEmployees() {
                 <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={drvPan} onChangeText={(v) => setDrvPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={drvBankAccount} onChangeText={setDrvBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
+                <TextInput value={drvBankAccount} onChangeText={setDrvBankAccount} placeholder="Account number" keyboardType="numeric" maxLength={18} style={modalInput} />
                 <Text style={modalLabel}>BANK IFSC CODE</Text>
-                <TextInput value={drvBankIfsc} onChangeText={(v) => setDrvBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+                <TextInput value={drvBankIfsc} onChangeText={(v) => {
+                  const upper = v.toUpperCase();
+                  setDrvBankIfsc(upper);
+                  if (upper !== drvBankIfsc) setDrvIfscInfo(null);
+                  if (upper.length === 11) {
+                    setDrvIfscChecking(true);
+                    api.get(`/utils/ifsc/${upper}`)
+                      .then(res => { setDrvIfscInfo(res.data); setDrvIfscChecking(false); })
+                      .catch(() => { setDrvIfscInfo("error"); setDrvIfscChecking(false); });
+                  }
+                }} placeholder="SBIN0001234" autoCapitalize="characters" maxLength={11} style={modalInput} />
+                {drvIfscChecking && <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>Checking IFSC...</Text>}
+                {drvIfscInfo && drvIfscInfo !== "error" && (
+                  <Text style={{ color: "#059669", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    {drvIfscInfo.bank} — {drvIfscInfo.branch}, {drvIfscInfo.city}
+                  </Text>
+                )}
+                {drvIfscInfo === "error" && (
+                  <Text style={{ color: "#EF4444", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    IFSC code not found
+                  </Text>
+                )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER</Text>
                 <TextInput value={drvLicenseNumber} onChangeText={(v) => setDrvLicenseNumber(v.toUpperCase())} placeholder="DL number" autoCapitalize="characters" style={modalInput} />
 
@@ -809,7 +863,7 @@ export default function ManageEmployees() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>AADHAR NUMBER</Text>
-                <TextInput value={drvAadharNumber} onChangeText={(v) => setDrvAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+                <TextInput value={drvAadharNumber} onChangeText={setDrvAadharNumber} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={modalInput} />
 
                 <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>

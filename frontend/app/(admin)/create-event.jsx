@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import VenuePicker from "../../components/VenuePicker";
 
 export default function CreateEvent() {
   const router = useRouter();
@@ -32,6 +33,10 @@ export default function CreateEvent() {
   const [startTime, setStartTime] = useState("18:00");
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
+  const [venuePlaceId, setVenuePlaceId] = useState(null);
+  const [venueAddress, setVenueAddress] = useState(null);
+  const [venueLat, setVenueLat] = useState(null);
+  const [venueLng, setVenueLng] = useState(null);
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [keyHookStart, setKeyHookStart] = useState(isHotelOwner ? "51" : "1");
@@ -189,13 +194,16 @@ export default function CreateEvent() {
             </View>
           ) : (
             <InputRow icon="location-outline">
-              <TextInput
-                testID="event-venue-input"
+              <VenuePicker
                 value={venue}
-                onChangeText={setVenue}
-                placeholder="Grand Ballroom"
-                placeholderTextColor="#9CA3AF"
-                style={textInputStyle}
+                onSelect={(val) => {
+                  setVenue(val.venue || "");
+                  setVenuePlaceId(val.venue_place_id);
+                  setVenueAddress(val.venue_address);
+                  setVenueLat(val.venue_lat);
+                  setVenueLng(val.venue_lng);
+                }}
+                placeholder="Search venue e.g. ITC Narmada"
               />
             </InputRow>
           )}

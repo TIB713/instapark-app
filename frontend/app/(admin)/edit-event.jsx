@@ -20,6 +20,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format, parse } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import VenuePicker from "../../components/VenuePicker";
 
 export default function EditEvent() {
   const router = useRouter();
@@ -34,6 +35,10 @@ export default function EditEvent() {
   const [startTime, setStartTime] = useState("18:00");
   const [endTime, setEndTime] = useState("23:00");
   const [venue, setVenue] = useState("");
+  const [venuePlaceId, setVenuePlaceId] = useState(null);
+  const [venueAddress, setVenueAddress] = useState(null);
+  const [venueLat, setVenueLat] = useState(null);
+  const [venueLng, setVenueLng] = useState(null);
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [keyHooks, setKeyHooks] = useState("50");
@@ -60,6 +65,10 @@ export default function EditEvent() {
         setEventData(data);
         setName(data.name || "");
         setVenue(data.venue || "");
+        setVenuePlaceId(data.venue_place_id || null);
+        setVenueAddress(data.venue_address || null);
+        setVenueLat(data.venue_lat || null);
+        setVenueLng(data.venue_lng || null);
         setMaxCars(String(data.max_cars || 200));
         setGateTimerMinutes(String(data.gate_timer_minutes || 5));
         setKeyHooks(String(data.key_hooks || 50));
@@ -109,6 +118,10 @@ export default function EditEvent() {
           start_time: startTime,
           end_time: endTime,
           venue: venue.trim(),
+          venue_place_id: venuePlaceId,
+          venue_address: venueAddress,
+          venue_lat: venueLat,
+          venue_lng: venueLng,
           max_cars: parseInt(maxCars) || 200,
           key_hooks: parseInt(keyHooks) || 50,
           zones: zones.filter((z) => z.name?.trim()),
@@ -161,7 +174,17 @@ export default function EditEvent() {
               <Label>VENUE</Label>
               <View style={inputRowStyle}>
                 <Ionicons name="location-outline" size={18} color="#7C3AED" />
-                <TextInput value={venue} onChangeText={setVenue} style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
+                <VenuePicker
+                  value={venue}
+                  onSelect={(val) => {
+                    setVenue(val.venue || "");
+                    setVenuePlaceId(val.venue_place_id);
+                    setVenueAddress(val.venue_address);
+                    setVenueLat(val.venue_lat);
+                    setVenueLng(val.venue_lng);
+                  }}
+                  placeholder="Search venue e.g. ITC Narmada"
+                />
               </View>
 
               <View style={{ flexDirection: "row", gap: rp(12) }}>
