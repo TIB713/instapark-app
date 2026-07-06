@@ -13,7 +13,9 @@ import { useAppStore } from "../../lib/store";
 export default function PreRegisterQR() { 
   const router = useRouter(); 
   const { user } = useAppStore();
-  const isHotelOwner = user?.provider_type === "hotel_owner";
+  const [resolvedProviderType, setResolvedProviderType] = useState(null);
+
+  const isHotelOwner = resolvedProviderType === "hotel_owner";
   const themeColor = isHotelOwner ? "#1D4ED8" : "#7C3AED";
   const overlayColor = isHotelOwner ? "rgba(29,78,216,0.5)" : "rgba(79,70,229,0.5)";
   const qrColor = isHotelOwner ? "#1D4ED8" : "#4F46E5";
@@ -22,8 +24,22 @@ export default function PreRegisterQR() {
   const [qrToken, setQrToken] = useState(null); 
   const [name, setName] = useState(""); 
  
+  useEffect(() => {
+    api.get("/auth/me")
+      .then(({ data }) => {
+        const freshType = data.provider_type || "valet_provider";
+        if (freshType !== user?.provider_type) {
+          useAppStore.getState().setUser({ ...user, provider_type: freshType });
+        }
+        setResolvedProviderType(freshType);
+      })
+      .catch(() => setResolvedProviderType(user?.provider_type || "valet_provider"));
+  }, []);
+
   useEffect(() => { 
-    if (isHotelOwner) {
+    if (!resolvedProviderType) return;
+    
+    if (resolvedProviderType === "hotel_owner") {
       api.get("/hotels")
         .then(({ data }) => {
           if (data && data.length > 0) {
@@ -42,7 +58,7 @@ export default function PreRegisterQR() {
         .catch(() => Alert.alert("Error", "Failed to load QR code")) 
         .finally(() => setLoading(false)); 
     }
-  }, [isHotelOwner]); 
+  }, [resolvedProviderType]); 
  
   const preRegisterUrl = qrToken 
     ? (isHotelOwner 
