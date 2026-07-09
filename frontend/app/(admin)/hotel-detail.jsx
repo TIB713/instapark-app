@@ -97,6 +97,8 @@ export default function HotelDetail() {
   const [showEventDatePicker, setShowEventDatePicker] = useState(false);
   const [showEventStartTimePicker, setShowEventStartTimePicker] = useState(false);
   const [showEventEndTimePicker, setShowEventEndTimePicker] = useState(false);
+  const [newEventHostName, setNewEventHostName] = useState("");
+  const [newEventHostEmail, setNewEventHostEmail] = useState("");
 
   // Team tab state
   const [allDrivers, setAllDrivers] = useState([]);
@@ -468,7 +470,7 @@ export default function HotelDetail() {
     }
     setSavingEvent(true);
     try {
-      await api.post(`/hotels/${hid}/events`, {
+      const { data } = await api.post(`/hotels/${hid}/events`, {
         name: newEventName.trim(),
         date: newEventDate,
         end_date: newEventDate,
@@ -489,8 +491,20 @@ export default function HotelDetail() {
         event_type: "hotel_special",
         venue: hotel?.name,
       });
+      if (newEventHostName.trim() && newEventHostEmail.trim()) {
+        try {
+          await api.patch(`/events/${data.id}/host`, {
+            host_name: newEventHostName.trim(),
+            host_email: newEventHostEmail.trim()
+          });
+        } catch (err) {
+          Alert.alert("Host Invite Failed", "Event created, but host invite failed to send.");
+        }
+      }
       setShowAddEventModal(false);
       setNewEventName("");
+      setNewEventHostName("");
+      setNewEventHostEmail("");
       setNewEventKeyHookStart("51");
       setNewEventKeyHookEnd("100");
       setNewEventGates(["Main Gate"]);
@@ -1332,7 +1346,7 @@ export default function HotelDetail() {
               <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalTextInput} />
               <Text style={modalLabel}>EMAIL</Text>
               <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalTextInput} />
-              <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+              <Text style={modalLabel}>PHONE</Text>
               <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
               <Text style={modalLabel}>4-DIGIT PIN</Text>
               <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} secureTextEntry style={modalTextInput} />
@@ -1426,6 +1440,12 @@ export default function HotelDetail() {
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={modalLabel}>EVENT NAME</Text>
                 <TextInput value={newEventName} onChangeText={setNewEventName} placeholder="Wedding Reception" style={modalTextInput} />
+
+                <Text style={modalLabel}>HOST NAME (OPTIONAL)</Text>
+                <TextInput value={newEventHostName} onChangeText={setNewEventHostName} placeholder="e.g. John Doe" style={modalTextInput} />
+
+                <Text style={modalLabel}>HOST EMAIL (OPTIONAL)</Text>
+                <TextInput value={newEventHostEmail} onChangeText={setNewEventHostEmail} placeholder="e.g. host@example.com" keyboardType="email-address" autoCapitalize="none" style={modalTextInput} />
 
                 <Text style={modalLabel}>DATE</Text>
                 <TouchableOpacity

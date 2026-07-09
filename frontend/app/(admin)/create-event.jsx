@@ -37,6 +37,8 @@ export default function CreateEvent() {
   const [venueAddress, setVenueAddress] = useState(null);
   const [venueLat, setVenueLat] = useState(null);
   const [venueLng, setVenueLng] = useState(null);
+  const [hostName, setHostName] = useState("");
+  const [hostEmail, setHostEmail] = useState("");
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [keyHookStart, setKeyHookStart] = useState(isHotelOwner ? "51" : "1");
@@ -131,6 +133,16 @@ export default function CreateEvent() {
       }
 
       const { data } = res;
+      if (hostName.trim() && hostEmail.trim()) {
+        try {
+          await api.patch(`/events/${data.id}/host`, {
+            host_name: hostName.trim(),
+            host_email: hostEmail.trim()
+          });
+        } catch (err) {
+          Alert.alert("Host Invite Failed", "Event created, but host invite failed to send.");
+        }
+      }
       setCurrentEventId(data.id);
       await AsyncStorage.setItem("current_event_id", data.id);
       router.replace("/(admin)/event-detail");
@@ -172,6 +184,30 @@ export default function CreateEvent() {
               value={name}
               onChangeText={setName}
               placeholder="Wedding Reception"
+              placeholderTextColor="#9CA3AF"
+              style={textInputStyle}
+            />
+          </InputRow>
+
+          <Label>HOST NAME (OPTIONAL)</Label>
+          <InputRow icon="person-outline">
+            <TextInput
+              value={hostName}
+              onChangeText={setHostName}
+              placeholder="e.g. John Doe"
+              placeholderTextColor="#9CA3AF"
+              style={textInputStyle}
+            />
+          </InputRow>
+
+          <Label>HOST EMAIL (OPTIONAL)</Label>
+          <InputRow icon="mail-outline">
+            <TextInput
+              value={hostEmail}
+              onChangeText={setHostEmail}
+              placeholder="e.g. host@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
               placeholderTextColor="#9CA3AF"
               style={textInputStyle}
             />

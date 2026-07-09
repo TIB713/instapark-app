@@ -921,6 +921,10 @@ export default function EventDetail() {
       Alert.alert("Invalid PIN", "PIN must be a 4-digit number");
       return;
     }
+    if (!drvPhone.trim()) {
+      Alert.alert("Required", "Phone is required");
+      return;
+    }
     let phoneToSave;
     if (drvPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
@@ -993,7 +997,7 @@ export default function EventDetail() {
       await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
-        phone: phoneToSave || undefined,
+        phone: phoneToSave,
         pin: drvPin,
         photo_url: photoUrl || undefined,
         pan_number: drvPan.trim(),
@@ -1869,6 +1873,64 @@ export default function EventDetail() {
             ))}
           </View>
 
+          {event?.event_type !== "hotel_daily" && (
+            <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
+              <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(16) }}>Event Host</Text>
+              
+              <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", marginBottom: rp(4), letterSpacing: rs(1) }}>HOST NAME</Text>
+              <TextInput
+                value={event?.host_name || ""}
+                onChangeText={txt => setEvent(prev => ({ ...prev, host_name: txt }))}
+                placeholder="e.g. John Doe"
+                placeholderTextColor="#9CA3AF"
+                style={{ backgroundColor: "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: "#111827", marginBottom: rp(16) }}
+              />
+
+              <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", marginBottom: rp(4), letterSpacing: rs(1) }}>HOST EMAIL</Text>
+              <View style={{ flexDirection: "row", gap: rp(8) }}>
+                <TextInput
+                  value={event?.host_email || ""}
+                  onChangeText={txt => setEvent(prev => ({ ...prev, host_email: txt }))}
+                  placeholder="john@example.com"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={{ flex: 1, backgroundColor: "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: "#111827" }}
+                />
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!event?.host_email) {
+                      Alert.alert("Required", "Please enter host email");
+                      return;
+                    }
+                    try {
+                      await api.patch(`/events/${currentEventId}/host`, {
+                        host_name: event.host_name,
+                        host_email: event.host_email
+                      });
+                      Alert.alert("Success", "Host updated and portal email sent");
+                      fetchEvent();
+                    } catch (err) {
+                      Alert.alert("Error", "Failed to update host");
+                    }
+                  }}
+                  style={{ backgroundColor: "#1A3C6E", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>
+                    {event?.host_email_sent ? "Resend Portal" : "Send Portal"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {event?.host_email_sent && (
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), gap: rp(6) }}>
+                  <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#059669" }}>Portal email sent</Text>
+                </View>
+              )}
+            </View>
+          )}
+
           <TouchableOpacity
             onPress={exportCSV}
             disabled={exportingCSV}
@@ -2677,7 +2739,7 @@ export default function EventDetail() {
 
                 <Text style={modalLabel}>NAME</Text>
                 <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
-                <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+                <Text style={modalLabel}>PHONE</Text>
                 <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
                 <Text style={modalLabel}>4-DIGIT PIN</Text>
                 <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={modalInput} />

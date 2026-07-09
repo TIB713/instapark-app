@@ -317,7 +317,11 @@ export default function ManageEmployees() {
       Alert.alert("Invalid Email", "Please enter a valid email address");
       return;
     }
-    if (drvPhone.trim() && !/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) {
+    if (!drvPhone.trim()) {
+      Alert.alert("Required", "Phone is required");
+      return;
+    }
+    if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) {
       Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
       return;
     }
@@ -384,7 +388,7 @@ export default function ManageEmployees() {
       await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
-        phone: drvPhone.trim() || undefined,
+        phone: drvPhone.trim(),
         gender: drvGender,
         pin: drvPassword,
         driver_photo: photoUrl || undefined,
@@ -683,7 +687,7 @@ export default function ManageEmployees() {
                 <Text style={modalLabel}>EMAIL</Text>
                 <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" autoCapitalize="none" style={modalInput} />
                 <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
-                <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <TextInput value={supPhone} onChangeText={setSupPhone} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
                 <Text style={modalLabel}>GENDER</Text>
                 <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
                   <TouchableOpacity
@@ -792,8 +796,8 @@ export default function ManageEmployees() {
 
                 <Text style={modalLabel}>NAME</Text>
                 <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
-                <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
-                <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <Text style={modalLabel}>PHONE</Text>
+                <TextInput value={drvPhone} onChangeText={setDrvPhone} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
                 <Text style={modalLabel}>GENDER</Text>
                 <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
                   <TouchableOpacity
