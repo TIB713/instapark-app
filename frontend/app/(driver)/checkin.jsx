@@ -222,38 +222,9 @@ export default function CheckIn() {
 
   const submit = async () => { 
     if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; } 
-    if (!validatePlate(plate.trim())) { 
-      Alert.alert("Invalid Plate", "Please enter a valid Indian vehicle number plate."); 
-      return; 
-    } 
-    if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; } 
-    if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; } 
-    if (!guestName.trim()) { Alert.alert("Required", "Guest name is required"); return; }
-    if (!guestPhone.trim() && !altGuestPhone.trim()) { Alert.alert("Required", "Please enter at least one mobile number (guest or alternate)"); return; }
-    let phoneToSave = "";
-    if (guestPhone.trim()) {
-      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
-      const normalized = normalizeIndianPhone(guestPhone.trim());
-      const isValidIndian = /^\d{10}$/.test(normalized);
-      const isValidIntl = /^\+\d{10,15}$/.test(guestPhone.trim());
-      if (!isValidIndian && !isValidIntl) {
-        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
-        return;
-      }
-      phoneToSave = isValidIndian ? normalized : guestPhone.trim();
-    }
-    let altPhoneToSave = "";
-    if (altGuestPhone.trim()) {
-      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
-      const normalized = normalizeIndianPhone(altGuestPhone.trim());
-      const isValidIndian = /^\d{10}$/.test(normalized);
-      const isValidIntl = /^\+\d{10,15}$/.test(altGuestPhone.trim());
-      if (!isValidIndian && !isValidIntl) {
-        Alert.alert("Invalid Alternate Phone", "Enter a 10-digit Indian number, or an international number starting with +");
-        return;
-      }
-      altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
-    }
+    // TEST MODE: Removed validation for plate format, color, make, guest name, and phone
+    let phoneToSave = guestPhone.trim();
+    let altPhoneToSave = altGuestPhone.trim();
     if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; } 
     setSubmitting(true); 
     try { 
