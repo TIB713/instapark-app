@@ -296,6 +296,18 @@ export default function AddCar() {
       altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
     }
     if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; }
+    
+    Alert.alert(
+      "Confirm Check-In",
+      `Confirm check-in for ${plate}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doSubmit(phoneToSave, altPhoneToSave) }
+      ]
+    );
+  };
+
+  const doSubmit = async (phoneToSave, altPhoneToSave) => {
     setSubmitting(true);
     try {
       const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };

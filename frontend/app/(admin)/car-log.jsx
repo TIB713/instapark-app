@@ -248,6 +248,15 @@ export default function CarLog() {
       time: inc.created_at });
   });
 
+  // Interleave assignment history
+  (log.assignment_history || []).forEach(a => {
+    steps.push({
+      type: "assignment",
+      assignment: a,
+      time: a.created_at,
+    });
+  });
+
   // Sort: primarily by timestamp, but steps without a timestamp
   // (legacy data) fall back to a canonical status order so they
   // always appear in the correct position.
@@ -370,6 +379,28 @@ export default function CarLog() {
                 /> 
               ); 
             } 
+            if (step.type === "assignment") {
+              const a = step.assignment;
+              const isSelf = a.source === "self";
+              const label = isSelf 
+                ? `${a.driver_name} self-checked-in`
+                : `${a.action === 'reassigned' ? 'Reassigned' : 'Assigned'} to ${a.driver_name} by ${a.performed_by?.name || "System"} (${a.performed_by?.role || "admin"})`;
+              const subtitle = a.previous_driver_id && drivers_map[a.previous_driver_id] 
+                ? `Previously: ${drivers_map[a.previous_driver_id]}`
+                : null;
+              
+              return (
+                <TimelineStep
+                  key={`asg-${i}`}
+                  color="#8B5CF6"
+                  icon="account-switch"
+                  label={label}
+                  time={step.time}
+                  note={subtitle}
+                  isLast={isLast}
+                />
+              );
+            }
             const scfg = STATUS_CONFIG[step.status]; 
             if (step.status === "DELIVERED") {
               return (

@@ -97,6 +97,7 @@ export default function Tasks() {
   const [otpInput, setOtpInput] = useState({});
   const [verifyingOtp, setVerifyingOtp] = useState({});
   const [arrivingAtGate, setArrivingAtGate] = useState(null);
+  const [pickingUp, setPickingUp] = useState({});
   const [nowTick, setNowTick] = useState(Date.now());
 
   useEffect(() => {
@@ -308,6 +309,17 @@ export default function Tasks() {
       return;
     }
 
+    Alert.alert(
+      "Confirm Parking",
+      `Confirm parking ${selectedCar?.plate} in Zone ${selectedZone}, Slot ${selectedSlot}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doConfirmPark() }
+      ]
+    );
+  };
+
+  const doConfirmPark = async () => {
     setConfirmingPark(true);
     try {
       // 1. Copy photos to local storage first for safety
@@ -361,16 +373,41 @@ export default function Tasks() {
   };
 
   const pickup = async (car) => {
+    Alert.alert(
+      "Pick up this car?",
+      `Confirm you're picking up ${car.plate}.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doPickup(car) }
+      ]
+    );
+  };
+
+  const doPickup = async (car) => {
+    setPickingUp((prev) => ({ ...prev, [car.id]: true }));
     try {
       await api.patch(`/cars/${car.id}/pickup`, { retrieval_driver_id: resolvedDriverId });
       await updateJourney(car.id, "retrieval");
       fetchRetrievals();
     } catch (e) {
       Alert.alert("Error", e.response?.data?.detail || "Failed");
+    } finally {
+      setPickingUp((prev) => ({ ...prev, [car.id]: false }));
     }
   };
 
   const arriveAtGate = async (car) => {
+    Alert.alert(
+      "Arrive at gate",
+      `Mark arrived at gate for ${car.plate}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doArriveAtGate(car) }
+      ]
+    );
+  };
+
+  const doArriveAtGate = async (car) => {
     setArrivingAtGate(car.id);
     try {
       await api.patch(`/cars/${car.id}/arrive-at-gate`);
@@ -385,6 +422,17 @@ export default function Tasks() {
   const verifyDeliveryOtp = async (car) => {
     const code = (otpInput[car.id] || "").trim();
     if (!code) { Alert.alert("Enter the code", "Ask the guest for their code and enter it."); return; }
+    Alert.alert(
+      "Confirm Handover",
+      `Confirm handover code for ${car.plate}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doVerifyDeliveryOtp(car, code) }
+      ]
+    );
+  };
+
+  const doVerifyDeliveryOtp = async (car, code) => {
     setVerifyingOtp((prev) => ({ ...prev, [car.id]: true }));
     try {
       await api.post(`/cars/${car.id}/verify-delivery-otp`, { otp: code });
@@ -493,6 +541,18 @@ export default function Tasks() {
       { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
     );
     const finalUri = compressed.uri;
+
+    Alert.alert(
+      "Confirm Handover",
+      `Confirm handover of ${car.plate} to the guest?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doHandleHandover(car, finalUri) }
+      ]
+    );
+  };
+
+  const doHandleHandover = async (car, finalUri) => {
     const net = await NetInfo.fetch();
     if (!net.isConnected) {
       const localPath = `${FileSystem.documentDirectory}handover_${car.id}_${Date.now()}.jpg`;
@@ -1083,10 +1143,17 @@ export default function Tasks() {
                 <>
                   <TouchableOpacity
                     onPress={() => pickup(car)}
-                    style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
+                    disabled={pickingUp[car.id]}
+                    style={{ backgroundColor: "#F59E0B", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center", opacity: pickingUp[car.id] ? 0.7 : 1 }}
                   >
-                    <Ionicons name="hand-right" size={14} color="#fff" />
-                    <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
+                    {pickingUp[car.id] ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="hand-right" size={14} color="#fff" />
+                        <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(12), marginLeft: rp(6), letterSpacing: rs(1.5) }}>PICK UP</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => navigateToCar(car.id)}

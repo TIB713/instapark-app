@@ -191,6 +191,17 @@ export default function SupervisorEventDetail() {
   }, [currentEventId]);
 
   const resolveSOSAlert = async (alertId) => {
+    Alert.alert(
+      "Resolve SOS Alert",
+      "Mark this SOS alert as resolved?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doResolveSOSAlert(alertId) }
+      ]
+    );
+  };
+
+  const doResolveSOSAlert = async (alertId) => {
     setResolvingSOSId(alertId);
     try {
       await api.patch(`/sos/${alertId}/resolve`);
@@ -250,7 +261,18 @@ export default function SupervisorEventDetail() {
     }
   };
 
-  const handleAssignDriver = async (driverId) => {
+  const handleAssignDriver = async (driverId, driverName) => {
+    Alert.alert(
+      "Confirm Assignment",
+      `Assign ${driverName} to ${selectedCar?.plate}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doAssign(driverId) }
+      ]
+    );
+  };
+
+  const doAssign = async (driverId) => {
     const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
     setAssigningDriver(true);
     try {
@@ -403,6 +425,17 @@ export default function SupervisorEventDetail() {
   const [assigningAll, setAssigningAll] = useState(false);
 
   const toggleAssign = async (d) => {
+    Alert.alert(
+      d.assigned ? "Remove Driver" : "Assign Driver",
+      d.assigned ? `Remove ${d.name} from this event?` : `Assign ${d.name} to this event?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doToggleAssign(d) }
+      ]
+    );
+  };
+
+  const doToggleAssign = async (d) => {
     setAssigningId(d.id);
     setDrivers(prev => prev.map(drv => drv.id === d.id ? { ...drv, assigned: !drv.assigned } : drv));
     try {
@@ -422,6 +455,17 @@ export default function SupervisorEventDetail() {
   const assignAll = async () => {
     const available = drivers.filter(d => (d.available || d.assigned) && !d.assigned);
     if (available.length === 0) return;
+    Alert.alert(
+      "Assign All Drivers",
+      `Assign all ${available.length} available drivers to this event?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doAssignAll(available) }
+      ]
+    );
+  };
+
+  const doAssignAll = async (available) => {
     setAssigningAll(true);
     setDrivers(prev => prev.map(d => (d.available || d.assigned) ? { ...d, assigned: true } : d));
     try {
@@ -1345,7 +1389,7 @@ export default function SupervisorEventDetail() {
                           <TouchableOpacity
                             key={d.id}
                             disabled={assigningDriver}
-                            onPress={() => handleAssignDriver(d.id)}
+                            onPress={() => handleAssignDriver(d.id, d.name)}
                             style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(12), borderBottomWidth: rp(1), borderBottomColor: "#E5E7EB" }}
                           >
                             <Text style={{ fontWeight: "700", color: "#111827" }}>{d.name}</Text>

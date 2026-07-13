@@ -81,6 +81,7 @@ export default function Login() {
         setUser(meData);
         setToken(data.token);
         await setItem("last_known_role", meData.role);
+        try { registerForPushNotifications(api); } catch {}
         router.replace("/(admin)/dashboard");
         return;
       } else if (tab === "supervisor") {

@@ -226,16 +226,28 @@ export default function CheckIn() {
     let phoneToSave = guestPhone.trim();
     let altPhoneToSave = altGuestPhone.trim();
     if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; } 
+    
+    Alert.alert(
+      "Confirm Check-In",
+      `Confirm check-in for ${plate}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doSubmit(phoneToSave, altPhoneToSave) }
+      ]
+    );
+  };
+
+  const doSubmit = async (phoneToSave, altPhoneToSave) => {
     setSubmitting(true); 
     try { 
       // 1. Copy photos to local storage first for safety
       const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
-      for (const [label, uri] of Object.entries(photos)) {
-        if (!uri) continue;
+      await Promise.all(Object.entries(photos).map(async ([label, uri]) => {
+        if (!uri) return;
         const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
         await FileSystem.copyAsync({ from: uri, to: localPath });
         photoLocalPaths[label] = localPath;
-      }
+      }));
 
       const net = await NetInfo.fetch();
       if (!net.isConnected) {
@@ -308,11 +320,12 @@ export default function CheckIn() {
           }); 
         } 
       } 
-      try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch {} 
+      api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {}); 
       try { await AsyncStorage.removeItem("checkin_photos"); } catch {} 
       try { await AsyncStorage.removeItem("checkin_draft"); } catch {} 
       // Start GPS journey tracking from this moment — driver now walks to park the car
-      try { await updateJourney(car.id, "checkin"); await markJourneyAccepted(car.id); } catch {}
+      updateJourney(car.id, "checkin").catch(() => {});
+      markJourneyAccepted(car.id).catch(() => {});
       router.replace({ 
         pathname: "/(driver)/qr-display", 
         params: { 

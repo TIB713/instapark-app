@@ -146,7 +146,7 @@ export const checkEventStatusAndStop = async () => {
 
   try {
     const resp = await fetch(
-      `${apiUrl}/api/v1/events/${eventId}`,
+      `${apiUrl}/events/${eventId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!resp.ok) return true; // don't stop tracking on network error

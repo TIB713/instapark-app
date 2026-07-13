@@ -385,7 +385,7 @@ export default function EventDetail() {
     }
   };
 
-  const handleAssignDriver = async (driverId, isBusy, busyPlate) => {
+  const handleAssignDriver = async (driverId, isBusy, busyPlate, driverName) => {
     const doAssign = async () => {
       const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
       setAssigningDriver(true);
@@ -401,18 +401,19 @@ export default function EventDetail() {
         setAssigningDriver(false);
       }
     };
-    if (isBusy) {
-      Alert.alert(
-        "Driver is busy",
-        `This driver is currently busy${busyPlate ? ` with car ${busyPlate}` : ""}. Assign this car to them anyway?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Assign Anyway", onPress: doAssign },
-        ]
-      );
-      return;
-    }
-    doAssign();
+
+    const message = isBusy
+      ? `This driver is currently busy${busyPlate ? ` with car ${busyPlate}` : ""}. Assign this car to them anyway?`
+      : `Assign ${driverName} to ${selectedCar?.plate}?`;
+
+    Alert.alert(
+      isBusy ? "Driver is busy" : "Confirm Assignment",
+      message,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: isBusy ? "Assign Anyway" : "Confirm", onPress: doAssign },
+      ]
+    );
   };
 
   const exportCSV = async () => {
@@ -693,8 +694,19 @@ export default function EventDetail() {
   const [assigningAll, setAssigningAll] = useState(false);
 
   const toggleAssign = async (d) => {
+    Alert.alert(
+      d.assigned ? "Remove Driver" : "Assign Driver",
+      d.assigned ? `Remove ${d.name} from this event?` : `Assign ${d.name} to this event?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doToggleAssign(d) }
+      ]
+    );
+  };
+
+  const doToggleAssign = async (d) => {
     setAssigningId(d.id);
-    // Optimistic update — update UI immediately
+    // Optimistic update - update UI immediately
     setDrivers(prev => prev.map(drv => drv.id === d.id ? { ...drv, assigned: !drv.assigned } : drv));
     try {
       if (d.assigned) {
@@ -703,15 +715,26 @@ export default function EventDetail() {
         await api.post(`/events/${currentEventId}/drivers/${d.id}`);
       }
     } catch (e) {
-      // Revert optimistic update on error
+      // Revert optimistic update on failure
       setDrivers(prev => prev.map(drv => drv.id === d.id ? { ...drv, assigned: d.assigned } : drv));
-      Alert.alert("Error", e.response?.data?.detail || "Failed");
+      Alert.alert("Error", e.response?.data?.detail || "Failed to update assignment");
     } finally {
       setAssigningId(null);
     }
   };
 
   const toggleAssignSupervisor = async (s) => {
+    Alert.alert(
+      s.assigned ? "Remove Supervisor" : "Assign Supervisor",
+      s.assigned ? `Remove supervisor ${s.name} from this event?` : `Assign supervisor ${s.name} to this event?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doToggleAssignSupervisor(s) }
+      ]
+    );
+  };
+
+  const doToggleAssignSupervisor = async (s) => {
     setAssigningSupervisorId(s.id);
     try {
       if (s.assigned) {
@@ -722,7 +745,7 @@ export default function EventDetail() {
       await fetchSupervisors();
     } catch (e) {
       const msg = e.response?.data?.detail || "Failed to update assignment";
-      Alert.alert("Cannot Assign", msg);
+      Alert.alert("Error", msg);
     } finally {
       setAssigningSupervisorId(null);
     }
@@ -782,6 +805,18 @@ export default function EventDetail() {
       Alert.alert("Required", "Aadhar Photo is required");
       return;
     }
+
+    Alert.alert(
+      "Confirm Changes",
+      `Confirm saving changes for supervisor ${supName.trim()}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doSaveSupervisor(phoneToSave) }
+      ]
+    );
+  };
+
+  const doSaveSupervisor = async (phoneToSave) => {
     setSavingSupervisor(true);
     try {
       let uploadedPhotoUrl;
@@ -980,6 +1015,18 @@ export default function EventDetail() {
       Alert.alert("Required", "Aadhar Photo is required");
       return;
     }
+
+    Alert.alert(
+      "Confirm Changes",
+      `Confirm saving changes for driver ${drvName.trim()}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doSaveDriver(phoneToSave) }
+      ]
+    );
+  };
+
+  const doSaveDriver = async (phoneToSave) => {
     setSavingDriver(true);
     try {
       let photoUrl;
@@ -1022,6 +1069,18 @@ export default function EventDetail() {
   const assignAll = async () => {
     const available = drivers.filter(d => (d.available || d.assigned) && !d.assigned);
     if (available.length === 0) return;
+    
+    Alert.alert(
+      "Assign All Drivers",
+      `Assign all ${available.length} available drivers to this event?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: () => doAssignAll(available) }
+      ]
+    );
+  };
+
+  const doAssignAll = async (available) => {
     setAssigningAll(true);
     // Optimistic update all at once
     setDrivers(prev => prev.map(d => (d.available || d.assigned) ? { ...d, assigned: true } : d));
@@ -1030,7 +1089,7 @@ export default function EventDetail() {
     } catch (e) {
       // Refetch on error to get correct state
       fetchDrivers();
-      Alert.alert("Error", "Some drivers could not be assigned");
+      Alert.alert("Error", "Failed to assign some drivers");
     } finally {
       setAssigningAll(false);
     }
@@ -2567,7 +2626,7 @@ export default function EventDetail() {
                             <TouchableOpacity
                               key={d.id}
                               disabled={assigningDriver}
-                              onPress={() => handleAssignDriver(d.id, d.duty_status === "busy", d.current_car_plate)}
+                              onPress={() => handleAssignDriver(d.id, d.duty_status === "busy", d.current_car_plate, d.name)}
                               style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(12), borderBottomWidth: rp(1), borderBottomColor: "#E5E7EB" }}
                             >
                               <View>
