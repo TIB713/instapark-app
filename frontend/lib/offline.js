@@ -126,23 +126,33 @@ export const processPendingQueue = async () => {
             });
             carId = res.data.id;
           } else {
-            const res = await api.post("/cars", {
-              plate: item.plate,
-              color: item.color,
-              make: item.make,
-              notes: item.notes,
-              gate: item.gate,
-              event_id: item.eventId,
-              check_in_driver_id: item.checkInDriverId,
-              guest_phone: item.guestPhone,
-              car_type: item.carType,
-              alt_guest_phone: item.altGuestPhone,
-              has_damage: item.hasDamage,
-              damage_notes: item.damageNotes,
-              damage_types: item.damageTypes,
-              guest_name: item.guestName
-            });
-            carId = res.data.id;
+            try {
+              const res = await api.post("/cars", {
+                plate: item.plate,
+                color: item.color,
+                make: item.make,
+                notes: item.notes,
+                gate: item.gate,
+                event_id: item.eventId,
+                check_in_driver_id: item.checkInDriverId,
+                guest_phone: item.guestPhone,
+                car_type: item.carType,
+                alt_guest_phone: item.altGuestPhone,
+                has_damage: item.hasDamage,
+                damage_notes: item.damageNotes,
+                damage_types: item.damageTypes,
+                guest_name: item.guestName
+              });
+              carId = res.data.id;
+            } catch (err) {
+              const detail = err.response?.data?.detail;
+              if (err.response?.status === 400 && typeof detail === "string" && detail.includes("already active")) {
+                const existingRes = await api.get(`/cars/by-plate/${encodeURIComponent(item.plate)}?event_id=${item.eventId}`);
+                carId = existingRes.data.id;
+              } else {
+                throw err;
+              }
+            }
           }
 
           // Upload photos

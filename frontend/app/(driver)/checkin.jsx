@@ -77,25 +77,25 @@ export default function CheckIn() {
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [prefilledCarId, setPrefilledCarId] = useState(null); 
-  const [passToken, setPassToken] = useState(null); 
-  const [guestName, setGuestName] = useState(""); 
-  const [isPreRegistered, setIsPreRegistered] = useState(false); 
-  const params = useLocalSearchParams(); 
+  const [prefilledCarId, setPrefilledCarId] = useState(null);
+  const [passToken, setPassToken] = useState(null);
+  const [guestName, setGuestName] = useState("");
+  const [isPreRegistered, setIsPreRegistered] = useState(false);
+  const params = useLocalSearchParams();
 
-  useEffect(() => { 
-    if (params.prefill_plate) { 
-      setPlate(params.prefill_plate || ""); 
-      setMake(params.prefill_make || ""); 
-      setColor(params.prefill_color || ""); 
-      setGuestPhone(params.prefill_phone || ""); 
-      setGuestName(params.prefill_name || ""); 
-      setPassToken(params.prefill_pass_token || null); 
-      setPrefilledCarId(params.prefill_car_id || null); 
-      setIsPreRegistered(true); 
+  useEffect(() => {
+    if (params.prefill_plate) {
+      setPlate(params.prefill_plate || "");
+      setMake(params.prefill_make || "");
+      setColor(params.prefill_color || "");
+      setGuestPhone(params.prefill_phone || "");
+      setGuestName(params.prefill_name || "");
+      setPassToken(params.prefill_pass_token || null);
+      setPrefilledCarId(params.prefill_car_id || null);
+      setIsPreRegistered(true);
       setGuestNotes(params.prefill_guest_notes || "");
-    } 
-  }, [params.prefill_plate]); 
+    }
+  }, [params.prefill_plate]);
 
   useEffect(() => {
     (async () => {
@@ -103,7 +103,7 @@ export default function CheckIn() {
         const { data } = await api.get(`/events/${currentEventId}`);
         setEventGates(data.gates || []);
         if (data.gates?.[0]) setSelectedGate(data.gates[0]);
-      } catch {}
+      } catch { }
       try {
         const draft = await AsyncStorage.getItem("checkin_draft");
         const savedPhotos = await AsyncStorage.getItem("checkin_photos");
@@ -123,7 +123,7 @@ export default function CheckIn() {
           if (d.guestName) setGuestName(d.guestName);
         }
         if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
-      } catch {}
+      } catch { }
     })();
   }, [currentEventId]);
 
@@ -135,7 +135,7 @@ export default function CheckIn() {
       if (data.found) {
         setPendingLookup(data);
       }
-    } catch {}
+    } catch { }
   };
 
   const confirmLookup = () => {
@@ -180,7 +180,7 @@ export default function CheckIn() {
     try {
       await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName }));
       await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
-    } catch {}
+    } catch { }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
       const asset = result.assets[0];
@@ -192,9 +192,9 @@ export default function CheckIn() {
       const finalUri = compressed.uri;
       const np = { ...photos, [label]: finalUri };
       setPhotos(np);
-      try { await AsyncStorage.setItem("checkin_photos", JSON.stringify(np)); } catch {}
+      try { await AsyncStorage.setItem("checkin_photos", JSON.stringify(np)); } catch { }
     }
-    try { await AsyncStorage.removeItem("checkin_draft"); } catch {}
+    try { await AsyncStorage.removeItem("checkin_draft"); } catch { }
   };
 
   const uploadPhotosInBackground = async (carId, photosObj) => {
@@ -212,21 +212,50 @@ export default function CheckIn() {
           });
           urls.push(up.data.url);
           labels.push(label);
-        } catch {}
+        } catch { }
       }
       if (urls.length > 0) {
         await api.post(`/cars/${carId}/photos`, { urls, type: "checkin", labels });
       }
-    } catch {}
+    } catch { }
   };
 
-  const submit = async () => { 
-    if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; } 
-    // TEST MODE: Removed validation for plate format, color, make, guest name, and phone
-    let phoneToSave = guestPhone.trim();
-    let altPhoneToSave = altGuestPhone.trim();
-    if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; } 
-    
+  const submit = async () => {
+    if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; }
+    if (!validatePlate(plate.trim())) {
+      Alert.alert("Invalid Plate", "Please enter a valid Indian vehicle number plate.");
+      return;
+    }
+    if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; }
+    if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; }
+    if (!guestName.trim()) { Alert.alert("Required", "Guest name is required"); return; }
+    if (!guestPhone.trim() && !altGuestPhone.trim()) { Alert.alert("Required", "Please enter at least one mobile number (guest or alternate)"); return; }
+    let phoneToSave = "";
+    if (guestPhone.trim()) {
+      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
+      const normalized = normalizeIndianPhone(guestPhone.trim());
+      const isValidIndian = /^\d{10}$/.test(normalized);
+      const isValidIntl = /^\+\d{10,15}$/.test(guestPhone.trim());
+      if (!isValidIndian && !isValidIntl) {
+        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
+        return;
+      }
+      phoneToSave = isValidIndian ? normalized : guestPhone.trim();
+    }
+    let altPhoneToSave = "";
+    if (altGuestPhone.trim()) {
+      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
+      const normalized = normalizeIndianPhone(altGuestPhone.trim());
+      const isValidIndian = /^\d{10}$/.test(normalized);
+      const isValidIntl = /^\+\d{10,15}$/.test(altGuestPhone.trim());
+      if (!isValidIndian && !isValidIntl) {
+        Alert.alert("Invalid Alternate Phone", "Enter a 10-digit Indian number, or an international number starting with +");
+        return;
+      }
+      altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
+    }
+    if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; }
+
     Alert.alert(
       "Confirm Check-In",
       `Confirm check-in for ${plate}?`,
@@ -238,10 +267,10 @@ export default function CheckIn() {
   };
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
-    setSubmitting(true); 
-    try { 
+    setSubmitting(true);
+    const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
+    try {
       // 1. Copy photos to local storage first for safety
-      const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
       await Promise.all(Object.entries(photos).map(async ([label, uri]) => {
         if (!uri) return;
         const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
@@ -277,77 +306,124 @@ export default function CheckIn() {
         return;
       }
 
-      let car; 
-      if (isPreRegistered && prefilledCarId) { 
+      let car;
+      if (isPreRegistered && prefilledCarId) {
         // Complete check-in for PRE_REGISTERED car 
-        const { data } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, { 
-          check_in_driver_id: resolvedDriverId, 
-          gate: selectedGate || "", 
-          make: make.trim(), 
-          color: color.trim(), 
-          notes: notes.trim(), 
-          plate: plate.trim().toUpperCase(), 
+        const { data } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, {
+          check_in_driver_id: resolvedDriverId,
+          gate: selectedGate || "",
+          make: make.trim(),
+          color: color.trim(),
+          notes: notes.trim(),
+          plate: plate.trim().toUpperCase(),
           car_type: carType,
           alt_guest_phone: altPhoneToSave || null,
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
           damage_types: damageTypes,
           guest_name: guestName.trim(),
-        }); 
-        car = data; 
-      } else { 
+        });
+        car = data;
+      } else {
         // Normal check-in 
-        const { data } = await api.post("/cars", { 
-          plate: plate.trim().toUpperCase(), 
-          color: color.trim(), 
-          make: make.trim(), 
-          notes: notes.trim(), 
-          gate: selectedGate || "", 
-          event_id: currentEventId, 
-          check_in_driver_id: resolvedDriverId, 
+        const { data } = await api.post("/cars", {
+          plate: plate.trim().toUpperCase(),
+          color: color.trim(),
+          make: make.trim(),
+          notes: notes.trim(),
+          gate: selectedGate || "",
+          event_id: currentEventId,
+          check_in_driver_id: resolvedDriverId,
           car_type: carType,
           alt_guest_phone: altPhoneToSave || null,
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
           damage_types: damageTypes,
           guest_name: guestName.trim(),
-          ...(phoneToSave ? { guest_phone: phoneToSave } : {}), 
-        }); 
-        car = data; 
-        if (car.warning) { 
-          await new Promise((resolve) => { 
-            Alert.alert("⚠️ Almost Full", "This event is almost at capacity.", [{ text: "OK", onPress: resolve }]); 
-          }); 
-        } 
-      } 
-      api.post(`/slots/event/${currentEventId}/initialize`).catch(() => {}); 
-      try { await AsyncStorage.removeItem("checkin_photos"); } catch {} 
-      try { await AsyncStorage.removeItem("checkin_draft"); } catch {} 
+          ...(phoneToSave ? { guest_phone: phoneToSave } : {}),
+        });
+        car = data;
+        if (car.warning) {
+          await new Promise((resolve) => {
+            Alert.alert("⚠️ Almost Full", "This event is almost at capacity.", [{ text: "OK", onPress: resolve }]);
+          });
+        }
+      }
+      api.post(`/slots/event/${currentEventId}/initialize`).catch(() => { });
+      try { await AsyncStorage.removeItem("checkin_photos"); } catch { }
+      try { await AsyncStorage.removeItem("checkin_draft"); } catch { }
       // Start GPS journey tracking from this moment — driver now walks to park the car
-      updateJourney(car.id, "checkin").catch(() => {});
-      markJourneyAccepted(car.id).catch(() => {});
-      router.replace({ 
-        pathname: "/(driver)/qr-display", 
-        params: { 
-          token: car.qr_token, 
-          plate: car.plate, 
-          carId: car.id, 
-          ...(phoneToSave ? { guestPhone: phoneToSave } : {}), 
-        }, 
-      }); 
+      updateJourney(car.id, "checkin").catch(() => { });
+      markJourneyAccepted(car.id).catch(() => { });
+      router.replace({
+        pathname: "/(driver)/qr-display",
+        params: {
+          token: car.qr_token,
+          plate: car.plate,
+          carId: car.id,
+          ...(phoneToSave ? { guestPhone: phoneToSave } : {}),
+        },
+      });
       // Use original photo URIs for online background upload
-      uploadPhotosInBackground(car.id, photos).finally(() => { 
-        Object.values(photoLocalPaths).forEach(path => { 
-          if (path) FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {}); 
-        }); 
-      }); 
-    } catch (err) { 
-      const msg = err.response?.data?.detail || "Check-in failed"; 
-      if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in."); 
-      else if (typeof msg === "string" && msg.includes("Duplicate")) Alert.alert("Duplicate", "Plate already checked in."); 
-      else Alert.alert("Error", typeof msg === "string" ? msg : "Failed"); 
-    } finally { setSubmitting(false); } 
-  }; 
+      uploadPhotosInBackground(car.id, photos).finally(() => {
+        Object.values(photoLocalPaths).forEach(path => {
+          if (path) FileSystem.deleteAsync(path, { idempotent: true }).catch(() => { });
+        });
+      });
+    } catch (err) {
+      console.log("CHECKIN ERROR STATUS:", err.response?.status);
+      console.log("CHECKIN ERROR DATA:", JSON.stringify(err.response?.data));
+      console.log("CHECKIN ERROR MESSAGE:", err.message);
+      const gotServerResponse = !!err.response;
+      if (!gotServerResponse) {
+        try {
+          await enqueueCheckinAction({
+            eventId: currentEventId,
+            plate: plate.trim().toUpperCase(),
+            color: color.trim(),
+            make: make.trim(),
+            notes: notes.trim(),
+            gate: selectedGate,
+            guestPhone: phoneToSave,
+            checkInDriverId: resolvedDriverId,
+            photoLocalPaths,
+            isPreRegistered,
+            prefilledCarId,
+            carType,
+            altGuestPhone: altPhoneToSave || null,
+            hasDamage,
+            damageNotes: damageNotes.trim() || null,
+            damageTypes,
+            guestName: guestName.trim(),
+          });
+          await AsyncStorage.removeItem("checkin_draft");
+          await AsyncStorage.removeItem("checkin_photos");
+          Alert.alert("Saved for Retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
+          router.back();
+          return;
+        } catch {
+          Alert.alert("Error", "Could not save this check-in for retry. Please check your connection and try again.");
+        }
+      } else {
+        const msg = err.response?.data?.detail || "Check-in failed";
+        const isAlreadyCheckedIn = typeof msg === "string" && msg.includes("already active in this event");
+        if (typeof msg === "string" && msg.includes("full")) {
+          Alert.alert("Event Full", "No more cars can be checked in.");
+        } else if (isAlreadyCheckedIn || (typeof msg === "string" && msg.includes("Duplicate"))) {
+          Alert.alert(
+            "Already Checked In",
+            "This vehicle appears to already be checked in for this event — it may have been created by a previous attempt. Please check the car list before re-submitting.",
+          );
+        } else {
+          Alert.alert("Error", typeof msg === "string" ? msg : "Failed");
+        }
+        // Clear stale draft so the NEXT check-in doesn't inherit this one's photos/fields
+        try { await AsyncStorage.removeItem("checkin_draft"); } catch {}
+        try { await AsyncStorage.removeItem("checkin_photos"); } catch {}
+        setPhotos({ front: null, back: null, left: null, right: null, extra: null });
+      }
+    } finally { setSubmitting(false); }
+  };
 
 
   return (
@@ -383,13 +459,13 @@ export default function CheckIn() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
-              Check In Vehicle
+              Check In Vehicle v2
             </Text>
-            <TouchableOpacity 
-              onPress={() => router.push("/(driver)/scanner")} 
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8), marginLeft: "auto" }} 
-            > 
-              <Ionicons name="qr-code-outline" size={22} color="#fff" /> 
+            <TouchableOpacity
+              onPress={() => router.push("/(driver)/scanner")}
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8), marginLeft: "auto" }}
+            >
+              <Ionicons name="qr-code-outline" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -401,25 +477,25 @@ export default function CheckIn() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: rp(100) }}
         >
-          {isPreRegistered && ( 
-            <View style={{ 
-              backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", 
-              borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), 
-              flexDirection: "row", alignItems: "center", gap: rp(10) 
-            }}> 
-              <Ionicons name="checkmark-circle" size={20} color="#059669" /> 
-              <View style={{ flex: 1 }}> 
-                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}> 
-                  PRE-REGISTERED GUEST 
-                </Text> 
-                {guestName ? ( 
-                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}> 
-                    {guestName} — details pre-filled, please verify 
-                  </Text> 
-                ) : null} 
-              </View> 
-            </View> 
-          )} 
+          {isPreRegistered && (
+            <View style={{
+              backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7",
+              borderRadius: rp(16), padding: rp(12), marginBottom: rp(16),
+              flexDirection: "row", alignItems: "center", gap: rp(10)
+            }}>
+              <Ionicons name="checkmark-circle" size={20} color="#059669" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>
+                  PRE-REGISTERED GUEST
+                </Text>
+                {guestName ? (
+                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>
+                    {guestName} — details pre-filled, please verify
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          )}
           {isPreRegistered && guestNotes ? (
             <View style={{
               backgroundColor: "#FEF3C7",
@@ -436,12 +512,16 @@ export default function CheckIn() {
                 size={20} color="#D97706"
                 style={{ marginTop: rp(1) }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: rs(12), fontWeight: "900",
-                  color: "#92400E" }}>
+                <Text style={{
+                  fontSize: rs(12), fontWeight: "900",
+                  color: "#92400E"
+                }}>
                   GUEST INSTRUCTIONS
                 </Text>
-                <Text style={{ fontSize: rs(13), color: "#78350F",
-                  marginTop: rp(4), lineHeight: 18 }}>
+                <Text style={{
+                  fontSize: rs(13), color: "#78350F",
+                  marginTop: rp(4), lineHeight: 18
+                }}>
                   {guestNotes}
                 </Text>
               </View>
@@ -728,7 +808,7 @@ export default function CheckIn() {
               elevation: 6,
             }}
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE</Text>}
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE v2</Text>}
           </TouchableOpacity>
           <View style={{ height: rp(40) }} />
         </ScrollView>

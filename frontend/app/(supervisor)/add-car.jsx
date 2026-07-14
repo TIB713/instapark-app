@@ -309,8 +309,8 @@ export default function AddCar() {
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
     setSubmitting(true);
+    const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
     try {
-      const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
       for (const [label, uri] of Object.entries(photos)) {
         if (!uri) continue;
         const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
@@ -405,10 +405,42 @@ export default function AddCar() {
         });
       });
     } catch (err) {
-      const msg = err.response?.data?.detail || "Check-in failed";
-      if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in.");
-      else if (typeof msg === "string" && msg.includes("Duplicate")) Alert.alert("Duplicate", "Plate already checked in.");
-      else Alert.alert("Error", typeof msg === "string" ? msg : "Failed");
+      const gotServerResponse = !!err.response;
+      if (!gotServerResponse) {
+        try {
+          await enqueueCheckinAction({
+            eventId: currentEventId,
+            plate: plate.trim().toUpperCase(),
+            color: color.trim(),
+            make: make.trim(),
+            notes: notes.trim(),
+            gate: selectedGate,
+            guestPhone: phoneToSave,
+            checkInDriverId: resolvedDriverId,
+            photoLocalPaths,
+            isPreRegistered,
+            prefilledCarId,
+            carType,
+            altGuestPhone: altPhoneToSave || null,
+            hasDamage,
+            damageNotes: damageNotes.trim() || null,
+            damageTypes,
+            guestName: guestName.trim(),
+          });
+          await AsyncStorage.removeItem("checkin_draft");
+          await AsyncStorage.removeItem("checkin_photos");
+          Alert.alert("Saved for Retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
+          router.back();
+          return;
+        } catch {
+          Alert.alert("Error", "Could not save this check-in for retry. Please check your connection and try again.");
+        }
+      } else {
+        const msg = err.response?.data?.detail || "Check-in failed";
+        if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in.");
+        else if (typeof msg === "string" && msg.includes("Duplicate")) Alert.alert("Duplicate", "Plate already checked in.");
+        else Alert.alert("Error", typeof msg === "string" ? msg : "Failed");
+      }
     } finally { setSubmitting(false); }
   };
 
