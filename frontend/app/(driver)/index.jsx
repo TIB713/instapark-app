@@ -133,8 +133,8 @@ export default function DriverHome() {
       </SafeAreaView>
 
       <ScrollView
-        style={{ flex: 1, paddingHorizontal: rp(16), marginTop: -14 }}
-        contentContainerStyle={{ paddingTop: rp(14), paddingBottom: rp(40) }}
+        style={{ flex: 1, paddingHorizontal: rp(16) }}
+        contentContainerStyle={{ paddingTop: rp(20), paddingBottom: rp(40) }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

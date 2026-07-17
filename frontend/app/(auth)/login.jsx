@@ -46,7 +46,7 @@ export default function Login() {
   const [supEmail, setSupEmail] = useState("");
   const [supPassword, setSupPassword] = useState("");
   const [showSupPwd, setShowSupPwd] = useState(false);
-  const [empId, setEmpId] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
   const [pin, setPin] = useState("");
   const [showDriverPin, setShowDriverPin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,7 +54,7 @@ export default function Login() {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotStep, setForgotStep] = useState(1);
   const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotEmpId, setForgotEmpId] = useState("");
+  const [forgotDriverPhone, setForgotDriverPhone] = useState("");
   const [forgotOtp, setForgotOtp] = useState("");
   const [forgotNewSecret, setForgotNewSecret] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -102,13 +102,13 @@ export default function Login() {
         router.replace("/(supervisor)/dashboard");
         return;
       } else {
-        if (!empId.trim() || pin.length !== 4) {
-          setError("Employee ID and 4-digit PIN are required");
+        if (!/^\d{10}$/.test(driverPhone.trim()) || pin.length !== 4) {
+          setError("A valid 10-digit phone number and 4-digit PIN are required");
           setLoading(false);
           return;
         }
         const { data } = await api.post("/auth/driver/login", {
-          employee_id: empId.trim().toUpperCase(),
+          phone: driverPhone.trim(),
           pin,
         });
         await setItem("auth_token", data.token);
@@ -148,12 +148,12 @@ export default function Login() {
           email: forgotEmail.trim()
         });
       } else {
-        if (!forgotEmpId.trim()) {
-          setForgotError("Employee ID is required");
+        if (!/^\d{10}$/.test(forgotDriverPhone.trim())) {
+          setForgotError("A valid 10-digit phone number is required");
           return;
         }
         await api.post("/auth/driver/forgot-pin", {
-          employee_id: forgotEmpId.trim().toUpperCase()
+          phone: forgotDriverPhone.trim()
         });
       }
       setForgotStep(2);
@@ -169,7 +169,7 @@ export default function Login() {
         : "Failed to send OTP. Please try again.";
       setForgotError(msg);
       setForgotEmail("");
-      setForgotEmpId("");
+      setForgotDriverPhone("");
     } finally {
       setForgotLoading(false);
     }
@@ -205,7 +205,7 @@ export default function Login() {
         });
       } else {
         await api.post("/auth/driver/reset-pin", {
-          employee_id: forgotEmpId.trim().toUpperCase(),
+          phone: forgotDriverPhone.trim(),
           otp: forgotOtp.trim(),
           new_pin: forgotNewSecret.trim()
         });
@@ -233,7 +233,7 @@ export default function Login() {
     setForgotMode(false);
     setForgotStep(1);
     setForgotEmail("");
-    setForgotEmpId("");
+    setForgotDriverPhone("");
     setForgotOtp("");
     setForgotNewSecret("");
     setForgotError("");
@@ -337,7 +337,7 @@ export default function Login() {
                     setError("");
                     setSupEmail("");
                     setSupPassword("");
-                    setEmpId("");
+                    setDriverPhone("");
                     setPin("");
                   }}
                   activeOpacity={0.7}
@@ -372,7 +372,7 @@ export default function Login() {
                     setError("");
                     setEmail("");
                     setPassword("");
-                    setEmpId("");
+                    setDriverPhone("");
                     setPin("");
                   }}
                   activeOpacity={0.7}
@@ -520,16 +520,17 @@ export default function Login() {
                 </View>
               ) : (
                 <View>
-                  <Text style={styles.label}>EMPLOYEE ID</Text>
+                  <Text style={styles.label}>PHONE NUMBER</Text>
                   <View style={styles.input}>
-                    <Ionicons name="person-outline" size={20} color={accent} />
+                    <Ionicons name="call-outline" size={20} color={accent} />
                     <TextInput
-                      testID="driver-empid-input"
-                      value={empId}
-                      onChangeText={(v) => setEmpId(v.toUpperCase())}
-                      placeholder="DRV12345"
+                      testID="driver-phone-input"
+                      value={driverPhone}
+                      onChangeText={(v) => setDriverPhone(v.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="9876543210"
                       placeholderTextColor="#9CA3AF"
-                      autoCapitalize="characters"
+                      keyboardType="number-pad"
+                      maxLength={10}
                       style={styles.textInput}
                     />
                   </View>
@@ -723,7 +724,7 @@ export default function Login() {
                       <Text style={{ fontSize: rs(11),
                         fontWeight: "800", color: "#6B7280",
                         letterSpacing: rs(2), marginBottom: rp(8) }}>
-                        YOUR EMPLOYEE ID
+                        YOUR PHONE NUMBER
                       </Text>
                       <View style={{ backgroundColor: "#F9FAFB",
                         borderRadius: rp(14), borderWidth: 1,
@@ -731,17 +732,18 @@ export default function Login() {
                         flexDirection: "row",
                         alignItems: "center",
                         paddingHorizontal: rp(14), marginBottom: rp(16) }}>
-                        <Ionicons name="id-card-outline" size={rs(18)}
+                        <Ionicons name="call-outline" size={rs(18)}
                           color="#059669" />
                         <TextInput
-                          value={forgotEmpId}
+                          value={forgotDriverPhone}
                           onChangeText={(v) => {
-                            setForgotEmpId(v);
+                            setForgotDriverPhone(v.replace(/\D/g, "").slice(0, 10));
                             setForgotError("");
                           }}
-                          placeholder="DRV12345"
+                          placeholder="9876543210"
                           placeholderTextColor="#9CA3AF"
-                          autoCapitalize="characters"
+                          keyboardType="number-pad"
+                          maxLength={10}
                           style={{ flex: 1, paddingVertical: rp(14),
                             paddingLeft: rp(10), fontSize: rs(15),
                             color: "#111827" }}

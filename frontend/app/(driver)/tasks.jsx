@@ -1,7 +1,7 @@
 // version 3
 import * as Location from "expo-location";
 import { Linking } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -99,11 +99,12 @@ export default function Tasks() {
   const [arrivingAtGate, setArrivingAtGate] = useState(null);
   const [pickingUp, setPickingUp] = useState({});
   const [nowTick, setNowTick] = useState(Date.now());
+  const retrievalsRef = useRef([]);
+  const lastExpiryRefetchRef = useRef(0);
 
   useEffect(() => {
-    const t = setInterval(() => setNowTick(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+    retrievalsRef.current = retrievals;
+  }, [retrievals]);
 
   const fetchMyCars = useCallback(async () => {
     try {
@@ -134,6 +135,28 @@ export default function Tasks() {
       setRetrievals(data || []);
     } catch {}
   }, [currentEventId]);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      const now = Date.now();
+      setNowTick(now);
+
+      // If any car's gate timer has expired locally, the backend should be
+      // flipping it to AWAITING_REPARK shortly — actively refetch instead of
+      // waiting on a WebSocket push, so the re-park button shows up on its own.
+      const hasExpiredGateTimer = retrievalsRef.current.some(
+        (car) =>
+          car.status === "ARRIVED_AT_GATE" &&
+          car.gate_timer_expires_at &&
+          new Date(car.gate_timer_expires_at).getTime() <= now
+      );
+      if (hasExpiredGateTimer && now - lastExpiryRefetchRef.current > 4000) {
+        lastExpiryRefetchRef.current = now;
+        fetchRetrievals();
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [fetchRetrievals]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -1592,7 +1615,7 @@ export default function Tasks() {
 
 
 
-// import { useEffect, useState, useCallback } from "react";
+// import { useEffect, useState, useCallback, useRef } from "react";
 // import {
 //   View,
 //   Text,
@@ -2217,7 +2240,7 @@ export default function Tasks() {
 
 
 // // version 2
-// import { useEffect, useState, useCallback } from "react";
+// import { useEffect, useState, useCallback, useRef } from "react";
 // import {
 //   View,
 //   Text,

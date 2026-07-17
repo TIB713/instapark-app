@@ -62,8 +62,6 @@ export default function Hotels() {
 
   const [zones, setZones] = useState([{ name: "A", slots: "" }]);
   const [gates, setGates] = useState(["Main Gate"]);
-  const [keyHookStart, setKeyHookStart] = useState("1");
-  const [keyHookEnd, setKeyHookEnd] = useState("50");
 
   const isHotelOwner = user?.provider_type === "hotel_owner";
   const isValetProvider = !isHotelOwner;
@@ -148,9 +146,6 @@ export default function Hotels() {
         provider_id: user?.provider_id,
         zones: zones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
         gates: gates.filter(g => g.trim()),
-        key_hook_start: parseInt(keyHookStart) || 1,
-        key_hook_end: parseInt(keyHookEnd) || 50,
-        key_hooks: (parseInt(keyHookEnd) || 50) - (parseInt(keyHookStart) || 1) + 1,
       });
       setShowAddModal(false);
       resetForm();
@@ -435,32 +430,7 @@ export default function Hotels() {
                 keyboardType="numeric"
               />
 
-              <Text style={modalLabel}>KEY HOOKS</Text>
-              <View style={{ flexDirection: "row", gap: rp(12) }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[modalLabel, { marginTop: 0 }]}>FROM</Text>
-                  <TextInput
-                    style={modalInput}
-                    placeholder="1"
-                    value={keyHookStart}
-                    onChangeText={setKeyHookStart}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[modalLabel, { marginTop: 0 }]}>TO</Text>
-                  <TextInput
-                    style={modalInput}
-                    placeholder="50"
-                    value={keyHookEnd}
-                    onChangeText={setKeyHookEnd}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-              <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>
-                Drivers can only assign hook numbers {keyHookStart} to {keyHookEnd} for this hotel's daily events
-              </Text>
+
 
 
 

@@ -175,7 +175,7 @@ export default function Dashboard() {
             backgroundColor: "#7C3AED",
             borderBottomLeftRadius: rp(44),
             borderBottomRightRadius: rp(44),
-            paddingBottom: rp(36),
+            paddingBottom: rp(20),
             paddingHorizontal: rp(20),
             paddingTop: rp(8),
           }}
@@ -212,8 +212,8 @@ export default function Dashboard() {
       </SafeAreaView>
 
       <ScrollView
-        style={{ flex: 1, marginTop: -rp(20) }}
-        contentContainerStyle={{ paddingBottom: rp(100) }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: rp(14), paddingBottom: rp(100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
         <ScrollView
@@ -271,11 +271,11 @@ export default function Dashboard() {
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(10) }}>
-                  <Ionicons name="add-circle" size={rs(22)} color="#7C3AED" />
+                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(8) }}>
+                  <Ionicons name="add-circle" size={rs(18)} color="#7C3AED" />
                 </View>
-                <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Create Special Event</Text>
-                <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Add a special event</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Create Special Event</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Add an event</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -284,11 +284,11 @@ export default function Dashboard() {
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(10) }}>
-                  <Ionicons name="add-circle" size={rs(22)} color="#7C3AED" />
+                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(8) }}>
+                  <Ionicons name="add-circle" size={rs(18)} color="#7C3AED" />
                 </View>
-                <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>New Event</Text>
-                <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Create new valet event</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>New Event</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Create event</Text>
               </TouchableOpacity>
             )}
 
@@ -299,11 +299,11 @@ export default function Dashboard() {
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(10) }}>
-                  <Ionicons name="qr-code-outline" size={rs(22)} color="#D97706" />
+                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8) }}>
+                  <Ionicons name="qr-code-outline" size={rs(18)} color="#D97706" />
                 </View>
-                <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Guest QR</Text>
-                <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Pre-registration code</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Guest QR</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Registration</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -312,29 +312,26 @@ export default function Dashboard() {
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#EBF5FF", borderRadius: rp(99), padding: rp(10) }}>
-                  <Ionicons name="business-outline" size={rs(22)} color="#1D4ED8" />
+                <View style={{ backgroundColor: "#EBF5FF", borderRadius: rp(99), padding: rp(8) }}>
+                  <Ionicons name="business-outline" size={rs(18)} color="#1D4ED8" />
                 </View>
-                <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Hotels</Text>
-                <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Manage hotel contracts</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Hotels</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Contracts</Text>
               </TouchableOpacity>
             )}
-          </View>
 
-          <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(12) }}>
             <TouchableOpacity
               testID="quick-manage-employees"
               onPress={() => router.push("/(admin)/manage-employees")}
               activeOpacity={0.85}
               style={[quickAction, cardShadow]}
             >
-              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(10) }}>
-                <Ionicons name="people-outline" size={rs(22)} color="#0F2044" />
+              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(8) }}>
+                <Ionicons name="people-outline" size={rs(18)} color="#0F2044" />
               </View>
-              <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Employees</Text>
-              <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Manage your team</Text>
+              <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Employees</Text>
+              <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Manage team</Text>
             </TouchableOpacity>
-            <View style={{ flex: 1 }} />
           </View>
         </View>
 
@@ -557,6 +554,6 @@ const cardBase = {
 const quickAction = {
   flex: 1,
   backgroundColor: "#FFFFFF",
-  borderRadius: rp(24),
-  padding: rp(16),
+  borderRadius: rp(20),
+  padding: rp(12),
 };

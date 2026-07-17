@@ -163,7 +163,7 @@ export default function SupervisorDashboard() {
             backgroundColor: ACCENT_COLOR,
             borderBottomLeftRadius: 44,
             borderBottomRightRadius: 44,
-            paddingBottom: rp(36),
+            paddingBottom: rp(20),
             paddingHorizontal: rp(20),
             paddingTop: rp(8),
           }}
@@ -200,8 +200,8 @@ export default function SupervisorDashboard() {
       )}
 
       <ScrollView
-        style={{ flex: 1, marginTop: -20 }}
-        contentContainerStyle={{ paddingBottom: rp(100) }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: rp(14), paddingBottom: rp(100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT_COLOR} />}
       >
         <ScrollView

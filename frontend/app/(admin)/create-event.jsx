@@ -41,8 +41,6 @@ export default function CreateEvent() {
   const [hostEmail, setHostEmail] = useState("");
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
-  const [keyHookStart, setKeyHookStart] = useState(isHotelOwner ? "51" : "1");
-  const [keyHookEnd, setKeyHookEnd] = useState(isHotelOwner ? "100" : "50");
   const [zones, setZones] = useState([{ name: "A", slots: 20 }]);
   const [gates, setGates] = useState(["Main Gate"]);
   const [showDP, setShowDP] = useState(false);
@@ -108,9 +106,6 @@ export default function CreateEvent() {
         venue: venue.trim(),
         max_cars: parseInt(maxCars) || 200,
         gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
-        key_hook_start: parseInt(keyHookStart) || 1,
-        key_hook_end: parseInt(keyHookEnd) || 50,
-        key_hooks: (parseInt(keyHookEnd) || 50) - (parseInt(keyHookStart) || 1) + 1,
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
         is_template: false,
@@ -151,8 +146,8 @@ export default function CreateEvent() {
       const message = Array.isArray(detail)
         ? detail.map(d => d.msg || JSON.stringify(d)).join(", ")
         : typeof detail === "string"
-        ? detail
-        : "Failed to create event";
+          ? detail
+          : "Failed to create event";
       Alert.alert("Error", message);
     } finally {
       setSaving(false);
@@ -377,36 +372,6 @@ export default function CreateEvent() {
             <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: "row", gap: rp(12) }}>
-            <View style={{ flex: 1 }}>
-              <Label>KEY HOOKS FROM</Label>
-              <InputRow icon="key-outline">
-                <TextInput
-                  value={keyHookStart}
-                  onChangeText={setKeyHookStart}
-                  placeholder={isHotelOwner ? "51" : "1"}
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  style={textInputStyle}
-                />
-              </InputRow>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Label>KEY HOOKS TO</Label>
-              <InputRow icon="key-outline">
-                <TextInput
-                  value={keyHookEnd}
-                  onChangeText={setKeyHookEnd}
-                  placeholder={isHotelOwner ? "100" : "50"}
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  style={textInputStyle}
-                />
-              </InputRow>
-            </View>
-          </View>
           <Label>GATE WAIT TIMER (MINUTES)</Label>
           <InputRow icon="timer-outline">
             <TextInput

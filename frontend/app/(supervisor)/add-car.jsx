@@ -269,7 +269,6 @@ export default function AddCar() {
     if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; }
     if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; }
     if (!guestName.trim()) { Alert.alert("Required", "Guest name is required"); return; }
-    if (!guestPhone.trim() && !altGuestPhone.trim()) { Alert.alert("Required", "Please enter at least one mobile number (guest or alternate)"); return; }
     if (!selectedDriverId) { Alert.alert("Required", "Please select a driver to hand this car to"); return; }
     let phoneToSave = "";
     if (guestPhone.trim()) {
@@ -603,8 +602,8 @@ export default function AddCar() {
               )}
             </>
           )}
-          <Text style={{ fontSize: rs(11), color: "#EF4444", fontWeight: "700", marginBottom: rp(6) }}>* At least one mobile number is required</Text>
-          <Lbl>GUEST MOBILE</Lbl>
+          <Text style={{ fontSize: rs(11), color: "#6B7280", marginBottom: rp(6) }}>Mobile number is optional — guest can scan the QR instead.</Text>
+          <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
           <View style={inputRow}>
             <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
             <TextInput value={guestPhone} onChangeText={setGuestPhone} placeholder="10-digit mobile number" placeholderTextColor="#9CA3AF" keyboardType="phone-pad" maxLength={10} style={textInput} />

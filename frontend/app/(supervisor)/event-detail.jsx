@@ -582,6 +582,14 @@ export default function SupervisorEventDetail() {
               <>
                 <TouchableOpacity 
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => { setShowMenu(false); router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } }); }}
+                >
+                  <Ionicons name="create-outline" size={20} color={ACCENT_COLOR} />
+                  <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Edit Event</Text>
+                </TouchableOpacity>
+                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
+                <TouchableOpacity 
+                  style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => { setShowMenu(false); router.push("/(admin)/pre-register-qr"); }}
                 >
                   <Ionicons name="qr-code-outline" size={20} color={ACCENT_COLOR} />

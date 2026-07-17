@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   BackHandler,
+  Share,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -132,6 +133,9 @@ export default function EventDetail() {
   const [supAadharNumber, setSupAadharNumber] = useState("");
   const [supAadharPhotoUri, setSupAadharPhotoUri] = useState(null);
   const [supPhoto, setSupPhoto] = useState(null);
+  const [supGender, setSupGender] = useState("male");
+  const [supIfscChecking, setSupIfscChecking] = useState(false);
+  const [supIfscInfo, setSupIfscInfo] = useState(null);
   const [savingSupervisor, setSavingSupervisor] = useState(false);
 
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
@@ -149,6 +153,9 @@ export default function EventDetail() {
   const [drvBankIfsc, setDrvBankIfsc] = useState("");
   const [drvAadharNumber, setDrvAadharNumber] = useState("");
   const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
+  const [drvGender, setDrvGender] = useState("male");
+  const [drvIfscChecking, setDrvIfscChecking] = useState(false);
+  const [drvIfscInfo, setDrvIfscInfo] = useState(null);
   const [savingDriver, setSavingDriver] = useState(false);
 
   const [employeeTab, setEmployeeTab] = useState("supervisors");
@@ -754,11 +761,20 @@ export default function EventDetail() {
   const resetSupForm = () => {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
     setSupPanNumber(""); setSupBankAccountNumber(""); setSupBankIfsc(""); setSupAadharNumber(""); setSupAadharPhotoUri(null); setSupPhoto(null);
+    setSupGender("male"); setSupIfscChecking(false); setSupIfscInfo(null);
   };
 
   const saveSupervisor = async () => {
     if (!supName.trim() || !supEmail.trim() || !supPassword.trim()) {
       Alert.alert("Required", "Name, email and password are required");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
+    if (!supGender) {
+      Alert.alert("Required", "Please select gender");
       return;
     }
     let phoneToSave;
@@ -773,26 +789,17 @@ export default function EventDetail() {
       }
       phoneToSave = isValidIndian ? normalized : supPhone.trim();
     }
-    if (!supPanNumber.trim()) {
-      Alert.alert("Required", "PAN Number is required");
-      return;
-    }
-    if (!supBankAccountNumber.trim()) {
-      Alert.alert("Required", "Bank Account Number is required");
-      return;
-    }
-    if (!supBankIfsc.trim()) {
-      Alert.alert("Required", "Bank IFSC is required");
-      return;
-    }
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPanNumber.trim().toUpperCase())) {
+    if (supPanNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPanNumber.trim().toUpperCase())) {
       Alert.alert("Invalid PAN", "Expected format: ABCDE1234F"); return;
     }
-    if (!/^\d{9,18}$/.test(supBankAccountNumber.trim())) {
+    if (supBankAccountNumber.trim() && !/^\d{9,18}$/.test(supBankAccountNumber.trim())) {
       Alert.alert("Invalid Bank Account", "Must be 9–18 digits"); return;
     }
-    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) {
+    if (supBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) {
       Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
+    }
+    if (supBankIfsc.trim().length === 11 && supIfscInfo === "error") {
+      Alert.alert("Invalid IFSC", "This IFSC code was not found. Please check and try again."); return;
     }
     if (!supAadharNumber.trim()) {
       Alert.alert("Required", "Aadhar Number is required");
@@ -840,12 +847,13 @@ export default function EventDetail() {
         email: supEmail.trim().toLowerCase(),
         phone: phoneToSave || undefined,
         password: supPassword,
-        pan_number: supPanNumber.trim(),
-        bank_account_number: supBankAccountNumber.trim(),
-        bank_ifsc: supBankIfsc.trim().toUpperCase(),
+        pan_number: supPanNumber.trim() || undefined,
+        bank_account_number: supBankAccountNumber.trim() || undefined,
+        bank_ifsc: supBankIfsc.trim() ? supBankIfsc.trim().toUpperCase() : undefined,
         aadhar_number: supAadharNumber.trim(),
         aadhar_photo: aadharPhotoUrl,
         supervisor_photo: uploadedPhotoUrl || undefined,
+        gender: supGender,
       });
       setShowAddSupervisorModal(false);
       resetSupForm();
@@ -873,6 +881,9 @@ export default function EventDetail() {
     setDrvBankIfsc("");
     setDrvAadharNumber("");
     setDrvAadharPhotoUri(null);
+    setDrvGender("male");
+    setDrvIfscChecking(false);
+    setDrvIfscInfo(null);
   };
 
   const pickDriverPhoto = async () => {
@@ -952,8 +963,16 @@ export default function EventDetail() {
       Alert.alert("Required", "Name, email and PIN are required");
       return;
     }
-    if (drvPin.length !== 4) {
-      Alert.alert("Invalid PIN", "PIN must be a 4-digit number");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
+    if (drvPin.length !== 4 || !/^\d{4}$/.test(drvPin)) {
+      Alert.alert("Invalid PIN", "PIN must be exactly 4 digits");
+      return;
+    }
+    if (!drvGender) {
+      Alert.alert("Required", "Please select gender");
       return;
     }
     if (!drvPhone.trim()) {
@@ -972,26 +991,17 @@ export default function EventDetail() {
       }
       phoneToSave = isValidIndian ? normalized : drvPhone.trim();
     }
-    if (!drvPan.trim()) {
-      Alert.alert("Required", "PAN Number is required");
-      return;
-    }
-    if (!drvBankAccount.trim()) {
-      Alert.alert("Required", "Bank Account Number is required");
-      return;
-    }
-    if (!drvBankIfsc.trim()) {
-      Alert.alert("Required", "Bank IFSC is required");
-      return;
-    }
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(drvPan.trim().toUpperCase())) {
+    if (drvPan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(drvPan.trim().toUpperCase())) {
       Alert.alert("Invalid PAN", "Expected format: ABCDE1234F"); return;
     }
-    if (!/^\d{9,18}$/.test(drvBankAccount.trim())) {
+    if (drvBankAccount.trim() && !/^\d{9,18}$/.test(drvBankAccount.trim())) {
       Alert.alert("Invalid Bank Account", "Must be 9–18 digits"); return;
     }
-    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(drvBankIfsc.trim().toUpperCase())) {
+    if (drvBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(drvBankIfsc.trim().toUpperCase())) {
       Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
+    }
+    if (drvBankIfsc.trim().length === 11 && drvIfscInfo === "error") {
+      Alert.alert("Invalid IFSC", "This IFSC code was not found. Please check and try again."); return;
     }
     if (!drvLicenseNumber.trim()) {
       Alert.alert("Required", "Driving License Number is required");
@@ -1046,14 +1056,15 @@ export default function EventDetail() {
         email: drvEmail.trim().toLowerCase(),
         phone: phoneToSave,
         pin: drvPin,
-        photo_url: photoUrl || undefined,
-        pan_number: drvPan.trim(),
-        bank_account_number: drvBankAccount.trim(),
-        bank_ifsc: drvBankIfsc.trim(),
+        driver_photo: photoUrl || undefined,
+        pan_number: drvPan.trim() || undefined,
+        bank_account_number: drvBankAccount.trim() || undefined,
+        bank_ifsc: drvBankIfsc.trim() || undefined,
         driving_license_number: drvLicenseNumber.trim(),
         driving_license_photo: licensePhotoUrl,
         aadhar_number: drvAadharNumber.trim(),
         aadhar_photo: aadharPhotoUrl,
+        gender: drvGender,
       });
       setShowAddDriverModal(false);
       resetDrvForm();
@@ -2517,9 +2528,7 @@ export default function EventDetail() {
                 const url = event?.event_type === "hotel_daily"
                   ? `${process.env.EXPO_PUBLIC_GUEST_URL}/hotel-register/${specialEventHotel?.hotel_qr_token}`
                   : `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${specialEventQRToken}`;
-                Sharing.shareAsync(null, {
-                  dialogTitle: `Guest QR for ${event?.name}`,
-                  UTI: "public.plain-text",
+                Share.share({
                   message: `Pre-register for ${event?.name} at ${specialEventHotel?.name}: ${url}`,
                 });
               }}
@@ -2712,6 +2721,22 @@ export default function EventDetail() {
                 <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
                 <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
 
+                <Text style={modalLabel}>GENDER</Text>
+                <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: supGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setSupGender('male')}
+                  >
+                    <Text style={{ fontWeight: '600', color: supGender === 'male' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Male</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: supGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setSupGender('female')}
+                  >
+                    <Text style={{ fontWeight: '600', color: supGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <Text style={modalLabel}>PASSWORD</Text>
                 <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
 
@@ -2722,7 +2747,39 @@ export default function EventDetail() {
                 <TextInput value={supBankAccountNumber} onChangeText={setSupBankAccountNumber} placeholder="Account Number" keyboardType="numeric" style={modalInput} />
 
                 <Text style={modalLabel}>BANK IFSC</Text>
-                <TextInput value={supBankIfsc} onChangeText={setSupBankIfsc} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+                <TextInput value={supBankIfsc} onChangeText={(v) => {
+                  const upper = v.toUpperCase();
+                  setSupBankIfsc(upper);
+                  if (upper.length === 11) {
+                    setSupIfscChecking(true);
+                    api.get(`/utils/ifsc/${upper}`)
+                      .then(res => { setSupIfscInfo(res.data); setSupIfscChecking(false); })
+                      .catch((err) => {
+                        if (err.response?.status === 404) {
+                          setSupIfscInfo("error");
+                        } else {
+                          setSupIfscInfo("unverified");
+                        }
+                        setSupIfscChecking(false);
+                      });
+                  }
+                }} placeholder="SBIN0001234" autoCapitalize="characters" maxLength={11} style={modalInput} />
+                {supIfscChecking && <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>Checking IFSC...</Text>}
+                {supIfscInfo === "unverified" && (
+                  <Text style={{ color: "#D97706", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    Couldn't verify IFSC right now — you can still continue
+                  </Text>
+                )}
+                {supIfscInfo && supIfscInfo !== "error" && supIfscInfo !== "unverified" && (
+                  <Text style={{ color: "#059669", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    {supIfscInfo.bank} — {supIfscInfo.branch}, {supIfscInfo.city}
+                  </Text>
+                )}
+                {supIfscInfo === "error" && (
+                  <Text style={{ color: "#EF4444", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    Invalid IFSC Code
+                  </Text>
+                )}
 
                 <Text style={modalLabel}>AADHAR NUMBER</Text>
                 <TextInput value={supAadharNumber} onChangeText={(v) => setSupAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
@@ -2800,6 +2857,22 @@ export default function EventDetail() {
                 <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
                 <Text style={modalLabel}>PHONE</Text>
                 <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+
+                <Text style={modalLabel}>GENDER</Text>
+                <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: drvGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setDrvGender('male')}
+                  >
+                    <Text style={{ fontWeight: '600', color: drvGender === 'male' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Male</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: drvGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    onPress={() => setDrvGender('female')}
+                  >
+                    <Text style={{ fontWeight: '600', color: drvGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
+                  </TouchableOpacity>
+                </View>
                 <Text style={modalLabel}>4-DIGIT PIN</Text>
                 <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={modalInput} />
                 <Text style={modalLabel}>EMAIL</Text>
@@ -2809,7 +2882,39 @@ export default function EventDetail() {
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
                 <TextInput value={drvBankAccount} onChangeText={setDrvBankAccount} placeholder="Account number" keyboardType="numeric" style={modalInput} />
                 <Text style={modalLabel}>BANK IFSC CODE</Text>
-                <TextInput value={drvBankIfsc} onChangeText={(v) => setDrvBankIfsc(v.toUpperCase())} placeholder="SBIN0001234" autoCapitalize="characters" style={modalInput} />
+                <TextInput value={drvBankIfsc} onChangeText={(v) => {
+                  const upper = v.toUpperCase();
+                  setDrvBankIfsc(upper);
+                  if (upper.length === 11) {
+                    setDrvIfscChecking(true);
+                    api.get(`/utils/ifsc/${upper}`)
+                      .then(res => { setDrvIfscInfo(res.data); setDrvIfscChecking(false); })
+                      .catch((err) => {
+                        if (err.response?.status === 404) {
+                          setDrvIfscInfo("error");
+                        } else {
+                          setDrvIfscInfo("unverified");
+                        }
+                        setDrvIfscChecking(false);
+                      });
+                  }
+                }} placeholder="SBIN0001234" autoCapitalize="characters" maxLength={11} style={modalInput} />
+                {drvIfscChecking && <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>Checking IFSC...</Text>}
+                {drvIfscInfo === "unverified" && (
+                  <Text style={{ color: "#D97706", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    Couldn't verify IFSC right now — you can still continue
+                  </Text>
+                )}
+                {drvIfscInfo && drvIfscInfo !== "error" && drvIfscInfo !== "unverified" && (
+                  <Text style={{ color: "#059669", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    {drvIfscInfo.bank} — {drvIfscInfo.branch}, {drvIfscInfo.city}
+                  </Text>
+                )}
+                {drvIfscInfo === "error" && (
+                  <Text style={{ color: "#EF4444", fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(16) }}>
+                    Invalid IFSC Code
+                  </Text>
+                )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER</Text>
                 <TextInput value={drvLicenseNumber} onChangeText={(v) => setDrvLicenseNumber(v.toUpperCase())} placeholder="DL number" autoCapitalize="characters" style={modalInput} />
 

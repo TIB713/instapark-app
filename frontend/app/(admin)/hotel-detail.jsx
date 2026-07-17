@@ -90,8 +90,7 @@ export default function HotelDetail() {
   const [newEventStartTime, setNewEventStartTime] = useState("18:00");
   const [newEventEndTime, setNewEventEndTime] = useState("23:00");
   const [newEventMaxCars, setNewEventMaxCars] = useState("100");
-  const [newEventKeyHookStart, setNewEventKeyHookStart] = useState("51");
-  const [newEventKeyHookEnd, setNewEventKeyHookEnd] = useState("100");
+
   const [newEventGates, setNewEventGates] = useState(["Main Gate"]);
   const [newEventZones, setNewEventZones] = useState([{ name: "Zone A", slots: "50" }]);
   const [showEventDatePicker, setShowEventDatePicker] = useState(false);
@@ -155,8 +154,7 @@ export default function HotelDetail() {
   const [editHotel, setEditHotel] = useState(null);
   const [editZones, setEditZones] = useState([]);
   const [editGates, setEditGates] = useState([]);
-  const [editKeyHookStart, setEditKeyHookStart] = useState("1");
-  const [editKeyHookEnd, setEditKeyHookEnd] = useState("50");
+
 
   const today = new Date().toISOString().split("T")[0];
   const todayEvents = allEvents
@@ -193,8 +191,6 @@ export default function HotelDetail() {
       // Initialize edit state from hotel data
       setEditZones(data.zones || [{ name: "A", slots: data.total_valet_slots || 50 }]);
       setEditGates(data.gates || ["Main Gate"]);
-      setEditKeyHookStart(String(data.key_hook_start || 1));
-      setEditKeyHookEnd(String(data.key_hook_end || 50));
     } catch (e) {
       console.error("Error fetching hotel:", e);
     }
@@ -477,12 +473,6 @@ export default function HotelDetail() {
         start_time: newEventStartTime,
         end_time: newEventEndTime,
         max_cars: maxCarsNum,
-        key_hook_start: parseInt(newEventKeyHookStart) || 51,
-        key_hook_end: parseInt(newEventKeyHookEnd) || 100,
-        key_hooks:
-          (parseInt(newEventKeyHookEnd) || 100) -
-          (parseInt(newEventKeyHookStart) || 51) +
-          1,
         zones: newEventZones.map((z) => ({
           name: z.name,
           slots: parseInt(z.slots) || 50,
@@ -974,60 +964,6 @@ export default function HotelDetail() {
 
 
 
-              {/* Key Hook Range */}
-              <View style={{ marginTop: rp(12) }}>
-                <Text style={modalLabel}>KEY HOOK RANGE</Text>
-                <View style={{ flexDirection: "row", gap: rp(12) }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[modalLabel, { marginTop: 0 }]}>FROM</Text>
-                    <TextInput
-                      value={editKeyHookStart}
-                      onChangeText={setEditKeyHookStart}
-                      keyboardType="numeric"
-                      style={modalTextInput}
-                      onEndEditing={() =>
-                        updateHotel({
-                          key_hook_start: parseInt(editKeyHookStart) || 1,
-                          key_hook_end: parseInt(editKeyHookEnd) || 50,
-                          key_hooks:
-                            (parseInt(editKeyHookEnd) || 50) -
-                            (parseInt(editKeyHookStart) || 1) +
-                            1,
-                        })
-                      }
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[modalLabel, { marginTop: 0 }]}>TO</Text>
-                    <TextInput
-                      value={editKeyHookEnd}
-                      onChangeText={setEditKeyHookEnd}
-                      keyboardType="numeric"
-                      style={modalTextInput}
-                      onEndEditing={() =>
-                        updateHotel({
-                          key_hook_start: parseInt(editKeyHookStart) || 1,
-                          key_hook_end: parseInt(editKeyHookEnd) || 50,
-                          key_hooks:
-                            (parseInt(editKeyHookEnd) || 50) -
-                            (parseInt(editKeyHookStart) || 1) +
-                            1,
-                        })
-                      }
-                    />
-                  </View>
-                </View>
-                <Text
-                  style={{
-                    color: "#6B7280",
-                    fontSize: rs(11),
-                    marginTop: rp(4),
-                  }}
-                >
-                  Drivers can only assign hook numbers {editKeyHookStart} to{" "}
-                  {editKeyHookEnd} for this hotel's daily events
-                </Text>
-              </View>
 
               {/* Gates */}
               <View style={{ marginTop: rp(12) }}>
@@ -1488,33 +1424,6 @@ export default function HotelDetail() {
 
                 <Text style={modalLabel}>MAX CARS</Text>
                 <TextInput value={newEventMaxCars} onChangeText={setNewEventMaxCars} keyboardType="numeric" placeholder="100" style={modalTextInput} />
-
-                <Text style={modalLabel}>KEY HOOK RANGE</Text>
-                <View style={{ flexDirection: "row", gap: rp(12) }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[modalLabel, { marginTop: 0 }]}>FROM</Text>
-                    <TextInput
-                      value={newEventKeyHookStart}
-                      onChangeText={setNewEventKeyHookStart}
-                      keyboardType="numeric"
-                      placeholder="51"
-                      style={modalTextInput}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[modalLabel, { marginTop: 0 }]}>TO</Text>
-                    <TextInput
-                      value={newEventKeyHookEnd}
-                      onChangeText={setNewEventKeyHookEnd}
-                      keyboardType="numeric"
-                      placeholder="100"
-                      style={modalTextInput}
-                    />
-                  </View>
-                </View>
-                <Text style={{ fontSize: rs(10), color: "#9CA3AF", marginTop: rp(4) }}>
-                  Use a range that does not overlap with the daily event hooks
-                </Text>
 
                 <Text style={modalLabel}>GATES</Text>
                 {newEventGates.map((gate, index) => (

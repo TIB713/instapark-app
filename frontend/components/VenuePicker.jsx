@@ -21,6 +21,7 @@ export default function VenuePicker({
 
   const handleChangeText = (text) => {
     setTextValue(text);
+    onSelect({ venue: text, venue_place_id: null, venue_address: null, venue_lat: null, venue_lng: null });
     
     if (text.trim().length < 3) {
       setSuggestions([]);
@@ -37,8 +38,8 @@ export default function VenuePicker({
           setSuggestions(data);
           setShowDropdown(true);
         } else {
-          setSuggestions([{ place_id: "NONE", description: "No matches found" }]);
-          setShowDropdown(true);
+          setSuggestions([]);
+          setShowDropdown(false);
         }
       } catch (err) {
         setSuggestions([]);
