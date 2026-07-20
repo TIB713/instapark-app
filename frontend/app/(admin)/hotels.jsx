@@ -59,6 +59,7 @@ export default function Hotels() {
   const [contactEmail, setContactEmail] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
+  const [errors, setErrors] = useState({});
 
   const [zones, setZones] = useState([{ name: "A", slots: "" }]);
   const [gates, setGates] = useState(["Main Gate"]);
@@ -113,21 +114,22 @@ export default function Hotels() {
     setGates(["Main Gate"]);
     setKeyHookStart("1");
     setKeyHookEnd("50");
+    setErrors({});
   };
 
   const saveHotel = async () => {
-    if (!name || !address || !city || !state || !contactName || !contactPhone || !totalSlots) {
-      Alert.alert("Required Fields", "Please fill all required fields");
-      return;
-    }
-    if (!/^\d{10}$/.test(contactPhone.trim().replace(/\D/g, ""))) {
-      Alert.alert("Invalid Phone", "Please enter a valid 10-digit contact phone number");
-      return;
-    }
-    if (contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) {
-      Alert.alert("Invalid Email", "Please enter a valid contact email address");
-      return;
-    }
+    const errs = {};
+    if (!name.trim()) errs.name = "Hotel name is required";
+    if (!address.trim()) errs.address = "Address is required";
+    if (!city) errs.city = "City is required";
+    if (!state) errs.state = "State is required";
+    if (!contactName.trim()) errs.contactName = "Contact name is required";
+    if (!contactPhone.trim()) errs.contactPhone = "Contact phone is required";
+    else if (!/^\d{10}$/.test(contactPhone.trim().replace(/\D/g, ""))) errs.contactPhone = "Please enter a valid 10-digit contact phone number";
+    if (contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) errs.contactEmail = "Please enter a valid contact email address";
+    if (!totalSlots) errs.totalSlots = "Total valet slots is required";
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setSaving(true);
     try {
@@ -336,7 +338,7 @@ export default function Hotels() {
       <Modal
         visible={showAddModal}
         animationType="slide"
-        onRequestClose={() => setShowAddModal(false)}
+        onRequestClose={() => { setShowAddModal(false); setErrors({}); resetForm(); }}
       >
         <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
           <KeyboardAvoidingView
@@ -353,7 +355,7 @@ export default function Hotels() {
                 alignItems: "center",
               }}
             >
-              <TouchableOpacity onPress={() => setShowAddModal(false)} style={{ padding: rp(8), marginLeft: -rp(8) }}>
+              <TouchableOpacity onPress={() => { setShowAddModal(false); setErrors({}); resetForm(); }} style={{ padding: rp(8), marginLeft: -rp(8) }}>
                 <Ionicons name="close" size={rs(24)} color="#fff" />
               </TouchableOpacity>
               <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12) }}>Add Hotel</Text>
@@ -362,65 +364,72 @@ export default function Hotels() {
             <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(16) }}>
               <Text style={modalLabel}>HOTEL NAME *</Text>
               <TextInput
-                style={modalInput}
+                style={[modalInput, errors.name && modalInputError]}
                 placeholder="Enter hotel name"
                 value={name}
-                onChangeText={setName}
+                onChangeText={(t) => { setName(t); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }}
               />
+              {errors.name && <Text style={modalErrorText}>* {errors.name}</Text>}
 
               <Text style={modalLabel}>ADDRESS *</Text>
               <TextInput
-                style={modalInput}
+                style={[modalInput, errors.address && modalInputError]}
                 placeholder="Enter address"
                 value={address}
-                onChangeText={setAddress}
+                onChangeText={(t) => { setAddress(t); if (errors.address) setErrors(prev => ({ ...prev, address: undefined })); }}
               />
+              {errors.address && <Text style={modalErrorText}>* {errors.address}</Text>}
 
               <View style={{ marginBottom: rp(12) }}>
                 <Text style={modalLabel}>STATE & CITY *</Text>
                 <CityStatePicker
                   state={state}
                   city={city}
-                  onStateChange={val => { setState(val); setCity(""); }}
-                  onCityChange={val => setCity(val)}
+                  onStateChange={val => { setState(val); setCity(""); if (errors.state) setErrors(prev => ({ ...prev, state: undefined })); }}
+                  onCityChange={val => { setCity(val); if (errors.city) setErrors(prev => ({ ...prev, city: undefined })); }}
                 />
+                {(errors.state || errors.city) && <Text style={modalErrorText}>* {errors.state || errors.city}</Text>}
               </View>
 
               <Text style={modalLabel}>CONTACT NAME *</Text>
               <TextInput
-                style={modalInput}
+                style={[modalInput, errors.contactName && modalInputError]}
                 placeholder="Contact name"
                 value={contactName}
-                onChangeText={setContactName}
+                onChangeText={(t) => { setContactName(t); if (errors.contactName) setErrors(prev => ({ ...prev, contactName: undefined })); }}
               />
+              {errors.contactName && <Text style={modalErrorText}>* {errors.contactName}</Text>}
 
               <Text style={modalLabel}>CONTACT PHONE *</Text>
               <TextInput
-                style={modalInput}
+                style={[modalInput, errors.contactPhone && modalInputError]}
                 placeholder="Contact phone"
                 value={contactPhone}
-                onChangeText={setContactPhone}
+                onChangeText={(t) => { setContactPhone(t); if (errors.contactPhone) setErrors(prev => ({ ...prev, contactPhone: undefined })); }}
                 keyboardType="phone-pad"
               />
+              {errors.contactPhone && <Text style={modalErrorText}>* {errors.contactPhone}</Text>}
 
               <Text style={modalLabel}>CONTACT EMAIL</Text>
               <TextInput
-                style={modalInput}
+                style={[modalInput, errors.contactEmail && modalInputError]}
                 placeholder="Contact email (optional)"
                 value={contactEmail}
-                onChangeText={setContactEmail}
+                onChangeText={(t) => { setContactEmail(t); if (errors.contactEmail) setErrors(prev => ({ ...prev, contactEmail: undefined })); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              {errors.contactEmail && <Text style={modalErrorText}>* {errors.contactEmail}</Text>}
 
               <Text style={modalLabel}>TOTAL VALET SLOTS *</Text>
               <TextInput
-                style={modalInput}
+                style={[modalInput, errors.totalSlots && modalInputError]}
                 placeholder="Total slots"
                 value={totalSlots}
-                onChangeText={setTotalSlots}
+                onChangeText={(t) => { setTotalSlots(t); if (errors.totalSlots) setErrors(prev => ({ ...prev, totalSlots: undefined })); }}
                 keyboardType="numeric"
               />
+              {errors.totalSlots && <Text style={modalErrorText}>* {errors.totalSlots}</Text>}
               <Text style={modalLabel}>GATE WAIT TIMER (MINUTES)</Text>
               <TextInput
                 style={modalInput}
@@ -563,3 +572,5 @@ const modalInput = {
   flexDirection: "row",
   alignItems: "center",
 };
+const modalInputError = { borderColor: "#EF4444" };
+const modalErrorText = { color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) };

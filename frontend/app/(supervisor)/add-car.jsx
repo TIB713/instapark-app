@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +24,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { enqueueCheckinAction } from "../../lib/offline";
+
+const REQUIRED_PHOTO_ORDER = ["front", "back", "left", "right"];
 
 const validatePlate = (plate) => {
   const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
@@ -77,10 +80,13 @@ export default function AddCar() {
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [pendingLookup, setPendingLookup] = useState(null);
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
   const [prefilledCarId, setPrefilledCarId] = useState(null);
   const [passToken, setPassToken] = useState(null);
   const [guestName, setGuestName] = useState("");
@@ -222,7 +228,7 @@ export default function AddCar() {
       await AsyncStorage.setItem("add_car_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName }));
       await AsyncStorage.setItem("add_car_photos", JSON.stringify(photos));
     } catch { }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
       const asset = result.assets[0];
       const compressed = await ImageManipulator.manipulateAsync(
@@ -230,11 +236,37 @@ export default function AddCar() {
         [{ resize: { width: rp(1280) } }],
         { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
       );
-      const np = { ...photos, [label]: compressed.uri };
-      setPhotos(np);
-      try { await AsyncStorage.setItem("add_car_photos", JSON.stringify(np)); } catch { }
+      setPendingPhoto({ label, uri: compressed.uri });
+      setShowPhotoPreview(true);
     }
     try { await AsyncStorage.removeItem("add_car_draft"); } catch { }
+  };
+
+  const confirmPendingPhoto = async () => {
+    if (!pendingPhoto) return;
+    const { label, uri } = pendingPhoto;
+    const np = { ...photos, [label]: uri };
+    setPhotos(np);
+    if (errors.photos && np.front && np.back && np.left && np.right) {
+      setErrors(prev => ({ ...prev, photos: undefined }));
+    }
+    try { await AsyncStorage.setItem("add_car_photos", JSON.stringify(np)); } catch { }
+    setShowPhotoPreview(false);
+    setPendingPhoto(null);
+    const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
+    if (idx !== -1) {
+      const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
+      if (nextLabel) {
+        takePhoto(nextLabel);
+      }
+    }
+  };
+
+  const retakePendingPhoto = () => {
+    const label = pendingPhoto?.label;
+    setShowPhotoPreview(false);
+    setPendingPhoto(null);
+    if (label) takePhoto(label);
   };
 
   const uploadPhotosInBackground = async (carId, photosObj) => {
@@ -261,15 +293,13 @@ export default function AddCar() {
   };
 
   const submit = async () => {
-    if (!plate.trim()) { Alert.alert("Required", "License plate is required"); return; }
-    if (!validatePlate(plate.trim())) {
-      Alert.alert("Invalid Plate", "Please enter a valid Indian vehicle number plate.");
-      return;
-    }
-    if (!color.trim()) { Alert.alert("Required", "Vehicle color is required"); return; }
-    if (!make.trim()) { Alert.alert("Required", "Vehicle make/model is required"); return; }
-    if (!guestName.trim()) { Alert.alert("Required", "Guest name is required"); return; }
-    if (!selectedDriverId) { Alert.alert("Required", "Please select a driver to hand this car to"); return; }
+    const errs = {};
+    if (!plate.trim()) errs.plate = "License plate is required";
+    else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
+    if (!color.trim()) errs.color = "Vehicle color is required";
+    if (!make.trim()) errs.make = "Vehicle make/model is required";
+    if (!guestName.trim()) errs.guestName = "Guest name is required";
+    if (!selectedDriverId) errs.driver = "Please select a driver to hand this car to";
     let phoneToSave = "";
     if (guestPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
@@ -277,10 +307,10 @@ export default function AddCar() {
       const isValidIndian = /^\d{10}$/.test(normalized);
       const isValidIntl = /^\+\d{10,15}$/.test(guestPhone.trim());
       if (!isValidIndian && !isValidIntl) {
-        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
-        return;
+        errs.guestPhone = "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)";
+      } else {
+        phoneToSave = isValidIndian ? normalized : guestPhone.trim();
       }
-      phoneToSave = isValidIndian ? normalized : guestPhone.trim();
     }
     let altPhoneToSave = "";
     if (altGuestPhone.trim()) {
@@ -289,13 +319,15 @@ export default function AddCar() {
       const isValidIndian = /^\d{10}$/.test(normalized);
       const isValidIntl = /^\+\d{10,15}$/.test(altGuestPhone.trim());
       if (!isValidIndian && !isValidIntl) {
-        Alert.alert("Invalid Alternate Phone", "Enter a 10-digit Indian number, or an international number starting with +");
-        return;
+        errs.altGuestPhone = "Enter a 10-digit Indian number, or an international number starting with +";
+      } else {
+        altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
       }
-      altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
     }
-    if (!photos.front || !photos.back || !photos.left || !photos.right) { Alert.alert("Required", "Front, back, left, and right photos are all required"); return; }
-    
+    if (!photos.front || !photos.back || !photos.left || !photos.right) errs.photos = "Front, back, left, and right photos are all required";
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     Alert.alert(
       "Confirm Check-In",
       `Confirm check-in for ${plate}?`,
@@ -487,11 +519,12 @@ export default function AddCar() {
             </View>
           ) : null}
           <Lbl>LICENSE PLATE *</Lbl>
-          <View style={inputRow}>
+          <View style={[inputRow, errors.plate && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="car-outline" size={20} color="#059669" />
             <TextInput
               value={plate}
               onChangeText={(v) => {
+                if (errors.plate) setErrors(prev => ({ ...prev, plate: undefined }));
                 const cleaned = v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
                 setPlate(cleaned);
                 if (cleaned === "") {
@@ -510,6 +543,7 @@ export default function AddCar() {
               style={textInput}
             />
           </View>
+          {errors.plate && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
           {pendingLookup && (
             <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
@@ -539,20 +573,23 @@ export default function AddCar() {
             </View>
           )}
           <Lbl>GUEST NAME *</Lbl>
-          <View style={inputRow}>
+          <View style={[inputRow, errors.guestName && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="person-outline" size={20} color="#059669" />
-            <TextInput value={guestName} onChangeText={setGuestName} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
+            <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
+          {errors.guestName && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
           <Lbl>COLOR</Lbl>
-          <View style={inputRow}>
+          <View style={[inputRow, errors.color && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="color-palette-outline" size={20} color="#059669" />
-            <TextInput value={color} onChangeText={setColor} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
+            <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
+          {errors.color && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
           <Lbl>MAKE / MODEL</Lbl>
-          <View style={inputRow}>
+          <View style={[inputRow, errors.make && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="construct-outline" size={20} color="#059669" />
-            <TextInput value={make} onChangeText={setMake} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
+            <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
+          {errors.make && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
           <Lbl>CAR TYPE *</Lbl>
           <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
             {["normal", "premium"].map((ct) => (
@@ -604,15 +641,17 @@ export default function AddCar() {
           )}
           <Text style={{ fontSize: rs(11), color: "#6B7280", marginBottom: rp(6) }}>Mobile number is optional — guest can scan the QR instead.</Text>
           <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
-          <View style={inputRow}>
+          <View style={[inputRow, errors.guestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
-            <TextInput value={guestPhone} onChangeText={setGuestPhone} placeholder="10-digit mobile number" placeholderTextColor="#9CA3AF" keyboardType="phone-pad" maxLength={10} style={textInput} />
+            <TextInput value={guestPhone} onChangeText={(text) => { setGuestPhone(text); if (errors.guestPhone) setErrors(prev => ({ ...prev, guestPhone: undefined })); }} placeholder="10-digit mobile number" placeholderTextColor="#9CA3AF" keyboardType="phone-pad" maxLength={10} style={textInput} />
           </View>
+          {errors.guestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
           <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
-          <View style={inputRow}>
+          <View style={[inputRow, errors.altGuestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
-            <TextInput value={altGuestPhone} onChangeText={setAltGuestPhone} placeholder="10-digit mobile number" placeholderTextColor="#9CA3AF" keyboardType="phone-pad" maxLength={10} style={textInput} />
+            <TextInput value={altGuestPhone} onChangeText={(text) => { setAltGuestPhone(text); if (errors.altGuestPhone) setErrors(prev => ({ ...prev, altGuestPhone: undefined })); }} placeholder="10-digit mobile number" placeholderTextColor="#9CA3AF" keyboardType="phone-pad" maxLength={10} style={textInput} />
           </View>
+          {errors.altGuestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
 
           {eventGates.length > 0 && (
             <>
@@ -628,7 +667,7 @@ export default function AddCar() {
           )}
 
           <Lbl>VEHICLE PHOTOS * (ALL REQUIRED EXCEPT EXTRA)</Lbl>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: rp(16) }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: errors.photos ? 0 : rp(16), borderWidth: errors.photos ? rp(1) : 0, borderColor: "#EF4444", borderRadius: rp(16), padding: errors.photos ? rp(8) : 0 }}>
             {["front", "back", "left", "right", "extra"].map((label) => (
               <View key={label} style={{ width: rp(80), height: rp(80) }}>
                 {photos[label] ? (
@@ -647,6 +686,28 @@ export default function AddCar() {
               </View>
             ))}
           </View>
+          {errors.photos && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
+
+          <Modal visible={showPhotoPreview} transparent animationType="fade">
+            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: rp(20) }}>
+              <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(16), width: "100%" }}>
+                <Text style={{ fontSize: rs(14), fontWeight: "900", color: "#111827", marginBottom: rp(12), textTransform: "uppercase", textAlign: "center" }}>
+                  {pendingPhoto?.label} Photo
+                </Text>
+                {pendingPhoto && (
+                  <Image source={{ uri: pendingPhoto.uri }} style={{ width: "100%", height: rp(280), borderRadius: rp(16), marginBottom: rp(16) }} resizeMode="cover" />
+                )}
+                <View style={{ flexDirection: "row", gap: rp(10) }}>
+                  <TouchableOpacity onPress={retakePendingPhoto} style={{ flex: 1, paddingVertical: rp(14), borderRadius: rp(14), borderWidth: rp(1), borderColor: "#059669", alignItems: "center" }}>
+                    <Text style={{ color: "#059669", fontWeight: "800" }}>Retake</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={confirmPendingPhoto} style={{ flex: 1, paddingVertical: rp(14), borderRadius: rp(14), backgroundColor: "#059669", alignItems: "center" }}>
+                    <Text style={{ color: "#fff", fontWeight: "800" }}>Confirm</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           <Lbl>ASSIGN TO DRIVER *</Lbl>
           {loadingDrivers ? (
@@ -654,12 +715,12 @@ export default function AddCar() {
           ) : drivers.length === 0 ? (
             <Text style={{ color: "#9CA3AF", fontSize: rs(13), marginBottom: rp(16) }}>No drivers rostered on this event yet.</Text>
           ) : (
-            <View style={{ backgroundColor: "#fff", borderRadius: rp(16), borderWidth: rp(1), borderColor: "#E5E7EB", overflow: "hidden", marginBottom: rp(16) }}>
+            <View style={{ backgroundColor: "#fff", borderRadius: rp(16), borderWidth: rp(1), borderColor: errors.driver ? "#EF4444" : "#E5E7EB", overflow: "hidden", marginBottom: errors.driver ? 0 : rp(16) }}>
               {drivers.map((d, idx) => {
                 const meta = statusMeta(d.duty_status);
                 const selected = selectedDriverId === d.id;
                 return (
-                  <TouchableOpacity key={d.id} onPress={() => handlePickDriver(d)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(14), paddingHorizontal: rp(16), borderTopWidth: idx === 0 ? 0 : rp(1), borderTopColor: "#F3F4F6", backgroundColor: selected ? "#ECFDF5" : "#fff" }}>
+                  <TouchableOpacity key={d.id} onPress={() => { handlePickDriver(d); if (errors.driver) setErrors(prev => ({ ...prev, driver: undefined })); }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(14), paddingHorizontal: rp(16), borderTopWidth: idx === 0 ? 0 : rp(1), borderTopColor: "#F3F4F6", backgroundColor: selected ? "#ECFDF5" : "#fff" }}>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontWeight: "800", color: "#111827", fontSize: rs(14) }}>{d.name}</Text>
                       {d.duty_status === "busy" && d.current_car_plate && (
@@ -675,6 +736,7 @@ export default function AddCar() {
               })}
             </View>
           )}
+          {errors.driver && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.driver}</Text>}
 
           <TouchableOpacity onPress={submit} disabled={submitting} style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginBottom: rp(16), shadowColor: "#059669", shadowOpacity: 0.3, shadowRadius: rp(14), shadowOffset: { width: 0, height: rp(6) }, elevation: 6 }}>
             {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE</Text>}

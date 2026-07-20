@@ -158,6 +158,25 @@ export default function Tasks() {
     return () => clearInterval(t);
   }, [fetchRetrievals]);
 
+  // If the guest recalls the car while we're mid-re-park (park modal open),
+  // the backend flips this car's status away from AWAITING_REPARK. Catch
+  // that and bounce out of the park flow automatically — the driver just
+  // needs to bring the car back to the gate, not finish parking it.
+  useEffect(() => {
+    if (!showParkModal || !selectedCar) return;
+    const liveCar = retrievals.find((c) => c.id === selectedCar.id);
+    if (liveCar && liveCar.status !== "AWAITING_REPARK") {
+      setShowParkModal(false);
+      setParkPhotos([]);
+      setParkingPhotoStep(false);
+      setSelectedSlot(null);
+      Alert.alert(
+        "Guest is back at the gate!",
+        `${selectedCar.plate} — bring the car back to the gate instead. No need to re-park it.`
+      );
+    }
+  }, [retrievals, showParkModal, selectedCar]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([fetchMyCars(), fetchRetrievals()]);

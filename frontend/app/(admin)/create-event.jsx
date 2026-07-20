@@ -49,6 +49,7 @@ export default function CreateEvent() {
   const [showETP, setShowETP] = useState(false);
   const [saving, setSaving] = useState(false);
   const [myHotel, setMyHotel] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (isHotelOwner) {
@@ -75,9 +76,12 @@ export default function CreateEvent() {
   };
 
   const save = async () => {
-    if (!name.trim()) { Alert.alert("Required", "Event name is required"); return; }
-    if (!venue.trim()) { Alert.alert("Required", "Venue is required"); return; }
-    if (!maxCars || parseInt(maxCars) < 1) { Alert.alert("Invalid", "Max cars must be at least 1"); return; }
+    const errs = {};
+    if (!name.trim()) errs.name = "Event name is required";
+    if (!venue.trim()) errs.venue = "Venue is required";
+    if (!maxCars || parseInt(maxCars) < 1) errs.maxCars = "Max cars must be at least 1";
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (startDT < new Date()) {
       Alert.alert("Invalid", "Start date and time has already passed");
@@ -173,16 +177,20 @@ export default function CreateEvent() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
           <Label>EVENT NAME</Label>
-          <InputRow icon="calendar-outline">
+          <InputRow icon="calendar-outline" error={formErrors.name}>
             <TextInput
               testID="event-name-input"
               value={name}
-              onChangeText={setName}
+              onChangeText={(txt) => {
+                setName(txt);
+                if (formErrors.name) setFormErrors(prev => ({ ...prev, name: null }));
+              }}
               placeholder="Wedding Reception"
               placeholderTextColor="#9CA3AF"
               style={textInputStyle}
             />
           </InputRow>
+          {formErrors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.name}</Text>}
 
           <Label>HOST NAME (OPTIONAL)</Label>
           <InputRow icon="person-outline">
@@ -224,19 +232,23 @@ export default function CreateEvent() {
               </View>
             </View>
           ) : (
-            <InputRow icon="location-outline">
-              <VenuePicker
-                value={venue}
-                onSelect={(val) => {
-                  setVenue(val.venue || "");
-                  setVenuePlaceId(val.venue_place_id);
-                  setVenueAddress(val.venue_address);
-                  setVenueLat(val.venue_lat);
-                  setVenueLng(val.venue_lng);
-                }}
-                placeholder="Search venue e.g. ITC Narmada"
-              />
-            </InputRow>
+            <View>
+              <InputRow icon="location-outline" error={formErrors.venue}>
+                <VenuePicker
+                  value={venue}
+                  onSelect={(val) => {
+                    setVenue(val.venue || "");
+                    setVenuePlaceId(val.venue_place_id);
+                    setVenueAddress(val.venue_address);
+                    setVenueLat(val.venue_lat);
+                    setVenueLng(val.venue_lng);
+                    if (formErrors.venue) setFormErrors(prev => ({ ...prev, venue: null }));
+                  }}
+                  placeholder="Search venue e.g. ITC Narmada"
+                />
+              </InputRow>
+              {formErrors.venue && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.venue}</Text>}
+            </View>
           )}
           {isHotelOwner && (
             <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
@@ -283,15 +295,19 @@ export default function CreateEvent() {
           </View>
 
           <Label>MAX CARS</Label>
-          <InputRow icon="car-outline">
+          <InputRow icon="car-outline" error={formErrors.maxCars}>
             <TextInput
               value={maxCars}
-              onChangeText={setMaxCars}
+              onChangeText={(txt) => {
+                setMaxCars(txt);
+                if (formErrors.maxCars) setFormErrors(prev => ({ ...prev, maxCars: null }));
+              }}
               keyboardType="numeric"
               placeholderTextColor="#9CA3AF"
               style={textInputStyle}
             />
           </InputRow>
+          {formErrors.maxCars && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.maxCars}</Text>}
 
           <Label>PARKING ZONES</Label>
           {zones.map((z, i) => (
@@ -466,9 +482,9 @@ function Label({ children }) {
   );
 }
 
-function InputRow({ icon, children }) {
+function InputRow({ icon, children, error }) {
   return (
-    <View style={inputRowStyle}>
+    <View style={[inputRowStyle, error && { borderColor: "#EF4444" }]}>
       <Ionicons name={icon} size={18} color="#7C3AED" />
       <View style={{ flex: 1, marginLeft: rp(10) }}>{children}</View>
     </View>

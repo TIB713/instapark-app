@@ -30,6 +30,7 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 
 const ACCENT_COLOR = "#1D4ED8";
+const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
   shadowOpacity: 0.08,
@@ -389,8 +390,8 @@ export default function HotelDetail() {
   };
 
   const saveSupervisor = async () => {
-    if (!supName.trim() || !supEmail.trim() || !supPassword.trim()) {
-      Alert.alert("Required", "Name, email, and password are required");
+    if (!supName.trim() || !supEmail.trim()) {
+      Alert.alert("Required", "Name and email are required");
       return;
     }
 
@@ -422,7 +423,7 @@ export default function HotelDetail() {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
         phone: supPhone.trim() || undefined,
-        password: supPassword,
+        password: generateTempPassword(),
         aadhar_number: supAadharNumber.trim(),
         aadhar_photo: aadharPhotoUrl,
       });
@@ -1293,8 +1294,8 @@ export default function HotelDetail() {
                 {drvAadharPhotoUri ? (
                   <View style={{ position: "relative" }}>
                     <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
-                    <TouchableOpacity 
-                      onPress={() => { setDrvAadharPhotoUri(null); }} 
+                    <TouchableOpacity
+                      onPress={() => { setDrvAadharPhotoUri(null); }}
                       style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
                     >
                       <Ionicons name="close-circle" size={24} color="#EF4444" />
@@ -1330,8 +1331,8 @@ export default function HotelDetail() {
               <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" autoCapitalize="none" keyboardType="email-address" style={modalTextInput} />
               <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
               <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
-              <Text style={modalLabel}>PASSWORD</Text>
-              <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalTextInput} />
+              {/* <Text style={modalLabel}>PASSWORD</Text>
+              <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalTextInput} /> */}
               <Text style={modalLabel}>AADHAR NUMBER</Text>
               <TextInput value={supAadharNumber} onChangeText={setSupAadharNumber} placeholder="Aadhar number" autoCapitalize="characters" style={modalTextInput} />
               <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
@@ -1339,8 +1340,8 @@ export default function HotelDetail() {
                 {supAadharPhotoUri ? (
                   <View style={{ position: "relative" }}>
                     <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
-                    <TouchableOpacity 
-                      onPress={() => { setSupAadharPhotoUri(null); }} 
+                    <TouchableOpacity
+                      onPress={() => { setSupAadharPhotoUri(null); }}
                       style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
                     >
                       <Ionicons name="close-circle" size={24} color="#EF4444" />
@@ -1802,3 +1803,9 @@ const iconBtn = {
   borderRadius: rp(99),
   padding: rp(8),
 };
+
+
+
+
+
+

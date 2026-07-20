@@ -20,6 +20,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import api from "../../lib/api";
 
+const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
+
 const cardShadow = {
   shadowColor: "#0F2044",
   shadowOpacity: 0.08,
@@ -216,7 +218,7 @@ export default function ManageEmployees() {
     if (!supName.trim()) errs.name = "Name is required";
     if (!supEmail.trim()) errs.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) errs.email = "Please enter a valid email address";
-    if (!supPassword.trim()) errs.password = "Password is required";
+    // if (!supPassword.trim()) errs.password = "Password is required";
     if (!supGender) errs.gender = "Please select gender";
     if (supPhone.trim() && !/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
     if (supPan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPan.trim().toUpperCase())) errs.pan = "Expected format: ABCDE1234F";
@@ -254,7 +256,7 @@ export default function ManageEmployees() {
         email: supEmail.trim().toLowerCase(),
         phone: supPhone.trim() || undefined,
         gender: supGender,
-        password: supPassword,
+        password: generateTempPassword(),
         pan_number: supPan.trim() || undefined,
         bank_account_number: supBankAccount.trim() || undefined,
         bank_ifsc: supBankIfsc.trim() || undefined,
@@ -635,9 +637,9 @@ export default function ManageEmployees() {
                   </TouchableOpacity>
                 </View>
                 {errors.gender && <Text style={modalErrorText}>* {errors.gender}</Text>}
-                <Text style={modalLabel}>PASSWORD <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                {/* <Text style={modalLabel}>PASSWORD <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <TextInput value={supPassword} onChangeText={(t) => { setSupPassword(t); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })); }} placeholder="Min 6 characters" secureTextEntry style={[modalInput, errors.password && modalInputError]} />
-                {errors.password && <Text style={modalErrorText}>* {errors.password}</Text>}
+                {errors.password && <Text style={modalErrorText}>* {errors.password}</Text>} */}
                 <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
                 <TextInput value={supPan} onChangeText={(v) => { setSupPan(v.toUpperCase()); if (errors.pan) setErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, errors.pan && modalInputError]} />
                 {errors.pan && <Text style={modalErrorText}>* {errors.pan}</Text>}

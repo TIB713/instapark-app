@@ -27,6 +27,7 @@ export default function AdminQRDisplay() {
   const [phone, setPhone] = useState(initialPhone || ""); 
   const [sending, setSending] = useState(false); 
   const [loadingPhone, setLoadingPhone] = useState(false); 
+  const [phoneError, setPhoneError] = useState(null);
 
   const handleOpenSmsModal = async () => { 
     setSmsModalVisible(true); 
@@ -44,9 +45,10 @@ export default function AdminQRDisplay() {
  
   const handleSendSms = async () => { 
     if (!phone.trim() || !/^\d{10}$/.test(phone.trim())) { 
-      Alert.alert("Invalid Phone", "Please enter a valid 10-digit mobile number."); 
+      setPhoneError("Please enter a valid 10-digit mobile number.");
       return; 
     } 
+    setPhoneError(null);
     if (!carId) { 
       Alert.alert("Error", "Car ID not available. Cannot send SMS."); 
       return; 
@@ -198,7 +200,7 @@ export default function AdminQRDisplay() {
                 backgroundColor: "#F9FAFB", 
                 borderRadius: rp(14), 
                 borderWidth: rp(1), 
-                borderColor: "#E5E7EB", 
+                borderColor: phoneError ? "#EF4444" : "#E5E7EB", 
                 flexDirection: "row", 
                 alignItems: "center", 
                 paddingHorizontal: rp(14), 
@@ -211,7 +213,7 @@ export default function AdminQRDisplay() {
               ) : ( 
                 <TextInput 
                   value={phone} 
-                  onChangeText={setPhone} 
+                  onChangeText={(txt) => { setPhone(txt); if (phoneError) setPhoneError(null); }} 
                   placeholder="10-digit mobile number" 
                   placeholderTextColor="#9CA3AF" 
                   keyboardType="phone-pad" 
@@ -220,6 +222,7 @@ export default function AdminQRDisplay() {
                 /> 
               )} 
             </View> 
+            {phoneError && <Text style={{ color: "#EF4444", fontSize: rs(12), marginTop: rp(4), marginBottom: rp(8) }}>* {phoneError}</Text>}
  
             <Text style={{ fontSize: rs(12), color: "#9CA3AF", marginBottom: rp(20), lineHeight: 18 }}> 
               The guest will receive a link to request retrieval of their {plate} when ready. 

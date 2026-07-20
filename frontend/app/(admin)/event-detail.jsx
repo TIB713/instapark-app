@@ -53,6 +53,8 @@ const STATUS_CONFIG = {
 
 const FILTERS = ["ALL", "PRE_REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
 
+const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
+
 const cardShadow = {
   shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
@@ -765,8 +767,8 @@ export default function EventDetail() {
   };
 
   const saveSupervisor = async () => {
-    if (!supName.trim() || !supEmail.trim() || !supPassword.trim()) {
-      Alert.alert("Required", "Name, email and password are required");
+    if (!supName.trim() || !supEmail.trim()) {
+      Alert.alert("Required", "Name and email are required");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
@@ -846,7 +848,7 @@ export default function EventDetail() {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
         phone: phoneToSave || undefined,
-        password: supPassword,
+        password: generateTempPassword(),
         pan_number: supPanNumber.trim() || undefined,
         bank_account_number: supBankAccountNumber.trim() || undefined,
         bank_ifsc: supBankIfsc.trim() ? supBankIfsc.trim().toUpperCase() : undefined,
@@ -1080,7 +1082,7 @@ export default function EventDetail() {
   const assignAll = async () => {
     const available = drivers.filter(d => (d.available || d.assigned) && !d.assigned);
     if (available.length === 0) return;
-    
+
     Alert.alert(
       "Assign All Drivers",
       `Assign all ${available.length} available drivers to this event?`,
@@ -1946,7 +1948,7 @@ export default function EventDetail() {
           {event?.event_type !== "hotel_daily" && (
             <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
               <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(16) }}>Event Host</Text>
-              
+
               <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", marginBottom: rp(4), letterSpacing: rs(1) }}>HOST NAME</Text>
               <TextInput
                 value={event?.host_name || ""}
@@ -2737,8 +2739,8 @@ export default function EventDetail() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={modalLabel}>PASSWORD</Text>
-                <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} />
+                {/* <Text style={modalLabel}>PASSWORD</Text>
+                <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalInput} /> */}
 
                 <Text style={modalLabel}>PAN NUMBER</Text>
                 <TextInput value={supPanNumber} onChangeText={setSupPanNumber} placeholder="ABCDE1234F" autoCapitalize="characters" style={modalInput} />

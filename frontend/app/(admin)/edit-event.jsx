@@ -48,6 +48,7 @@ export default function EditEvent() {
   const [showEDP, setShowEDP] = useState(false);
   const [showSTP, setShowSTP] = useState(false);
   const [showETP, setShowETP] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const isHotelDailyEdit =
     user?.provider_type === "hotel_owner" && eventData?.event_type === "hotel_daily";
@@ -87,9 +88,12 @@ export default function EditEvent() {
   }, [eventId]);
 
   const save = async () => {
-    if (!isHotelDailyEdit && (!name.trim() || !venue.trim())) {
-      Alert.alert("Required", "Name and venue required");
-      return;
+    if (!isHotelDailyEdit) {
+      const errs = {};
+      if (!name.trim()) errs.name = "Event name is required";
+      if (!venue.trim()) errs.venue = "Venue is required";
+      setFormErrors(errs);
+      if (Object.keys(errs).length > 0) return;
     }
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
@@ -166,13 +170,17 @@ export default function EditEvent() {
           {!isHotelDailyEdit && (
             <>
               <Label>EVENT NAME</Label>
-              <View style={inputRowStyle}>
+              <View style={[inputRowStyle, formErrors.name && { borderColor: "#EF4444" }]}>
                 <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                <TextInput value={name} onChangeText={setName} style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
+                <TextInput value={name} onChangeText={(txt) => {
+                  setName(txt);
+                  if (formErrors.name) setFormErrors(prev => ({ ...prev, name: null }));
+                }} style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
               </View>
+              {formErrors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.name}</Text>}
 
               <Label>VENUE</Label>
-              <View style={inputRowStyle}>
+              <View style={[inputRowStyle, formErrors.venue && { borderColor: "#EF4444" }]}>
                 <Ionicons name="location-outline" size={18} color="#7C3AED" />
                 <VenuePicker
                   value={venue}
@@ -182,10 +190,12 @@ export default function EditEvent() {
                     setVenueAddress(val.venue_address);
                     setVenueLat(val.venue_lat);
                     setVenueLng(val.venue_lng);
+                    if (formErrors.venue) setFormErrors(prev => ({ ...prev, venue: null }));
                   }}
                   placeholder="Search venue e.g. ITC Narmada"
                 />
               </View>
+              {formErrors.venue && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.venue}</Text>}
 
               <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>

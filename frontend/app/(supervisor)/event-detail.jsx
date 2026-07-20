@@ -110,6 +110,8 @@ export default function SupervisorEventDetail() {
   const [resolveStatus, setResolveStatus] = useState("IN_REVIEW");
   const [resolveRemark, setResolveRemark] = useState("");
   const [submittingResolve, setSubmittingResolve] = useState(false);
+  const [resolveErrors, setResolveErrors] = useState({});
+  const [incidentErrors, setIncidentErrors] = useState({});
   const [incidents, setIncidents] = useState([]);
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -289,10 +291,12 @@ export default function SupervisorEventDetail() {
   };
 
   const submitResolve = async () => {
+    const errs = {};
     if ((resolveStatus === "RESOLVED" || resolveStatus === "DISMISSED") && !resolveRemark.trim()) {
-      Alert.alert("Required", "Please provide a remark when resolving or dismissing.");
-      return;
+      errs.remark = "Please provide a remark when resolving or dismissing.";
     }
+    setResolveErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setSubmittingResolve(true);
     try {
       await api.patch(`/incidents/${resolvingIncident.id}`, {
@@ -303,6 +307,7 @@ export default function SupervisorEventDetail() {
       setResolvingIncident(null);
       setResolveStatus("IN_REVIEW");
       setResolveRemark("");
+      setResolveErrors({});
       fetchIncidents();
       Alert.alert("Success", "Incident status updated successfully");
     } catch (err) {
@@ -314,18 +319,12 @@ export default function SupervisorEventDetail() {
   };
 
   const submitIncident = async () => {
-    if (!incidentCar) {
-      Alert.alert("Required", "Please select a car");
-      return;
-    }
-    if (!incidentType) {
-      Alert.alert("Required", "Please select an incident type");
-      return;
-    }
-    if (!incidentDesc.trim()) {
-      Alert.alert("Required", "Please add a description");
-      return;
-    }
+    const errs = {};
+    if (!incidentCar) errs.car = "Please select a car";
+    if (!incidentType) errs.type = "Please select an incident type";
+    if (!incidentDesc.trim()) errs.description = "Please add a description";
+    setIncidentErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setSubmittingIncident(true);
     try {
       let photoUrl = null;
@@ -357,6 +356,7 @@ export default function SupervisorEventDetail() {
       setIncidentDesc("");
       setIncidentPhoto(null);
       setIncidentCarSearch("");
+      setIncidentErrors({});
       fetchIncidents();
       Alert.alert("Saved", "Incident report saved successfully");
     } catch (e) {
@@ -1448,20 +1448,21 @@ export default function SupervisorEventDetail() {
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
                 <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827", flex: 1 }}>Report Incident</Text>
-                <TouchableOpacity onPress={() => setShowIncidentModal(false)}><Ionicons name="close-circle" size={26} color="#D1D5DB" /></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setShowIncidentModal(false); setIncidentErrors({}); }}><Ionicons name="close-circle" size={26} color="#D1D5DB" /></TouchableOpacity>
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={modalLabel}>SELECT CAR *</Text>
                 {!incidentCar && (
                   <>
-                    <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: rp(6) }}>
+                    <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: incidentErrors.car ? "#EF4444" : "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: incidentErrors.car ? rp(6) : rp(6) }}>
                       <Ionicons name="search" size={16} color={ACCENT_COLOR} />
-                      <TextInput value={incidentCarSearch} onChangeText={setIncidentCarSearch} placeholder="Search plate..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
+                      <TextInput value={incidentCarSearch} onChangeText={(text) => { setIncidentCarSearch(text); if(incidentErrors.car) setIncidentErrors(prev => ({...prev, car: undefined})); }} placeholder="Search plate..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
                     </View>
+                    {incidentErrors.car && <Text style={[modalErrorText, { marginTop: rp(4), marginBottom: rp(12) }]}>* {incidentErrors.car}</Text>}
                     {incidentCarSearch.length > 1 && (
                       <View style={{ backgroundColor: "#fff", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", marginBottom: rp(12), overflow: "hidden" }}>
                         {cars.filter(c => c.plate.toLowerCase().includes(incidentCarSearch.toLowerCase())).slice(0, 5).map(c => (
-                          <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); }} style={{ padding: rp(14), borderBottomWidth: rp(1), borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
+                          <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); if(incidentErrors.car) setIncidentErrors(prev => ({...prev, car: undefined})); }} style={{ padding: rp(14), borderBottomWidth: rp(1), borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
                             <Text style={{ fontWeight: "900", color: "#111827" }}>{c.plate}</Text>
                           </TouchableOpacity>
                         ))}
@@ -1517,12 +1518,12 @@ export default function SupervisorEventDetail() {
                 <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#0F2044", marginBottom: rp(8) }}>
                   Incident Type <Text style={{ color: "#EF4444" }}>*</Text>
                 </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(12) }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: incidentErrors.type ? rp(6) : rp(12) }}>
                   <View style={{ flexDirection: "row", gap: rp(8), paddingRight: rp(16) }}>
                     {INCIDENT_TYPES.map(t => (
                       <TouchableOpacity
                         key={t.key}
-                        onPress={() => setIncidentType(t.key)}
+                        onPress={() => { setIncidentType(t.key); if(incidentErrors.type) setIncidentErrors(prev => ({...prev, type: undefined})); }}
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
@@ -1531,7 +1532,7 @@ export default function SupervisorEventDetail() {
                           paddingVertical: rp(8),
                           borderRadius: rp(20),
                           borderWidth: 1.5,
-                          borderColor: incidentType === t.key ? "#0F2044" : "#E5E7EB",
+                          borderColor: incidentErrors.type ? "#EF4444" : (incidentType === t.key ? "#0F2044" : "#E5E7EB"),
                           backgroundColor: incidentType === t.key ? "#0F2044" : "#F9FAFB",
                         }}
                       >
@@ -1547,8 +1548,10 @@ export default function SupervisorEventDetail() {
                     ))}
                   </View>
                 </ScrollView>
+                {incidentErrors.type && <Text style={[modalErrorText, { marginBottom: rp(12) }]}>* {incidentErrors.type}</Text>}
                 <Text style={modalLabel}>DESCRIPTION *</Text>
-                <TextInput value={incidentDesc} onChangeText={setIncidentDesc} placeholder="Describe what happened..." multiline numberOfLines={4} style={[modalInput, { height: rp(100), textAlignVertical: "top" }]} />
+                <TextInput value={incidentDesc} onChangeText={(text) => { setIncidentDesc(text); if(incidentErrors.description) setIncidentErrors(prev => ({...prev, description: undefined})); }} placeholder="Describe what happened..." multiline numberOfLines={4} style={[modalInput, incidentErrors.description && modalInputError, { height: rp(100), textAlignVertical: "top" }]} />
+                {incidentErrors.description && <Text style={modalErrorText}>* {incidentErrors.description}</Text>}
                                 <View style={{ position: "relative" }}>
                   <TouchableOpacity onPress={pickIncidentPhoto} style={{ borderWidth: rp(1.5), borderColor: incidentPhoto ? "#059669" : "#E5E7EB", borderStyle: "dashed", borderRadius: rp(14), padding: rp(16), alignItems: "center", marginBottom: rp(20) }}>
                   <Text style={{ color: incidentPhoto ? "#059669" : "#9CA3AF", fontWeight: "700" }}>{incidentPhoto ? "Photo Added ✓" : "Add Photo (Optional)"}</Text>
@@ -1650,7 +1653,7 @@ export default function SupervisorEventDetail() {
                   <Ionicons name="shield-checkmark" size={20} color={ACCENT_COLOR} />
                 </View>
                 <Text style={{ fontSize: rs(18), fontWeight: "900", color: "#111827", flex: 1 }}>Update Status</Text>
-                <TouchableOpacity onPress={() => setShowResolveModal(false)}>
+                <TouchableOpacity onPress={() => { setShowResolveModal(false); setResolveErrors({}); }}>
                   <Ionicons name="close-circle" size={26} color="#D1D5DB" />
                 </TouchableOpacity>
               </View>
@@ -1676,11 +1679,12 @@ export default function SupervisorEventDetail() {
                 <Text style={modalLabel}>HOW WAS THIS RESOLVED?</Text>
                 <TextInput
                   value={resolveRemark}
-                  onChangeText={setResolveRemark}
+                  onChangeText={(text) => { setResolveRemark(text); if (resolveErrors.remark) setResolveErrors(prev => ({ ...prev, remark: undefined })); }}
                   placeholder="Details about the resolution..."
                   multiline
-                  style={[modalInput, { minHeight: rp(100), textAlignVertical: "top" }]}
+                  style={[modalInput, resolveErrors.remark && modalInputError, { minHeight: rp(100), textAlignVertical: "top" }]}
                 />
+                {resolveErrors.remark && <Text style={modalErrorText}>* {resolveErrors.remark}</Text>}
                 <TouchableOpacity
                   onPress={submitResolve}
                   disabled={submittingResolve}
@@ -1705,4 +1709,6 @@ export default function SupervisorEventDetail() {
 const iconBtn = { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(10) };
 const modalLabel = { fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) };
 const modalInput = { backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", padding: rp(14), color: "#111827", marginBottom: rp(16), fontSize: rs(14) };
+const modalInputError = { borderColor: "#EF4444" };
+const modalErrorText = { color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) };
 const exportBtn = { flex: 1, borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center", borderWidth: rp(1), flexDirection: "row", justifyContent: "center" };
