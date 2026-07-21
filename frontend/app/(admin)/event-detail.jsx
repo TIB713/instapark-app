@@ -125,6 +125,7 @@ export default function EventDetail() {
   const [supervisors, setSupervisors] = useState([]);
   const [assigningSupervisorId, setAssigningSupervisorId] = useState(null);
   const [showAddSupervisorModal, setShowAddSupervisorModal] = useState(false);
+  const [errors, setErrors] = useState({});
   const [supName, setSupName] = useState("");
   const [supEmail, setSupEmail] = useState("");
   const [supPhone, setSupPhone] = useState("");
@@ -135,12 +136,13 @@ export default function EventDetail() {
   const [supAadharNumber, setSupAadharNumber] = useState("");
   const [supAadharPhotoUri, setSupAadharPhotoUri] = useState(null);
   const [supPhoto, setSupPhoto] = useState(null);
-  const [supGender, setSupGender] = useState("male");
+  const [supGender, setSupGender] = useState("");
   const [supIfscChecking, setSupIfscChecking] = useState(false);
   const [supIfscInfo, setSupIfscInfo] = useState(null);
   const [savingSupervisor, setSavingSupervisor] = useState(false);
 
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [driverErrors, setDriverErrors] = useState({});
   const [drvName, setDrvName] = useState("");
   const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
@@ -155,7 +157,7 @@ export default function EventDetail() {
   const [drvBankIfsc, setDrvBankIfsc] = useState("");
   const [drvAadharNumber, setDrvAadharNumber] = useState("");
   const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
-  const [drvGender, setDrvGender] = useState("male");
+  const [drvGender, setDrvGender] = useState("");
   const [drvIfscChecking, setDrvIfscChecking] = useState(false);
   const [drvIfscInfo, setDrvIfscInfo] = useState(null);
   const [savingDriver, setSavingDriver] = useState(false);
@@ -763,56 +765,60 @@ export default function EventDetail() {
   const resetSupForm = () => {
     setSupName(""); setSupEmail(""); setSupPhone(""); setSupPassword("");
     setSupPanNumber(""); setSupBankAccountNumber(""); setSupBankIfsc(""); setSupAadharNumber(""); setSupAadharPhotoUri(null); setSupPhoto(null);
-    setSupGender("male"); setSupIfscChecking(false); setSupIfscInfo(null);
+    setSupGender("male"); setSupIfscChecking(false); setSupIfscInfo(null); setErrors({});
+  };
+
+  const validateSupervisor = () => {
+    const errs = {};
+    if (!supName.trim()) errs.name = "Name is required";
+    if (!supEmail.trim()) errs.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) errs.email = "Please enter a valid email address";
+    if (!supGender) errs.gender = "Please select gender";
+    if (supPhone.trim() && !/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
+    if (supPanNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPanNumber.trim().toUpperCase())) errs.pan = "Expected format: ABCDE1234F";
+    if (supBankAccountNumber.trim() && !/^\d{9,18}$/.test(supBankAccountNumber.trim())) errs.bankAccount = "Must be 9-18 digits";
+    if (supBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) errs.bankIfsc = "Expected format: ABCD0123456";
+    else if (supBankIfsc.trim().length === 11 && supIfscInfo === "error") errs.bankIfsc = "This IFSC code was not found. Please check and try again.";
+    if (!supAadharNumber.trim()) errs.aadharNumber = "Aadhar Number is required";
+    else if (!/^\d{12}$/.test(supAadharNumber.trim())) errs.aadharNumber = "Aadhar number must be exactly 12 digits";
+    if (!supAadharPhotoUri) errs.aadharPhoto = "Aadhar Photo is required";
+    return errs;
+  };
+
+  const validateDriver = () => {
+    const errs = {};
+    if (!drvName.trim()) errs.name = "Name is required";
+    if (!drvEmail.trim()) errs.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) errs.email = "Please enter a valid email address";
+    if (!drvPin.trim()) errs.pin = "PIN is required";
+    else if (drvPin.length !== 4 || !/^\d{4}$/.test(drvPin)) errs.pin = "PIN must be exactly 4 digits";
+    if (!drvGender) errs.gender = "Please select gender";
+    if (!drvPhone.trim()) errs.phone = "Phone is required";
+    else if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
+    if (drvPan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(drvPan.trim().toUpperCase())) errs.pan = "Expected format: ABCDE1234F";
+    if (drvBankAccount.trim() && !/^\d{9,18}$/.test(drvBankAccount.trim())) errs.bankAccount = "Must be 9-18 digits";
+    if (drvBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(drvBankIfsc.trim().toUpperCase())) errs.bankIfsc = "Expected format: ABCD0123456";
+    else if (drvBankIfsc.trim().length === 11 && drvIfscInfo === "error") errs.bankIfsc = "This IFSC code was not found. Please check and try again.";
+    if (!drvLicenseNumber.trim()) errs.licenseNumber = "Driving License Number is required";
+    else if (!/^[A-Z0-9]{10,16}$/.test(drvLicenseNumber.trim().toUpperCase())) errs.licenseNumber = "Must be 10-16 alphanumeric characters";
+    if (!drvLicensePhotoUri) errs.licensePhoto = "License Photo is required";
+    if (!drvAadharNumber.trim()) errs.aadharNumber = "Aadhar Number is required";
+    else if (!/^\d{12}$/.test(drvAadharNumber.trim())) errs.aadharNumber = "Aadhar number must be exactly 12 digits";
+    if (!drvAadharPhotoUri) errs.aadharPhoto = "Aadhar Photo is required";
+    return errs;
   };
 
   const saveSupervisor = async () => {
-    if (!supName.trim() || !supEmail.trim()) {
-      Alert.alert("Required", "Name and email are required");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
-      return;
-    }
-    if (!supGender) {
-      Alert.alert("Required", "Please select gender");
-      return;
-    }
+    const errs = validateSupervisor();
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     let phoneToSave;
     if (supPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
       const normalized = normalizeIndianPhone(supPhone.trim());
       const isValidIndian = /^\d{10}$/.test(normalized);
-      const isValidIntl = /^\+\d{10,15}$/.test(supPhone.trim());
-      if (!isValidIndian && !isValidIntl) {
-        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
-        return;
-      }
       phoneToSave = isValidIndian ? normalized : supPhone.trim();
-    }
-    if (supPanNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPanNumber.trim().toUpperCase())) {
-      Alert.alert("Invalid PAN", "Expected format: ABCDE1234F"); return;
-    }
-    if (supBankAccountNumber.trim() && !/^\d{9,18}$/.test(supBankAccountNumber.trim())) {
-      Alert.alert("Invalid Bank Account", "Must be 9–18 digits"); return;
-    }
-    if (supBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) {
-      Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
-    }
-    if (supBankIfsc.trim().length === 11 && supIfscInfo === "error") {
-      Alert.alert("Invalid IFSC", "This IFSC code was not found. Please check and try again."); return;
-    }
-    if (!supAadharNumber.trim()) {
-      Alert.alert("Required", "Aadhar Number is required");
-      return;
-    }
-    if (!/^\d{12}$/.test(supAadharNumber.trim())) {
-      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
-    }
-    if (!supAadharPhotoUri) {
-      Alert.alert("Required", "Aadhar Photo is required");
-      return;
     }
 
     Alert.alert(
@@ -961,71 +967,16 @@ export default function EventDetail() {
   };
 
   const saveDriver = async () => {
-    if (!drvName.trim() || !drvEmail.trim() || !drvPin.trim()) {
-      Alert.alert("Required", "Name, email and PIN are required");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
-      return;
-    }
-    if (drvPin.length !== 4 || !/^\d{4}$/.test(drvPin)) {
-      Alert.alert("Invalid PIN", "PIN must be exactly 4 digits");
-      return;
-    }
-    if (!drvGender) {
-      Alert.alert("Required", "Please select gender");
-      return;
-    }
-    if (!drvPhone.trim()) {
-      Alert.alert("Required", "Phone is required");
-      return;
-    }
+    const errs = validateDriver();
+    setDriverErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     let phoneToSave;
     if (drvPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
       const normalized = normalizeIndianPhone(drvPhone.trim());
       const isValidIndian = /^\d{10}$/.test(normalized);
-      const isValidIntl = /^\+\d{10,15}$/.test(drvPhone.trim());
-      if (!isValidIndian && !isValidIntl) {
-        Alert.alert("Invalid Phone", "Enter a 10-digit Indian number, or an international number starting with + (e.g. +44...)");
-        return;
-      }
       phoneToSave = isValidIndian ? normalized : drvPhone.trim();
-    }
-    if (drvPan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(drvPan.trim().toUpperCase())) {
-      Alert.alert("Invalid PAN", "Expected format: ABCDE1234F"); return;
-    }
-    if (drvBankAccount.trim() && !/^\d{9,18}$/.test(drvBankAccount.trim())) {
-      Alert.alert("Invalid Bank Account", "Must be 9–18 digits"); return;
-    }
-    if (drvBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(drvBankIfsc.trim().toUpperCase())) {
-      Alert.alert("Invalid IFSC", "Expected format: ABCD0123456"); return;
-    }
-    if (drvBankIfsc.trim().length === 11 && drvIfscInfo === "error") {
-      Alert.alert("Invalid IFSC", "This IFSC code was not found. Please check and try again."); return;
-    }
-    if (!drvLicenseNumber.trim()) {
-      Alert.alert("Required", "Driving License Number is required");
-      return;
-    }
-    if (!/^[A-Z0-9]{10,16}$/.test(drvLicenseNumber.trim().toUpperCase())) {
-      Alert.alert("Invalid License", "Must be 10–16 alphanumeric characters"); return;
-    }
-    if (!drvLicensePhotoUri) {
-      Alert.alert("Required", "License Photo is required");
-      return;
-    }
-    if (!drvAadharNumber.trim()) {
-      Alert.alert("Required", "Aadhar Number is required");
-      return;
-    }
-    if (!/^\d{12}$/.test(drvAadharNumber.trim())) {
-      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
-    }
-    if (!drvAadharPhotoUri) {
-      Alert.alert("Required", "Aadhar Photo is required");
-      return;
     }
 
     Alert.alert(
@@ -2410,8 +2361,6 @@ export default function EventDetail() {
         </ScrollView>
       )}
 
-
-
       <Modal
         visible={showSpecialEventQRModal}
         transparent
@@ -2714,25 +2663,44 @@ export default function EventDetail() {
                 </View>
                 <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#0F2044", marginBottom: rp(20) }}>Add Supervisor</Text>
 
-                <Text style={modalLabel}>NAME</Text>
-                <TextInput value={supName} onChangeText={setSupName} placeholder="Full Name" style={modalInput} />
+                <TouchableOpacity onPress={pickSupPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                  <Text style={[modalLabel, { textAlign: "center" }]}>Supervisor Photo (optional)</Text>
+                  {supPhoto ? (
+                    <View style={{ position: "relative" }}>
+                      <Image source={{ uri: supPhoto }} style={{ width: rp(80), height: rp(80), borderRadius: rp(40), borderWidth: rp(2), borderColor: "#0F2044" }} />
+                      <TouchableOpacity onPress={() => setSupPhoto(null)} style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}>
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ width: rp(80), height: rp(80), borderRadius: rp(40), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                      <Ionicons name="person" size={32} color="#9CA3AF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
 
-                <Text style={modalLabel}>EMAIL</Text>
-                <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={modalInput} />
+                <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={supName} onChangeText={t => { setSupName(t); if(errors.name) setErrors(prev => ({...prev, name: undefined})); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
+                {errors.name && <Text style={modalErrorText}>* {errors.name}</Text>}
 
-                <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
-                <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={supEmail} onChangeText={t => { setSupEmail(t); if(errors.email) setErrors(prev => ({...prev, email: undefined})); }} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
+                {errors.email && <Text style={modalErrorText}>* {errors.email}</Text>}
 
-                <Text style={modalLabel}>GENDER</Text>
+                <Text style={modalLabel}>PHONE</Text>
+                <TextInput value={supPhone} onChangeText={t => { setSupPhone(t); if(errors.phone) setErrors(prev => ({...prev, phone: undefined})); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
+                {errors.phone && <Text style={modalErrorText}>* {errors.phone}</Text>}
+
+                <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
                   <TouchableOpacity
-                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: supGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: errors.gender && !supGender ? '#EF4444' : supGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
                     onPress={() => setSupGender('male')}
                   >
                     <Text style={{ fontWeight: '600', color: supGender === 'male' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Male</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: supGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: errors.gender && !supGender ? '#EF4444' : supGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: supGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
                     onPress={() => setSupGender('female')}
                   >
                     <Text style={{ fontWeight: '600', color: supGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
@@ -2746,7 +2714,8 @@ export default function EventDetail() {
                 <TextInput value={supPanNumber} onChangeText={setSupPanNumber} placeholder="ABCDE1234F" autoCapitalize="characters" style={modalInput} />
 
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={supBankAccountNumber} onChangeText={setSupBankAccountNumber} placeholder="Account Number" keyboardType="numeric" style={modalInput} />
+                <TextInput value={supBankAccountNumber} onChangeText={t => { setSupBankAccountNumber(t); if(errors.bankAccount) setErrors(prev => ({...prev, bankAccount: undefined})); }} placeholder="Account Number" keyboardType="numeric" style={[modalInput, errors.bankAccount && modalInputError]} />
+                {errors.bankAccount && <Text style={modalErrorText}>* {errors.bankAccount}</Text>}
 
                 <Text style={modalLabel}>BANK IFSC</Text>
                 <TextInput value={supBankIfsc} onChangeText={(v) => {
@@ -2783,32 +2752,22 @@ export default function EventDetail() {
                   </Text>
                 )}
 
-                <Text style={modalLabel}>AADHAR NUMBER</Text>
-                <TextInput value={supAadharNumber} onChangeText={(v) => setSupAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+                <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={supAadharNumber} onChangeText={v => { setSupAadharNumber(v.toUpperCase()); if(errors.aadharNumber) setErrors(prev => ({...prev, aadharNumber: undefined})); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, errors.aadharNumber && modalInputError]} />
+                {errors.aadharNumber && <Text style={modalErrorText}>* {errors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
+                  {errors.aadharPhoto && <Text style={[modalErrorText, {marginTop: rp(-4)}]}>* {errors.aadharPhoto}</Text>}
                   {supAadharPhotoUri ? (
                     <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
                 </TouchableOpacity>
 
-                <Text style={modalLabel}>SUPERVISOR PHOTO (OPTIONAL)</Text>
-                <TouchableOpacity onPress={pickSupPhoto} style={{ flexDirection: "row", alignItems: "center", gap: rp(8), paddingVertical: rp(12), paddingHorizontal: rp(16), backgroundColor: "#F3F4F6", borderRadius: rp(12), marginBottom: rp(8) }}>
-                  <Ionicons name="camera" size={20} color="#6B7280" />
-                  <Text style={{ color: "#4B5563", fontSize: rs(13), fontWeight: "600", flex: 1 }}>
-                    {supPhoto ? "Photo Added ✓" : "Take Photo"}
-                  </Text>
-                  {supPhoto && (
-                    <TouchableOpacity onPress={() => setSupPhoto(null)} style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}>
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
-                    </TouchableOpacity>
-                  )}
-                </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={saveSupervisor}
@@ -2855,30 +2814,34 @@ export default function EventDetail() {
                   )}
                 </TouchableOpacity>
 
-                <Text style={modalLabel}>NAME</Text>
-                <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalInput} />
-                <Text style={modalLabel}>PHONE</Text>
-                <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalInput} />
+                <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={drvName} onChangeText={t => { setDrvName(t); if(driverErrors.name) setDriverErrors(prev => ({...prev, name: undefined})); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
+                {driverErrors.name && <Text style={modalErrorText}>* {driverErrors.name}</Text>}
+                <Text style={modalLabel}>PHONE <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={drvPhone} onChangeText={t => { setDrvPhone(t); if(driverErrors.phone) setDriverErrors(prev => ({...prev, phone: undefined})); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
+                {driverErrors.phone && <Text style={modalErrorText}>* {driverErrors.phone}</Text>}
 
-                <Text style={modalLabel}>GENDER</Text>
+                <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
                   <TouchableOpacity
-                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: drvGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: driverErrors.gender && !drvGender ? '#EF4444' : drvGender === 'male' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'male' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
                     onPress={() => setDrvGender('male')}
                   >
                     <Text style={{ fontWeight: '600', color: drvGender === 'male' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Male</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: drvGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
+                    style={{ flex: 1, paddingVertical: rp(12), borderRadius: rp(12), borderWidth: rp(1), borderColor: driverErrors.gender && !drvGender ? '#EF4444' : drvGender === 'female' ? '#1D4ED8' : '#E5E7EB', backgroundColor: drvGender === 'female' ? '#EFF6FF' : '#FFF', alignItems: 'center' }}
                     onPress={() => setDrvGender('female')}
                   >
                     <Text style={{ fontWeight: '600', color: drvGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={modalLabel}>4-DIGIT PIN</Text>
-                <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={modalInput} />
-                <Text style={modalLabel}>EMAIL</Text>
-                <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalInput} />
+                <Text style={modalLabel}>4-DIGIT PIN <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={drvPin} onChangeText={t => { setDrvPin(t); if(driverErrors.pin) setDriverErrors(prev => ({...prev, pin: undefined})); }} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
+                {driverErrors.pin && <Text style={modalErrorText}>* {driverErrors.pin}</Text>}
+                <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={drvEmail} onChangeText={t => { setDrvEmail(t); if(driverErrors.email) setDriverErrors(prev => ({...prev, email: undefined})); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
+                {driverErrors.email && <Text style={modalErrorText}>* {driverErrors.email}</Text>}
                 <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={drvPan} onChangeText={(v) => setDrvPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
@@ -2917,29 +2880,33 @@ export default function EventDetail() {
                     Invalid IFSC Code
                   </Text>
                 )}
-                <Text style={modalLabel}>DRIVING LICENCE NUMBER</Text>
-                <TextInput value={drvLicenseNumber} onChangeText={(v) => setDrvLicenseNumber(v.toUpperCase())} placeholder="DL number" autoCapitalize="characters" style={modalInput} />
+                <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if(driverErrors.licenseNumber) setDriverErrors(prev => ({...prev, licenseNumber: undefined})); }} placeholder="DL number" autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
                 <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo *</Text>
+                  {driverErrors.licensePhoto && <Text style={[modalErrorText, {marginTop: rp(-4)}]}>* {driverErrors.licensePhoto}</Text>}
                   {drvLicensePhotoUri ? (
                     <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
                 </TouchableOpacity>
 
-                <Text style={modalLabel}>AADHAR NUMBER</Text>
-                <TextInput value={drvAadharNumber} onChangeText={(v) => setDrvAadharNumber(v.toUpperCase())} placeholder="Aadhar number" autoCapitalize="characters" style={modalInput} />
+                <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                <TextInput value={drvAadharNumber} onChangeText={v => { setDrvAadharNumber(v.toUpperCase()); if(driverErrors.aadharNumber) setDriverErrors(prev => ({...prev, aadharNumber: undefined})); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
+                  {driverErrors.aadharPhoto && <Text style={[modalErrorText, {marginTop: rp(-4)}]}>* {driverErrors.aadharPhoto}</Text>}
                   {drvAadharPhotoUri ? (
                     <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
+                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
@@ -3396,6 +3363,8 @@ const modalLabel = {
   marginBottom: rp(8),
 };
 
+const modalInputError = { borderColor: "#EF4444" };
+const modalErrorText = { color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) };
 const modalInput = {
   backgroundColor: "#F9FAFB",
   borderRadius: rp(14),
