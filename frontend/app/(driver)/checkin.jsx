@@ -87,6 +87,8 @@ export default function CheckIn() {
   const [passToken, setPassToken] = useState(null);
   const [guestName, setGuestName] = useState("");
   const [isPreRegistered, setIsPreRegistered] = useState(false);
+  const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
+  const [instantPark, setInstantPark] = useState(false);
   const params = useLocalSearchParams();
 
   useEffect(() => {
@@ -109,6 +111,7 @@ export default function CheckIn() {
         const { data } = await api.get(`/events/${currentEventId}`);
         setEventGates(data.gates || []);
         if (data.gates?.[0]) setSelectedGate(data.gates[0]);
+        setEventAllowsInstantPark(!!data.allow_instant_park);
       } catch { }
       try {
         const draft = await AsyncStorage.getItem("checkin_draft");
@@ -258,9 +261,11 @@ export default function CheckIn() {
     else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
     if (!color.trim()) errs.color = "Vehicle color is required";
     if (!make.trim()) errs.make = "Vehicle make/model is required";
-    if (!guestName.trim()) errs.guestName = "Guest name is required";
+    const skipGuestDetails = eventAllowsInstantPark && instantPark;
+    if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
     let phoneToSave = "";
-    if (guestPhone.trim()) {
+    if (!skipGuestDetails && !guestPhone.trim()) errs.guestPhone = "Guest mobile number is required";
+    else if (guestPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
       const normalized = normalizeIndianPhone(guestPhone.trim());
       const isValidIndian = /^\d{10}$/.test(normalized);
@@ -342,6 +347,7 @@ export default function CheckIn() {
       if (isPreRegistered && prefilledCarId) {
         // Complete check-in for PRE_REGISTERED car 
         const { data } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, {
+          event_id: currentEventId,
           check_in_driver_id: resolvedDriverId,
           gate: selectedGate || "",
           make: make.trim(),
@@ -371,7 +377,8 @@ export default function CheckIn() {
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
           damage_types: damageTypes,
-          guest_name: guestName.trim(),
+          instant_park: eventAllowsInstantPark && instantPark,
+          ...(guestName.trim() ? { guest_name: guestName.trim() } : {}),
           ...(phoneToSave ? { guest_phone: phoneToSave } : {}),
         });
         car = data;
@@ -559,6 +566,22 @@ export default function CheckIn() {
               </View>
             </View>
           ) : null}
+          {eventAllowsInstantPark && (
+            <View style={{ backgroundColor: "#EEF2FF", borderWidth: rp(1), borderColor: "#C7D2FE", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flex: 1, marginRight: rp(10) }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#3730A3" }}>⚡ INSTANT PARK</Text>
+                <Text style={{ fontSize: rs(11), color: "#4338CA", marginTop: rp(2) }}>
+                  Guest doesn't want to share personal details — skip name & phone
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setInstantPark(v => !v)}
+                style={{ width: rp(52), height: rp(30), borderRadius: rp(15), padding: rp(3), backgroundColor: instantPark ? "#4F46E5" : "#E5E7EB" }}
+              >
+                <View style={{ width: rp(24), height: rp(24), borderRadius: rp(12), backgroundColor: "#fff", marginLeft: instantPark ? rp(22) : 0 }} />
+              </TouchableOpacity>
+            </View>
+          )}
           <Lbl>LICENSE PLATE *</Lbl>
           <View style={[inputRow, errors.plate && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="car-outline" size={20} color="#059669" />
@@ -587,7 +610,7 @@ export default function CheckIn() {
               placeholder="GJ01AB1234"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="characters"
-              maxLength={10}
+              maxLength={11}
               style={textInput}
             />
           </View>
@@ -640,7 +663,7 @@ export default function CheckIn() {
               </TouchableOpacity>
             </View>
           )}
-          <Lbl>GUEST NAME *</Lbl>
+          <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST NAME (OPTIONAL)" : "GUEST NAME *"}</Lbl>
           <View style={[inputRow, errors.guestName && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="person-outline" size={20} color="#059669" />
             <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
@@ -739,8 +762,7 @@ export default function CheckIn() {
               )}
             </>
           )}
-          <Text style={{ fontSize: rs(11), color: "#6B7280", marginBottom: rp(6) }}>Mobile number is optional — guest can scan the QR instead.</Text>
-          <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
+          <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST MOBILE (OPTIONAL)" : "GUEST MOBILE *"}</Lbl>
           <View style={[inputRow, errors.guestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
             <TextInput

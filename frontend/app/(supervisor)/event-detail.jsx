@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import QRCode from "react-native-qrcode-svg";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -76,6 +77,8 @@ export default function SupervisorEventDetail() {
 
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
+  const [showEventQRModal, setShowEventQRModal] = useState(false);
+  const [eventQrToken, setEventQrToken] = useState(null);
   const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
   const [slotTab, setSlotTab] = useState("parking");
@@ -126,6 +129,10 @@ export default function SupervisorEventDetail() {
     try {
       const { data } = await api.get(`/events/${currentEventId}`);
       setEvent(data);
+      try {
+        const { data: qrData } = await api.get(`/events/${currentEventId}/qr-token`);
+        setEventQrToken(qrData.event_qr_token);
+      } catch {}
     } catch {}
   }, [currentEventId]);
 
@@ -590,7 +597,7 @@ export default function SupervisorEventDetail() {
                 <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity 
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
-                  onPress={() => { setShowMenu(false); router.push("/(admin)/pre-register-qr"); }}
+                  onPress={() => { setShowMenu(false); setShowEventQRModal(true); }}
                 >
                   <Ionicons name="qr-code-outline" size={20} color={ACCENT_COLOR} />
                   <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
@@ -1703,6 +1710,27 @@ export default function SupervisorEventDetail() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {showEventQRModal && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", zIndex: 2000 }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(28), alignItems: "center", width: "85%" }}>
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#1D4ED8", letterSpacing: rs(3), marginBottom: rp(12) }}>EVENT GUEST QR</Text>
+            <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#111827", textAlign: "center", marginBottom: rp(20) }}>{event?.name}</Text>
+            <View style={{ padding: rp(14), backgroundColor: "#F5F3FF", borderRadius: rp(20), marginBottom: rp(20) }}>
+              {eventQrToken ? (
+                <QRCode value={`${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${eventQrToken}`} size={220} color="#1D4ED8" />
+              ) : (
+                <View style={{ width: rp(220), height: rp(220), justifyContent: "center", alignItems: "center" }}>
+                  <ActivityIndicator color="#1D4ED8" size="large" />
+                </View>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => setShowEventQRModal(false)} style={{ paddingVertical: rp(12), paddingHorizontal: rp(24) }}>
+              <Text style={{ color: "#9CA3AF", fontWeight: "700" }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Switch,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -59,6 +60,7 @@ export default function Hotels() {
   const [contactEmail, setContactEmail] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
+  const [allowInstantPark, setAllowInstantPark] = useState(false);
   const [errors, setErrors] = useState({});
 
   const [zones, setZones] = useState([{ name: "A", slots: "" }]);
@@ -109,6 +111,7 @@ export default function Hotels() {
     setContactEmail("");
     setTotalSlots("");
     setGateTimerMinutes("5");
+    setAllowInstantPark(false);
 
     setZones([{ name: "A", slots: "" }]);
     setGates(["Main Gate"]);
@@ -144,6 +147,7 @@ export default function Hotels() {
         contact_person_email: contactEmail.trim() || undefined,
         total_valet_slots: parseInt(totalSlots),
         gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
+        allow_instant_park: allowInstantPark,
 
         provider_id: user?.provider_id,
         zones: zones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
@@ -438,6 +442,15 @@ export default function Hotels() {
                 onChangeText={setGateTimerMinutes}
                 keyboardType="numeric"
               />
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: rp(16), marginBottom: rp(16) }}>
+                <Text style={{ fontSize: rs(13), fontWeight: "700", color: "#374151", flex: 1 }}>Allow Instant Park for this hotel's events</Text>
+                <Switch
+                  value={allowInstantPark}
+                  onValueChange={setAllowInstantPark}
+                  trackColor={{ false: "#D1D5DB", true: "#059669" }}
+                  thumbColor="#ffffff"
+                />
+              </View>
 
 
 

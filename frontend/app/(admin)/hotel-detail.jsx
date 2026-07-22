@@ -91,6 +91,7 @@ export default function HotelDetail() {
   const [newEventStartTime, setNewEventStartTime] = useState("18:00");
   const [newEventEndTime, setNewEventEndTime] = useState("23:00");
   const [newEventMaxCars, setNewEventMaxCars] = useState("100");
+  const [newEventAllowInstantPark, setNewEventAllowInstantPark] = useState(false);
 
   const [newEventGates, setNewEventGates] = useState(["Main Gate"]);
   const [newEventZones, setNewEventZones] = useState([{ name: "Zone A", slots: "50" }]);
@@ -474,6 +475,7 @@ export default function HotelDetail() {
         start_time: newEventStartTime,
         end_time: newEventEndTime,
         max_cars: maxCarsNum,
+        allow_instant_park: newEventAllowInstantPark,
         zones: newEventZones.map((z) => ({
           name: z.name,
           slots: parseInt(z.slots) || 50,
@@ -1425,6 +1427,16 @@ export default function HotelDetail() {
 
                 <Text style={modalLabel}>MAX CARS</Text>
                 <TextInput value={newEventMaxCars} onChangeText={setNewEventMaxCars} keyboardType="numeric" placeholder="100" style={modalTextInput} />
+
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: rp(8), marginBottom: rp(24) }}>
+                  <Text style={{ fontSize: rs(13), fontWeight: "700", color: "#374151", flex: 1, textTransform: "uppercase" }}>ALLOW INSTANT PARK</Text>
+                  <Switch
+                    value={newEventAllowInstantPark}
+                    onValueChange={setNewEventAllowInstantPark}
+                    trackColor={{ false: "#D1D5DB", true: "#059669" }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
 
                 <Text style={modalLabel}>GATES</Text>
                 {newEventGates.map((gate, index) => (

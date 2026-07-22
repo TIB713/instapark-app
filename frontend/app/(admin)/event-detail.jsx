@@ -181,6 +181,13 @@ export default function EventDetail() {
         } catch (err) {
           console.error("Error fetching hotel info/QR for special event:", err);
         }
+      } else if (data.event_type === "regular") {
+        try {
+          const { data: qrData } = await api.get(`/events/${data.id}/qr-token`);
+          setSpecialEventQRToken(qrData.event_qr_token);
+        } catch (err) {
+          console.error("Error fetching QR for event:", err);
+        }
       }
     } catch { }
   }, [currentEventId]);
@@ -1194,7 +1201,7 @@ export default function EventDetail() {
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => {
                     setShowMenu(false);
-                    if (event?.event_type === "hotel_special" || event?.event_type === "hotel_daily") {
+                    if (event?.event_type === "hotel_special" || event?.event_type === "hotel_daily" || event?.event_type === "regular") {
                       setShowSpecialEventQRModal(true);
                     } else {
                       router.push("/(admin)/pre-register-qr");
@@ -2399,7 +2406,7 @@ export default function EventDetail() {
               }}
             >
               <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#1D4ED8", letterSpacing: rs(3) }}>
-                {event?.event_type === "hotel_daily" ? "HOTEL DAILY VALET QR" : "SPECIAL EVENT GUEST QR"}
+                {event?.event_type === "hotel_daily" ? "HOTEL DAILY VALET QR" : event?.event_type === "hotel_special" ? "SPECIAL EVENT GUEST QR" : "EVENT GUEST QR"}
               </Text>
               <TouchableOpacity onPress={() => setShowSpecialEventQRModal(false)}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
@@ -2416,18 +2423,22 @@ export default function EventDetail() {
             >
               {event?.name}
             </Text>
-            <Text
-              style={{
-                fontSize: rs(14),
-                fontWeight: "700",
-                color: "#6B7280",
-                textAlign: "center",
-                marginTop: rp(4),
-                marginBottom: rp(24),
-              }}
-            >
-              {specialEventHotel?.name}
-            </Text>
+            {specialEventHotel?.name ? (
+              <Text
+                style={{
+                  fontSize: rs(14),
+                  fontWeight: "700",
+                  color: "#6B7280",
+                  textAlign: "center",
+                  marginTop: rp(4),
+                  marginBottom: rp(24),
+                }}
+              >
+                {specialEventHotel.name}
+              </Text>
+            ) : (
+              <View style={{ marginBottom: rp(24) }} />
+            )}
 
             <View
               style={{

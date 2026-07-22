@@ -6,9 +6,11 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import api from "../../lib/api"; 
+import { useAppStore } from "../../lib/store";
  
 export default function Scanner() { 
   const router = useRouter(); 
+  const { currentEventId } = useAppStore();
   const { returnTo } = useLocalSearchParams();
   const targetScreen = returnTo || "/(driver)/checkin"; 
   const [permission, requestPermission] = useCameraPermissions(); 
@@ -53,6 +55,16 @@ export default function Scanner() {
           "Already Checked In",
           `This vehicle (${pass.plate}) has already been checked in.`,
           [{ text: "OK", onPress: () => router.back() }]
+        );
+        return;
+      }
+
+      if (currentEventId && pass.event_id !== currentEventId) {
+        Alert.alert(
+          "Not Registered For This Event",
+          `${pass.guest_name || "This guest"} is pre-registered for "${pass.event_name}", not the event you're currently assigned to.`,
+          [{ text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } },
+           { text: "Cancel", onPress: () => router.back() }]
         );
         return;
       }

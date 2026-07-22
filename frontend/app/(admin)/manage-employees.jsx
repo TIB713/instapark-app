@@ -220,7 +220,8 @@ export default function ManageEmployees() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) errs.email = "Please enter a valid email address";
     // if (!supPassword.trim()) errs.password = "Password is required";
     if (!supGender) errs.gender = "Please select gender";
-    if (supPhone.trim() && !/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
+    if (!supPhone.trim()) errs.phone = "Phone is required";
+    else if (!/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
     if (supPan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(supPan.trim().toUpperCase())) errs.pan = "Expected format: ABCDE1234F";
     if (supBankAccount.trim() && !/^\d{9,18}$/.test(supBankAccount.trim())) errs.bankAccount = "Must be 9–18 digits";
     if (supBankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(supBankIfsc.trim().toUpperCase())) errs.bankIfsc = "Expected format: ABCD0123456";
@@ -254,7 +255,7 @@ export default function ManageEmployees() {
       await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
-        phone: supPhone.trim() || undefined,
+        phone: supPhone.trim(),
         gender: supGender,
         password: generateTempPassword(),
         pan_number: supPan.trim() || undefined,
@@ -618,7 +619,7 @@ export default function ManageEmployees() {
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <TextInput value={supEmail} onChangeText={(t) => { setSupEmail(t); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }} placeholder="email@example.com" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
                 {errors.email && <Text style={modalErrorText}>* {errors.email}</Text>}
-                <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
+                <Text style={modalLabel}>PHONE <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <TextInput value={supPhone} onChangeText={(t) => { setSupPhone(t); if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
                 {errors.phone && <Text style={modalErrorText}>* {errors.phone}</Text>}
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
