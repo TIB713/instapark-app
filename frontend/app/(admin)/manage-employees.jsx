@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import api from "../../lib/api";
+import { pickImageHelper } from "../../utils/imagePicker";
 
 const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
 
@@ -141,66 +142,42 @@ export default function ManageEmployees() {
     setDrvIfscInfo(null); setDrvIfscChecking(false);
   };
 
-  const pickDriverPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickDriverPhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setDrvPhotoUri(uri);
+        setDrvPhoto(uri);
+      }
     });
-    if (!result.canceled) {
-      setDrvPhotoUri(result.assets[0].uri);
-      setDrvPhoto(result.assets[0].uri);
-    }
   };
 
-  const pickLicensePhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickLicensePhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setDrvLicensePhotoUri(uri);
+        setDrvLicensePhoto(uri);
+      }
     });
-    if (!result.canceled) {
-      setDrvLicensePhotoUri(result.assets[0].uri);
-      setDrvLicensePhoto(result.assets[0].uri);
-    }
   };
 
-  const pickAadharPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickAadharPhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setDrvAadharPhotoUri(uri);
+      }
     });
-    if (!result.canceled) {
-      setDrvAadharPhotoUri(result.assets[0].uri);
-    }
   };
 
-  const pickSupAadharPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickSupAadharPhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setSupAadharPhotoUri(uri);
+      }
     });
-    if (!result.canceled) {
-      setSupAadharPhotoUri(result.assets[0].uri);
-    }
   };
 
   const uploadDriverImage = async (uri, folder) => {
@@ -580,20 +557,14 @@ export default function ManageEmployees() {
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
                 <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#7C3AED", marginBottom: rp(16) }}>Add Supervisor</Text>
 
-                <TouchableOpacity onPress={async () => {
-                  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                  if (!perm.granted) {
-                    Alert.alert("Permission needed", "Photo library access is required");
-                    return;
-                  }
-                  const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                <TouchableOpacity onPress={() => {
+                  pickImageHelper({
                     quality: 0.8,
+                    onSelect: (uri) => {
+                      setSupPhotoUri(uri);
+                      setSupPhoto(uri);
+                    }
                   });
-                  if (!result.canceled) {
-                    setSupPhotoUri(result.assets[0].uri);
-                    setSupPhoto(result.assets[0].uri);
-                  }
                 }} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Supervisor Photo (optional)</Text>
                   {supPhotoUri ? (

@@ -118,10 +118,14 @@ export default function SupervisorDashboard() {
     ]);
   };
 
-  const openEvent = async (e) => {
+  const openEvent = async (e, showQr = false) => {
     setCurrentEventId(e.id);
     await AsyncStorage.setItem("current_event_id", e.id);
-    router.push("/(supervisor)/event-detail");
+    if (showQr) {
+      router.push({ pathname: "/(supervisor)/event-detail", params: { showQr: "true" } });
+    } else {
+      router.push("/(supervisor)/event-detail");
+    }
   };
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -148,10 +152,14 @@ export default function SupervisorDashboard() {
       icon: "qr-code-outline", 
       value: null, 
       label: "GUEST QR", 
-      onPress: () => router.push({ 
-        pathname: "/(admin)/pre-register-qr", 
-        params: user?.hotel_id ? { hotelId: user.hotel_id } : {} 
-      }) 
+      onPress: () => {
+        const assignedEvents = events.filter(e => e.status === "active" || e.status === "upcoming");
+        if (assignedEvents.length > 0) {
+          openEvent(assignedEvents[0], true);
+        } else {
+          Alert.alert("No Assigned Event", "You don't have any active or upcoming assigned events to show a QR for.");
+        }
+      }
     },
   ];
 
@@ -305,7 +313,14 @@ export default function SupervisorDashboard() {
             </TouchableOpacity>
             <TouchableOpacity
               testID="quick-guest-qr"
-              onPress={() => router.push("/(admin)/pre-register-qr")}
+              onPress={() => {
+                const assignedEvents = events.filter(e => e.status === "active" || e.status === "upcoming");
+                if (assignedEvents.length > 0) {
+                  openEvent(assignedEvents[0], true);
+                } else {
+                  Alert.alert("No Assigned Event", "You don't have any active or upcoming assigned events to show a QR for.");
+                }
+              }}
               activeOpacity={0.85}
               style={[quickAction, cardShadow]}
             >

@@ -41,6 +41,7 @@ import { formatDistanceToNow } from "date-fns";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
+import { pickImageHelper } from "../../utils/imagePicker";
 
 const STATUS_CONFIG = {
   PRE_REGISTERED: { color: "#8B5CF6", label: "Pre-Registered" },
@@ -336,16 +337,13 @@ export default function EventDetail() {
     }
   };
 
-  const pickSupPhoto = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Camera access required");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
+  const pickSupPhoto = () => {
+    pickImageHelper({
       quality: 0.75,
+      onSelect: (uri) => {
+        setSupPhoto(uri);
+      }
     });
-    if (!result.canceled) setSupPhoto(result.assets[0].uri);
   };
 
   const pickIncidentPhoto = async () => {
@@ -901,66 +899,42 @@ export default function EventDetail() {
     setDrvIfscInfo(null);
   };
 
-  const pickDriverPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickDriverPhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setDrvPhotoUri(uri);
+        setDrvPhoto(uri);
+      }
     });
-    if (!result.canceled) {
-      setDrvPhotoUri(result.assets[0].uri);
-      setDrvPhoto(result.assets[0].uri);
-    }
   };
 
-  const pickLicensePhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickLicensePhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setDrvLicensePhotoUri(uri);
+        setDrvLicensePhoto(uri);
+      }
     });
-    if (!result.canceled) {
-      setDrvLicensePhotoUri(result.assets[0].uri);
-      setDrvLicensePhoto(result.assets[0].uri);
-    }
   };
 
-  const pickAadharPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickAadharPhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setDrvAadharPhotoUri(uri);
+      }
     });
-    if (!result.canceled) {
-      setDrvAadharPhotoUri(result.assets[0].uri);
-    }
   };
 
-  const pickSupAadharPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const pickSupAadharPhoto = () => {
+    pickImageHelper({
       quality: 0.8,
+      onSelect: (uri) => {
+        setSupAadharPhotoUri(uri);
+      }
     });
-    if (!result.canceled) {
-      setSupAadharPhotoUri(result.assets[0].uri);
-    }
   };
 
   const uploadDriverImage = async (uri, folder) => {

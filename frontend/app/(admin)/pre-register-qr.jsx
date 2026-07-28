@@ -52,11 +52,21 @@ export default function PreRegisterQR() {
         .finally(() => setLoading(false));
     } else {
       api.get("/events")
-        .then(({ data }) => {
+        .then(async ({ data }) => {
           const regularEvents = (data || []).filter(
             e => e.event_type === "regular" && (e.status === "active" || e.status === "upcoming")
           );
-          setEvents(regularEvents);
+          
+          const eventsWithTokens = await Promise.all(regularEvents.map(async (ev) => {
+            try {
+              const res = await api.get(`/events/${ev.id}/qr-token`);
+              return { ...ev, event_qr_token: res.data.event_qr_token };
+            } catch (err) {
+              return ev; // leave as is if fails
+            }
+          }));
+          
+          setEvents(eventsWithTokens);
         })
         .catch(() => Alert.alert("Error", "Failed to load events"))
         .finally(() => setLoading(false));

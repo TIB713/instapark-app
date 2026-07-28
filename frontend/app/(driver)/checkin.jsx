@@ -220,7 +220,11 @@ export default function CheckIn() {
     if (idx !== -1) {
       const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
       if (nextLabel) {
-        takePhoto(nextLabel);
+        Alert.alert(
+          "Next Photo",
+          `Now please capture the ${nextLabel.toUpperCase()} of the vehicle.`,
+          [{ text: "OK", onPress: () => takePhoto(nextLabel) }]
+        );
       }
     }
   };
@@ -498,7 +502,7 @@ export default function CheckIn() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
-              Check In Vehicle v2
+              Check In Vehicle
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(driver)/scanner")}
@@ -891,7 +895,7 @@ export default function CheckIn() {
               elevation: 6,
             }}
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE v2</Text>}
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE</Text>}
           </TouchableOpacity>
           <View style={{ height: rp(40) }} />
         </ScrollView>

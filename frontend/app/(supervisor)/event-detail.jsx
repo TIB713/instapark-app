@@ -16,7 +16,7 @@ import {
   Platform,
   BackHandler,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -63,6 +63,7 @@ const cardShadow = {
 
 export default function SupervisorEventDetail() {
   const router = useRouter();
+  const { showQr } = useLocalSearchParams();
 
   useEffect(() => {
     const backAction = () => {
@@ -79,6 +80,12 @@ export default function SupervisorEventDetail() {
   const [event, setEvent] = useState(null);
   const [showEventQRModal, setShowEventQRModal] = useState(false);
   const [eventQrToken, setEventQrToken] = useState(null);
+
+  useEffect(() => {
+    if (showQr === 'true' && currentEventId) {
+      setShowEventQRModal(true);
+    }
+  }, [showQr, currentEventId]);
   const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
   const [slotTab, setSlotTab] = useState("parking");

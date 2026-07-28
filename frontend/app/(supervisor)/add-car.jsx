@@ -260,7 +260,11 @@ export default function AddCar() {
     if (idx !== -1) {
       const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
       if (nextLabel) {
-        takePhoto(nextLabel);
+        Alert.alert(
+          "Next Photo",
+          `Now please capture the ${nextLabel.toUpperCase()} of the vehicle.`,
+          [{ text: "OK", onPress: () => takePhoto(nextLabel) }]
+        );
       }
     }
   };

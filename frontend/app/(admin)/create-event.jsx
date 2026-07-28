@@ -130,7 +130,7 @@ export default function CreateEvent() {
         // Normal valet provider
         res = await api.post("/events", {
           ...payload,
-          event_type: "event", // default for valet provider
+          event_type: "regular", // default for valet provider
         });
       }
 
