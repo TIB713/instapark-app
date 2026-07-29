@@ -331,19 +331,20 @@ export default function ManageEmployees() {
   };
 
   const handleSupervisorLongPress = (s) => {
+    const action = s.is_active ? "Deactivate" : "Activate";
     Alert.alert("Supervisor Options", s.name, [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Deactivate",
-        style: "destructive",
+        text: action,
+        style: s.is_active ? "destructive" : "default",
         onPress: async () => {
           setProcessingId(s.id);
           try {
-            await api.delete(`/supervisors/${s.id}`);
-            Alert.alert("Success", "Deactivated successfully");
+            await api.patch(`/supervisors/${s.id}`, { is_active: !s.is_active });
+            Alert.alert("Success", `${action}d successfully`);
             fetchAll();
           } catch (e) {
-            Alert.alert("Error", e.response?.data?.detail || "Failed to deactivate");
+            Alert.alert("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
           } finally {
             setProcessingId(null);
           }
@@ -353,19 +354,20 @@ export default function ManageEmployees() {
   };
 
   const handleDriverLongPress = (d) => {
+    const action = d.is_active ? "Deactivate" : "Activate";
     Alert.alert("Driver Options", d.name, [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Deactivate",
-        style: "destructive",
+        text: action,
+        style: d.is_active ? "destructive" : "default",
         onPress: async () => {
           setProcessingId(d.id);
           try {
-            await api.delete(`/drivers/${d.id}`);
-            Alert.alert("Success", "Deactivated successfully");
+            await api.patch(`/drivers/${d.id}`, { is_active: !d.is_active });
+            Alert.alert("Success", `${action}d successfully`);
             fetchAll();
           } catch (e) {
-            Alert.alert("Error", e.response?.data?.detail || "Failed to deactivate");
+            Alert.alert("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
           } finally {
             setProcessingId(null);
           }
@@ -449,12 +451,24 @@ export default function ManageEmployees() {
                       <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>
                         {s.name}
                       </Text>
+                      <View style={{
+                        backgroundColor: s.is_active ? "#D1FAE5" : "#FEE2E2",
+                        borderRadius: rp(99),
+                        paddingHorizontal: rp(6),
+                        paddingVertical: rp(2),
+                        marginLeft: rp(2),
+                      }}>
+                        <Text style={{ color: s.is_active ? "#059669" : "#EF4444", fontSize: rs(9), fontWeight: "800" }}>
+                          {s.is_active ? "ACTIVE" : "INACTIVE"}
+                        </Text>
+                      </View>
                       {!s.is_verified && (
                         <View style={{
                           backgroundColor: "#FEF3C7",
                           borderRadius: rp(99),
                           paddingHorizontal: rp(6),
                           paddingVertical: rp(2),
+                          marginLeft: rp(2),
                         }}>
                           <Text style={{ color: "#D97706", fontSize: rs(9), fontWeight: "800" }}>
                             UNVERIFIED
@@ -517,7 +531,20 @@ export default function ManageEmployees() {
                     <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(18) }}>{d.name?.[0]?.toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1, marginLeft: rp(14) }}>
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{d.name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: rp(6) }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{d.name}</Text>
+                      <View style={{
+                        backgroundColor: d.is_active ? "#D1FAE5" : "#FEE2E2",
+                        borderRadius: rp(99),
+                        paddingHorizontal: rp(6),
+                        paddingVertical: rp(2),
+                        marginLeft: rp(2),
+                      }}>
+                        <Text style={{ color: d.is_active ? "#059669" : "#EF4444", fontSize: rs(9), fontWeight: "800" }}>
+                          {d.is_active ? "ACTIVE" : "INACTIVE"}
+                        </Text>
+                      </View>
+                    </View>
                     <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>ID: {d.employee_id}</Text>
                   </View>
                   {processingId === d.id ? (

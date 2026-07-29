@@ -1644,11 +1644,16 @@ export default function EventDetail() {
                         <Text style={{ fontSize: rs(11), fontWeight: "700", color: s.available ? "#059669" : "#F43F5E" }}>
                           {s.available ? "Available" : `In ${s.conflict_event_name || "another event"}`}
                         </Text>
+                        {s.is_verified === false && (
+                          <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4), marginLeft: rp(6) }}>
+                            <Text style={{ color: "#D97706", fontSize: rs(9), fontWeight: "bold" }}>UNVERIFIED</Text>
+                          </View>
+                        )}
                       </View>
                     </TouchableOpacity>
                   </View>
 
-                  {s.available || s.assigned ? (
+                  {s.assigned || (s.available && s.is_verified !== false) ? (
                     <TouchableOpacity
                       onPress={() => toggleAssignSupervisor(s)}
                       disabled={assigningSupervisorId === s.id}
@@ -1681,7 +1686,9 @@ export default function EventDetail() {
                     </TouchableOpacity>
                   ) : (
                     <View style={{ marginTop: rp(12), backgroundColor: "#F3F4F6", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center" }}>
-                      <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>In {s.conflict_event_name}</Text>
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>
+                        {s.is_verified === false && !s.assigned ? "Unverified" : `In ${s.conflict_event_name || "another event"}`}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -1781,6 +1788,11 @@ export default function EventDetail() {
                         <Text style={{ fontSize: rs(11), fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
                           {d.available ? "Available" : `In ${d.conflict_event_name || "another event"}`}
                         </Text>
+                        {d.is_verified === false && (
+                          <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4), marginLeft: rp(6) }}>
+                            <Text style={{ color: "#D97706", fontSize: rs(9), fontWeight: "bold" }}>UNVERIFIED</Text>
+                          </View>
+                        )}
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -1796,7 +1808,7 @@ export default function EventDetail() {
                       </Text>
                     </View>
                   </View>
-                  {d.available || d.assigned ? (
+                  {d.assigned || (d.available && d.is_verified !== false) ? (
                     <TouchableOpacity
                       onPress={() => toggleAssign(d)}
                       disabled={assigningId === d.id}
@@ -1829,7 +1841,9 @@ export default function EventDetail() {
                     </TouchableOpacity>
                   ) : (
                     <View style={{ marginTop: rp(12), backgroundColor: "#F3F4F6", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center" }}>
-                      <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>In {d.conflict_event_name}</Text>
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>
+                        {d.is_verified === false && !d.assigned ? "Unverified" : `In ${d.conflict_event_name || "another event"}`}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -1895,7 +1909,8 @@ export default function EventDetail() {
                 onChangeText={txt => setEvent(prev => ({ ...prev, host_name: txt }))}
                 placeholder="e.g. John Doe"
                 placeholderTextColor="#9CA3AF"
-                style={{ backgroundColor: "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: "#111827", marginBottom: rp(16) }}
+                editable={!isClosed}
+                style={{ backgroundColor: isClosed ? "#F3F4F6" : "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: isClosed ? "#9CA3AF" : "#111827", marginBottom: rp(16) }}
               />
 
               <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", marginBottom: rp(4), letterSpacing: rs(1) }}>HOST EMAIL</Text>
@@ -1907,32 +1922,40 @@ export default function EventDetail() {
                   placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  style={{ flex: 1, backgroundColor: "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: "#111827" }}
+                  editable={!isClosed}
+                  style={{ flex: 1, backgroundColor: isClosed ? "#F3F4F6" : "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: isClosed ? "#9CA3AF" : "#111827" }}
                 />
-                <TouchableOpacity
-                  onPress={async () => {
-                    if (!event?.host_email) {
-                      Alert.alert("Required", "Please enter host email");
-                      return;
-                    }
-                    try {
-                      await api.patch(`/events/${currentEventId}/host`, {
-                        host_name: event.host_name,
-                        host_email: event.host_email
-                      });
-                      Alert.alert("Success", "Host updated and portal email sent");
-                      fetchEvent();
-                    } catch (err) {
-                      Alert.alert("Error", "Failed to update host");
-                    }
-                  }}
-                  style={{ backgroundColor: "#1A3C6E", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>
-                    {event?.host_email_sent ? "Resend Portal" : "Send Portal"}
-                  </Text>
-                </TouchableOpacity>
+                {!isClosed && (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      if (!event?.host_email) {
+                        Alert.alert("Required", "Please enter host email");
+                        return;
+                      }
+                      try {
+                        await api.patch(`/events/${currentEventId}/host`, {
+                          host_name: event.host_name,
+                          host_email: event.host_email
+                        });
+                        Alert.alert("Success", "Host updated and portal email sent");
+                        fetchEvent();
+                      } catch (err) {
+                        Alert.alert("Error", err?.response?.data?.detail || "Failed to update host");
+                      }
+                    }}
+                    style={{ backgroundColor: "#1A3C6E", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>
+                      {event?.host_email_sent ? "Resend Portal" : "Send Portal"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
+              {isClosed && (
+                <Text style={{ color: "#EF4444", fontSize: rs(11), marginTop: rp(8), fontWeight: "600" }}>
+                  Cannot send portal email — event is closed
+                </Text>
+              )}
 
               {event?.host_email_sent && (
                 <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), gap: rp(6) }}>

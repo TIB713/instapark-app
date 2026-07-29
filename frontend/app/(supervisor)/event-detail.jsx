@@ -835,6 +835,11 @@ export default function SupervisorEventDetail() {
                     <Text style={{ fontSize: rs(11), fontWeight: "700", color: d.available ? "#059669" : "#F43F5E" }}>
                       {d.available ? "Available" : `In ${d.conflict_event_name || "another event"}`}
                     </Text>
+                    {d.is_verified === false && (
+                      <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4), marginLeft: rp(6) }}>
+                        <Text style={{ color: "#D97706", fontSize: rs(9), fontWeight: "bold" }}>UNVERIFIED</Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               </View>
@@ -846,7 +851,7 @@ export default function SupervisorEventDetail() {
                   <Text style={{ color: "#0EA5E9", fontSize: rs(11), fontWeight: "700" }}>Retrieved: {d.cars_retrieved || 0}</Text>
                 </View>
               </View>
-              {d.available || d.assigned ? (
+              {d.assigned || (d.available && d.is_verified !== false) ? (
                 <TouchableOpacity
                   onPress={() => toggleAssign(d)}
                   disabled={assigningId === d.id}
@@ -872,7 +877,9 @@ export default function SupervisorEventDetail() {
                 </TouchableOpacity>
               ) : (
                 <View style={{ marginTop: rp(12), backgroundColor: "#F3F4F6", borderRadius: rp(14), paddingVertical: rp(12), alignItems: "center" }}>
-                  <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>In {d.conflict_event_name}</Text>
+                  <Text style={{ color: "#9CA3AF", fontSize: rs(11) }}>
+                    {d.is_verified === false && !d.assigned ? "Unverified" : `In ${d.conflict_event_name || "another event"}`}
+                  </Text>
                 </View>
               )}
             </View>

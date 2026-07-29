@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as ImagePicker from "expo-image-picker";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -47,6 +48,12 @@ export default function SupervisorDetail() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+  const [bankAccount, setBankAccount] = useState("");
+  const [bankIfsc, setBankIfsc] = useState("");
+  const [aadharNumber, setAadharNumber] = useState("");
+  const [aadharPhoto, setAadharPhoto] = useState(null);
+  const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [evtFilter, setEvtFilter] = useState("active");
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -62,6 +69,11 @@ export default function SupervisorDetail() {
       setName(supRes.data.name || "");
       setPhone(supRes.data.phone || "");
       setEmail(supRes.data.email || "");
+      setPanNumber(supRes.data.pan_number || "");
+      setBankAccount(supRes.data.bank_account_number || "");
+      setBankIfsc(supRes.data.bank_ifsc || "");
+      setAadharNumber(supRes.data.aadhar_number || "");
+      setAadharPhoto(supRes.data.aadhar_photo || null);
       setEvents(eventsRes.data || []);
       setStats(statsRes.data);
     } catch (e) {
@@ -76,12 +88,40 @@ export default function SupervisorDetail() {
     fetchData();
   }, [fetchData]);
 
+  const validateSupervisor = () => {
+    const errs = {};
+    if (!name.trim()) errs.name = "Name is required";
+    if (!phone.trim()) errs.phone = "Phone is required";
+    else if (!/^\d{10}$/.test(phone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
+    if (password && password.length < 6) errs.password = "Password must be at least 6 characters";
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Please enter a valid email address";
+    if (panNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber.trim().toUpperCase())) errs.panNumber = "Expected format: ABCDE1234F";
+    if (bankAccount.trim() && !/^\d{9,18}$/.test(bankAccount.trim())) errs.bankAccount = "Must be 9-18 digits";
+    if (bankIfsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankIfsc.trim().toUpperCase())) errs.bankIfsc = "Expected format: ABCD0123456";
+    if (!aadharNumber.trim()) errs.aadharNumber = "Aadhar Number is required";
+    else if (!/^\d{12}$/.test(aadharNumber.trim())) errs.aadharNumber = "Aadhar number must be exactly 12 digits";
+    if (!aadharPhoto) errs.aadharPhoto = "Aadhar Photo is required";
+    return errs;
+  };
+
   const saveSupervisor = async () => {
+    const errs = validateSupervisor();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      Alert.alert("Validation Error", "Please check the highlighted fields");
+      return;
+    }
+    setErrors({});
     try {
       setSaving(true);
       const body = { name, phone };
       if (email.trim()) body.email = email.trim();
       if (password && password.length >= 6) body.password = password;
+      if (panNumber.trim()) body.pan_number = panNumber.trim();
+      if (bankAccount.trim()) body.bank_account_number = bankAccount.trim();
+      if (bankIfsc.trim()) body.bank_ifsc = bankIfsc.trim();
+      if (aadharNumber.trim()) body.aadhar_number = aadharNumber.trim();
+      if (aadharPhoto) body.aadhar_photo = aadharPhoto;
       await api.patch(`/supervisors/${supervisorId}`, body);
       Alert.alert("Updated", "Supervisor updated successfully");
       setPassword("");
@@ -89,6 +129,34 @@ export default function SupervisorDetail() {
       Alert.alert("Error", e.response?.data?.detail || "Failed to update");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const pickAadharPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission needed", "Photo library access is required");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      try {
+        const formData = new FormData();
+        formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+        formData.append("folder", "aadhar_photos");
+        const up = await api.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setAadharPhoto(up.data.url);
+        setErrors(prev => ({ ...prev, aadharPhoto: undefined }));
+        Alert.alert("Success", "Aadhar photo uploaded");
+      } catch (e) {
+        Alert.alert("Error", "Failed to upload photo");
+      }
     }
   };
 
@@ -343,19 +411,7 @@ export default function SupervisorDetail() {
             <Text style={{ fontWeight: "900", fontSize: rs(16), color: "#111827" }}>{supervisor.name}</Text> 
             <Text style={{ fontSize: rs(12), color: "#6B7280", marginTop: rp(1) }}>{supervisor.employee_id || supervisor.provider_name || "—"}</Text> 
             <View style={{ flexDirection: "row", gap: rp(6), marginTop: rp(5), flexWrap: "wrap" }}> 
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    supervisor.is_active ? "Deactivate Supervisor" : "Activate Supervisor",
-                    supervisor.is_active
-                      ? "This supervisor will be marked inactive. Continue?"
-                      : "This supervisor will be marked active again. Continue?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Confirm", onPress: toggleActive },
-                    ]
-                  );
-                }}
+              <View
                 style={{
                   backgroundColor: supervisor.is_active ? "#D1FAE5" : "#FEE2E2",
                   paddingHorizontal: rp(8),
@@ -366,7 +422,7 @@ export default function SupervisorDetail() {
                 <Text style={{ color: supervisor.is_active ? "#059669" : "#EF4444", fontSize: rs(10), fontWeight: "800" }}>
                   {supervisor.is_active ? "ACTIVE ✓" : "INACTIVE ✗"}
                 </Text>
-              </TouchableOpacity>
+              </View>
               {supervisor.phone ? ( 
                 <View style={{ flexDirection: "row", alignItems: "center", gap: rp(3), backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(2), borderRadius: rp(99) }}> 
                   <Ionicons name="call-outline" size={10} color="#6B7280" /> 
@@ -396,34 +452,112 @@ export default function SupervisorDetail() {
               </View>
             </View>
 
-            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginTop: rp(24), marginBottom: rp(10), marginHorizontal: rp(16) }}>EDIT SUPERVISOR</Text>
+            {supervisor && (
+              <>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginTop: rp(24), marginBottom: rp(10), marginHorizontal: rp(16) }}>EDIT SUPERVISOR</Text>
             <View style={[{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(18), marginHorizontal: rp(16) }, cardShadow]}>
-              <Text style={miniLabel}>NAME</Text>
-              <View style={miniInput}>
+              <Text style={miniLabel}>NAME <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <View style={[miniInput, errors.name && { borderColor: "#EF4444" }]}>
                 <Ionicons name="person-outline" size={16} color="#7C3AED" />
                 <TextInput value={name} onChangeText={setName} style={miniInputText} />
               </View>
-              <Text style={miniLabel}>PHONE</Text>
-              <View style={miniInput}>
+              {errors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.name}</Text>}
+              <Text style={miniLabel}>PHONE <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <View style={[miniInput, errors.phone && { borderColor: "#EF4444" }]}>
                 <Ionicons name="call-outline" size={16} color="#7C3AED" />
                 <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={miniInputText} />
               </View>
+              {errors.phone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.phone}</Text>}
               <Text style={miniLabel}>NEW PASSWORD (LEAVE BLANK TO KEEP)</Text>
-              <View style={miniInput}>
+              <View style={[miniInput, errors.password && { borderColor: "#EF4444" }]}>
                 <Ionicons name="keypad-outline" size={16} color="#7C3AED" />
                 <TextInput value={password} onChangeText={setPassword} secureTextEntry style={miniInputText} />
               </View>
+              {errors.password && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.password}</Text>}
               <Text style={miniLabel}>EMAIL</Text>
-              <View style={miniInput}>
+              <View style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
                 <Ionicons name="mail-outline" size={16} color="#7C3AED" />
                 <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={miniInputText} />
               </View>
+              {errors.email && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.email}</Text>}
+              <Text style={miniLabel}>PAN CARD NUMBER</Text>
+              <View style={[miniInput, errors.panNumber && { borderColor: "#EF4444" }]}>
+                <Ionicons name="card-outline" size={16} color="#7C3AED" />
+                <TextInput value={panNumber} onChangeText={v => setPanNumber(v.toUpperCase())} autoCapitalize="characters" maxLength={10} placeholder="ABCDE1234F" placeholderTextColor="#9CA3AF" style={miniInputText} />
+              </View>
+              {errors.panNumber && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.panNumber}</Text>}
+              <Text style={miniLabel}>BANK ACCOUNT NUMBER</Text>
+              <View style={[miniInput, errors.bankAccount && { borderColor: "#EF4444" }]}>
+                <Ionicons name="business-outline" size={16} color="#7C3AED" />
+                <TextInput value={bankAccount} onChangeText={setBankAccount} keyboardType="numeric" placeholder="Account number" placeholderTextColor="#9CA3AF" style={miniInputText} />
+              </View>
+              {errors.bankAccount && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankAccount}</Text>}
+              <Text style={miniLabel}>BANK IFSC CODE</Text>
+              <View style={[miniInput, errors.bankIfsc && { borderColor: "#EF4444" }]}>
+                <Ionicons name="business-outline" size={16} color="#7C3AED" />
+                <TextInput value={bankIfsc} onChangeText={v => setBankIfsc(v.toUpperCase())} autoCapitalize="characters" maxLength={11} placeholder="SBIN0001234" placeholderTextColor="#9CA3AF" style={miniInputText} />
+              </View>
+              {errors.bankIfsc && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankIfsc}</Text>}
+              <Text style={miniLabel}>AADHAR NUMBER <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <View style={[miniInput, errors.aadharNumber && { borderColor: "#EF4444" }]}>
+                <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+                <TextInput value={aadharNumber} onChangeText={setAadharNumber} autoCapitalize="none" placeholder="Aadhar number" placeholderTextColor="#9CA3AF" style={miniInputText} />
+              </View>
+              {errors.aadharNumber && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.aadharNumber}</Text>}
+              <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16), marginTop: rp(8) }}>
+                <Text style={miniLabel}>AADHAR PHOTO <Text style={{ color: "#EF4444" }}>*</Text></Text>
+                {aadharPhoto ? (
+                  <View style={{ position: "relative", marginTop: rp(8) }}>
+                    <Image source={{ uri: aadharPhoto }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: errors.aadharPhoto ? "#EF4444" : "#7C3AED" }} />
+                    <TouchableOpacity 
+                      onPress={() => setAadharPhoto(null)} 
+                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.9)", borderRadius: rp(99), padding: rp(2) }}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
+                    <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                  </View>
+                )}
+              </TouchableOpacity>
+              {errors.aadharPhoto && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", textAlign: 'center', marginTop: rp(4) }}>* {errors.aadharPhoto}</Text>}
               <TouchableOpacity
                 onPress={saveSupervisor}
                 disabled={saving}
                 style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(4) }}
               >
                 {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SAVE</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    supervisor.is_active ? "Deactivate Supervisor" : "Activate Supervisor",
+                    supervisor.is_active
+                      ? "This supervisor will be marked inactive. Continue?"
+                      : "This supervisor will be marked active again. Continue?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Confirm", onPress: toggleActive },
+                    ]
+                  );
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: rp(6),
+                  backgroundColor: supervisor.is_active ? "#FEE2E2" : "#D1FAE5",
+                  borderRadius: rp(12),
+                  paddingVertical: rp(12),
+                  marginTop: rp(8),
+                }}
+              >
+                <Ionicons name={supervisor.is_active ? "close-circle-outline" : "checkmark-circle-outline"} size={16} color={supervisor.is_active ? "#EF4444" : "#059669"} />
+                <Text style={{ color: supervisor.is_active ? "#EF4444" : "#059669", fontWeight: "800", fontSize: rs(13) }}>
+                  {supervisor.is_active ? "Deactivate Supervisor" : "Activate Supervisor"}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleDelete}
@@ -442,6 +576,8 @@ export default function SupervisorDetail() {
                 <Text style={{ color: "#EF4444", fontWeight: "800", fontSize: rs(13) }}>Delete Supervisor</Text>
               </TouchableOpacity>
             </View>
+          </>
+        )}
           </>
         )}
 
