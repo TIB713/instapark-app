@@ -192,7 +192,8 @@ export default function DriverStats() {
     if (!driver) return;
     setExportingPDF(true);
     try {
-      const { data: incidents } = await api.get(`/incidents/driver/${driverId}`);
+      const { data: report } = await api.get(`/drivers/${driverId}/report`);
+      const incidents = report.incidents || [];
       
       const eventRows = events.map(e => `
         <tr>
@@ -251,8 +252,9 @@ export default function DriverStats() {
           <div class="stat"><div class="stat-val">${events.length}</div><div class="stat-lbl">Total Events</div></div>
           <div class="stat"><div class="stat-val">${stats.cars_checked_in}</div><div class="stat-lbl">Total Check-ins</div></div>
           <div class="stat"><div class="stat-val">${stats.cars_retrieved}</div><div class="stat-lbl">Total Retrievals</div></div>
-          <div class="stat"><div class="stat-val">${stats.avg_rating || "—"}</div><div class="stat-lbl">Avg Rating</div></div>
-          <div class="stat"><div class="stat-val" style="color:${stats.total_incidents > 0 ? "#EF4444" : "#111827"}">${stats.total_incidents || 0}</div><div class="stat-lbl">Incidents</div></div>
+          <div class="stat"><div class="stat-val">${report.platform_avg_rating || "—"}</div><div class="stat-lbl">Platform Rating</div></div>
+          <div class="stat"><div class="stat-val">${report.driver_avg_rating || "—"}</div><div class="stat-lbl">Driver Rating</div></div>
+          <div class="stat"><div class="stat-val" style="color:${incidents.length > 0 ? "#EF4444" : "#111827"}">${incidents.length}</div><div class="stat-lbl">Incidents</div></div>
         </div>
       </div>
       <div class="section">

@@ -68,11 +68,12 @@ export default function Dashboard() {
       const today = new Date().toISOString().split("T")[0];
       setActiveTodayCount(unique.filter(e => e.date === today && e.status === "active").length);
       
-      const ratedEvents = unique.filter((e) => (e.avg_rating || 0) > 0);
-      const avg = ratedEvents.length > 0
-        ? (ratedEvents.reduce((s, e) => s + (e.avg_rating || 0), 0) / ratedEvents.length).toFixed(1)
-        : "—";
-      setAvgRating(avg);
+      try {
+        const { data: stats } = await api.get("/providers/me/stats");
+        setAvgRating(stats.platform_avg_rating || "—");
+      } catch {
+        setAvgRating("—");
+      }
       setAllFetchedEvents(sorted);
       const recent = sorted.slice(0, 5);
       setEvents(recent);

@@ -441,7 +441,7 @@ export default function EventDetail() {
       const headers = [
         "Plate", "Make", "Color", "Status", "Zone", "Slot",
         "Key Tag", "Check-in Driver", "Retrieval Driver",
-        "Duration (min)", "Retrieval Time (min)", "Rating", "Notes",
+        "Duration (min)", "Retrieval Time (min)", "Platform Rating", "Driver Rating", "Notes",
         "Pre-registered", "Walk-in", "Peak Hour", "Incidents", "Delivered", "Still Parked"
       ].join(",");
       const rows = data.cars.map(c =>
@@ -450,7 +450,7 @@ export default function EventDetail() {
           c.zone || "", c.slot || "", c.key_tag || "",
           c.check_in_driver || "", c.retrieval_driver || "",
           c.duration_minutes || "", c.retrieval_minutes || "",
-          c.rating || "",
+          c.rating || "", c.driver_rating || "",
           `"${(c.notes || "").replace(/"/g, "'")}"`,
           data.summary.pre_registered || 0,
           data.summary.walk_in || 0,
@@ -509,6 +509,7 @@ export default function EventDetail() {
         <td>${d.checkins}</td>
         <td>${d.parkings}</td>
         <td>${d.retrievals}</td>
+        <td>${d.avg_rating != null ? d.avg_rating + "★" : "—"}</td>
         <td style="color:${d.incidents > 0 ? "#EF4444" : "#6B7280"
         }">${d.incidents}</td>
       </tr>`
@@ -603,10 +604,17 @@ export default function EventDetail() {
           </div>
           <div class="stat">
             <div class="stat-val">
-              ${s.avg_rating > 0
-          ? s.avg_rating + "★" : "—"}
+              ${s.platform_avg_rating > 0
+          ? s.platform_avg_rating + "★" : "—"}
             </div>
-            <div class="stat-lbl">Avg Rating</div>
+            <div class="stat-lbl">Platform Rating</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">
+              ${s.driver_avg_rating > 0
+          ? s.driver_avg_rating + "★" : "—"}
+            </div>
+            <div class="stat-lbl">Driver Rating</div>
           </div>
           <div class="stat">
             <div class="stat-val" style="color:${s.total_incidents > 0 ? "#EF4444" : "#059669"}">${s.total_incidents}</div>
@@ -627,7 +635,7 @@ export default function EventDetail() {
         <table><thead><tr>
           <th>Driver</th><th>Emp ID</th>
           <th>Check-ins</th><th>Parkings</th>
-          <th>Retrievals</th><th>Incidents</th>
+          <th>Retrievals</th><th>Avg Rating</th><th>Incidents</th>
         </tr></thead>
         <tbody>${driverRows}</tbody></table>
       </div>
