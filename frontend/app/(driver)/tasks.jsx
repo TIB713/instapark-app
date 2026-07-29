@@ -1211,7 +1211,7 @@ export default function Tasks() {
                     }}
                   >
                     <Ionicons name="navigate" size={16} color="#1D4ED8" />
-                    <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: 13 }}>Navigate to Car</Text>
+                    <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: rs(13) }}>Navigate to Car</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -1245,7 +1245,7 @@ export default function Tasks() {
                     }}
                   >
                     <Ionicons name="navigate" size={16} color="#1D4ED8" />
-                    <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: 13 }}>Navigate to Car</Text>
+                    <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: rs(13) }}>Navigate to Car</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -1495,7 +1495,7 @@ export default function Tasks() {
             ? <ActivityIndicator size="small" color="#059669" />
             : <Ionicons name={capturedGPS ? "location" : "location-outline"} size={18} color={capturedGPS ? "#059669" : "#6B7280"} />
           }
-          <Text style={{ color: capturedGPS ? "#059669" : "#6B7280", fontSize: 14 }}>
+          <Text style={{ color: capturedGPS ? "#059669" : "#6B7280", fontSize: rs(14) }}>
             {capturedGPS
               ? `GPS Saved ✓ (${capturedGPS.lat.toFixed(5)}, ${capturedGPS.lng.toFixed(5)})`
               : "Save GPS Pin (Open Ground Only)"}
@@ -1537,15 +1537,15 @@ export default function Tasks() {
       <Modal visible={showSOSModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 }}>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: "#DC2626", marginBottom: 4 }}>
+            <Text style={{ fontSize: rs(20), fontWeight: "700", color: "#DC2626", marginBottom: 4 }}>
               🚨 Send SOS Alert
             </Text>
-            <Text style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>
+            <Text style={{ fontSize: rs(13), color: "#6B7280", marginBottom: 20 }}>
               Your supervisor will be notified immediately
             </Text>
 
             {/* Alert Type Chips */}
-            <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 10 }}>
+            <Text style={{ fontSize: rs(13), fontWeight: "600", color: "#374151", marginBottom: 10 }}>
               What do you need help with?
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
@@ -1568,7 +1568,7 @@ export default function Tasks() {
                     backgroundColor: sosAlertType === item.key ? "#FEE2E2" : "white",
                   }}
                 >
-                  <Text style={{ color: sosAlertType === item.key ? "#DC2626" : "#6B7280", fontWeight: "600", fontSize: 13 }}>
+                  <Text style={{ color: sosAlertType === item.key ? "#DC2626" : "#6B7280", fontWeight: "600", fontSize: rs(13) }}>
                     {item.label}
                   </Text>
                 </TouchableOpacity>
@@ -1587,7 +1587,7 @@ export default function Tasks() {
                 borderColor: "#E5E7EB",
                 borderRadius: 10,
                 padding: 12,
-                fontSize: 14,
+                fontSize: rs(14),
                 color: "#111827",
                 textAlignVertical: "top",
                 marginBottom: 20,

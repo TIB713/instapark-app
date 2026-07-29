@@ -9,6 +9,15 @@ import { AppState } from "react-native";
 import { checkEventStatusAndStop } from "../lib/locationTracking";
 import { cleanupOldOfflinePhotos } from "../lib/offline";
 import "../global.css";
+import { Text, TextInput } from "react-native";
+
+if (Text.defaultProps == null) Text.defaultProps = {};
+Text.defaultProps.allowFontScaling = false;
+Text.defaultProps.maxFontSizeMultiplier = 1;
+
+if (TextInput.defaultProps == null) TextInput.defaultProps = {};
+TextInput.defaultProps.allowFontScaling = false;
+TextInput.defaultProps.maxFontSizeMultiplier = 1;
 
 export default function RootLayout() {
   const router = useRouter();

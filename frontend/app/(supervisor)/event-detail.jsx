@@ -571,7 +571,7 @@ export default function SupervisorEventDetail() {
                   alignItems: "center", justifyContent: "center",
                   borderWidth: 1.5, borderColor: "white",
                 }}>
-                  <Text style={{ color: "white", fontSize: 9, fontWeight: "700" }}>
+                  <Text style={{ color: "white", fontSize: rs(9), fontWeight: "700" }}>
                     {sosCount}
                   </Text>
                 </View>
@@ -1597,7 +1597,7 @@ export default function SupervisorEventDetail() {
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: "80%" }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F2044" }}>
+              <Text style={{ fontSize: rs(18), fontWeight: "700", color: "#0F2044" }}>
                 🚨 SOS Alerts {sosCount > 0 ? `(${sosCount} active)` : ""}
               </Text>
               <TouchableOpacity onPress={() => setShowSOSPanel(false)}>
@@ -1623,17 +1623,17 @@ export default function SupervisorEventDetail() {
                       marginBottom: 10,
                     }}>
                       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <Text style={{ fontWeight: "700", color: alert.status === "ACTIVE" ? "#DC2626" : "#6B7280", fontSize: 14 }}>
+                        <Text style={{ fontWeight: "700", color: alert.status === "ACTIVE" ? "#DC2626" : "#6B7280", fontSize: rs(14) }}>
                           {alert.alert_type.replace(/_/g, " ")}
                         </Text>
                         {alert.status === "RESOLVED" && (
-                          <Text style={{ color: "#059669", fontSize: 12, fontWeight: "600" }}>Resolved ✓</Text>
+                          <Text style={{ color: "#059669", fontSize: rs(12), fontWeight: "600" }}>Resolved ✓</Text>
                         )}
                       </View>
-                      <Text style={{ color: "#374151", fontSize: 13 }}>Driver: {alert.driver_name}</Text>
-                      {alert.car_number ? <Text style={{ color: "#374151", fontSize: 13 }}>Car: {alert.car_number}</Text> : null}
-                      {alert.note ? <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>{alert.note}</Text> : null}
-                      <Text style={{ color: "#9CA3AF", fontSize: 11, marginTop: 6 }}>{alert.created_at}</Text>
+                      <Text style={{ color: "#374151", fontSize: rs(13) }}>Driver: {alert.driver_name}</Text>
+                      {alert.car_number ? <Text style={{ color: "#374151", fontSize: rs(13) }}>Car: {alert.car_number}</Text> : null}
+                      {alert.note ? <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: 4 }}>{alert.note}</Text> : null}
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: 6 }}>{alert.created_at}</Text>
                       {alert.status === "ACTIVE" && (
                         <TouchableOpacity
                           onPress={() => resolveSOSAlert(alert.id)}
@@ -1648,7 +1648,7 @@ export default function SupervisorEventDetail() {
                         >
                           {resolvingSOSId === alert.id
                             ? <ActivityIndicator color="white" size="small" />
-                            : <Text style={{ color: "white", fontWeight: "600", fontSize: 13 }}>Mark Resolved</Text>
+                            : <Text style={{ color: "white", fontWeight: "600", fontSize: rs(13) }}>Mark Resolved</Text>
                           }
                         </TouchableOpacity>
                       )}

@@ -343,10 +343,13 @@ export default function Login() {
                   activeOpacity={0.7}
                 >
                   <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                     style={{
                       fontWeight: "800",
                       fontSize: rs(15),
-                      letterSpacing: rs(2),
+                      letterSpacing: rs(0.5),
                       color: tab === "admin" ? "#7C3AED" : "#9CA3AF",
                     }}
                   >
@@ -378,10 +381,13 @@ export default function Login() {
                   activeOpacity={0.7}
                 >
                   <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                     style={{
                       fontWeight: "800",
                       fontSize: rs(15),
-                      letterSpacing: rs(2),
+                      letterSpacing: rs(0.5),
                       color: tab === "supervisor" ? "#0F2044" : "#9CA3AF",
                     }}
                   >
@@ -413,10 +419,13 @@ export default function Login() {
                   activeOpacity={0.7}
                 >
                   <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                     style={{
                       fontWeight: "800",
                       fontSize: rs(15),
-                      letterSpacing: rs(2),
+                      letterSpacing: rs(0.5),
                       color: tab === "driver" ? "#059669" : "#9CA3AF",
                     }}
                   >
