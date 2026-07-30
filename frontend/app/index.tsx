@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { getItem, setItem, deleteItem as secureDelete } from "../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useAppStore } from "../lib/store";
 import api from "../lib/api";
+import { getRouteForRole } from "../lib/routeForRole";
 
 export default function Index() {
   const router = useRouter();
@@ -18,23 +19,16 @@ export default function Index() {
           try {
             const { data } = await api.get("/auth/me");
             const role = data.role;
-            if (role === "admin" || role === "superadmin") {
+            
+            if (role === "admin" || role === "superadmin" || role === "owner") {
               await AsyncStorage.removeItem("driver_session");
               useAppStore.getState().signOut();
               useAppStore.getState().setUser(data);
-              setChecking(false);
-              router.replace("/(admin)/dashboard");
-              return;
-            }
-            if (role === "supervisor") {
+            } else if (role === "supervisor") {
               useAppStore.getState().setUser(data);
-              setChecking(false);
-              router.replace("/(supervisor)/dashboard");
-              return;
-            }
-            if (role === "driver") {
+            } else if (role === "driver") {
               const driverData = {
-                id: data.user_id,
+                id: data.user_id || data.id,
                 name: data.name,
                 role: data.role,
                 provider_id: data.provider_id,
@@ -44,11 +38,12 @@ export default function Index() {
               useAppStore.getState().signOut();
               useAppStore.getState().setDriver(driverData);
               if (eid) useAppStore.getState().setCurrentEventId(eid);
-              setChecking(false);
-              router.replace("/(driver)");
-              return;
             }
-            await secureDelete("auth_token");
+
+            setChecking(false);
+            router.replace(getRouteForRole(role));
+            return;
+
           } catch {
             await secureDelete("auth_token");
             await setItem("last_known_role", "");

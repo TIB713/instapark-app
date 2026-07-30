@@ -157,7 +157,7 @@ export default function Dashboard() {
     { id: "hotel_active_today", testID: "stat-active-today", color: "#059669", icon: "pulse", value: activeTodayCount, label: "ACTIVE TODAY", onPress: () => router.push("/(admin)/hotels") },
     { id: "hotel_drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-employees?tab=drivers") },
     { id: "hotel_supervisors", testID: "stat-supervisors", color: "#0F2044", icon: "shield-checkmark", value: supervisors.length, label: "SUPERVISORS", onPress: () => router.push("/(admin)/manage-employees?tab=supervisors") },
-    { id: "hotel_guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "GUEST QR", onPress: () => router.push("/(admin)/pre-register-qr") },
+    { id: "hotel_guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "QR CODES", onPress: () => router.push("/(admin)/pre-register-qr") },
   ] : [
     { id: "total", testID: "stat-total-events", color: "#7C3AED", icon: "calendar", value: totalEventsCount, label: "TOTAL EVENTS", onPress: () => router.push("/(admin)/all-events") },
     { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: activeCount, label: "ACTIVE NOW", onPress: () => router.push("/(admin)/all-events") },
@@ -165,7 +165,7 @@ export default function Dashboard() {
     { id: "drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-employees?tab=drivers") },
     { id: "hotels", testID: "stat-hotels", color: "#1D4ED8", icon: "business-outline", value: hotels.length, label: "HOTELS", onPress: () => router.push("/(admin)/hotels") },
     { id: "rating", testID: "stat-rating", color: "#F59E0B", icon: "star", value: avgRating, label: "AVG RATING", onPress: () => router.push("/(admin)/all-events") },
-    { id: "guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "GUEST QR", onPress: () => router.push("/(admin)/pre-register-qr") },
+    { id: "guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "QR CODES", onPress: () => router.push("/(admin)/pre-register-qr") },
   ];
 
   return (

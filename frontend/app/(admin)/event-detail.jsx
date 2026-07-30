@@ -1186,7 +1186,7 @@ export default function EventDetail() {
                     if (event?.event_type === "hotel_special" || event?.event_type === "hotel_daily" || event?.event_type === "regular") {
                       setShowSpecialEventQRModal(true);
                     } else {
-                      router.push("/(admin)/pre-register-qr");
+                      Alert.alert("Notice", "This event type has no specific QR code.");
                     }
                   }}
                 >

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { rs, rp } from '../../utils/responsive'; 
 import { 
-  View, Text, TouchableOpacity, Share, ActivityIndicator, Alert, ScrollView
+  View, Text, TouchableOpacity, ActivityIndicator, Alert, TextInput, FlatList, Modal
 } from "react-native"; 
 import { useRouter } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
@@ -9,7 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg"; 
 import api from "../../lib/api"; 
 import { useAppStore } from "../../lib/store";
- 
+
 export default function PreRegisterQR() { 
   const router = useRouter(); 
   const { user } = useAppStore();
@@ -21,10 +21,11 @@ export default function PreRegisterQR() {
   const qrColor = isHotelOwner ? "#1D4ED8" : "#4F46E5";
 
   const [loading, setLoading] = useState(true); 
-  const [qrToken, setQrToken] = useState(null); 
-  const [name, setName] = useState(""); 
-  const [events, setEvents] = useState([]);
- 
+  const [cards, setCards] = useState([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [modalCard, setModalCard] = useState(null);
+
   useEffect(() => {
     api.get("/auth/me")
       .then(({ data }) => {
@@ -37,60 +38,49 @@ export default function PreRegisterQR() {
       .catch(() => setResolvedProviderType(user?.provider_type || "valet_provider"));
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => { 
     if (!resolvedProviderType) return;
-    
-    if (resolvedProviderType === "hotel_owner") {
-      api.get("/hotels")
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setQrToken(data[0].hotel_qr_token);
-            setName(data[0].name);
-          }
-        })
-        .catch(() => Alert.alert("Error", "Failed to load hotel QR code"))
-        .finally(() => setLoading(false));
-    } else {
-      api.get("/events")
-        .then(async ({ data }) => {
-          const regularEvents = (data || []).filter(
-            e => e.event_type === "regular" && (e.status === "active" || e.status === "upcoming")
-          );
-          
-          const eventsWithTokens = await Promise.all(regularEvents.map(async (ev) => {
-            try {
-              const res = await api.get(`/events/${ev.id}/qr-token`);
-              return { ...ev, event_qr_token: res.data.event_qr_token };
-            } catch (err) {
-              return ev; // leave as is if fails
-            }
-          }));
-          
-          setEvents(eventsWithTokens);
-        })
-        .catch(() => Alert.alert("Error", "Failed to load events"))
-        .finally(() => setLoading(false));
-    }
-  }, [resolvedProviderType]); 
- 
-  const preRegisterUrl = qrToken 
-    ? (isHotelOwner 
-        ? `${process.env.EXPO_PUBLIC_GUEST_URL}/hotel-register/${qrToken}`
-        : `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/${qrToken}`) 
-    : ""; 
- 
-  const handleShare = () => { 
-    if (!preRegisterUrl) return; 
-    Share.share({ 
-      message: `Pre-register your vehicle for ${name}. Visit: ${preRegisterUrl}`, 
-    }); 
-  }; 
- 
+    setLoading(true);
+    api.get("/qr-cards/me", { params: { search: debouncedSearch || undefined } })
+      .then(({ data }) => setCards(data.cards || []))
+      .catch(() => Alert.alert("Error", "Failed to load QR cards"))
+      .finally(() => setLoading(false));
+  }, [resolvedProviderType, debouncedSearch]); 
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity 
+      onPress={() => setModalCard(item)}
+      style={{ 
+        backgroundColor: "#fff", 
+        borderRadius: rp(16), 
+        padding: rp(16), 
+        alignItems: "center", 
+        width: "47%", 
+        marginBottom: rp(16),
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2
+      }}
+    >
+      <View style={{ backgroundColor: "#F9FAFB", padding: rp(10), borderRadius: rp(12), marginBottom: rp(12) }}>
+        <QRCode value={item.qr_token} size={80} color={qrColor} />
+      </View>
+      <Text style={{ fontSize: rs(14), fontWeight: "bold", color: "#111827" }}>Tag #{item.key_tag_number}</Text>
+    </TouchableOpacity>
+  );
+
   return ( 
     <View style={{ flex: 1, backgroundColor: themeColor }}> 
       <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: overlayColor }} /> 
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}> 
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: rp(20), paddingTop: rp(8) }}> 
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: rp(20), paddingTop: rp(8), paddingBottom: rp(16) }}> 
           <TouchableOpacity 
             onPress={() => router.back()} 
             style={{ backgroundColor: "rgba(255,255,255,0.18)", borderRadius: rp(99), padding: rp(10) }} 
@@ -98,86 +88,68 @@ export default function PreRegisterQR() {
             <Ionicons name="chevron-back" size={22} color="#fff" /> 
           </TouchableOpacity> 
           <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(14), flex: 1, letterSpacing: rs(0.5) }}> 
-            {isHotelOwner ? "Hotel Registration QR" : "Pre-Registration QR"}
+            QR Codes
           </Text> 
         </View> 
- 
-        <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: rp(24), paddingVertical: rp(24) }}> 
-          {loading ? ( 
-            <ActivityIndicator size="large" color="#fff" /> 
-          ) : ( 
-            <> 
-              {isHotelOwner && (
-                <>
-                  <View style={{ backgroundColor: "#fff", borderRadius: rp(32), padding: rp(32), alignItems: "center", width: "100%", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: rp(24), shadowOffset: { width: 0, height: rp(12) }, elevation: 12 }}> 
-                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: themeColor, letterSpacing: rs(3) }}> 
-                      {isHotelOwner ? "HOTEL GUEST REGISTRATION" : "EVENT GUEST PRE-REGISTRATION"}
-                    </Text> 
-                    <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#111827", marginTop: rp(6), textAlign: "center" }}> 
-                      {name} 
-                    </Text> 
-                    <Text style={{ color: "#9CA3AF", marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13), textAlign: "center" }}> 
-                      {isHotelOwner ? "Guests scan this to register their vehicle" : "For event guests only — use Hotel QR for hotel valet"}
-                    </Text> 
-                    <View style={{ padding: rp(14), backgroundColor: isHotelOwner ? "#EFF6FF" : "#F5F3FF", borderRadius: rp(20) }}> 
-                      {qrToken ? ( 
-                        <QRCode value={preRegisterUrl} size={220} color={qrColor} /> 
-                      ) : ( 
-                        <View style={{ width: rp(220), height: rp(220), justifyContent: "center", alignItems: "center" }}> 
-                          <Text style={{ color: "#9CA3AF" }}>QR unavailable</Text> 
-                        </View> 
-                      )} 
-                    </View> 
-                    <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(18), textAlign: "center" }}> 
-                      Guest scans this to pre-register their vehicle 
-                    </Text> 
-                  </View> 
-     
-                  <TouchableOpacity 
-                    onPress={handleShare} 
-                    style={{ backgroundColor: "rgba(255,255,255,0.15)", borderWidth: rp(1.5), borderColor: "#fff", borderRadius: rp(16), paddingVertical: rp(14), marginTop: rp(24), width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center" }} 
-                  > 
-                    <Ionicons name="share-outline" size={20} color="#fff" /> 
-                    <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>SHARE LINK</Text> 
-                  </TouchableOpacity>
-                </>
-              )}
 
-              {!isHotelOwner && (
-                events.length === 0 ? (
-                  <Text style={{ color: "#fff", textAlign: "center" }}>No active or upcoming events</Text>
-                ) : (
-                  <View style={{ width: "100%" }}>
-                    {events.map(ev => {
-                      const url = `${process.env.EXPO_PUBLIC_GUEST_URL}/pre-register/event/${ev.event_qr_token}`;
-                      return (
-                        <View key={ev.id} style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), alignItems: "center", width: "100%", marginBottom: rp(16) }}>
-                          <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#111827", textAlign: "center" }}>{ev.name}</Text>
-                          <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(2), marginBottom: rp(16) }}>{ev.date}</Text>
-                          {ev.event_qr_token ? (
-                            <QRCode value={url} size={160} color={qrColor} />
-                          ) : (
-                            <View style={{ width: rp(160), height: rp(160), justifyContent: "center", alignItems: "center" }}>
-                              <Text style={{ color: "#9CA3AF" }}>QR unavailable</Text>
-                            </View>
-                          )}
-                          <TouchableOpacity
-                            onPress={() => Share.share({ message: `Pre-register your vehicle for ${ev.name}. Visit: ${url}` })}
-                            style={{ backgroundColor: themeColor, borderRadius: rp(14), paddingVertical: rp(10), paddingHorizontal: rp(20), marginTop: rp(16), flexDirection: "row", alignItems: "center" }}
-                          >
-                            <Ionicons name="share-outline" size={16} color="#fff" />
-                            <Text style={{ color: "#fff", fontWeight: "800", marginLeft: rp(6) }}>SHARE</Text>
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    })}
-                  </View>
-                )
-              )}
-            </> 
-          )} 
-        </ScrollView> 
+        <View style={{ flex: 1, backgroundColor: "#F3F4F6", borderTopLeftRadius: rp(24), borderTopRightRadius: rp(24), overflow: "hidden" }}>
+          
+          <View style={{ padding: rp(20), backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: rp(12), paddingHorizontal: rp(14), paddingVertical: rp(10), borderWidth: 1, borderColor: "#E5E7EB" }}>
+              <Ionicons name="search" size={20} color="#9CA3AF" />
+              <TextInput 
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search Key Tag Number..."
+                style={{ flex: 1, marginLeft: rp(10), fontSize: rs(15), color: "#111827" }}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </View>
+
+          {loading ? ( 
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <ActivityIndicator size="large" color={themeColor} /> 
+            </View>
+          ) : cards.length > 0 ? (
+            <FlatList 
+              data={cards}
+              keyExtractor={c => c.id.toString()}
+              numColumns={2}
+              columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: rp(20) }}
+              contentContainerStyle={{ paddingVertical: rp(20) }}
+              renderItem={renderItem}
+            />
+          ) : (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: rp(40) }}>
+              <Ionicons name="qr-code-outline" size={48} color="#D1D5DB" />
+              <Text style={{ fontSize: rs(16), fontWeight: "bold", color: "#4B5563", marginTop: rp(16) }}>No QR Codes Found</Text>
+              <Text style={{ fontSize: rs(14), color: "#9CA3AF", textAlign: "center", marginTop: rp(8) }}>Try adjusting your search criteria</Text>
+            </View>
+          )}
+
+        </View>
+
+        <Modal visible={!!modalCard} transparent={true} animationType="fade" onRequestClose={() => setModalCard(null)}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center", padding: rp(24) }}>
+            <View style={{ backgroundColor: "#fff", borderRadius: rp(24), width: "100%", overflow: "hidden" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: rp(20), borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}>
+                <Text style={{ fontSize: rs(18), fontWeight: "bold", color: "#111827" }}>Tag #{modalCard?.key_tag_number}</Text>
+                <TouchableOpacity onPress={() => setModalCard(null)} style={{ padding: rp(4) }}>
+                  <Ionicons name="close" size={24} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
+              <View style={{ padding: rp(40), alignItems: "center", backgroundColor: "#F9FAFB" }}>
+                <View style={{ backgroundColor: "#fff", padding: rp(20), borderRadius: rp(16), shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
+                  {modalCard && <QRCode value={modalCard.qr_token} size={200} color={qrColor} />}
+                </View>
+                <Text style={{ fontSize: rs(24), fontWeight: "bold", color: "#4B5563", marginTop: rp(24), letterSpacing: rs(2) }}>#{modalCard?.key_tag_number}</Text>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
       </SafeAreaView> 
     </View> 
   ); 
-} 
+}
