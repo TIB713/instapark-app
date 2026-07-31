@@ -846,9 +846,9 @@ export default function EventDetail() {
 
   const doSaveSupervisor = async (phoneToSave) => {
     setSavingSupervisor(true);
-    try {
-      let uploadedPhotoUrl;
-      if (supPhoto) {
+    let uploadedPhotoUrl;
+    if (supPhoto) {
+      try {
         const formData = new FormData();
         formData.append("file", { uri: supPhoto, type: "image/jpeg", name: "photo.jpg" });
         formData.append("folder", "supervisors");
@@ -856,13 +856,25 @@ export default function EventDetail() {
           headers: { "Content-Type": "multipart/form-data" },
         });
         uploadedPhotoUrl = up.data.url;
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        setSavingSupervisor(false);
+        return;
       }
+    }
 
-      let aadharPhotoUrl;
-      if (supAadharPhotoUri) {
+    let aadharPhotoUrl;
+    if (supAadharPhotoUri) {
+      try {
         aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        setSavingSupervisor(false);
+        return;
       }
+    }
 
+    try {
       await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
@@ -881,7 +893,7 @@ export default function EventDetail() {
       Alert.alert("Supervisor Added!", `${supName} has been added and will receive login credentials by email.`);
       fetchSupervisors();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add supervisor");
+      Alert.alert("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
     } finally {
       setSavingSupervisor(false);
     }
@@ -980,19 +992,38 @@ export default function EventDetail() {
 
   const doSaveDriver = async (phoneToSave) => {
     setSavingDriver(true);
-    try {
-      let photoUrl;
-      if (drvPhotoUri) {
+    let photoUrl;
+    if (drvPhotoUri) {
+      try {
         photoUrl = await uploadDriverImage(drvPhotoUri, "drivers");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        setSavingDriver(false);
+        return;
       }
-      let licensePhotoUrl;
-      if (drvLicensePhotoUri) {
+    }
+    let licensePhotoUrl;
+    if (drvLicensePhotoUri) {
+      try {
         licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload license photo — please check your connection and try again.");
+        setSavingDriver(false);
+        return;
       }
-      let aadharPhotoUrl;
-      if (drvAadharPhotoUri) {
+    }
+    let aadharPhotoUrl;
+    if (drvAadharPhotoUri) {
+      try {
         aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        setSavingDriver(false);
+        return;
       }
+    }
+    
+    try {
       await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
@@ -1013,7 +1044,7 @@ export default function EventDetail() {
       Alert.alert("Driver Added!", `${drvName} has been added successfully.`);
       fetchDrivers();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add driver");
+      Alert.alert("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
     } finally {
       setSavingDriver(false);
     }
@@ -2897,7 +2928,7 @@ export default function EventDetail() {
                   </Text>
                 )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if(driverErrors.licenseNumber) setDriverErrors(prev => ({...prev, licenseNumber: undefined})); }} placeholder="DL number" autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                <TextInput value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if(driverErrors.licenseNumber) setDriverErrors(prev => ({...prev, licenseNumber: undefined})); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
                 {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
                 <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>

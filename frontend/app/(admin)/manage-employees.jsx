@@ -40,7 +40,6 @@ export default function ManageEmployees() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [processingId, setProcessingId] = useState(null);
-  const [resendingInviteId, setResendingInviteId] = useState(null);
 
   // Supervisor Form State
   const [showSupModal, setShowSupModal] = useState(false);
@@ -214,9 +213,9 @@ export default function ManageEmployees() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setSavingSup(true);
-    try {
-      let photoUrl;
-      if (supPhotoUri) {
+    let photoUrl;
+    if (supPhotoUri) {
+      try {
         const formData = new FormData();
         formData.append("file", { uri: supPhotoUri, type: "image/jpeg", name: "photo.jpg" });
         formData.append("folder", "supervisors");
@@ -224,11 +223,24 @@ export default function ManageEmployees() {
           headers: { "Content-Type": "multipart/form-data" },
         });
         photoUrl = up.data.url;
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        setSavingSup(false);
+        return;
       }
-      let aadharPhotoUrl;
-      if (supAadharPhotoUri) {
+    }
+    let aadharPhotoUrl;
+    if (supAadharPhotoUri) {
+      try {
         aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        setSavingSup(false);
+        return;
       }
+    }
+    
+    try {
       await api.post("/supervisors", {
         name: supName.trim(),
         email: supEmail.trim().toLowerCase(),
@@ -246,7 +258,7 @@ export default function ManageEmployees() {
       resetSupForm(); setErrors({});
       fetchAll();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add supervisor");
+      Alert.alert("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
     } finally {
       setSavingSup(false);
     }
@@ -280,19 +292,38 @@ export default function ManageEmployees() {
     setDriverErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setSavingDrv(true);
-    try {
-      let photoUrl;
-      if (drvPhotoUri) {
+    let photoUrl;
+    if (drvPhotoUri) {
+      try {
         photoUrl = await uploadDriverImage(drvPhotoUri, "drivers");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        setSavingDrv(false);
+        return;
       }
-      let licensePhotoUrl;
-      if (drvLicensePhotoUri) {
+    }
+    let licensePhotoUrl;
+    if (drvLicensePhotoUri) {
+      try {
         licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload license photo — please check your connection and try again.");
+        setSavingDrv(false);
+        return;
       }
-      let aadharPhotoUrl;
-      if (drvAadharPhotoUri) {
+    }
+    let aadharPhotoUrl;
+    if (drvAadharPhotoUri) {
+      try {
         aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
+      } catch (e) {
+        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        setSavingDrv(false);
+        return;
       }
+    }
+    
+    try {
       await api.post("/drivers", {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
@@ -312,23 +343,13 @@ export default function ManageEmployees() {
       resetDrvForm();
       fetchAll();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add driver");
+      Alert.alert("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
     } finally {
       setSavingDrv(false);
     }
   };
 
-  const handleResendInvite = async (s) => {
-    setResendingInviteId(s.id);
-    try {
-      await api.post(`/supervisors/${s.id}/resend-invite`);
-      Alert.alert("Invite Sent", `Verification email resent to ${s.email}`);
-    } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to resend invite");
-    } finally {
-      setResendingInviteId(null);
-    }
-  };
+
 
   const handleSupervisorLongPress = (s) => {
     const action = s.is_active ? "Deactivate" : "Activate";
@@ -479,37 +500,7 @@ export default function ManageEmployees() {
                     <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>
                       {s.email}
                     </Text>
-                    {!s.is_verified && (
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation?.();
-                          handleResendInvite(s);
-                        }}
-                        disabled={resendingInviteId === s.id}
-                        style={{
-                          marginTop: rp(6),
-                          alignSelf: "flex-start",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: rp(4),
-                          backgroundColor: "#FEF3C7",
-                          borderWidth: 1,
-                          borderColor: "#F59E0B",
-                          borderRadius: rp(8),
-                          paddingHorizontal: rp(10),
-                          paddingVertical: rp(4),
-                        }}
-                      >
-                        {resendingInviteId === s.id ? (
-                          <ActivityIndicator size="small" color="#D97706" />
-                        ) : (
-                          <Ionicons name="mail-outline" size={12} color="#D97706" />
-                        )}
-                        <Text style={{ color: "#D97706", fontSize: rs(11), fontWeight: "700" }}>
-                          {resendingInviteId === s.id ? "Sending..." : "Resend Invite"}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+
                   </View>
                   {processingId === s.id ? (
                     <ActivityIndicator size="small" color="#7C3AED" />
@@ -819,7 +810,7 @@ export default function ManageEmployees() {
                   </Text>
                 )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvLicenseNumber} onChangeText={(v) => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                <TextInput value={drvLicenseNumber} onChangeText={(v) => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
                 {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
                 <TouchableOpacity onPress={() => { pickLicensePhoto(); if (driverErrors.licensePhoto) setDriverErrors(prev => ({ ...prev, licensePhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>

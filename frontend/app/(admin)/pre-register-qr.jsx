@@ -25,6 +25,20 @@ export default function PreRegisterQR() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [modalCard, setModalCard] = useState(null);
+  
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState("lost");
+  const [reportNote, setReportNote] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  const fetchCards = () => {
+    if (!resolvedProviderType) return;
+    setLoading(true);
+    api.get("/qr-cards/me", { params: { search: debouncedSearch || undefined } })
+      .then(({ data }) => setCards(data.cards || []))
+      .catch(() => Alert.alert("Error", "Failed to load QR cards"))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     api.get("/auth/me")
@@ -44,17 +58,34 @@ export default function PreRegisterQR() {
   }, [search]);
 
   useEffect(() => { 
-    if (!resolvedProviderType) return;
-    setLoading(true);
-    api.get("/qr-cards/me", { params: { search: debouncedSearch || undefined } })
-      .then(({ data }) => setCards(data.cards || []))
-      .catch(() => Alert.alert("Error", "Failed to load QR cards"))
-      .finally(() => setLoading(false));
+    fetchCards();
   }, [resolvedProviderType, debouncedSearch]); 
+
+  const submitReport = () => {
+    if (!modalCard) return;
+    setSubmittingReport(true);
+    api.post(`/qr-cards/${modalCard.id}/report-incident`, { reason: reportReason, note: reportNote })
+      .then(() => {
+        Alert.alert("Success", "Incident reported successfully");
+        setModalCard(null);
+        setIsReporting(false);
+        setReportNote("");
+        fetchCards();
+      })
+      .catch((err) => {
+        Alert.alert("Error", err.response?.data?.detail || "Failed to report incident");
+      })
+      .finally(() => setSubmittingReport(false));
+  };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      onPress={() => setModalCard(item)}
+      onPress={() => {
+        setModalCard(item);
+        setIsReporting(false);
+        setReportNote("");
+        setReportReason("lost");
+      }}
       style={{ 
         backgroundColor: "#fff", 
         borderRadius: rp(16), 
@@ -69,8 +100,13 @@ export default function PreRegisterQR() {
         elevation: 2
       }}
     >
+      {item.status === "pending_incident" && (
+        <View style={{ position: "absolute", top: rp(8), right: rp(8), backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(4), zIndex: 10 }}>
+          <Ionicons name="warning" size={16} color="#D97706" />
+        </View>
+      )}
       <View style={{ backgroundColor: "#F9FAFB", padding: rp(10), borderRadius: rp(12), marginBottom: rp(12) }}>
-        <QRCode value={item.qr_token} size={80} color={qrColor} />
+        <QRCode value={`${process.env.EXPO_PUBLIC_GUEST_URL}/v/${item.qr_token}`} size={80} color={qrColor} />
       </View>
       <Text style={{ fontSize: rs(14), fontWeight: "bold", color: "#111827" }}>Tag #{item.key_tag_number}</Text>
     </TouchableOpacity>
@@ -141,10 +177,77 @@ export default function PreRegisterQR() {
               </View>
               <View style={{ padding: rp(40), alignItems: "center", backgroundColor: "#F9FAFB" }}>
                 <View style={{ backgroundColor: "#fff", padding: rp(20), borderRadius: rp(16), shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
-                  {modalCard && <QRCode value={modalCard.qr_token} size={200} color={qrColor} />}
+                  {modalCard && <QRCode value={`${process.env.EXPO_PUBLIC_GUEST_URL}/v/${modalCard.qr_token}`} size={200} color={qrColor} />}
                 </View>
                 <Text style={{ fontSize: rs(24), fontWeight: "bold", color: "#4B5563", marginTop: rp(24), letterSpacing: rs(2) }}>#{modalCard?.key_tag_number}</Text>
               </View>
+
+              <View style={{ padding: rp(20), backgroundColor: "#fff" }}>
+                {modalCard?.status === "pending_incident" ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FEF3C7", padding: rp(12), borderRadius: rp(12), borderWidth: 1, borderColor: "#FDE68A" }}>
+                    <Ionicons name="warning" size={20} color="#D97706" />
+                    <Text style={{ marginLeft: rp(8), color: "#92400E", fontSize: rs(13), fontWeight: "bold", flex: 1 }}>
+                      Reported as lost/damaged — awaiting superadmin review
+                    </Text>
+                  </View>
+                ) : !isReporting ? (
+                  <TouchableOpacity 
+                    onPress={() => setIsReporting(true)}
+                    style={{ backgroundColor: "#fff", borderWidth: 1, borderColor: "#FECACA", padding: rp(14), borderRadius: rp(12), alignItems: "center" }}
+                  >
+                    <Text style={{ color: "#DC2626", fontWeight: "bold", fontSize: rs(15) }}>Report Lost / Damaged</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View>
+                    <Text style={{ fontSize: rs(12), fontWeight: "bold", color: "#6B7280", textTransform: "uppercase", marginBottom: rp(8) }}>Reason</Text>
+                    <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
+                      <TouchableOpacity 
+                        onPress={() => setReportReason("lost")}
+                        style={{ flex: 1, padding: rp(12), borderRadius: rp(10), borderWidth: 1, alignItems: "center", ...(reportReason === "lost" ? { backgroundColor: "#FEF2F2", borderColor: "#FECACA" } : { backgroundColor: "#fff", borderColor: "#E5E7EB" }) }}
+                      >
+                        <Text style={{ fontWeight: "bold", fontSize: rs(14), ...(reportReason === "lost" ? { color: "#B91C1C" } : { color: "#4B5563" }) }}>Lost</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => setReportReason("damaged")}
+                        style={{ flex: 1, padding: rp(12), borderRadius: rp(10), borderWidth: 1, alignItems: "center", ...(reportReason === "damaged" ? { backgroundColor: "#FEF2F2", borderColor: "#FECACA" } : { backgroundColor: "#fff", borderColor: "#E5E7EB" }) }}
+                      >
+                        <Text style={{ fontWeight: "bold", fontSize: rs(14), ...(reportReason === "damaged" ? { color: "#B91C1C" } : { color: "#4B5563" }) }}>Damaged</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={{ fontSize: rs(12), fontWeight: "bold", color: "#6B7280", textTransform: "uppercase", marginBottom: rp(8) }}>Note (Optional)</Text>
+                    <TextInput 
+                      value={reportNote}
+                      onChangeText={setReportNote}
+                      placeholder="Any details..."
+                      multiline
+                      numberOfLines={3}
+                      style={{ backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: rp(10), padding: rp(12), fontSize: rs(14), color: "#111827", minHeight: rp(80), textAlignVertical: "top", marginBottom: rp(20) }}
+                    />
+
+                    <View style={{ flexDirection: "row", gap: rp(12) }}>
+                      <TouchableOpacity 
+                        onPress={() => setIsReporting(false)}
+                        style={{ flex: 1, padding: rp(14), borderRadius: rp(12), borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center", backgroundColor: "#fff" }}
+                      >
+                        <Text style={{ color: "#4B5563", fontWeight: "bold", fontSize: rs(15) }}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={submitReport}
+                        disabled={submittingReport}
+                        style={{ flex: 1, padding: rp(14), borderRadius: rp(12), alignItems: "center", backgroundColor: "#DC2626", opacity: submittingReport ? 0.7 : 1 }}
+                      >
+                        {submittingReport ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: rs(15) }}>Submit Report</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+
             </View>
           </View>
         </Modal>

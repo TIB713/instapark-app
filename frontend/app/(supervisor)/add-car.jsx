@@ -93,6 +93,11 @@ export default function AddCar() {
   const [isPreRegistered, setIsPreRegistered] = useState(false);
   const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
   const [instantPark, setInstantPark] = useState(false);
+  
+  const [qrToken, setQrToken] = useState("");
+  const [keyTagNumber, setKeyTagNumber] = useState("");
+  const [qrCardId, setQrCardId] = useState("");
+  
   const params = useLocalSearchParams();
 
   // Driver assignment — the one thing that differs from the driver's own check-in form
@@ -112,7 +117,17 @@ export default function AddCar() {
       setIsPreRegistered(true);
       setGuestNotes(params.prefill_guest_notes || "");
     }
-  }, [params.prefill_plate]);
+    if (params.prefill_qr_token) {
+      setQrToken(params.prefill_qr_token || "");
+      setKeyTagNumber(params.prefill_key_tag_number || "");
+      setQrCardId(params.prefill_qr_card_id || "");
+    }
+    if (!params.prefill_plate && !params.prefill_qr_token) {
+      Alert.alert("Missing QR Card", "Please scan a vehicle key-tag first.", [
+        { text: "OK", onPress: () => router.replace("/(supervisor)/scan-qr-card") }
+      ]);
+    }
+  }, [params.prefill_plate, params.prefill_qr_token, params.prefill_key_tag_number, params.prefill_qr_card_id, router]);
 
   useEffect(() => {
     (async () => {
@@ -405,6 +420,7 @@ export default function AddCar() {
         car = data;
       } else {
         const { data } = await api.post("/cars", {
+          qr_token: qrToken,
           plate: plate.trim().toUpperCase(),
           color: color.trim(),
           make: make.trim(),
@@ -508,6 +524,23 @@ export default function AddCar() {
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(100) }}>
+          {keyTagNumber ? (
+            <View style={{
+              backgroundColor: "#EFF6FF", borderWidth: rp(1), borderColor: "#BFDBFE",
+              borderRadius: rp(16), padding: rp(12), marginBottom: rp(16),
+              flexDirection: "row", alignItems: "center", gap: rp(10)
+            }}>
+              <Ionicons name="pricetag" size={20} color="#3B82F6" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#1D4ED8" }}>
+                  KEY TAG SCANNED
+                </Text>
+                <Text style={{ fontSize: rs(18), color: "#1E3A8A", marginTop: rp(2), fontWeight: "bold", letterSpacing: rs(1) }}>
+                  #{keyTagNumber}
+                </Text>
+              </View>
+            </View>
+          ) : null}
           {isPreRegistered && (
             <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", gap: rp(10) }}>
               <Ionicons name="checkmark-circle" size={20} color="#059669" />

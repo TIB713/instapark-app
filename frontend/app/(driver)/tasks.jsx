@@ -663,7 +663,7 @@ export default function Tasks() {
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <TouchableOpacity
-                onPress={() => router.push("/(driver)/checkin")}
+                onPress={() => router.push("/(driver)/scan-qr-card")}
                 testID="add-checkin-btn"
                 style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
               >

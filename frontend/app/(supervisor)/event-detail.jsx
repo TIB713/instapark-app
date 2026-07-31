@@ -675,7 +675,7 @@ export default function SupervisorEventDetail() {
 
       {tab === "cars" && (
         <TouchableOpacity
-          onPress={() => router.push("/(supervisor)/add-car")}
+          onPress={() => router.push("/(supervisor)/scan-qr-card")}
           style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: ACCENT_COLOR, borderRadius: rp(14), paddingVertical: rp(14), marginHorizontal: rp(16), marginTop: rp(16) }}
         >
           <Ionicons name="add-circle-outline" size={18} color="#fff" />
