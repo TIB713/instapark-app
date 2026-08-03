@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
+import { fmtDateTime, todayIST, toISTDateString } from '../../utils/time';
 import {
   View,
   Text,
@@ -87,7 +88,7 @@ export default function HotelDetail() {
 
   // New event state
   const [newEventName, setNewEventName] = useState("");
-  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split("T")[0]);
+  const [newEventDate, setNewEventDate] = useState(todayIST());
   const [newEventStartTime, setNewEventStartTime] = useState("18:00");
   const [newEventEndTime, setNewEventEndTime] = useState("23:00");
   const [newEventMaxCars, setNewEventMaxCars] = useState("100");
@@ -158,7 +159,7 @@ export default function HotelDetail() {
   const [editGates, setEditGates] = useState([]);
 
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIST();
   const todayEvents = allEvents
     .filter(e => e.date === today)
     .sort((a, b) => (a.status === "active" ? -1 : 1));
@@ -912,7 +913,7 @@ export default function HotelDetail() {
                       <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(15) }}>{g.name}</Text>
                       <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{g.contact}</Text>
                       {g.expected_arrival && (
-                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(4) }}>Arrival: {new Date(g.expected_arrival).toLocaleString()}</Text>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(4) }}>Arrival: {fmtDateTime(g.expected_arrival)}</Text>
                       )}
                     </View>
                     <View style={{ alignItems: "flex-end", gap: rp(6) }}>
@@ -1615,7 +1616,7 @@ export default function HotelDetail() {
               minimumDate={new Date()}
               onChange={(_, d) => {
                 setShowEventDatePicker(false);
-                if (d) setNewEventDate(d.toISOString().split("T")[0]);
+                if (d) setNewEventDate(toISTDateString(d));
               }}
             />
           )}

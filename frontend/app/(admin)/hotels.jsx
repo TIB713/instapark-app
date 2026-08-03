@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
+import { todayIST } from "../../utils/time";
 import CityStatePicker from "../../components/CityStatePicker";
 import { State } from "country-state-city";
 
@@ -164,7 +165,7 @@ export default function Hotels() {
     }
   };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIST();
 
   const hotelsWithStatus = hotels.map(h => ({
     ...h,
@@ -263,7 +264,7 @@ export default function Hotels() {
       <ScrollView style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}>
         {loading && <ActivityIndicator color={ACCENT_COLOR} />}
         {filteredHotels.map((h) => {
-          const today = new Date().toISOString().split("T")[0];
+
           const todayEvent = allEvents.find(e => e.hotel_id === h.id && e.date === today);
 
           return (

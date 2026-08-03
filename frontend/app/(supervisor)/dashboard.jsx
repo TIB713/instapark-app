@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { rs, rp } from '../../utils/responsive';
+import { todayIST } from '../../utils/time';
 import {
   View,
   Text,
@@ -128,7 +129,7 @@ export default function SupervisorDashboard() {
     }
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayIST();
   const todayDaily = events.find(e => e.hotel_id === user?.hotel_id && e.date === todayStr && e.event_type === "hotel_daily");
   
   const active = events.filter((e) => e.status === "active").slice(0, 5);

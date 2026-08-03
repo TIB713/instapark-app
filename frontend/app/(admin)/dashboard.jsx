@@ -17,6 +17,7 @@ import { deleteItem as secureDelete } from "../../lib/secure";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { rs, rp } from "../../utils/responsive";
+import { todayIST } from "../../utils/time";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -65,7 +66,7 @@ export default function Dashboard() {
       setTotalEventsCount(unique.length);
       setTotalSpecialEventsCount(unique.filter(e => e.event_type === "hotel_special").length);
       setActiveCount(unique.filter(e => e.status === "active").length);
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayIST();
       setActiveTodayCount(unique.filter(e => e.date === today && e.status === "active").length);
       
       try {
@@ -138,7 +139,7 @@ export default function Dashboard() {
 
   const specialEvents = allFetchedEvents.filter(e => e.event_type === "hotel_special");
   const dailyEvents = allFetchedEvents.filter(e => e.event_type === "hotel_daily");
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayIST();
   const todaySpecial = specialEvents.filter(e => e.date === todayStr);
   const todayDaily = dailyEvents.find(e => e.date === todayStr);
   const active = events.filter((e) => e.status === "active");

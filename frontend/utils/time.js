@@ -11,3 +11,14 @@ export const fmtDateTime = (iso) =>
 
 export const fmtDateTimeFull = (iso) =>
   iso ? new Date(iso).toLocaleString("en-IN", { ...IST }) : "—";
+
+export const toISTDateString = (date) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const get = (type) => parts.find(p => p.type === type).value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+};
+
+export const todayIST = () => toISTDateString(new Date());

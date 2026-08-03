@@ -7,8 +7,10 @@ import QRCode from "react-native-qrcode-svg";
 
 export default function DriverQRDisplay() {
   const router = useRouter();
-  const { token, plate } = useLocalSearchParams();
+  const { token, plate, mode = "checkin", keyTag } = useLocalSearchParams();
   const guestUrl = `${process.env.EXPO_PUBLIC_GUEST_URL}/v/${token}`;
+  
+  const isParkMode = mode === "park";
 
   return (
     <View style={{ flex: 1, backgroundColor: "#059669" }} testID="driver-qr-screen">
@@ -31,7 +33,7 @@ export default function DriverQRDisplay() {
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(14), flex: 1 }}>
-            Guest QR Code
+            {isParkMode ? "Key Tag Card" : "Guest QR Code"}
           </Text>
         </View>
 
@@ -51,20 +53,27 @@ export default function DriverQRDisplay() {
             }}
           >
             <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#059669", letterSpacing: rs(3) }}>
-              GUEST QR CODE
+              {isParkMode ? "KEY TAG CARD" : "GUEST QR CODE"}
             </Text>
             <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827", marginTop: rp(6) }}>{plate}</Text>
-            <Text style={{ color: "#9CA3AF", marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>Show this to the guest</Text>
+            <Text style={{ color: "#9CA3AF", marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>
+              {isParkMode ? "Attach this to the parked car" : "Show this to the guest"}
+            </Text>
             <View style={{ padding: rp(14), backgroundColor: "#ECFDF5", borderRadius: rp(20) }}>
               <QRCode value={guestUrl} size={220} color="#0891B2" />
             </View>
-            <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(18), textAlign: "center" }}>
-              Guest scans this to request their car
+            {isParkMode && (
+              <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#111827", marginTop: rp(16) }}>
+                Tag #{keyTag}
+              </Text>
+            )}
+            <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: isParkMode ? rp(8) : rp(18), textAlign: "center" }}>
+              {isParkMode ? "Leave this card with the car" : "Guest scans this to request their car"}
             </Text>
           </View>
 
           <TouchableOpacity
-            onPress={() => Share.share({ message: `Valet QR for ${plate}. Scan to request: ${guestUrl}` })}
+            onPress={() => Share.share({ message: isParkMode ? `Key Tag ${keyTag} for ${plate}. Scan to request: ${guestUrl}` : `Valet QR for ${plate}. Scan to request: ${guestUrl}` })}
             style={{
               backgroundColor: "rgba(255,255,255,0.15)",
               borderWidth: rp(1.5),
