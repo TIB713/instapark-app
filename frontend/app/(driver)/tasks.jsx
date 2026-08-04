@@ -18,6 +18,7 @@ import {
   Platform,
   BackHandler,
   KeyboardAvoidingView,
+  AppState,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -201,6 +202,25 @@ export default function Tasks() {
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
       if (msg.type === "retrieval_update") fetchRetrievals();
     });
+
+    const appStateSub = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        disconnectWS(`/event/${currentEventId}`);
+        disconnectWS(`/retrievals/${currentEventId}`);
+        connectWS(`/event/${currentEventId}`, (msg) => {
+          if (msg.type === "car_update") fetchMyCars();
+          if (msg.type === "slot_update") fetchSlots();
+        });
+        connectWS(`/retrievals/${currentEventId}`, (msg) => {
+          if (msg.type === "retrieval_update") fetchRetrievals();
+        });
+        fetchMyCars();
+        fetchRetrievals();
+      }
+    });
+
+    const pollRetrievalsInterval = setInterval(fetchRetrievals, 15000);
+
     const unsub = NetInfo.addEventListener(async (state) => {
       if (state.isConnected) {
         await processPendingQueue();
@@ -230,6 +250,8 @@ export default function Tasks() {
 
     return () => {
       clearInterval(eventStatusInterval);
+      clearInterval(pollRetrievalsInterval);
+      appStateSub.remove();
       disconnectWS(`/event/${currentEventId}`);
       disconnectWS(`/retrievals/${currentEventId}`);
       unsub();
