@@ -1930,7 +1930,7 @@ export default function EventDetail() {
             ))}
           </View>
 
-          {event?.event_type !== "hotel_daily" && (
+          {/* {event?.event_type !== "hotel_daily" && (
             <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
               <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(16) }}>Event Host</Text>
 
@@ -1995,7 +1995,7 @@ export default function EventDetail() {
                 </View>
               )}
             </View>
-          )}
+          )} */}
 
           <TouchableOpacity
             onPress={exportCSV}
