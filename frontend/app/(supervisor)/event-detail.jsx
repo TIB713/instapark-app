@@ -601,14 +601,14 @@ export default function SupervisorEventDetail() {
                   <Ionicons name="create-outline" size={20} color={ACCENT_COLOR} />
                   <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Edit Event</Text>
                 </TouchableOpacity>
-                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
+                {/* <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity 
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => { setShowMenu(false); setShowEventQRModal(true); }}
                 >
                   <Ionicons name="qr-code-outline" size={20} color={ACCENT_COLOR} />
                   <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity 
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
@@ -1725,7 +1725,7 @@ export default function SupervisorEventDetail() {
         </View>
       </Modal>
 
-      {showEventQRModal && (
+      {/* {showEventQRModal && (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", zIndex: 2000 }}>
           <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(28), alignItems: "center", width: "85%" }}>
             <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#1D4ED8", letterSpacing: rs(3), marginBottom: rp(12) }}>EVENT GUEST QR</Text>
@@ -1744,7 +1744,7 @@ export default function SupervisorEventDetail() {
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      )} */}
     </View>
   );
 }

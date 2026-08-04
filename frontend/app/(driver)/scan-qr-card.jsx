@@ -37,7 +37,9 @@ export default function ScanQrCard() {
     try {
       const { data } = result;
       let token = data;
-      if (data.includes("/v/")) {
+      if (data.includes("/qr-redirect/")) {
+        token = data.split("/qr-redirect/")[1].split("?")[0].trim();
+      } else if (data.includes("/v/")) {
         token = data.split("/v/")[1].split("?")[0].trim();
       } else if (data.includes("/pass/")) {
         Alert.alert(

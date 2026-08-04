@@ -618,7 +618,7 @@ export default function HotelDetail() {
           ["team", "Team"],
           ["guests", "Guests"],
           ["info", "Info"],
-          ["qr", "QR"],
+          // ["qr", "QR"],
         ].map(([k, l]) => {
           return (
             <TouchableOpacity
@@ -671,14 +671,14 @@ export default function HotelDetail() {
                             {e.event_type === "hotel_daily" ? "AUTO DAILY" : "SPECIAL"}
                           </Text>
                         </View>
-                        {e.event_type === "hotel_special" && (
+                        {/* {e.event_type === "hotel_special" && (
                           <TouchableOpacity
                             onPress={() => handleShowEventQR(e)}
                             style={{ backgroundColor: "#F5F3FF", padding: rp(6), borderRadius: rp(8) }}
                           >
                             <Ionicons name="qr-code" size={16} color={ACCENT_COLOR} />
                           </TouchableOpacity>
-                        )}
+                        )} */}
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(8), gap: rp(12) }}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -744,14 +744,14 @@ export default function HotelDetail() {
                           {e.event_type === "hotel_daily" ? "AUTO DAILY" : "SPECIAL"}
                         </Text>
                       </View>
-                      {e.event_type === "hotel_special" && (
+                      {/* {e.event_type === "hotel_special" && (
                         <TouchableOpacity
                           onPress={() => handleShowEventQR(e)}
                           style={{ backgroundColor: "#F5F3FF", padding: rp(4), borderRadius: rp(6) }}
                         >
                           <Ionicons name="qr-code" size={14} color={ACCENT_COLOR} />
                         </TouchableOpacity>
-                      )}
+                      )} */}
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <Ionicons name="location-outline" size={12} color="#9CA3AF" />
                         <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginLeft: rp(4) }} numberOfLines={1}>{e.venue}</Text>
@@ -1168,7 +1168,7 @@ export default function HotelDetail() {
           </View>
         )}
 
-        {tab === "qr" && (
+        {/* {tab === "qr" && (
           <View style={{ padding: rp(16) }}>
             <View style={[cardBase, cardShadow, { alignItems: "center", padding: rp(28) }]}>
               <Text
@@ -1272,7 +1272,7 @@ export default function HotelDetail() {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        )} */}
       </ScrollView>
 
       {/* Create Driver Modal */}
@@ -1654,7 +1654,7 @@ export default function HotelDetail() {
       </Modal>
 
       {/* Special Event QR Modal */}
-      <Modal
+      {/* <Modal
         visible={showEventQRModal}
         transparent
         animationType="fade"
@@ -1711,7 +1711,7 @@ export default function HotelDetail() {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
     </View>
   );
 }

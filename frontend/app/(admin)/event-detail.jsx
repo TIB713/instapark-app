@@ -1209,7 +1209,7 @@ export default function EventDetail() {
                   <Ionicons name="create-outline" size={20} color="#7C3AED" />
                   <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>Edit Event</Text>
                 </TouchableOpacity>
-                <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
+                {/* <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
                   onPress={() => {
@@ -1223,7 +1223,7 @@ export default function EventDetail() {
                 >
                   <Ionicons name="qr-code-outline" size={20} color="#7C3AED" />
                   <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: '#0F2044' }}>QR Code</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <View style={{ height: rp(1), backgroundColor: '#F3F4F6' }} />
                 <TouchableOpacity
                   style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
@@ -2404,7 +2404,7 @@ export default function EventDetail() {
         </ScrollView>
       )}
 
-      <Modal
+      {/* <Modal
         visible={showSpecialEventQRModal}
         transparent
         animationType="fade"
@@ -2553,7 +2553,7 @@ export default function EventDetail() {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
 
       <Modal visible={showCarModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>

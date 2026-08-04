@@ -8,7 +8,7 @@ import QRCode from "react-native-qrcode-svg";
 export default function DriverQRDisplay() {
   const router = useRouter();
   const { token, plate, mode = "checkin", keyTag } = useLocalSearchParams();
-  const guestUrl = `${process.env.EXPO_PUBLIC_GUEST_URL}/v/${token}`;
+  const guestUrl = `${process.env.EXPO_PUBLIC_API_URL || "https://instapark.docusafe.ai/api/v1"}/qr-redirect/${token}`;
   
   const isParkMode = mode === "park";
 
