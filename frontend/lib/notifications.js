@@ -26,14 +26,10 @@ export async function registerForPushNotifications(api) {
       Constants.expoConfig?.extra?.eas?.projectId ??
       Constants.easConfig?.projectId;
     const token = await Notifications.getExpoPushTokenAsync({ projectId });
-    // Try driver/supervisor endpoint first, fall back to admin/provider endpoint
-    try {
-      await api.post('/drivers/push-token', { push_token: token.data });
-    } catch {
-      try {
-        await api.post('/providers/push-token', { push_token: token.data });
-      } catch {}
-    }
+    console.log('[PUSH] Registered push token:', token.data?.substring(0, 40) + '...');
+    try { await api.post('/drivers/push-token', { push_token: token.data }); return token.data; } catch {}
+    try { await api.post('/providers/push-token', { push_token: token.data }); return token.data; } catch {}
+    try { await api.post('/supervisors/push-token', { push_token: token.data }); return token.data; } catch {}
     return token.data;
   } catch (e) {
     console.warn('Push registration failed:', e);

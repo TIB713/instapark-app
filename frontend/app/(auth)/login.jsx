@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setItem } from "../../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import api from "../../lib/api";
 import { registerForPushNotifications } from "../../lib/notifications";
@@ -27,9 +28,6 @@ const requestPushPermissions = async (role) => {
   try {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status === "granted") {
-      const token = await Notifications.getExpoPushTokenAsync();
-      await AsyncStorage.setItem("push_token", token.data);
-      api.post("/drivers/push-token", { push_token: token.data }).catch(() => { });
     }
   } catch { }
 };
@@ -500,6 +498,15 @@ export default function Login() {
               )}
 
             </View>
+            <Text style={{ 
+              textAlign: "center", 
+              color: "rgba(255,255,255,0.4)", 
+              fontSize: rs(11), 
+              marginTop: rp(8),
+              marginBottom: rp(4)
+            }}>
+              v{Constants.expoConfig?.version || "1.0.0"}
+            </Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

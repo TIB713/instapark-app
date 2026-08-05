@@ -25,8 +25,10 @@ export default function Index() {
               useAppStore.getState().signOut();
               useAppStore.getState().setUser(data);
             } else if (role === "supervisor") {
+              await AsyncStorage.removeItem("driver_session");
               useAppStore.getState().setUser(data);
             } else if (role === "driver") {
+              await AsyncStorage.removeItem("admin_session");
               const driverData = {
                 id: data.user_id || data.id,
                 name: data.name,
@@ -55,13 +57,17 @@ export default function Index() {
               const ds = await AsyncStorage.getItem("driver_session");
               const lastRole = await getItem("last_known_role");
               const eid = await AsyncStorage.getItem("current_event_id");
-              if (ds) {
+              if (ds && lastRole === "driver") {
                 const d = JSON.parse(ds);
-                useAppStore.getState().setDriver(d);
-                if (eid) useAppStore.getState().setCurrentEventId(eid);
-                setChecking(false);
-                router.replace("/(driver)");
-                return;
+                if (d?.id && d?.role === "driver") {
+                  useAppStore.getState().setDriver(d);
+                  if (eid) useAppStore.getState().setCurrentEventId(eid);
+                  setChecking(false);
+                  router.replace("/(driver)");
+                  return;
+                } else {
+                  await AsyncStorage.removeItem("driver_session");
+                }
               } else if (lastRole && ["supervisor", "admin", "superadmin", "owner"].includes(lastRole)) {
                 setChecking(false);
                 router.replace(getRouteForRole(lastRole));
@@ -78,6 +84,12 @@ export default function Index() {
         const eid = await AsyncStorage.getItem("current_event_id");
         if (ds) {
           const d = JSON.parse(ds);
+          if (!d?.id || d?.role !== "driver") {
+            await AsyncStorage.removeItem("driver_session");
+            setChecking(false);
+            router.replace("/(auth)/login");
+            return;
+          }
           useAppStore.getState().setDriver(d);
           if (eid) useAppStore.getState().setCurrentEventId(eid);
           setChecking(false);
