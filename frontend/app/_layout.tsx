@@ -59,7 +59,7 @@ export default function RootLayout() {
         const lastRole = await getItem("last_known_role");
         if (lastRole) useAppStore.setState({ lastKnownRole: lastRole });
         const eventId = await AsyncStorage.getItem("current_event_id");
-        const driverStr = await AsyncStorage.getItem("driver_data");
+        const driverStr = await AsyncStorage.getItem("driver_session");
         if (eventId) useAppStore.getState().setCurrentEventId(eventId);
         if (driverStr) useAppStore.getState().setDriver(JSON.parse(driverStr));
       } catch (e) {

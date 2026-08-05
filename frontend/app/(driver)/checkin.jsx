@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -17,6 +17,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
@@ -82,6 +83,39 @@ export default function CheckIn() {
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const [showVideoCamera, setShowVideoCamera] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [videoUploadStatus, setVideoUploadStatus] = useState("idle");
+  const [checkinVideoUrl, setCheckinVideoUrl] = useState(null);
+  const [videoExtractedPhotos, setVideoExtractedPhotos] = useState([]);
+  const [videoUploadError, setVideoUploadError] = useState(null);
+  const [recordingStuck, setRecordingStuck] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef(null);
+  const lastRecordedVideoUriRef = useRef(null);
+
+  const uploadWalkaroundVideoInBackground = async (uri) => {
+    setVideoUploadStatus("uploading");
+    try {
+      const fd = new FormData();
+      fd.append("file", { uri, type: "video/mp4", name: "walkaround.mp4" });
+      fd.append("folder", `checkin-video-test/${plate || "unknown"}`);
+      fd.append("frame_count", "6");
+      
+      const response = await api.post("/upload/checkin-video", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000
+      });
+      
+      setCheckinVideoUrl(response.data.video_url);
+      setVideoExtractedPhotos(response.data.photo_urls || []);
+      setVideoUploadStatus("done");
+    } catch (e) {
+      setVideoUploadError("Could not upload video.");
+      setVideoUploadStatus("error");
+    }
+  };
   const [errors, setErrors] = useState({});
   const [prefilledCarId, setPrefilledCarId] = useState(null);
   const [passToken, setPassToken] = useState(null);
@@ -888,6 +922,167 @@ export default function CheckIn() {
             ))}
           </View>
           {errors.photos && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
+
+          {/* Video Walkaround Test */}
+          <View style={{ marginTop: rp(16), marginBottom: rp(16) }}>
+            <Lbl>🧪 TESTING: Video Walkaround</Lbl>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: rp(12) }}>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!cameraPermission?.granted) {
+                    const req = await requestCameraPermission();
+                    if (!req.granted) return;
+                  }
+                  setShowVideoCamera(true);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#fff",
+                  borderRadius: rp(12),
+                  padding: rp(12),
+                  borderWidth: rp(1),
+                  borderColor: "#059669",
+                  alignSelf: "flex-start",
+                }}
+              >
+                <Ionicons name="videocam-outline" size={rs(18)} color="#059669" />
+                <Text style={{ color: "#059669", fontWeight: "800", marginLeft: rp(8), fontSize: rs(12) }}>
+                  Record Walkaround
+                </Text>
+              </TouchableOpacity>
+              
+              {videoUploadStatus === "uploading" && (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <ActivityIndicator size="small" color="#6B7280" />
+                  <Text style={{ fontSize: rs(11), color: "#6B7280", marginLeft: rp(6) }}>Uploading in background…</Text>
+                </View>
+              )}
+              {videoUploadStatus === "error" && (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Ionicons name="warning" size={rs(16)} color="#EF4444" />
+                  <Text style={{ fontSize: rs(11), color: "#EF4444", marginLeft: rp(4), marginRight: rp(8) }}>{videoUploadError}</Text>
+                  <TouchableOpacity onPress={() => {
+                    if (lastRecordedVideoUriRef.current) uploadWalkaroundVideoInBackground(lastRecordedVideoUriRef.current);
+                  }}>
+                    <Text style={{ fontSize: rs(11), color: "#059669", fontWeight: "700" }}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+            
+            {videoUploadStatus === "done" && (
+              <View style={{ marginTop: rp(12) }}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(8) }}>
+                  <Ionicons name="checkmark-circle" size={rs(16)} color="#059669" />
+                  <Text style={{ fontSize: rs(12), color: "#059669", fontWeight: "700", marginLeft: rp(4) }}>
+                    Video processed ({videoExtractedPhotos.length} frames)
+                  </Text>
+                </View>
+                {videoExtractedPhotos.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
+                    {videoExtractedPhotos.map((url, i) => (
+                      <Image key={i} source={{ uri: url }} style={{ width: rp(60), height: rp(60), borderRadius: rp(8) }} />
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+          </View>
+
+          <Modal visible={showVideoCamera} animationType="slide">
+            <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
+              <View style={{ flex: 1 }}>
+                <CameraView ref={cameraRef} mode="video" style={{ flex: 1 }} />
+                
+                {/* Cancel Button */}
+                {!isRecording && (
+                  <TouchableOpacity
+                    onPress={() => setShowVideoCamera(false)}
+                    style={{ position: "absolute", top: rp(16), left: rp(16), backgroundColor: "rgba(0,0,0,0.5)", padding: rp(12), borderRadius: rp(99) }}
+                  >
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                )}
+                
+                {/* Controls */}
+                <View style={{ position: "absolute", bottom: rp(40), left: 0, right: 0, alignItems: "center" }}>
+                  {recordingStuck ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowVideoCamera(false);
+                        setIsRecording(false);
+                        setRecordingStuck(false);
+                      }}
+                      style={{
+                        backgroundColor: "#F97316",
+                        paddingVertical: rp(12),
+                        paddingHorizontal: rp(24),
+                        borderRadius: rp(99),
+                        alignItems: "center"
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(14) }}>Force Close (Discard Recording)</Text>
+                    </TouchableOpacity>
+                  ) : isRecording ? (
+                    <TouchableOpacity
+                      onPress={() => cameraRef.current?.stopRecording()}
+                      style={{
+                        width: rp(70),
+                        height: rp(70),
+                        borderRadius: rp(35),
+                        backgroundColor: "rgba(255,255,255,0.3)",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      <View style={{ width: rp(30), height: rp(30), backgroundColor: "#EF4444", borderRadius: rp(4) }} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (cameraRef.current) {
+                          setIsRecording(true);
+                          setRecordingStuck(false);
+                          setTimeout(() => {
+                            if (cameraRef.current) cameraRef.current.stopRecording();
+                          }, 30000);
+                          setTimeout(() => {
+                            setIsRecording((current) => {
+                              if (current) setRecordingStuck(true);
+                              return current;
+                            });
+                          }, 35000);
+                          
+                          // mute: true avoids needing microphone permission — walkaround video doesn't need audio. Also note: expo-camera video recording can be less reliable in Expo Go vs a custom dev client/EAS build — if issues persist, test on a dev build.
+                          const video = await cameraRef.current.recordAsync({ maxDuration: 30, mute: true });
+                          
+                          setIsRecording(false);
+                          setRecordingStuck(false);
+                          setShowVideoCamera(false);
+                          if (video && video.uri) {
+                            lastRecordedVideoUriRef.current = video.uri;
+                            uploadWalkaroundVideoInBackground(video.uri);
+                          }
+                        }
+                      }}
+                      style={{
+                        width: rp(70),
+                        height: rp(70),
+                        borderRadius: rp(35),
+                        borderWidth: rp(4),
+                        borderColor: "#fff",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      <View style={{ width: rp(54), height: rp(54), backgroundColor: "#EF4444", borderRadius: rp(27) }} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </SafeAreaView>
+          </Modal>
 
           <Modal visible={showPhotoPreview} transparent animationType="fade">
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: rp(20) }}>

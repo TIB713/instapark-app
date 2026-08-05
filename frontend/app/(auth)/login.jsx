@@ -292,7 +292,7 @@ export default function Login() {
 
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(8) }}>
                     <Text style={[styles.label, { marginBottom: 0 }]}>MOBILE NUMBER</Text>
-                    <TouchableOpacity onPress={() => { setLoginStep(1); setError("); setCredential("); }}>
+                    <TouchableOpacity onPress={() => { setLoginStep(1); setError(); setCredential(""); }}>
                       <Text style={{ color: accent, fontSize: rs(12), fontWeight: "700" }}>CHANGE</Text>
                     </TouchableOpacity>
                   </View>

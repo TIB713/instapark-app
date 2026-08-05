@@ -80,7 +80,8 @@ export default function Tasks() {
   const [keyTag, setKeyTag] = useState("");
   const [parkPhotos, setParkPhotos] = useState([]);
   const [parkingPhotoStep, setParkingPhotoStep] = useState(false);
-
+  const [showParkSuccessModal, setShowParkSuccessModal] = useState(false);
+  const [parkedCarInfo, setParkedCarInfo] = useState(null); // { plate, zone, slot, key_tag_number, qr_token }
 
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [sosAlertType, setSOSAlertType] = useState("NEED_HELP");
@@ -397,6 +398,8 @@ export default function Tasks() {
           parkedDriverId: resolvedDriverId,
           photoLocalPaths,
         });
+        setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, key_tag_number: selectedCar.key_tag_number, qr_token: selectedCar.qr_token });
+        setShowParkSuccessModal(true);
         setShowParkModal(false);
         setParkPhotos([]);
         setParkingPhotoStep(false);
@@ -415,6 +418,8 @@ export default function Tasks() {
       await updateJourney(selectedCar.id, "parked");
 
       const carId = selectedCar.id;
+      setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, key_tag_number: selectedCar.key_tag_number, qr_token: selectedCar.qr_token });
+      setShowParkSuccessModal(true);
       setShowParkModal(false);
       setParkPhotos([]);
       setParkingPhotoStep(false);
@@ -661,27 +666,8 @@ export default function Tasks() {
             <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", flex: 1, textAlign: "center", marginRight: rp(40) }}>
               My Tasks
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <TouchableOpacity
-                onPress={() => router.push("/(driver)/scan-qr-card")}
-                testID="add-checkin-btn"
-                style={{ backgroundColor: "#fff", borderRadius: rp(99), width: rp(40), height: rp(40), alignItems: "center", justifyContent: "center" }}
-              >
-                <Ionicons name="add" size={24} color="#059669" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowSOSModal(true)}
-                style={{
-                  backgroundColor: "#DC2626",
-                  borderRadius: 20,
-                  padding: 8,
-                  marginLeft: 8,
-                }}
-              >
-                <Ionicons name="warning" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
           </View>
+
         </View>
       </SafeAreaView>
 
@@ -691,7 +677,7 @@ export default function Tasks() {
           flexDirection: "row",
           backgroundColor: "#fff",
           marginHorizontal: rp(16),
-                  marginTop: -rp(18),
+          marginTop: rp(10),
           borderRadius: rp(20),
           padding: rp(4),
           ...cardShadow,
@@ -727,6 +713,26 @@ export default function Tasks() {
               <Text style={{ color: "#fff", fontSize: rs(11), fontWeight: "900" }}>{retrievalRequested}</Text>
             </View>
           )}
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ flexDirection: "row", justifyContent: "center", marginHorizontal: rp(16), marginTop: rp(12) }}>
+        <TouchableOpacity
+          onPress={() => router.push("/(driver)/scan-qr-card")}
+          testID="add-checkin-btn"
+          activeOpacity={0.85}
+          style={{ flex: 1, justifyContent: "center", backgroundColor: "#fff", borderRadius: rp(16), paddingHorizontal: rp(12), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", ...cardShadow }}
+        >
+          <Ionicons name="add" size={20} color="#059669" />
+          <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(13), marginLeft: rp(4) }}>Check In</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setShowSOSModal(true)}
+          activeOpacity={0.85}
+          style={{ flex: 1, justifyContent: "center", backgroundColor: "#DC2626", borderRadius: rp(16), paddingHorizontal: rp(12), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", marginLeft: rp(10), ...cardShadow }}
+        >
+          <Ionicons name="warning" size={18} color="white" />
+          <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(13), marginLeft: rp(4) }}>SOS</Text>
         </TouchableOpacity>
       </View>
 
@@ -1492,6 +1498,63 @@ export default function Tasks() {
                   ? <ActivityIndicator color="white" size="small" />
                   : <Text style={{ color: "white", fontWeight: "700" }}>Send SOS</Text>
                 }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showParkSuccessModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
+            <View style={{ alignItems: "center" }}>
+              <Ionicons name="checkmark-circle" size={rs(64)} color="#059669" />
+              <Text style={{ fontSize: rs(22), fontWeight: "900", color: "#111827", textAlign: "center", marginTop: rp(12) }}>
+                Vehicle Parked!
+              </Text>
+              <Text style={{ fontSize: rs(16), fontWeight: "700", color: "#6B7280", textAlign: "center", marginTop: rp(4) }}>
+                {parkedCarInfo?.plate}
+              </Text>
+
+              <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(12) }}>
+                <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
+                  <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>
+                    Zone {parkedCarInfo?.zone}
+                  </Text>
+                </View>
+                <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
+                  <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>
+                    Slot {parkedCarInfo?.slot}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ backgroundColor: "#ECFDF5", borderRadius: rp(20), padding: rp(20), marginTop: rp(16), alignItems: "center", width: "100%" }}>
+                <Text style={{ color: "#9CA3AF", fontWeight: "800", fontSize: rs(11), letterSpacing: rs(1) }}>KEY TAG</Text>
+                <Text style={{ fontSize: rs(36), fontWeight: "900", color: "#059669", textAlign: "center", marginTop: rp(4) }}>
+                  {parkedCarInfo?.key_tag_number}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setShowParkSuccessModal(false);
+                  router.push({ pathname: "/(driver)/qr-display", params: { token: parkedCarInfo?.qr_token, plate: parkedCarInfo?.plate } });
+                }}
+                style={{ backgroundColor: "#fff", borderWidth: rp(1.5), borderColor: "#059669", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", justifyContent: "center", marginTop: rp(16), width: "100%" }}
+              >
+                <Ionicons name="qr-code-outline" size={rs(20)} color="#059669" />
+                <Text style={{ color: "#059669", fontWeight: "800", fontSize: rs(14), marginLeft: rp(8) }}>Show QR Code</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setShowParkSuccessModal(false);
+                  setParkedCarInfo(null);
+                }}
+                style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginTop: rp(10), width: "100%" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(14) }}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>

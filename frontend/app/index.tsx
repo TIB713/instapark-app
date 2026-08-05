@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { getItem, setItem, deleteItem as secureDelete } from "../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,7 +17,7 @@ export default function Index() {
         const token = await getItem("auth_token");
         if (token) {
           try {
-            const { data } = await api.get("/auth/me");
+            const { data } = await api.get("/auth/me", { timeout: 20000 });
             const role = data.role;
             
             if (role === "admin" || role === "superadmin" || role === "owner") {
@@ -44,12 +44,34 @@ export default function Index() {
             router.replace(getRouteForRole(role));
             return;
 
-          } catch {
-            await secureDelete("auth_token");
-            await setItem("last_known_role", "");
-            setChecking(false);
-            router.replace("/(auth)/login");
-            return;
+          } catch (err) {
+            if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+              await secureDelete("auth_token");
+              await setItem("last_known_role", "");
+              setChecking(false);
+              router.replace("/(auth)/login");
+              return;
+            } else {
+              const ds = await AsyncStorage.getItem("driver_session");
+              const lastRole = await getItem("last_known_role");
+              const eid = await AsyncStorage.getItem("current_event_id");
+              if (ds) {
+                const d = JSON.parse(ds);
+                useAppStore.getState().setDriver(d);
+                if (eid) useAppStore.getState().setCurrentEventId(eid);
+                setChecking(false);
+                router.replace("/(driver)");
+                return;
+              } else if (lastRole && ["supervisor", "admin", "superadmin", "owner"].includes(lastRole)) {
+                setChecking(false);
+                router.replace(getRouteForRole(lastRole));
+                return;
+              } else {
+                setChecking(false);
+                router.replace("/(auth)/login");
+                return;
+              }
+            }
           }
         }
         const ds = await AsyncStorage.getItem("driver_session");

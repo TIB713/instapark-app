@@ -160,7 +160,7 @@ export default function Dashboard() {
     { id: "hotel_supervisors", testID: "stat-supervisors", color: "#0F2044", icon: "shield-checkmark", value: supervisors.length, label: "SUPERVISORS", onPress: () => router.push("/(admin)/manage-employees?tab=supervisors") },
     { id: "hotel_guest_qr", testID: "stat-guest-qr", color: "#D97706", icon: "qr-code-outline", value: null, label: "QR CODES", onPress: () => router.push("/(admin)/pre-register-qr") },
   ] : [
-    { id: "total", testID: "stat-total-events", color: "#7C3AED", icon: "calendar", value: totalEventsCount, label: "TOTAL EVENTS", onPress: () => router.push("/(admin)/all-events") },
+    { id: "total", testID: "stat-total-events", color: "#7C3AED", icon: "calendar", value: totalEventsCount, label: "EVENTS", onPress: () => router.push("/(admin)/all-events") },
     { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: activeCount, label: "ACTIVE NOW", onPress: () => router.push("/(admin)/all-events") },
     { id: "supervisors", testID: "stat-supervisors", color: "#0F2044", icon: "shield-checkmark", value: supervisors.length, label: "SUPERVISORS", onPress: () => router.push("/(admin)/manage-employees?tab=supervisors") },
     { id: "drivers", testID: "stat-drivers", color: "#4F46E5", icon: "people", value: drivers.length, label: "DRIVERS", onPress: () => router.push("/(admin)/manage-employees?tab=drivers") },
@@ -231,31 +231,25 @@ export default function Dashboard() {
               activeOpacity={0.85}
               style={{
                 backgroundColor: s.color,
-                borderRadius: rp(24),
-                paddingHorizontal: rp(18),
-                paddingVertical: rp(18),
-                minWidth: rp(150),
+                borderRadius: rp(18),
+                paddingHorizontal: rp(14),
+                paddingVertical: rp(14),
+                minWidth: rp(120),
+                alignItems: "center",
                 shadowColor: s.color,
                 shadowOpacity: 0.25,
-                shadowRadius: rp(14),
+                shadowRadius: rp(10),
                 shadowOffset: { width: 0, height: rp(6) },
                 elevation: 5,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Ionicons name={s.id.includes("guest_qr") ? "information-circle-outline" : s.icon} size={rs(22)} color="#fff" />
-                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: rp(99), padding: rp(4) }}>
-                  <Ionicons name="chevron-forward" size={rs(14)} color="#fff" />
-                </View>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rp(8) }}>
+                <Ionicons name={s.id.includes("guest_qr") ? "information-circle-outline" : s.icon} size={s.value !== null ? rs(20) : rs(24)} color="#fff" />
+                {s.value !== null && (
+                  <Text style={{ color: "#fff", fontSize: rs(26), fontWeight: "900" }}>{s.value}</Text>
+                )}
               </View>
-              {s.value !== null ? (
-                <Text style={{ color: "#fff", fontSize: rs(32), fontWeight: "900", marginTop: rp(10) }}>{s.value}</Text>
-              ) : (
-                <View style={{ marginTop: rp(10) }}>
-                  <Ionicons name={s.icon} size={rs(32)} color="#fff" />
-                </View>
-              )}
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: rs(10), fontWeight: "700", letterSpacing: rs(2), marginTop: rp(2) }}>
+              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: rs(9), fontWeight: "700", letterSpacing: rs(2), marginTop: rp(6), textAlign: "center" }}>
                 {s.label}
               </Text>
             </TouchableOpacity>
@@ -273,11 +267,11 @@ export default function Dashboard() {
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(8) }}>
+                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(8), alignSelf: "center" }}>
                   <Ionicons name="add-circle" size={rs(18)} color="#7C3AED" />
                 </View>
-                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Create Special Event</Text>
-                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Add an event</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12), textAlign: "center" }}>Create Special Event</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2), textAlign: "center" }}>Add an event</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -286,39 +280,26 @@ export default function Dashboard() {
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(8) }}>
+                <View style={{ backgroundColor: "#EDE9FE", borderRadius: rp(99), padding: rp(8), alignSelf: "center" }}>
                   <Ionicons name="add-circle" size={rs(18)} color="#7C3AED" />
                 </View>
-                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>New Event</Text>
-                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Create event</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12), textAlign: "center" }}>New Event</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2), textAlign: "center" }}>Create event</Text>
               </TouchableOpacity>
             )}
 
-            {isHotelOwner ? (
-              <TouchableOpacity
-                testID="quick-guest-qr"
-                onPress={() => router.push("/(admin)/pre-register-qr")}
-                activeOpacity={0.85}
-                style={[quickAction, cardShadow]}
-              >
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8) }}>
-                  <Ionicons name="qr-code-outline" size={rs(18)} color="#D97706" />
-                </View>
-                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Guest QR</Text>
-                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Registration</Text>
-              </TouchableOpacity>
-            ) : (
+            {!isHotelOwner && (
               <TouchableOpacity
                 testID="quick-hotels"
                 onPress={() => router.push("/(admin)/hotels")}
                 activeOpacity={0.85}
                 style={[quickAction, cardShadow]}
               >
-                <View style={{ backgroundColor: "#EBF5FF", borderRadius: rp(99), padding: rp(8) }}>
+                <View style={{ backgroundColor: "#EBF5FF", borderRadius: rp(99), padding: rp(8), alignSelf: "center" }}>
                   <Ionicons name="business-outline" size={rs(18)} color="#1D4ED8" />
                 </View>
-                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Hotels</Text>
-                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Contracts</Text>
+                <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12), textAlign: "center" }}>Hotels</Text>
+                <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2), textAlign: "center" }}>Contracts</Text>
               </TouchableOpacity>
             )}
 
@@ -328,11 +309,11 @@ export default function Dashboard() {
               activeOpacity={0.85}
               style={[quickAction, cardShadow]}
             >
-              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(8) }}>
+              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(8), alignSelf: "center" }}>
                 <Ionicons name="people-outline" size={rs(18)} color="#0F2044" />
               </View>
-              <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12) }}>Employees</Text>
-              <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2) }}>Manage team</Text>
+              <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12), textAlign: "center" }}>Employees</Text>
+              <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2), textAlign: "center" }}>Manage team</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -558,4 +539,5 @@ const quickAction = {
   backgroundColor: "#FFFFFF",
   borderRadius: rp(20),
   padding: rp(12),
+  alignItems: "center",
 };

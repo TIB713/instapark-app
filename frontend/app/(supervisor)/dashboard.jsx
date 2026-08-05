@@ -56,7 +56,7 @@ export default function SupervisorDashboard() {
         api.get(`/supervisors/${supervisorId}/events`),
         user?.hotel_id ? api.get(`/hotels/${user.hotel_id}`) : Promise.resolve({ data: null })
       ]);
-      
+
       const sorted = (eventsRes.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
       setEvents(sorted);
       if (hotelRes.data) setHotel(hotelRes.data);
@@ -131,7 +131,7 @@ export default function SupervisorDashboard() {
 
   const todayStr = todayIST();
   const todayDaily = events.find(e => e.hotel_id === user?.hotel_id && e.date === todayStr && e.event_type === "hotel_daily");
-  
+
   const active = events.filter((e) => e.status === "active").slice(0, 5);
   const past = events.filter((e) => e.status !== "active").slice(0, 5);
 
@@ -144,15 +144,16 @@ export default function SupervisorDashboard() {
   }
 
   const statCards = [
-    { id: "total", testID: "stat-total-events", color: ACCENT_COLOR, icon: "calendar", value: events.length, label: "TOTAL EVENTS" },
+    { id: "total", testID: "stat-total-events", color: ACCENT_COLOR, icon: "calendar", value: events.length, label: "EVENTS" },
     { id: "active", testID: "stat-active", color: "#059669", icon: "pulse", value: events.filter(e => e.status === "active").length, label: "ACTIVE NOW" },
-    { 
-      id: "guest_qr", 
-      testID: "stat-guest-qr", 
-      color: "#D97706", 
-      icon: "qr-code-outline", 
-      value: null, 
-      label: "GUEST QR", 
+    { id: "employees", testID: "stat-employees", color: "#4F46E5", icon: "people-outline", value: null, label: "EMPLOYEES", onPress: () => router.push("/(supervisor)/manage-employees") },
+    {
+      id: "guest_qr",
+      testID: "stat-guest-qr",
+      color: "#D97706",
+      icon: "qr-code-outline",
+      value: null,
+      label: "GUEST QR",
       onPress: () => {
         const assignedEvents = events.filter(e => e.status === "active" || e.status === "upcoming");
         if (assignedEvents.length > 0) {
@@ -201,18 +202,17 @@ export default function SupervisorDashboard() {
         </View>
       </SafeAreaView>
 
-      {wsStatus === "disconnected" && (
-        <View style={{ backgroundColor: "#FEF3C7", padding: rp(8), margin: rp(12), borderRadius: rp(12), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
-          <Ionicons name="cloud-offline-outline" size={16} color="#92400E" />
-          <Text style={{ color: "#92400E", fontSize: rs(12) }}>Live updates paused — reconnecting...</Text>
-        </View>
-      )}
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: rp(14), paddingBottom: rp(100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT_COLOR} />}
       >
+        {wsStatus === "disconnected" && (
+          <View style={{ backgroundColor: "#FEF3C7", padding: rp(8), marginHorizontal: rp(12), marginBottom: rp(12), borderRadius: rp(12), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+            <Ionicons name="cloud-offline-outline" size={16} color="#92400E" />
+            <Text style={{ color: "#92400E", fontSize: rs(12) }}>Live updates paused — reconnecting...</Text>
+          </View>
+        )}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -227,33 +227,25 @@ export default function SupervisorDashboard() {
               activeOpacity={0.85}
               style={{
                 backgroundColor: s.color,
-                borderRadius: rp(24),
-                paddingHorizontal: rp(18),
-                paddingVertical: rp(18),
-                minWidth: rp(150),
+                borderRadius: rp(18),
+                paddingHorizontal: rp(14),
+                paddingVertical: rp(14),
+                minWidth: rp(120),
+                alignItems: "center",
                 shadowColor: s.color,
                 shadowOpacity: 0.25,
-                shadowRadius: rp(14),
+                shadowRadius: rp(10),
                 shadowOffset: { width: 0, height: rp(6) },
                 elevation: 5,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Ionicons name={s.id === "guest_qr" ? "information-circle-outline" : s.icon} size={22} color="#fff" />
-                {s.onPress && (
-                  <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: rp(99), padding: rp(4) }}>
-                    <Ionicons name="chevron-forward" size={14} color="#fff" />
-                  </View>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rp(8) }}>
+                <Ionicons name={s.id === "guest_qr" ? "information-circle-outline" : s.icon} size={s.value !== null ? rs(20) : rs(24)} color="#fff" />
+                {s.value !== null && (
+                  <Text style={{ color: "#fff", fontSize: rs(26), fontWeight: "900" }}>{s.value}</Text>
                 )}
               </View>
-              {s.value !== null ? (
-                <Text style={{ color: "#fff", fontSize: rs(32), fontWeight: "900", marginTop: rp(10) }}>{s.value}</Text>
-              ) : (
-                <View style={{ marginTop: rp(10) }}>
-                  <Ionicons name={s.icon} size={32} color="#fff" />
-                </View>
-              )}
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: rs(10), fontWeight: "700", letterSpacing: rs(2), marginTop: rp(2) }}>
+              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: rs(9), fontWeight: "700", letterSpacing: rs(2), marginTop: rp(6), textAlign: "center" }}>
                 {s.label}
               </Text>
             </TouchableOpacity>
@@ -296,43 +288,7 @@ export default function SupervisorDashboard() {
           </View>
         )}
 
-        {/* Quick Actions */}
-        <View style={{ paddingHorizontal: rp(16), marginTop: rp(24) }}>
-          <Text style={labelStyle}>QUICK ACTIONS</Text>
-          <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(4) }}>
-            <TouchableOpacity
-              testID="quick-manage-employees"
-              onPress={() => router.push("/(supervisor)/manage-employees")}
-              activeOpacity={0.85}
-              style={[quickAction, cardShadow]}
-            >
-              <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(10) }}>
-                <Ionicons name="people-outline" size={22} color={ACCENT_COLOR} />
-              </View>
-              <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Employees</Text>
-              <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>View your team</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="quick-guest-qr"
-              onPress={() => {
-                const assignedEvents = events.filter(e => e.status === "active" || e.status === "upcoming");
-                if (assignedEvents.length > 0) {
-                  openEvent(assignedEvents[0], true);
-                } else {
-                  Alert.alert("No Assigned Event", "You don't have any active or upcoming assigned events to show a QR for.");
-                }
-              }}
-              activeOpacity={0.85}
-              style={[quickAction, cardShadow]}
-            >
-              <View style={{ backgroundColor: "rgba(217,119,6,0.1)", borderRadius: rp(99), padding: rp(10) }}>
-                <Ionicons name="qr-code-outline" size={22} color="#D97706" />
-              </View>
-              <Text style={{ fontWeight: "800", color: "#111827", marginTop: rp(10), fontSize: rs(14) }}>Guest QR</Text>
-              <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(2) }}>Share pre-registration</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
 
         {/* Active events */}
         <View style={{ paddingHorizontal: rp(16), marginTop: rp(28) }}>
@@ -442,11 +398,6 @@ export default function SupervisorDashboard() {
           </View>
         )}
 
-        <View style={{ marginTop: rp(24), paddingBottom: rp(20), alignItems: "center" }}>
-          <Text style={{ color: "#9CA3AF", fontSize: rs(12), textAlign: "center", fontStyle: "italic" }}>
-            Drivers are managed by your admin. You can view but cannot add or remove drivers.
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -468,8 +419,9 @@ const cardBase = {
 };
 
 const quickAction = {
-  flex: 1,
+  width: "31%",
   backgroundColor: "#FFFFFF",
-  borderRadius: rp(24),
-  padding: rp(16),
+  borderRadius: rp(20),
+  padding: rp(12),
+  alignItems: "center",
 };
