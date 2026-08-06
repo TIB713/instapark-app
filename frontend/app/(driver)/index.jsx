@@ -34,7 +34,7 @@ export default function DriverHome() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async (attempt = 0) => {
     const driverId = driver?.id || driver?.user_id;
     if (!driverId) {
       setLoading(false);
@@ -43,11 +43,27 @@ export default function DriverHome() {
     try {
       const { data } = await api.get(`/drivers/${driverId}/events`);
       setEvents(data || []);
+      setLoading(false);
+      setRefreshing(false);
     } catch (e) {
+      const isNetworkError = !e.response;
+      if (isNetworkError && attempt < 3) {
+        const delay = [1500, 3000, 5000][attempt];
+        console.warn(`[EVENTS] Network error attempt ${attempt + 1}, retrying in ${delay}ms`);
+        if (attempt === 0) {
+          // On first failure, unblock the UI immediately so driver is not frozen
+          // They will see empty events briefly, then list populates when retry succeeds
+          setLoading(false);
+          setRefreshing(false);
+        }
+        setTimeout(() => fetchEvents(attempt + 1), delay);
+        return;
+      }
+      // All retries exhausted or a real server error — unblock the UI
       console.error("Failed to fetch driver events", e);
+      setLoading(false);
+      setRefreshing(false);
     }
-    setLoading(false);
-    setRefreshing(false);
   }, [driver]);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);

@@ -17,7 +17,6 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -80,8 +79,6 @@ export default function AddCar() {
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
-  const [pendingPhoto, setPendingPhoto] = useState(null);
-  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [pendingLookup, setPendingLookup] = useState(null);
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
@@ -242,53 +239,29 @@ export default function AddCar() {
   const takePhoto = async (label) => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
+    const currentDraft = { plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName };
     try {
-      await AsyncStorage.setItem("add_car_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName }));
+      await AsyncStorage.setItem("add_car_draft", JSON.stringify(currentDraft));
       await AsyncStorage.setItem("add_car_photos", JSON.stringify(photos));
     } catch { }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
-      const asset = result.assets[0];
-      const compressed = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: rp(1280) } }],
-        { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      setPendingPhoto({ label, uri: compressed.uri });
-      setShowPhotoPreview(true);
-    }
-    try { await AsyncStorage.removeItem("add_car_draft"); } catch { }
-  };
-
-  const confirmPendingPhoto = async () => {
-    if (!pendingPhoto) return;
-    const { label, uri } = pendingPhoto;
-    const np = { ...photos, [label]: uri };
-    setPhotos(np);
-    if (errors.photos && np.front && np.back && np.left && np.right) {
-      setErrors(prev => ({ ...prev, photos: undefined }));
-    }
-    try { await AsyncStorage.setItem("add_car_photos", JSON.stringify(np)); } catch { }
-    setShowPhotoPreview(false);
-    setPendingPhoto(null);
-    const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
-    if (idx !== -1) {
-      const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
-      if (nextLabel) {
-        Alert.alert(
-          "Next Photo",
-          `Now please capture the ${nextLabel.toUpperCase()} of the vehicle.`,
-          [{ text: "OK", onPress: () => takePhoto(nextLabel) }]
-        );
+      const finalUri = result.assets[0].uri;
+      const np = { ...photos, [label]: finalUri };
+      setPhotos(np);
+      if (errors.photos && np.front && np.back && np.left && np.right) {
+        setErrors(prev => ({ ...prev, photos: undefined }));
+      }
+      try { await AsyncStorage.setItem("add_car_draft", JSON.stringify({ ...currentDraft, photos: np })); } catch {}
+      const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
+      if (idx !== -1) {
+        const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
+        if (nextLabel) {
+          Alert.alert("Next Photo", `Now capture the ${nextLabel.toUpperCase()} of the vehicle.`, [{ text: "OK", onPress: () => takePhoto(nextLabel) }]);
+        }
       }
     }
-  };
-
-  const retakePendingPhoto = () => {
-    const label = pendingPhoto?.label;
-    setShowPhotoPreview(false);
-    setPendingPhoto(null);
-    if (label) takePhoto(label);
+    try { await AsyncStorage.removeItem("add_car_draft"); } catch { }
   };
 
   const uploadPhotosInBackground = async (carId, photosObj) => {
@@ -315,11 +288,12 @@ export default function AddCar() {
   };
 
   const submit = async () => {
+    setSubmitting(true);
     const errs = {};
     if (!plate.trim()) errs.plate = "License plate is required";
     else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
-    if (!color.trim()) errs.color = "Vehicle color is required";
-    if (!make.trim()) errs.make = "Vehicle make/model is required";
+    if (!color.trim() && !(eventAllowsInstantPark && instantPark)) errs.color = "Vehicle color is required";
+    if (!make.trim() && !(eventAllowsInstantPark && instantPark)) errs.make = "Vehicle make/model is required";
     const skipGuestDetails = eventAllowsInstantPark && instantPark;
     if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
     if (!selectedDriverId) errs.driver = "Please select a driver to hand this car to";
@@ -350,20 +324,22 @@ export default function AddCar() {
     }
     if (!photos.front || !photos.back || !photos.left || !photos.right) errs.photos = "Front, back, left, and right photos are all required";
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      setSubmitting(false);
+      return;
+    }
 
     Alert.alert(
       "Confirm Check-In",
       `Confirm check-in for ${plate}?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancel", style: "cancel", onPress: () => setSubmitting(false) },
         { text: "Confirm", onPress: () => doSubmit(phoneToSave, altPhoneToSave) }
       ]
     );
   };
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
-    setSubmitting(true);
     const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
     try {
       for (const [label, uri] of Object.entries(photos)) {
@@ -637,13 +613,13 @@ export default function AddCar() {
             <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
           {errors.guestName && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
-          <Lbl>COLOR</Lbl>
+          <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE COLOR (OPTIONAL)" : "VEHICLE COLOR *"}</Lbl>
           <View style={[inputRow, errors.color && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="color-palette-outline" size={20} color="#059669" />
             <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
           </View>
           {errors.color && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
-          <Lbl>MAKE / MODEL</Lbl>
+          <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE MAKE/MODEL (OPTIONAL)" : "VEHICLE MAKE/MODEL *"}</Lbl>
           <View style={[inputRow, errors.make && { borderColor: "#EF4444", marginBottom: 0 }]}>
             <Ionicons name="construct-outline" size={20} color="#059669" />
             <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
@@ -746,26 +722,7 @@ export default function AddCar() {
           </View>
           {errors.photos && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
 
-          <Modal visible={showPhotoPreview} transparent animationType="fade">
-            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: rp(20) }}>
-              <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(16), width: "100%" }}>
-                <Text style={{ fontSize: rs(14), fontWeight: "900", color: "#111827", marginBottom: rp(12), textTransform: "uppercase", textAlign: "center" }}>
-                  {pendingPhoto?.label} Photo
-                </Text>
-                {pendingPhoto && (
-                  <Image source={{ uri: pendingPhoto.uri }} style={{ width: "100%", height: rp(280), borderRadius: rp(16), marginBottom: rp(16) }} resizeMode="cover" />
-                )}
-                <View style={{ flexDirection: "row", gap: rp(10) }}>
-                  <TouchableOpacity onPress={retakePendingPhoto} style={{ flex: 1, paddingVertical: rp(14), borderRadius: rp(14), borderWidth: rp(1), borderColor: "#059669", alignItems: "center" }}>
-                    <Text style={{ color: "#059669", fontWeight: "800" }}>Retake</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={confirmPendingPhoto} style={{ flex: 1, paddingVertical: rp(14), borderRadius: rp(14), backgroundColor: "#059669", alignItems: "center" }}>
-                    <Text style={{ color: "#fff", fontWeight: "800" }}>Confirm</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
+
 
           <Lbl>ASSIGN TO DRIVER *</Lbl>
           {loadingDrivers ? (
@@ -796,7 +753,7 @@ export default function AddCar() {
           )}
           {errors.driver && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.driver}</Text>}
 
-          <TouchableOpacity onPress={submit} disabled={submitting} style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginBottom: rp(16), shadowColor: "#059669", shadowOpacity: 0.3, shadowRadius: rp(14), shadowOffset: { width: 0, height: rp(6) }, elevation: 6 }}>
+          <TouchableOpacity onPress={submit} disabled={submitting} activeOpacity={0.7} style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center", marginBottom: rp(16), shadowColor: "#059669", shadowOpacity: 0.3, shadowRadius: rp(14), shadowOffset: { width: 0, height: rp(6) }, elevation: 6 }}>
             {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE</Text>}
           </TouchableOpacity>
           <View style={{ height: rp(40) }} />

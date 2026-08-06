@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -17,8 +17,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -27,7 +27,7 @@ import { useAppStore } from "../../lib/store";
 import { enqueueCheckinAction } from "../../lib/offline";
 import { updateJourney, markJourneyAccepted } from "../../lib/locationTracking";
 
-const REQUIRED_PHOTO_ORDER = ["front", "back", "left", "right"];
+const REQUIRED_PHOTO_ORDER = ["front", "right", "back", "left"];
 
 const validatePlate = (plate) => {
   const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
@@ -58,7 +58,324 @@ function Lbl({ children }) {
   );
 }
 
+const inputRow = {
+  backgroundColor: "#fff",
+  borderRadius: rp(16),
+  borderWidth: rp(1),
+  borderColor: "#E5E7EB",
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: rp(14),
+  marginBottom: rp(16),
+};
+const textInput = {
+  flex: 1,
+  paddingVertical: rp(14),
+  marginLeft: rp(10),
+  fontSize: rs(15),
+  color: "#111827",
+};
+
+const VehicleDetailsSection = memo(({
+  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, instantPark, eventAllowsInstantPark,
+  pendingLookup, setPendingLookup, lookupApplied, setLookupApplied, plateLookedUp, setPlateLookedUp, setGuestPhone, setAltGuestPhone,
+  lookupPlate, confirmLookup, rejectLookup, clearGuestOnly
+}) => {
+  return (
+    <>
+      <Lbl>LICENSE PLATE *</Lbl>
+      <View style={[inputRow, errors.plate && { borderColor: "#EF4444", marginBottom: 0 }]}>
+        <Ionicons name="car-outline" size={20} color="#059669" />
+        <TextInput
+          testID="plate-input"
+          value={plate}
+          onChangeText={(v) => {
+            if (errors.plate) setErrors(prev => ({ ...prev, plate: undefined }));
+            const cleaned = v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+            setPlate(cleaned);
+            if (cleaned === "") {
+              setPendingLookup(null);
+              setPlateLookedUp(false);
+              if (lookupApplied) {
+                setMake("");
+                setColor("");
+                setGuestName("");
+                setGuestPhone("");
+                setAltGuestPhone("");
+                setCarType("normal");
+                setLookupApplied(false);
+              }
+            }
+          }}
+          onBlur={() => lookupPlate(plate.trim().toUpperCase())}
+          placeholder="GJ01AB1234"
+          placeholderTextColor="#9CA3AF"
+          autoCapitalize="characters"
+          maxLength={11}
+          style={textInput}
+        />
+      </View>
+      {errors.plate && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
+      {pendingLookup && (
+        <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
+            <Ionicons name="help-circle" size={20} color="#059669" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>PREVIOUS VISIT FOUND</Text>
+              <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>
+                {pendingLookup.guest_name ? `${pendingLookup.guest_name} — ` : ""}Use these saved details?
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(10) }}>
+            <TouchableOpacity onPress={confirmLookup} activeOpacity={0.7} style={{ backgroundColor: "#059669", borderRadius: rp(10), paddingVertical: rp(6), paddingHorizontal: rp(14) }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#fff" }}>Use These Details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={rejectLookup} style={{ paddingVertical: rp(6), paddingHorizontal: rp(4) }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#6B7280" }}>Not This Guest</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      {lookupApplied && !pendingLookup && (
+        <View style={{ marginBottom: rp(16) }}>
+          <Text style={{ fontSize: rs(11), color: "#059669", marginBottom: rp(8) }}>
+            ✓ Details filled from previous visit
+          </Text>
+          <TouchableOpacity
+            onPress={clearGuestOnly}
+            style={{
+              borderWidth: rp(1),
+              borderColor: "#FCA5A5",
+              backgroundColor: "#FEF2F2",
+              borderRadius: rp(10),
+              paddingVertical: rp(8),
+              paddingHorizontal: rp(14),
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: rp(6),
+            }}
+          >
+            <Ionicons name="person-remove-outline" size={14} color="#DC2626" />
+            <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#DC2626" }}>
+              Not this guest? Clear name &amp; phone
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST NAME (OPTIONAL)" : "GUEST NAME *"}</Lbl>
+      <View style={[inputRow, errors.guestName && { borderColor: "#EF4444", marginBottom: 0 }]}>
+        <Ionicons name="person-outline" size={20} color="#059669" />
+        <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
+      </View>
+      {errors.guestName && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
+      <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE COLOR (OPTIONAL)" : "VEHICLE COLOR *"}</Lbl>
+      <View style={[inputRow, errors.color && { borderColor: "#EF4444", marginBottom: 0 }]}>
+        <Ionicons name="color-palette-outline" size={20} color="#059669" />
+        <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
+      </View>
+      {errors.color && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
+      <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE MAKE/MODEL (OPTIONAL)" : "VEHICLE MAKE/MODEL *"}</Lbl>
+      <View style={[inputRow, errors.make && { borderColor: "#EF4444", marginBottom: 0 }]}>
+        <Ionicons name="construct-outline" size={20} color="#059669" />
+        <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
+      </View>
+      {errors.make && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
+      <Lbl>CAR TYPE *</Lbl>
+      <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
+        {["normal", "premium"].map((ct) => (
+          <TouchableOpacity
+            key={ct}
+            onPress={() => setCarType(ct)}
+            style={{
+              paddingHorizontal: rp(14),
+              paddingVertical: rp(8),
+              borderRadius: rp(99),
+              backgroundColor: carType === ct ? "#059669" : "#fff",
+              borderWidth: rp(1),
+              borderColor: "#059669",
+            }}
+          >
+            <Text style={{ fontSize: rs(12), fontWeight: "800", color: carType === ct ? "#fff" : "#059669", letterSpacing: rs(0.5), textTransform: "capitalize" }}>{ct}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Lbl>NOTES</Lbl>
+      <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
+        <Ionicons name="document-text-outline" size={20} color="#059669" />
+        <TextInput
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          placeholder="Special notes..."
+          placeholderTextColor="#9CA3AF"
+          style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
+        />
+      </View>
+    </>
+  );
+});
+
+const DamageSection = memo(({ hasDamage, setHasDamage, damageTypes, setDamageTypes, damageNotes, setDamageNotes, showOtherDamage, setShowOtherDamage }) => {
+  return (
+    <>
+      <Lbl>EXISTING SCRATCH / DAMAGE?</Lbl>
+      <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
+        <TouchableOpacity onPress={() => setHasDamage(true)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
+          <Text style={{ fontSize: rs(12), fontWeight: "800", color: hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Yes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setHasDamage(false)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: !hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
+          <Text style={{ fontSize: rs(12), fontWeight: "800", color: !hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>No</Text>
+        </TouchableOpacity>
+      </View>
+      {hasDamage && (
+        <>
+          <Lbl>SELECT DAMAGE TYPE (TAP ALL THAT APPLY)</Lbl>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8), marginBottom: rp(16) }}>
+            {DAMAGE_OPTIONS.map((opt) => {
+              const selected = damageTypes.includes(opt);
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  onPress={() => setDamageTypes(prev => selected ? prev.filter(t => t !== opt) : [...prev, opt])}
+                  style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: selected ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
+                >
+                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: selected ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{opt}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              onPress={() => setShowOtherDamage(!showOtherDamage)}
+              style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: showOtherDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
+            >
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: showOtherDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Other</Text>
+            </TouchableOpacity>
+          </View>
+          {showOtherDamage && (
+            <>
+              <Lbl>OTHER DAMAGE (DESCRIBE)</Lbl>
+              <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
+                <Ionicons name="alert-circle-outline" size={20} color="#059669" />
+                <TextInput
+                  value={damageNotes}
+                  onChangeText={setDamageNotes}
+                  multiline
+                  placeholder="Describe scratches, dents, etc..."
+                  placeholderTextColor="#9CA3AF"
+                  style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
+                />
+              </View>
+            </>
+          )}
+        </>
+      )}
+    </>
+  );
+});
+
+const GuestContactSection = memo(({ guestPhone, setGuestPhone, altGuestPhone, setAltGuestPhone, errors, setErrors, instantPark, eventAllowsInstantPark }) => {
+  return (
+    <>
+      <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST MOBILE (OPTIONAL)" : "GUEST MOBILE *"}</Lbl>
+      <View style={[inputRow, errors.guestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
+        <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
+        <TextInput
+          value={guestPhone}
+          onChangeText={(text) => { setGuestPhone(text); if (errors.guestPhone) setErrors(prev => ({ ...prev, guestPhone: undefined })); }}
+          placeholder="10-digit mobile number"
+          placeholderTextColor="#9CA3AF"
+          keyboardType="phone-pad"
+          maxLength={10}
+          style={textInput}
+        />
+      </View>
+      {errors.guestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
+      <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
+      <View style={[inputRow, errors.altGuestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
+        <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
+        <TextInput
+          value={altGuestPhone}
+          onChangeText={(text) => { setAltGuestPhone(text); if (errors.altGuestPhone) setErrors(prev => ({ ...prev, altGuestPhone: undefined })); }}
+          placeholder="10-digit mobile number"
+          placeholderTextColor="#9CA3AF"
+          keyboardType="phone-pad"
+          maxLength={10}
+          style={textInput}
+        />
+      </View>
+      {errors.altGuestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
+    </>
+  );
+});
+
+const EntryGateSection = memo(({ eventGates, selectedGate, setSelectedGate }) => {
+  if (eventGates.length === 0) return null;
+  return (
+    <>
+      <Lbl>ENTRY GATE</Lbl>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }} style={{ marginBottom: rp(12) }}>
+        {eventGates.map((g) => (
+          <TouchableOpacity
+            key={g}
+            onPress={() => setSelectedGate(g)}
+            style={{
+              paddingHorizontal: rp(14),
+              paddingVertical: rp(8),
+              borderRadius: rp(99),
+              backgroundColor: selectedGate === g ? "#059669" : "#fff",
+              borderWidth: rp(1),
+              borderColor: "#059669",
+            }}
+          >
+            <Text style={{ fontSize: rs(12), fontWeight: "800", color: selectedGate === g ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{g}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </>
+  );
+});
+
+const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => {
+  return (
+    <>
+      <Lbl>VEHICLE PHOTOS * (ALL REQUIRED EXCEPT EXTRA)</Lbl>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: errors.photos ? 0 : rp(16), borderWidth: errors.photos ? rp(1) : 0, borderColor: "#EF4444", borderRadius: rp(16), padding: errors.photos ? rp(8) : 0 }}>
+        {["front", "right", "back", "left", "extra"].map((label) => (
+          <View key={label} style={{ width: rp(80), height: rp(80) }}>
+            {photos[label] ? (
+              <>
+                <Image source={{ uri: photos[label] }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
+                <TouchableOpacity
+                  onPress={() => onRemovePhoto(label)}
+                  style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                >
+                  <Ionicons name="close-circle" size={24} color="#EF4444" />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                onPress={() => takePhoto(label)}
+                style={{
+                  width: rp(80), height: rp(80), borderRadius: rp(16),
+                  backgroundColor: "#F3F4F6", borderWidth: rp(1), borderColor: "#D1D5DB",
+                  borderStyle: "dashed", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                <Ionicons name="camera-outline" size={28} color="#9CA3AF" />
+                <Text style={{ color: "#6B7280", fontSize: rs(10), fontWeight: "800", marginTop: rp(4), textTransform: "uppercase" }}>{label}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+      </View>
+      {errors.photos && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
+    </>
+  );
+});
+
 export default function CheckIn() {
+
   const router = useRouter();
   const { driver, currentEventId } = useAppStore();
   const resolvedDriverId = driver?.id;
@@ -77,8 +394,19 @@ export default function CheckIn() {
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
-  const [pendingPhoto, setPendingPhoto] = useState(null);
-  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+  const photosRef = useRef(photos);
+  useEffect(() => { photosRef.current = photos; }, [photos]);
+  const resizedPhotosRef = useRef({});
+  const permissionGrantedRef = useRef(false);
+
+  const getUploadReadyPhotos = (photosObj) => {
+    const out = {};
+    for (const [label, uri] of Object.entries(photosObj)) {
+      out[label] = uri ? (resizedPhotosRef.current[label] || uri) : uri;
+    }
+    return out;
+  };
+  const [nextPhotoLabel, setNextPhotoLabel] = useState(null);
   const [pendingLookup, setPendingLookup] = useState(null);
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
@@ -131,6 +459,12 @@ export default function CheckIn() {
   const params = useLocalSearchParams();
 
   useEffect(() => {
+    const emptyPhotos = { front: null, back: null, left: null, right: null, extra: null };
+    setPhotos(emptyPhotos);
+    photosRef.current = emptyPhotos;
+    AsyncStorage.removeItem("checkin_photos").catch(() => {});
+    AsyncStorage.removeItem("checkin_draft").catch(() => {});
+
     if (params.prefill_plate) {
       setPlate(params.prefill_plate || "");
       setMake(params.prefill_make || "");
@@ -179,7 +513,19 @@ export default function CheckIn() {
           if (d.damageTypes) setDamageTypes(d.damageTypes);
           if (d.guestName) setGuestName(d.guestName);
         }
-        if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
+        if (savedPhotos) {
+          const parsed = JSON.parse(savedPhotos);
+          const draft = await AsyncStorage.getItem("checkin_draft");
+          const d = draft ? JSON.parse(draft) : null;
+          // Only restore photos if they belong to the same plate currently being checked in
+          if (d?.plate && params.prefill_plate && d.plate.trim().toUpperCase() === params.prefill_plate.trim().toUpperCase()) {
+            setPhotos(parsed);
+            photosRef.current = parsed;
+          } else {
+            // Different car — discard stale photos
+            AsyncStorage.removeItem("checkin_photos").catch(() => {});
+          }
+        }
       } catch { }
     })();
   }, [currentEventId]);
@@ -231,76 +577,75 @@ export default function CheckIn() {
     );
   };
 
-  const takePhoto = async (label) => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
-    try {
-      await AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName }));
-      await AsyncStorage.setItem("checkin_photos", JSON.stringify(photos));
-    } catch { }
+  const draftRef = useRef({});
+  useEffect(() => {
+    draftRef.current = { plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName, errors };
+  });
+
+  const onRemovePhoto = useCallback((label) => {
+    const np = { ...photosRef.current, [label]: null };
+    photosRef.current = np;
+    setPhotos(np);
+    delete resizedPhotosRef.current[label];
+  }, []);
+
+  const takePhoto = useCallback(async (label) => {
+    if (!permissionGrantedRef.current) {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
+      permissionGrantedRef.current = true;
+    }
+    const d = draftRef.current;
+    AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate: d.plate, color: d.color, make: d.make, notes: d.notes, guestPhone: d.guestPhone, selectedGate: d.selectedGate, carType: d.carType, altGuestPhone: d.altGuestPhone, hasDamage: d.hasDamage, damageNotes: d.damageNotes, damageTypes: d.damageTypes, guestName: d.guestName })).catch(() => {});
+    AsyncStorage.setItem("checkin_photos", JSON.stringify(photosRef.current)).catch(() => {});
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
-      const asset = result.assets[0];
-      const compressed = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: rp(1280) } }],
-        { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      const finalUri = compressed.uri;
-      setPendingPhoto({ label, uri: finalUri });
-      setShowPhotoPreview(true);
-    }
-    try { await AsyncStorage.removeItem("checkin_draft"); } catch { }
-  };
-
-  const confirmPendingPhoto = async () => {
-    if (!pendingPhoto) return;
-    const { label, uri } = pendingPhoto;
-    const np = { ...photos, [label]: uri };
-    setPhotos(np);
-    if (errors.photos && np.front && np.back && np.left && np.right) {
-      setErrors(prev => ({ ...prev, photos: undefined }));
-    }
-    try { await AsyncStorage.setItem("checkin_photos", JSON.stringify(np)); } catch { }
-    setShowPhotoPreview(false);
-    setPendingPhoto(null);
-    const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
-    if (idx !== -1) {
-      const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
-      if (nextLabel) {
-        Alert.alert(
-          "Next Photo",
-          `Now please capture the ${nextLabel.toUpperCase()} of the vehicle.`,
-          [{ text: "OK", onPress: () => takePhoto(nextLabel) }]
-        );
+      const rawUri = result.assets[0].uri;
+      // Show the photo in the form immediately — no processing wait
+      const np = { ...photosRef.current, [label]: rawUri };
+      photosRef.current = np;
+      setPhotos(np);
+      if (d.errors.photos && np.front && np.back && np.left && np.right) {
+        setErrors(prev => ({ ...prev, photos: undefined }));
       }
+      AsyncStorage.setItem("checkin_photos", JSON.stringify(np)).catch(() => {});
+      const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
+      if (idx !== -1) {
+        const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
+        if (nextLabel) {
+          setNextPhotoLabel(nextLabel);
+        }
+      }
+      // Resize/compress silently in the background — does not block the UI or the next-photo prompt
+      ImageManipulator.manipulateAsync(
+        rawUri,
+        [{ resize: { width: 1280 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      )
+        .then((resized) => { resizedPhotosRef.current[label] = resized.uri; })
+        .catch(() => { resizedPhotosRef.current[label] = rawUri; });
     }
-  };
-
-  const retakePendingPhoto = () => {
-    const label = pendingPhoto?.label;
-    setShowPhotoPreview(false);
-    setPendingPhoto(null);
-    if (label) takePhoto(label);
-  };
+    AsyncStorage.removeItem("checkin_draft").catch(() => {});
+  }, []);
 
   const uploadPhotosInBackground = async (carId, photosObj) => {
     try {
+      const entries = Object.entries(photosObj).filter(([, uri]) => !!uri);
+      const results = await Promise.allSettled(entries.map(async ([label, uri]) => {
+        const fd = new FormData();
+        fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+        fd.append("folder", `checkin/${carId}`);
+        const up = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+        return { label, url: up.data.url };
+      }));
       const urls = [];
       const labels = [];
-      for (const [label, uri] of Object.entries(photosObj)) {
-        if (!uri) continue;
-        try {
-          const fd = new FormData();
-          fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
-          fd.append("folder", `checkin/${carId}`);
-          const up = await api.post("/upload", fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          urls.push(up.data.url);
-          labels.push(label);
-        } catch { }
-      }
+      results.forEach(r => {
+        if (r.status === "fulfilled") {
+          urls.push(r.value.url);
+          labels.push(r.value.label);
+        }
+      });
       if (urls.length > 0) {
         await api.post(`/cars/${carId}/photos`, { urls, type: "checkin", labels });
       }
@@ -308,11 +653,12 @@ export default function CheckIn() {
   };
 
   const submit = async () => {
+    setSubmitting(true);
     const errs = {};
     if (!plate.trim()) errs.plate = "License plate is required";
     else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
-    if (!color.trim()) errs.color = "Vehicle color is required";
-    if (!make.trim()) errs.make = "Vehicle make/model is required";
+    if (!color.trim() && !(eventAllowsInstantPark && instantPark)) errs.color = "Vehicle color is required";
+    if (!make.trim() && !(eventAllowsInstantPark && instantPark)) errs.make = "Vehicle make/model is required";
     const skipGuestDetails = eventAllowsInstantPark && instantPark;
     if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
     let phoneToSave = "";
@@ -343,32 +689,33 @@ export default function CheckIn() {
     if (!photos.front || !photos.back || !photos.left || !photos.right) errs.photos = "Front, back, left, and right photos are all required";
 
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      setSubmitting(false);
+      return;
+    }
 
     Alert.alert(
       "Confirm Check-In",
       `Confirm check-in for ${plate}?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancel", style: "cancel", onPress: () => setSubmitting(false) },
         { text: "Confirm", onPress: () => doSubmit(phoneToSave, altPhoneToSave) }
       ]
     );
   };
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
-    setSubmitting(true);
     const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
     try {
-      // 1. Copy photos to local storage first for safety
-      await Promise.all(Object.entries(photos).map(async ([label, uri]) => {
-        if (!uri) return;
-        const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
-        await FileSystem.copyAsync({ from: uri, to: localPath });
-        photoLocalPaths[label] = localPath;
-      }));
-
       const net = await NetInfo.fetch();
       if (!net.isConnected) {
+        // OFFLINE: copy photos first (needed for offline queue)
+        await Promise.all(Object.entries(getUploadReadyPhotos(photos)).map(async ([label, uri]) => {
+          if (!uri) return;
+          const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
+          await FileSystem.copyAsync({ from: uri, to: localPath });
+          photoLocalPaths[label] = localPath;
+        }));
         await enqueueCheckinAction({
           eventId: currentEventId,
           plate: plate.trim().toUpperCase(),
@@ -447,6 +794,14 @@ export default function CheckIn() {
       // Start GPS journey tracking from this moment — driver now walks to park the car
       updateJourney(car.id, "checkin").catch(() => { });
       markJourneyAccepted(car.id).catch(() => { });
+
+      // AFTER API succeeds: copy photos for cleanup tracking (fire and forget, don't await)
+      Promise.all(Object.entries(getUploadReadyPhotos(photos)).map(async ([label, uri]) => {
+        if (!uri) return;
+        const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
+        try { await FileSystem.copyAsync({ from: uri, to: localPath }); photoLocalPaths[label] = localPath; } catch {}
+      })).catch(() => {});
+
       router.replace({
         pathname: "/(driver)/qr-display",
         params: {
@@ -457,7 +812,7 @@ export default function CheckIn() {
         },
       });
       // Use original photo URIs for online background upload
-      uploadPhotosInBackground(car.id, photos).finally(() => {
+      uploadPhotosInBackground(car.id, getUploadReadyPhotos(photos)).finally(() => {
         Object.values(photoLocalPaths).forEach(path => {
           if (path) FileSystem.deleteAsync(path, { idempotent: true }).catch(() => { });
         });
@@ -512,7 +867,9 @@ export default function CheckIn() {
         // Clear stale draft so the NEXT check-in doesn't inherit this one's photos/fields
         try { await AsyncStorage.removeItem("checkin_draft"); } catch { }
         try { await AsyncStorage.removeItem("checkin_photos"); } catch { }
-        setPhotos({ front: null, back: null, left: null, right: null, extra: null });
+        const empty = { front: null, back: null, left: null, right: null, extra: null };
+        setPhotos(empty);
+        photosRef.current = empty;
       }
     } finally { setSubmitting(false); }
   };
@@ -652,276 +1009,39 @@ export default function CheckIn() {
               </TouchableOpacity>
             </View>
           )}
-          <Lbl>LICENSE PLATE *</Lbl>
-          <View style={[inputRow, errors.plate && { borderColor: "#EF4444", marginBottom: 0 }]}>
-            <Ionicons name="car-outline" size={20} color="#059669" />
-            <TextInput
-              testID="plate-input"
-              value={plate}
-              onChangeText={(v) => {
-                if (errors.plate) setErrors(prev => ({ ...prev, plate: undefined }));
-                const cleaned = v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
-                setPlate(cleaned);
-                if (cleaned === "") {
-                  setPendingLookup(null);
-                  setPlateLookedUp(false);
-                  if (lookupApplied) {
-                    setMake("");
-                    setColor("");
-                    setGuestName("");
-                    setGuestPhone("");
-                    setAltGuestPhone("");
-                    setCarType("normal");
-                    setLookupApplied(false);
-                  }
-                }
-              }}
-              onBlur={() => lookupPlate(plate.trim().toUpperCase())}
-              placeholder="GJ01AB1234"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="characters"
-              maxLength={11}
-              style={textInput}
-            />
-          </View>
-          {errors.plate && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
-          {pendingLookup && (
-            <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
-                <Ionicons name="help-circle" size={20} color="#059669" />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>PREVIOUS VISIT FOUND</Text>
-                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>
-                    {pendingLookup.guest_name ? `${pendingLookup.guest_name} — ` : ""}Use these saved details?
-                  </Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(10) }}>
-                <TouchableOpacity onPress={confirmLookup} style={{ backgroundColor: "#059669", borderRadius: rp(10), paddingVertical: rp(6), paddingHorizontal: rp(14) }}>
-                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#fff" }}>Use These Details</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={rejectLookup} style={{ paddingVertical: rp(6), paddingHorizontal: rp(4) }}>
-                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#6B7280" }}>Not This Guest</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          {lookupApplied && !pendingLookup && (
-            <View style={{ marginBottom: rp(16) }}>
-              <Text style={{ fontSize: rs(11), color: "#059669", marginBottom: rp(8) }}>
-                ✓ Details filled from previous visit
-              </Text>
-              <TouchableOpacity
-                onPress={clearGuestOnly}
-                style={{
-                  borderWidth: rp(1),
-                  borderColor: "#FCA5A5",
-                  backgroundColor: "#FEF2F2",
-                  borderRadius: rp(10),
-                  paddingVertical: rp(8),
-                  paddingHorizontal: rp(14),
-                  alignSelf: "flex-start",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: rp(6),
-                }}
-              >
-                <Ionicons name="person-remove-outline" size={14} color="#DC2626" />
-                <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#DC2626" }}>
-                  Not this guest? Clear name &amp; phone
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST NAME (OPTIONAL)" : "GUEST NAME *"}</Lbl>
-          <View style={[inputRow, errors.guestName && { borderColor: "#EF4444", marginBottom: 0 }]}>
-            <Ionicons name="person-outline" size={20} color="#059669" />
-            <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
-          </View>
-          {errors.guestName && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
-          <Lbl>COLOR</Lbl>
-          <View style={[inputRow, errors.color && { borderColor: "#EF4444", marginBottom: 0 }]}>
-            <Ionicons name="color-palette-outline" size={20} color="#059669" />
-            <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
-          </View>
-          {errors.color && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
-          <Lbl>MAKE / MODEL</Lbl>
-          <View style={[inputRow, errors.make && { borderColor: "#EF4444", marginBottom: 0 }]}>
-            <Ionicons name="construct-outline" size={20} color="#059669" />
-            <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
-          </View>
-          {errors.make && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
-          <Lbl>CAR TYPE *</Lbl>
-          <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
-            {["normal", "premium"].map((ct) => (
-              <TouchableOpacity
-                key={ct}
-                onPress={() => setCarType(ct)}
-                style={{
-                  paddingHorizontal: rp(14),
-                  paddingVertical: rp(8),
-                  borderRadius: rp(99),
-                  backgroundColor: carType === ct ? "#059669" : "#fff",
-                  borderWidth: rp(1),
-                  borderColor: "#059669",
-                }}
-              >
-                <Text style={{ fontSize: rs(12), fontWeight: "800", color: carType === ct ? "#fff" : "#059669", letterSpacing: rs(0.5), textTransform: "capitalize" }}>{ct}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Lbl>NOTES</Lbl>
-          <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
-            <Ionicons name="document-text-outline" size={20} color="#059669" />
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              placeholder="Special notes..."
-              placeholderTextColor="#9CA3AF"
-              style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
-            />
-          </View>
-          <Lbl>EXISTING SCRATCH / DAMAGE?</Lbl>
-          <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
-            <TouchableOpacity onPress={() => setHasDamage(true)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
-              <Text style={{ fontSize: rs(12), fontWeight: "800", color: hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Yes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setHasDamage(false)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: !hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
-              <Text style={{ fontSize: rs(12), fontWeight: "800", color: !hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>No</Text>
-            </TouchableOpacity>
-          </View>
-          {hasDamage && (
-            <>
-              <Lbl>SELECT DAMAGE TYPE (TAP ALL THAT APPLY)</Lbl>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8), marginBottom: rp(16) }}>
-                {DAMAGE_OPTIONS.map((opt) => {
-                  const selected = damageTypes.includes(opt);
-                  return (
-                    <TouchableOpacity
-                      key={opt}
-                      onPress={() => setDamageTypes(prev => selected ? prev.filter(t => t !== opt) : [...prev, opt])}
-                      style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: selected ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
-                    >
-                      <Text style={{ fontSize: rs(12), fontWeight: "800", color: selected ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{opt}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity
-                  onPress={() => setShowOtherDamage(!showOtherDamage)}
-                  style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: showOtherDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
-                >
-                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: showOtherDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Other</Text>
-                </TouchableOpacity>
-              </View>
-              {showOtherDamage && (
-                <>
-                  <Lbl>OTHER DAMAGE (DESCRIBE)</Lbl>
-                  <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
-                    <Ionicons name="alert-circle-outline" size={20} color="#059669" />
-                    <TextInput
-                      value={damageNotes}
-                      onChangeText={setDamageNotes}
-                      multiline
-                      placeholder="Describe scratches, dents, etc..."
-                      placeholderTextColor="#9CA3AF"
-                      style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
-                    />
-                  </View>
-                </>
-              )}
-            </>
-          )}
-          <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST MOBILE (OPTIONAL)" : "GUEST MOBILE *"}</Lbl>
-          <View style={[inputRow, errors.guestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
-            <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
-            <TextInput
-              value={guestPhone}
-              onChangeText={(text) => { setGuestPhone(text); if (errors.guestPhone) setErrors(prev => ({ ...prev, guestPhone: undefined })); }}
-              placeholder="10-digit mobile number"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
-              maxLength={10}
-              style={textInput}
-            />
-          </View>
-          {errors.guestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
-          <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
-          <View style={[inputRow, errors.altGuestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
-            <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
-            <TextInput
-              value={altGuestPhone}
-              onChangeText={(text) => { setAltGuestPhone(text); if (errors.altGuestPhone) setErrors(prev => ({ ...prev, altGuestPhone: undefined })); }}
-              placeholder="10-digit mobile number"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
-              maxLength={10}
-              style={textInput}
-            />
-          </View>
-          {errors.altGuestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
-
-          {eventGates.length > 0 && (
-            <>
-              <Lbl>ENTRY GATE</Lbl>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }} style={{ marginBottom: rp(12) }}>
-                {eventGates.map((g) => (
-                  <TouchableOpacity
-                    key={g}
-                    onPress={() => setSelectedGate(g)}
-                    style={{
-                      paddingHorizontal: rp(14),
-                      paddingVertical: rp(8),
-                      borderRadius: rp(99),
-                      backgroundColor: selectedGate === g ? "#059669" : "#fff",
-                      borderWidth: rp(1),
-                      borderColor: "#059669",
-                    }}
-                  >
-                    <Text style={{ fontSize: rs(12), fontWeight: "800", color: selectedGate === g ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{g}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </>
-          )}
-
-          <Lbl>VEHICLE PHOTOS * (ALL REQUIRED EXCEPT EXTRA)</Lbl>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: errors.photos ? 0 : rp(16), borderWidth: errors.photos ? rp(1) : 0, borderColor: "#EF4444", borderRadius: rp(16), padding: errors.photos ? rp(8) : 0 }}>
-            {["front", "back", "left", "right", "extra"].map((label) => (
-              <View key={label} style={{ width: rp(80), height: rp(80) }}>
-                {photos[label] ? (
-                  <>
-                    <Image source={{ uri: photos[label] }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
-                    <TouchableOpacity
-                      onPress={() => setPhotos({ ...photos, [label]: null })}
-                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
-                    >
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => takePhoto(label)}
-                    style={{
-                      width: rp(80),
-                      height: rp(80),
-                      borderRadius: rp(16),
-                      borderWidth: rp(2),
-                      borderColor: "#059669",
-                      borderStyle: "dashed",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "#fff",
-                    }}
-                  >
-                    <Ionicons name="camera-outline" size={24} color="#059669" />
-                    <Text style={{ fontSize: rs(9), color: "#059669", marginTop: rp(2), fontWeight: "900", textTransform: "uppercase" }}>{label}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
-          {errors.photos && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
+          <VehicleDetailsSection
+            plate={plate} setPlate={setPlate}
+            guestName={guestName} setGuestName={setGuestName}
+            color={color} setColor={setColor}
+            make={make} setMake={setMake}
+            carType={carType} setCarType={setCarType}
+            notes={notes} setNotes={setNotes}
+            errors={errors} setErrors={setErrors}
+            instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+            pendingLookup={pendingLookup} setPendingLookup={setPendingLookup}
+            lookupApplied={lookupApplied} setLookupApplied={setLookupApplied}
+            plateLookedUp={plateLookedUp} setPlateLookedUp={setPlateLookedUp}
+            setGuestPhone={setGuestPhone} setAltGuestPhone={setAltGuestPhone}
+            lookupPlate={lookupPlate} confirmLookup={confirmLookup} rejectLookup={rejectLookup} clearGuestOnly={clearGuestOnly}
+          />
+          <DamageSection
+            hasDamage={hasDamage} setHasDamage={setHasDamage}
+            damageTypes={damageTypes} setDamageTypes={setDamageTypes}
+            damageNotes={damageNotes} setDamageNotes={setDamageNotes}
+            showOtherDamage={showOtherDamage} setShowOtherDamage={setShowOtherDamage}
+          />
+          <GuestContactSection
+            guestPhone={guestPhone} setGuestPhone={setGuestPhone}
+            altGuestPhone={altGuestPhone} setAltGuestPhone={setAltGuestPhone}
+            errors={errors} setErrors={setErrors}
+            instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+          />
+          <EntryGateSection
+            eventGates={eventGates} selectedGate={selectedGate} setSelectedGate={setSelectedGate}
+          />
+          <PhotoGridSection
+            photos={photos} errors={errors} takePhoto={takePhoto} onRemovePhoto={onRemovePhoto}
+          />
 
           {/* Video Walkaround Test */}
           <View style={{ marginTop: rp(16), marginBottom: rp(16) }}>
@@ -989,6 +1109,28 @@ export default function CheckIn() {
               </View>
             )}
           </View>
+
+          <Modal visible={!!nextPhotoLabel} transparent animationType="none">
+            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+              <View style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(20), width: "80%", alignItems: "center" }}>
+                <Ionicons name="camera-outline" size={32} color="#059669" />
+                <Text style={{ fontSize: rs(16), fontWeight: "800", color: "#111827", marginTop: rp(10), textAlign: "center" }}>
+                  Now capture the {nextPhotoLabel?.toUpperCase()} of the vehicle
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    const label = nextPhotoLabel;
+                    setNextPhotoLabel(null);
+                    takePhoto(label);
+                  }}
+                  activeOpacity={0.7}
+                  style={{ backgroundColor: "#059669", borderRadius: rp(12), paddingVertical: rp(12), paddingHorizontal: rp(32), marginTop: rp(16) }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(14) }}>Continue</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
 
           <Modal visible={showVideoCamera} animationType="slide">
             <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
@@ -1084,31 +1226,11 @@ export default function CheckIn() {
             </SafeAreaView>
           </Modal>
 
-          <Modal visible={showPhotoPreview} transparent animationType="fade">
-            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: rp(20) }}>
-              <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(16), width: "100%" }}>
-                <Text style={{ fontSize: rs(14), fontWeight: "900", color: "#111827", marginBottom: rp(12), textTransform: "uppercase", textAlign: "center" }}>
-                  {pendingPhoto?.label} Photo
-                </Text>
-                {pendingPhoto && (
-                  <Image source={{ uri: pendingPhoto.uri }} style={{ width: "100%", height: rp(280), borderRadius: rp(16), marginBottom: rp(16) }} resizeMode="cover" />
-                )}
-                <View style={{ flexDirection: "row", gap: rp(10) }}>
-                  <TouchableOpacity onPress={retakePendingPhoto} style={{ flex: 1, paddingVertical: rp(14), borderRadius: rp(14), borderWidth: rp(1), borderColor: "#059669", alignItems: "center" }}>
-                    <Text style={{ color: "#059669", fontWeight: "800" }}>Retake</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={confirmPendingPhoto} style={{ flex: 1, paddingVertical: rp(14), borderRadius: rp(14), backgroundColor: "#059669", alignItems: "center" }}>
-                    <Text style={{ color: "#fff", fontWeight: "800" }}>Confirm</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
           <TouchableOpacity
             onPress={submit}
             disabled={submitting}
             testID="submit-checkin"
+            activeOpacity={0.7}
             style={{
               backgroundColor: "#059669",
               borderRadius: rp(16),
@@ -1131,22 +1253,5 @@ export default function CheckIn() {
   );
 }
 
-const inputRow = {
-  backgroundColor: "#fff",
-  borderRadius: rp(16),
-  borderWidth: rp(1),
-  borderColor: "#E5E7EB",
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: rp(14),
-  marginBottom: rp(16),
-};
-const textInput = {
-  flex: 1,
-  paddingVertical: rp(14),
-  marginLeft: rp(10),
-  fontSize: rs(15),
-  color: "#111827",
-};
 
 
