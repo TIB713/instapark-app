@@ -25,7 +25,18 @@ export async function registerForPushNotifications(api) {
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ??
       Constants.easConfig?.projectId;
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    let token;
+    let lastErr;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        token = await Notifications.getExpoPushTokenAsync({ projectId });
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    if (!token) throw lastErr;
     console.log('[PUSH] Registered push token:', token.data?.substring(0, 40) + '...');
     try { await api.post('/drivers/push-token', { push_token: token.data }); return token.data; } catch {}
     try { await api.post('/providers/push-token', { push_token: token.data }); return token.data; } catch {}

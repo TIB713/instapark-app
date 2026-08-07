@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { Audio } from "expo-av";
+import { Vibration } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -24,6 +26,7 @@ import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { formatDistanceToNow } from "date-fns";
+import { fmtDateTime } from "../../utils/time";
 import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
@@ -67,14 +70,22 @@ export default function SupervisorEventDetail() {
 
   useEffect(() => {
     const backAction = () => {
+      if (forcedSOSAlert) return true;
       if (showIncidentModal) { setShowIncidentModal(false); return true; }
       if (showCarModal) { setShowCarModal(false); return true; }
-      if (showSOSPanel) { setShowSOSPanel(false); return true; }
+      if (showSOSPanel) { 
+        if (sosCount > 0) {
+          Alert.alert("Resolve SOS", "Please resolve active SOS alerts first");
+          return true;
+        }
+        setShowSOSPanel(false); 
+        return true; 
+      }
       router.back(); return true;
     };
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => backHandler.remove();
-  }, [showIncidentModal, showCarModal, showSOSPanel]);
+  }, [showIncidentModal, showCarModal, showSOSPanel, forcedSOSAlert, sosCount]);
 
   const { currentEventId } = useAppStore();
   const [event, setEvent] = useState(null);
@@ -88,13 +99,10 @@ export default function SupervisorEventDetail() {
   }, [showQr, currentEventId]);
   const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
-  const [slotTab, setSlotTab] = useState("parking");
   const [cars, setCars] = useState([]);
   const [carStats, setCarStats] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [stats, setStats] = useState(null);
-  const [keys, setKeys] = useState([]);
-  const [keyStats, setKeyStats] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedCar, setSelectedCar] = useState(null);
@@ -131,6 +139,45 @@ export default function SupervisorEventDetail() {
   const [sosCount, setSOSCount] = useState(0);
   const [showSOSPanel, setShowSOSPanel] = useState(false);
   const [resolvingSOSId, setResolvingSOSId] = useState(null);
+
+  const [activeSOSQueue, setActiveSOSQueue] = useState([]);
+  const [forcedSOSAlert, setForcedSOSAlert] = useState(null);
+  const [resolvingForcedSOS, setResolvingForcedSOS] = useState(false);
+  const seenSOSIdsRef = useRef(new Set());
+  const hasSeededSOSRef = useRef(false);
+  const sosSoundRef = useRef(null);
+
+  useEffect(() => {
+    if (forcedSOSAlert === null && activeSOSQueue.length > 0) {
+      const [next, ...rest] = activeSOSQueue;
+      setForcedSOSAlert(next);
+      setActiveSOSQueue(rest);
+    }
+  }, [activeSOSQueue, forcedSOSAlert]);
+
+  useEffect(() => {
+    if (forcedSOSAlert) {
+      Vibration.vibrate([600, 400], true);
+      (async () => {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            require("../../assets/sounds/sos-alarm.mp3"),
+            { isLooping: true }
+          );
+          sosSoundRef.current = sound;
+          await sound.playAsync();
+        } catch (e) {
+          console.warn("Failed to play sos-alarm audio", e);
+        }
+      })();
+    } else {
+      Vibration.cancel();
+      if (sosSoundRef.current) {
+        sosSoundRef.current.stopAsync().then(() => sosSoundRef.current.unloadAsync()).catch(() => {});
+        sosSoundRef.current = null;
+      }
+    }
+  }, [forcedSOSAlert]);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -187,22 +234,29 @@ export default function SupervisorEventDetail() {
     } catch {}
   }, [currentEventId]);
 
-  const fetchKeys = useCallback(async () => {
-    try {
-      const { data } = await api.get(
-        `/events/${currentEventId}/keys`
-      );
-      setKeys(data.keys || []);
-      setKeyStats(data);
-    } catch {}
-  }, [currentEventId]);
-
   const fetchSOSAlerts = useCallback(async () => {
     if (!currentEventId) return;
     try {
       const { data } = await api.get(`/sos/event/${currentEventId}`);
-      setSOSAlerts(data || []);
-      setSOSCount((data || []).filter(a => a.status === "ACTIVE").length);
+      const alerts = data || [];
+      setSOSAlerts(alerts);
+      setSOSCount(alerts.filter(a => a.status === "ACTIVE").length);
+
+      if (!hasSeededSOSRef.current) {
+        alerts.forEach(alert => seenSOSIdsRef.current.add(alert.id));
+        hasSeededSOSRef.current = true;
+      } else {
+        const newQueue = [];
+        alerts.forEach(alert => {
+          if (alert.status === "ACTIVE" && !seenSOSIdsRef.current.has(alert.id)) {
+            seenSOSIdsRef.current.add(alert.id);
+            newQueue.push(alert);
+          }
+        });
+        if (newQueue.length > 0) {
+          setActiveSOSQueue(prev => [...prev, ...newQueue]);
+        }
+      }
     } catch {}
   }, [currentEventId]);
 
@@ -231,7 +285,7 @@ export default function SupervisorEventDetail() {
 
   useEffect(() => {
     if (!currentEventId) return;
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents(), fetchKeys(), fetchSOSAlerts()]);
+    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents(), fetchSOSAlerts()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
@@ -242,6 +296,10 @@ export default function SupervisorEventDetail() {
     return () => {
       disconnectWS(`/event/${currentEventId}`);
       disconnectWS(`/sos/${currentEventId}`);
+      Vibration.cancel();
+      if (sosSoundRef.current) {
+        sosSoundRef.current.unloadAsync().catch(() => {});
+      }
     };
   }, [currentEventId]);
 
@@ -946,14 +1004,7 @@ export default function SupervisorEventDetail() {
                   <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
                   <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
                 </View>
-                <View style={{ width: "45%" }}>
-                  <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
-                  <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
-                </View>
-                <View style={{ width: "45%" }}>
-                  <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
-                  <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
-                </View>
+
               </View>
             </View>
           )}
@@ -1133,32 +1184,6 @@ export default function SupervisorEventDetail() {
       {tab === "slots" && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
           
-          {/* Internal sub-tab toggle */}
-          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: rp(18), padding: rp(4), marginBottom: rp(16), ...cardShadow }}>
-            <TouchableOpacity
-              onPress={() => setSlotTab("parking")}
-              style={{
-                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
-                backgroundColor: slotTab === "parking" ? ACCENT_COLOR : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
-              }}
-            >
-              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setSlotTab("keys")}
-              style={{
-                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
-                backgroundColor: slotTab === "keys" ? ACCENT_COLOR : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
-              }}
-            >
-              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
-            </TouchableOpacity>
-          </View>
-
-          {slotTab === "parking" ? (
-            <>
               {/* Capacity Summary */}
               {(() => {
                 const total = slots.length;
@@ -1251,123 +1276,7 @@ export default function SupervisorEventDetail() {
                   </View>
                 );
               })()}
-            </>
-          ) : (
-            <>
-              {/* Summary card */}
-              {keyStats && (
-                <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
-                  {event?.key_hook_start != null && event?.key_hook_end != null && (
-                    <View style={{ backgroundColor: "#EFF6FF", borderRadius: rp(99), paddingHorizontal: rp(12), paddingVertical: rp(6), marginBottom: rp(12), alignSelf: "flex-start" }}>
-                      <Text style={{ color: "#1D4ED8", fontSize: rs(12), fontWeight: "800" }}>
-                        Hook range for this event: {event.key_hook_start} – {event.key_hook_end}
-                      </Text>
-                    </View>
-                  )}
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(14) }}>KEY BOARD STATUS</Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(16) }}>
-                    {[
-                      { label: "IN BOOTH", value: keyStats.in_booth, color: ACCENT_COLOR },
-                      { label: "AVAILABLE", value: keyStats.hooks_available, color: "#059669" },
-                      { label: "RETURNED", value: keyStats.returned, color: "#9CA3AF" },
-                      { label: "TOTAL HOOKS", value: keyStats.total_hooks, color: "#0EA5E9" },
-                    ].map(s => (
-                      <View key={s.label} style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: rs(24), fontWeight: "900", color: s.color }}>{s.value}</Text>
-                        <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5), marginTop: rp(4), textAlign: "center" }}>{s.label}</Text>
-                      </View>
-                    ))}
-                  </View>
 
-                  {/* Capacity bar */}
-                  {(() => {
-                    const pct = keyStats.total_hooks > 0 ? Math.round((keyStats.in_booth / keyStats.total_hooks) * 100) : 0;
-                    const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : ACCENT_COLOR;
-                    return (
-                      <>
-                        <View style={{ height: rp(8), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
-                          <View style={{ height: rp(8), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
-                        </View>
-                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(6), textAlign: "right" }}>{pct}% full</Text>
-                      </>
-                    );
-                  })()}
-
-                  {/* Full board warning */}
-                  {keyStats.hooks_full && (
-                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: rp(14), padding: rp(12), marginTop: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
-                      <Ionicons name="warning" size={18} color="#EF4444" />
-                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: rs(13), flex: 1 }}>Key board is full — no hooks available</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Untagged warning */}
-              {keyStats?.untagged_count > 0 && (
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(16), padding: rp(14), marginBottom: rp(16), flexDirection: "row", alignItems: "center", gap: rp(10), borderWidth: rp(1), borderColor: "#FDE68A" }}>
-                  <Ionicons name="warning" size={20} color="#D97706" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: rs(13) }}>{keyStats.untagged_count} car(s) have no key tag</Text>
-                    <Text style={{ color: "#B45309", fontSize: rs(11), marginTop: rp(2) }}>Ask drivers to add key tag numbers for these cars</Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Keys in booth */}
-              {keys.filter(k => k.in_booth).length > 0 && (
-                <>
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(3), marginBottom: rp(10) }}>IN BOOTH ({keys.filter(k => k.in_booth).length})</Text>
-                  {keys.filter(k => k.in_booth).map(k => (
-                    <View key={k.car_id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8), flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: ACCENT_COLOR, ...cardShadow }}>
-                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
-                        <Ionicons name="key" size={16} color={ACCENT_COLOR} />
-                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: ACCENT_COLOR, marginTop: rp(1) }}>#{k.key_tag}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(14) }}>{k.plate}</Text>
-                        <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>{k.color} {k.make}{k.zone ? ` · Zone ${k.zone} Slot ${k.slot}` : ""}</Text>
-                      </View>
-                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
-                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(1) }}>{k.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : k.status === "BEING_FETCHED" ? "FETCHING" : "PARKED"}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )}
-
-              {/* Returned keys */}
-              {keys.filter(k => !k.in_booth).length > 0 && (
-                <>
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#059669", letterSpacing: rs(3), marginTop: rp(8), marginBottom: rp(10) }}>RETURNED ({keys.filter(k => !k.in_booth).length})</Text>
-                  {keys.filter(k => !k.in_booth).map(k => (
-                    <View key={k.car_id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8), flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: "#D1FAE5", opacity: 0.75, ...cardShadow }}>
-                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
-                        <Ionicons name="key-outline" size={16} color="#059669" />
-                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: "#059669", marginTop: rp(1) }}>#{k.key_tag}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: rs(14) }}>{k.plate}</Text>
-                        <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(2) }}>{k.color} {k.make} · Delivered</Text>
-                      </View>
-                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
-                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#059669", letterSpacing: rs(1) }}>RETURNED</Text>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )}
-
-              {/* Empty state */}
-              {keys.length === 0 && (
-                <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(40), alignItems: "center", ...cardShadow }}>
-                  <Ionicons name="key-outline" size={44} color="#D1D5DB" />
-                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>No key tags recorded yet</Text>
-                  <Text style={{ color: "#D1D5DB", fontSize: rs(12), marginTop: rp(6), textAlign: "center" }}>Drivers add key tags from their tasks screen after parking</Text>
-                </View>
-              )}
-            </>
-          )}
         </ScrollView>
       )}
 
@@ -1600,7 +1509,13 @@ export default function SupervisorEventDetail() {
               <Text style={{ fontSize: rs(18), fontWeight: "700", color: "#0F2044" }}>
                 🚨 SOS Alerts {sosCount > 0 ? `(${sosCount} active)` : ""}
               </Text>
-              <TouchableOpacity onPress={() => setShowSOSPanel(false)}>
+              <TouchableOpacity onPress={() => {
+                if (sosCount > 0) {
+                  Alert.alert("Resolve SOS", "Please resolve active SOS alerts first");
+                } else {
+                  setShowSOSPanel(false);
+                }
+              }}>
                 <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
@@ -1633,7 +1548,14 @@ export default function SupervisorEventDetail() {
                       <Text style={{ color: "#374151", fontSize: rs(13) }}>Driver: {alert.driver_name}</Text>
                       {alert.car_number ? <Text style={{ color: "#374151", fontSize: rs(13) }}>Car: {alert.car_number}</Text> : null}
                       {alert.note ? <Text style={{ color: "#6B7280", fontSize: rs(13), marginTop: 4 }}>{alert.note}</Text> : null}
-                      <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: 6 }}>{alert.created_at}</Text>
+                      {alert.photo_url ? (
+                        <Image
+                          source={{ uri: alert.photo_url }}
+                          style={{ width: "100%", height: rp(160), borderRadius: 12, marginTop: 8 }}
+                          resizeMode="cover"
+                        />
+                      ) : null}
+                      <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: 6 }}>{fmtDateTime(alert.created_at)}</Text>
                       {alert.status === "ACTIVE" && (
                         <TouchableOpacity
                           onPress={() => resolveSOSAlert(alert.id)}
@@ -1659,6 +1581,68 @@ export default function SupervisorEventDetail() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* FORCED SOS MODAL */}
+      <Modal visible={!!forcedSOSAlert} transparent={false} animationType="fade" onRequestClose={() => {}}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#111827", padding: rp(24) }}>
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            <View style={{ alignItems: "center", marginBottom: rp(32) }}>
+              <Text style={{ fontSize: rs(64), marginBottom: rp(12) }}>🚨</Text>
+              <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#EF4444", textAlign: "center", letterSpacing: rs(2) }}>SOS EMERGENCY</Text>
+            </View>
+
+            <View style={{ backgroundColor: "#1F2937", borderRadius: rp(24), padding: rp(24), borderWidth: rp(2), borderColor: "#EF4444" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(16), borderBottomWidth: rp(1), borderBottomColor: "#374151", paddingBottom: rp(16) }}>
+                <Text style={{ color: "#FCA5A5", fontSize: rs(16), fontWeight: "800" }}>{forcedSOSAlert?.alert_type?.replace(/_/g, " ")}</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: rs(12), fontWeight: "600" }}>{fmtDateTime(forcedSOSAlert?.created_at)}</Text>
+              </View>
+              
+              <View style={{ gap: rp(12), marginBottom: rp(24) }}>
+                <Text style={{ color: "#E5E7EB", fontSize: rs(16), fontWeight: "600" }}>Driver: <Text style={{ color: "#fff", fontWeight: "800" }}>{forcedSOSAlert?.driver_name}</Text></Text>
+                {forcedSOSAlert?.car_number ? (
+                  <Text style={{ color: "#E5E7EB", fontSize: rs(16), fontWeight: "600" }}>Car: <Text style={{ color: "#fff", fontWeight: "800" }}>{forcedSOSAlert?.car_number}</Text></Text>
+                ) : null}
+                {forcedSOSAlert?.note ? (
+                  <View style={{ backgroundColor: "#374151", padding: rp(12), borderRadius: rp(12), marginTop: rp(8) }}>
+                    <Text style={{ color: "#D1D5DB", fontSize: rs(14) }}>{forcedSOSAlert.note}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {forcedSOSAlert?.photo_url ? (
+                <Image 
+                  source={{ uri: forcedSOSAlert.photo_url }}
+                  style={{ width: "100%", height: rp(250), borderRadius: rp(16), marginBottom: rp(24) }}
+                  resizeMode="cover"
+                />
+              ) : null}
+
+              <TouchableOpacity
+                disabled={resolvingForcedSOS}
+                onPress={async () => {
+                  setResolvingForcedSOS(true);
+                  try {
+                    await api.patch(`/sos/${forcedSOSAlert.id}/resolve`);
+                    setForcedSOSAlert(null);
+                    fetchSOSAlerts();
+                  } catch {
+                    Alert.alert("Error", "Failed to resolve alert.");
+                  } finally {
+                    setResolvingForcedSOS(false);
+                  }
+                }}
+                style={{ backgroundColor: "#10B981", borderRadius: rp(16), paddingVertical: rp(18), alignItems: "center" }}
+              >
+                {resolvingForcedSOS ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(16), letterSpacing: rs(2) }}>MARK RESOLVED</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
       </Modal>
 
       {/* RESOLVE INCIDENT MODAL */}

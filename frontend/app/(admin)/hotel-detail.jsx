@@ -45,20 +45,40 @@ const cardBase = {
   borderRadius: rp(24),
 };
 
+function InfoRow({ label, value, editing, onChange, keyboardType = "default" }) {
+  if (editing) {
+    return (
+      <View style={{ marginBottom: rp(16) }}>
+        <Text style={{ fontSize: rs(10), fontWeight: "800", color: ACCENT_COLOR, letterSpacing: rs(1.5) }}>{label}</Text>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          keyboardType={keyboardType}
+          style={{ marginTop: rp(4), backgroundColor: "#F9FAF8", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(8), fontSize: rs(15), color: "#111827", borderWidth: rp(1), borderColor: ACCENT_COLOR }}
+        />
+      </View>
+    );
+  }
+  return (
+    <View style={{ marginBottom: rp(16) }}>
+      <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5) }}>{label}</Text>
+      <Text style={{ fontSize: rs(15), fontWeight: "900", color: "#111827", marginTop: rp(4) }}>{value || "—"}</Text>
+    </View>
+  );
+}
+
 export default function HotelDetail() {
   const router = useRouter();
 
   useEffect(() => {
     const backAction = () => {
-      if (showCreateDriverModal) { setShowCreateDriverModal(false); return true; }
-      if (showCreateSupervisorModal) { setShowCreateSupervisorModal(false); return true; }
       if (showAddEventModal) { setShowAddEventModal(false); return true; }
       if (showEventQRModal) { setShowEventQRModal(false); return true; }
       router.back(); return true;
     };
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => backHandler.remove();
-  }, [showCreateDriverModal, showCreateSupervisorModal, showAddEventModal, showEventQRModal]);
+  }, [showAddEventModal, showEventQRModal]);
 
   const { hid } = useLocalSearchParams();
   const { setCurrentEventId } = useAppStore();
@@ -106,57 +126,12 @@ export default function HotelDetail() {
   const [allDrivers, setAllDrivers] = useState([]);
   const [allSupervisors, setAllSupervisors] = useState([]);
   const [teamSearch, setTeamSearch] = useState("");
-  const [showCreateDriverModal, setShowCreateDriverModal] = useState(false);
-  const [showCreateSupervisorModal, setShowCreateSupervisorModal] = useState(false);
-  const [drvName, setDrvName] = useState("");
-  const [drvEmail, setDrvEmail] = useState("");
-  const [drvPhone, setDrvPhone] = useState("");
-  const [drvPin, setDrvPin] = useState("");
-  const [drvAadharNumber, setDrvAadharNumber] = useState("");
-  const [drvAadharPhotoUri, setDrvAadharPhotoUri] = useState(null);
-  const [savingDrv, setSavingDrv] = useState(false);
-
-  const pickDrvAadharPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-    if (!result.canceled) {
-      setDrvAadharPhotoUri(result.assets[0].uri);
-    }
-  };
-  const [supName, setSupName] = useState("");
-  const [supEmail, setSupEmail] = useState("");
-  const [supPhone, setSupPhone] = useState("");
-  const [supPassword, setSupPassword] = useState("");
-  const [supAadharNumber, setSupAadharNumber] = useState("");
-  const [supAadharPhotoUri, setSupAadharPhotoUri] = useState(null);
-  const [savingSup, setSavingSup] = useState(false);
-
-  const pickSupAadharPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-    if (!result.canceled) {
-      setSupAadharPhotoUri(result.assets[0].uri);
-    }
-  };
 
   // Info tab state (editable)
   const [editHotel, setEditHotel] = useState(null);
   const [editZones, setEditZones] = useState([]);
   const [editGates, setEditGates] = useState([]);
+  const [editingInfo, setEditingInfo] = useState(false);
 
 
   const today = todayIST();
@@ -264,23 +239,6 @@ export default function HotelDetail() {
     }
   };
 
-  const resetDrvForm = () => {
-    setDrvName("");
-    setDrvEmail("");
-    setDrvPhone("");
-    setDrvPin("");
-    setDrvAadharNumber("");
-    setDrvAadharPhotoUri(null);
-  };
-
-  const resetSupForm = () => {
-    setSupName("");
-    setSupEmail("");
-    setSupPhone("");
-    setSupPassword("");
-    setSupAadharNumber("");
-    setSupAadharPhotoUri(null);
-  };
 
   const addMember = async (memberId) => {
     try {
@@ -345,100 +303,7 @@ export default function HotelDetail() {
     }
   };
 
-  const uploadDriverImage = async (uri, folder) => {
-    const formData = new FormData();
-    formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
-    formData.append("folder", folder);
-    const up = await api.post("/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return up.data.url;
-  };
 
-  const saveDriver = async () => {
-    if (!drvName.trim()) { Alert.alert("Required", "Name is required"); return; }
-    if (!drvEmail.trim()) { Alert.alert("Required", "Email is required"); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) { Alert.alert("Invalid Email", "Please enter a valid email address"); return; }
-    if (!drvPhone.trim()) { Alert.alert("Required", "Phone is required"); return; }
-    if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) { Alert.alert("Invalid Phone", "Phone must be exactly 10 digits"); return; }
-    if (!drvPin.trim()) { Alert.alert("Required", "PIN is required"); return; }
-    if (!/^\d{4}$/.test(drvPin.trim())) { Alert.alert("Invalid PIN", "PIN must be exactly 4 numeric digits"); return; }
-    if (!drvAadharNumber.trim()) { Alert.alert("Required", "Aadhar Number is required"); return; }
-    if (!/^\d{12}$/.test(drvAadharNumber.trim())) { Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return; }
-    if (!drvAadharPhotoUri) { Alert.alert("Required", "Aadhar Photo is required"); return; }
-    setSavingDrv(true);
-    try {
-      let aadharPhotoUrl;
-      if (drvAadharPhotoUri) {
-        aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
-      }
-      const { data: newDriver } = await api.post("/drivers", {
-        name: drvName.trim(),
-        email: drvEmail.trim().toLowerCase(),
-        phone: drvPhone.trim() || undefined,
-        pin: drvPin,
-        aadhar_number: drvAadharNumber.trim(),
-        aadhar_photo: aadharPhotoUrl,
-      });
-      setShowCreateDriverModal(false);
-      resetDrvForm();
-      await addMember(newDriver.id);
-      fetchAllMembers();
-    } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add driver");
-    } finally {
-      setSavingDrv(false);
-    }
-  };
-
-  const saveSupervisor = async () => {
-    if (!supName.trim() || !supEmail.trim()) {
-      Alert.alert("Required", "Name and email are required");
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supEmail.trim())) {
-      Alert.alert("Invalid Email", "Please enter a valid email address"); return;
-    }
-    if (supPhone.trim() && !/^\d{10}$/.test(supPhone.trim().replace(/\D/g, ""))) {
-      Alert.alert("Invalid Phone", "Phone must be exactly 10 digits"); return;
-    }
-    if (supAadharNumber.trim() && !/^\d{12}$/.test(supAadharNumber.trim())) {
-      Alert.alert("Invalid Aadhar", "Aadhar number must be exactly 12 digits"); return;
-    }
-
-    if (!supAadharNumber.trim()) {
-      Alert.alert("Required", "Aadhar Number is required");
-      return;
-    }
-    if (!supAadharPhotoUri) {
-      Alert.alert("Required", "Aadhar Photo is required");
-      return;
-    }
-    setSavingSup(true);
-    try {
-      let aadharPhotoUrl;
-      if (supAadharPhotoUri) {
-        aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
-      }
-      const { data: newSupervisor } = await api.post("/supervisors", {
-        name: supName.trim(),
-        email: supEmail.trim().toLowerCase(),
-        phone: supPhone.trim() || undefined,
-        password: generateTempPassword(),
-        aadhar_number: supAadharNumber.trim(),
-        aadhar_photo: aadharPhotoUrl,
-      });
-      setShowCreateSupervisorModal(false);
-      resetSupForm();
-      await addMember(newSupervisor.id);
-      fetchAllMembers();
-    } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add supervisor");
-    } finally {
-      setSavingSup(false);
-    }
-  };
 
   const openEvent = (event) => {
     setCurrentEventId(event.id);
@@ -499,8 +364,6 @@ export default function HotelDetail() {
       setNewEventName("");
       setNewEventHostName("");
       setNewEventHostEmail("");
-      setNewEventKeyHookStart("51");
-      setNewEventKeyHookEnd("100");
       setNewEventGates(["Main Gate"]);
       setNewEventZones([{ name: "Zone A", slots: "50" }]);
       fetchEvents();
@@ -616,7 +479,7 @@ export default function HotelDetail() {
           ["today", "Today"],
           ["events", "Events"],
           ["team", "Team"],
-          ["guests", "Guests"],
+          // ["guests", "Guests"],
           ["info", "Info"],
           // ["qr", "QR"],
         ].map(([k, l]) => {
@@ -797,21 +660,8 @@ export default function HotelDetail() {
               })}
             </View>
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
+            <View style={{ marginBottom: rp(12) }}>
               <Text style={sectionTitle}>{teamTab.toUpperCase()}</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  if (teamTab === "drivers") {
-                    setShowCreateDriverModal(true);
-                  } else {
-                    setShowCreateSupervisorModal(true);
-                  }
-                }}
-                style={{ backgroundColor: ACCENT_COLOR, paddingHorizontal: rp(12), paddingVertical: rp(6), borderRadius: rp(10), flexDirection: "row", alignItems: "center", gap: rp(4) }}
-              >
-                <Ionicons name="add" size={16} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(11) }}>NEW {teamTab.toUpperCase().slice(0, -1)}</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingHorizontal: rp(12), marginBottom: rp(16) }}>
@@ -858,7 +708,7 @@ export default function HotelDetail() {
           </View>
         )}
 
-        {tab === "guests" && (
+        {/* {tab === "guests" && (
           <View>
             <View style={{ marginBottom: rp(16) }}>
               <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#6B7280", marginBottom: rp(8) }}>Upload for:</Text>
@@ -943,211 +793,244 @@ export default function HotelDetail() {
               </View>
             )}
           </View>
-        )}
+        )} */}
 
         {tab === "info" && (
           <View>
-            <Text style={sectionTitle}>HOTEL INFORMATION</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
+              <Text style={sectionTitle}>HOTEL INFORMATION</Text>
+              {editingInfo ? (
+                <View style={{ flexDirection: "row", gap: rp(8) }}>
+                  <TouchableOpacity
+                    onPress={() => { setEditHotel(hotel); setEditGates(hotel.gates || [""]); setEditZones(hotel.zones?.length ? hotel.zones : [{ name: "", slots: "" }]); setEditingInfo(false); }}
+                    style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(10), backgroundColor: "#F3F4F6" }}
+                  >
+                    <Text style={{ color: "#6B7280", fontWeight: "800", fontSize: rs(12) }}>CANCEL</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={async () => {
+                      await updateHotel({
+                        name: editHotel.name,
+                        address: editHotel.address,
+                        city: editHotel.city,
+                        state: editHotel.state,
+                        contact_person_name: editHotel.contact_person_name,
+                        contact_person_phone: editHotel.contact_person_phone,
+                        contact_person_email: editHotel.contact_person_email,
+                        total_valet_slots: parseInt(editHotel.total_valet_slots) || 0,
+                        gate_timer_minutes: parseInt(editHotel.gate_timer_minutes) || 5,
+                        is_active: editHotel.is_active,
+                        gates: editGates.filter(g => g.trim()),
+                        zones: editZones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
+                      });
+                      setEditingInfo(false);
+                    }}
+                    style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(10), backgroundColor: ACCENT_COLOR }}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>SAVE</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setEditingInfo(true)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: rp(4), paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(10), backgroundColor: "#F3F4F6" }}
+                >
+                  <Ionicons name="pencil" size={14} color={ACCENT_COLOR} />
+                  <Text style={{ color: ACCENT_COLOR, fontWeight: "800", fontSize: rs(12) }}>EDIT</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), ...cardShadow }}>
-              <InfoField label="HOTEL NAME" value={editHotel?.name} onSave={(v) => updateHotel({ name: v })} />
-              <InfoField label="ADDRESS" value={editHotel?.address} onSave={(v) => updateHotel({ address: v })} />
+              <InfoRow label="HOTEL NAME" value={editHotel?.name} editing={editingInfo} onChange={(v) => setEditHotel(prev => ({ ...prev, name: v }))} />
+              <InfoRow label="ADDRESS" value={editHotel?.address} editing={editingInfo} onChange={(v) => setEditHotel(prev => ({ ...prev, address: v }))} />
               <View style={{ marginBottom: rp(16) }}>
                 <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5), marginBottom: rp(8) }}>STATE & CITY</Text>
-                <CityStatePicker
-                  state={State.getStatesOfCountry("IN").find(s => s.name === editHotel?.state)?.isoCode || editHotel?.state}
-                  city={editHotel?.city}
-                  onStateChange={val => updateHotel({ state: State.getStatesOfCountry("IN").find(s => s.isoCode === val)?.name || val, city: "" })}
-                  onCityChange={val => updateHotel({ city: val })}
-                />
+                {editingInfo ? (
+                  <CityStatePicker
+                    state={State.getStatesOfCountry("IN").find(s => s.name === editHotel?.state)?.isoCode || editHotel?.state}
+                    city={editHotel?.city}
+                    onStateChange={val => setEditHotel(prev => ({ ...prev, state: State.getStatesOfCountry("IN").find(s => s.isoCode === val)?.name || val, city: "" }))}
+                    onCityChange={val => setEditHotel(prev => ({ ...prev, city: val }))}
+                  />
+                ) : (
+                  <Text style={{ fontSize: rs(15), fontWeight: "900", color: "#111827", marginTop: rp(4) }}>
+                    {editHotel?.city}, {editHotel?.state}
+                  </Text>
+                )}
               </View>
-              <InfoField label="CONTACT PERSON" value={editHotel?.contact_person_name} onSave={(v) => updateHotel({ contact_person_name: v })} />
-              <InfoField label="PHONE" value={editHotel?.contact_person_phone} onSave={(v) => updateHotel({ contact_person_phone: v })} />
-              <InfoField label="EMAIL" value={editHotel?.contact_person_email} onSave={(v) => updateHotel({ contact_person_email: v })} />
-              <InfoField label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ total_valet_slots: parseInt(v) })} />
-              <InfoField label="GATE WAIT TIMER (MIN)" value={editHotel?.gate_timer_minutes?.toString()} keyboardType="numeric" onSave={(v) => updateHotel({ gate_timer_minutes: parseInt(v) })} />
-
-
-
+              <InfoRow label="CONTACT PERSON" value={editHotel?.contact_person_name} editing={editingInfo} onChange={(v) => setEditHotel(prev => ({ ...prev, contact_person_name: v }))} />
+              <InfoRow label="PHONE" value={editHotel?.contact_person_phone} editing={editingInfo} onChange={(v) => setEditHotel(prev => ({ ...prev, contact_person_phone: v }))} />
+              <InfoRow label="EMAIL" value={editHotel?.contact_person_email} editing={editingInfo} onChange={(v) => setEditHotel(prev => ({ ...prev, contact_person_email: v }))} />
+              <InfoRow label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} editing={editingInfo} keyboardType="numeric" onChange={(v) => setEditHotel(prev => ({ ...prev, total_valet_slots: v }))} />
+              <InfoRow label="GATE WAIT TIMER (MIN)" value={editHotel?.gate_timer_minutes?.toString()} editing={editingInfo} keyboardType="numeric" onChange={(v) => setEditHotel(prev => ({ ...prev, gate_timer_minutes: v }))} />
 
               {/* Gates */}
               <View style={{ marginTop: rp(12) }}>
                 <Text style={modalLabel}>GATES</Text>
-                {editGates.map((gate, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: rp(8),
-                      marginBottom: rp(8),
-                    }}
-                  >
-                    <TextInput
-                      style={[modalTextInput, { flex: 1 }]}
-                      placeholder="Gate name"
-                      value={gate}
-                      onChangeText={(text) => {
-                        const newGates = [...editGates];
-                        newGates[index] = text;
-                        setEditGates(newGates);
-                      }}
-                      onEndEditing={() =>
-                        updateHotel({ gates: editGates.filter((g) => g.trim()) })
-                      }
-                    />
-                    {editGates.length > 1 && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          const newGates = editGates.filter(
-                            (_, i) => i !== index
-                          );
-                          setEditGates(newGates);
-                          updateHotel({
-                            gates: newGates.filter((g) => g.trim()),
-                          });
+                {editingInfo ? (
+                  <>
+                    {editGates.map((gate, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: rp(8),
+                          marginBottom: rp(8),
                         }}
                       >
-                        <Ionicons
-                          name="close-circle"
-                          size={rs(24)}
-                          color="#F43F5E"
+                        <TextInput
+                          style={[modalTextInput, { flex: 1 }]}
+                          placeholder="Gate name"
+                          value={gate}
+                          onChangeText={(text) => {
+                            const newGates = [...editGates];
+                            newGates[index] = text;
+                            setEditGates(newGates);
+                          }}
                         />
-                      </TouchableOpacity>
-                    )}
+                        {editGates.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              const newGates = editGates.filter(
+                                (_, i) => i !== index
+                              );
+                              setEditGates(newGates);
+                            }}
+                          >
+                            <Ionicons
+                              name="close-circle"
+                              size={rs(24)}
+                              color="#F43F5E"
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={() => setEditGates([...editGates, ""])}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: rp(6),
+                        paddingVertical: rp(8),
+                      }}
+                    >
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={rs(20)}
+                        color="#7C3AED"
+                      />
+                      <Text
+                        style={{
+                          color: "#7C3AED",
+                          fontSize: rs(14),
+                          fontWeight: "700",
+                        }}
+                      >
+                        Add Gate
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <View style={{ gap: rp(8), marginTop: rp(4) }}>
+                    {editGates.map((gate, i) => (
+                      <Text key={i} style={{ fontSize: rs(15), fontWeight: "900", color: "#111827" }}>{gate}</Text>
+                    ))}
                   </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() => setEditGates([...editGates, ""])}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: rp(6),
-                    paddingVertical: rp(8),
-                  }}
-                >
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={rs(20)}
-                    color="#7C3AED"
-                  />
-                  <Text
-                    style={{
-                      color: "#7C3AED",
-                      fontSize: rs(14),
-                      fontWeight: "700",
-                    }}
-                  >
-                    Add Gate
-                  </Text>
-                </TouchableOpacity>
+                )}
               </View>
 
               {/* Parking Zones */}
               <View style={{ marginTop: rp(12) }}>
                 <Text style={modalLabel}>PARKING ZONES</Text>
-                {editZones.map((zone, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: rp(8),
-                      marginBottom: rp(8),
-                    }}
-                  >
-                    <TextInput
-                      style={[modalTextInput, { flex: 1 }]}
-                      placeholder="Zone name"
-                      value={zone.name}
-                      onChangeText={(text) => {
-                        const newZones = [...editZones];
-                        newZones[index] = { ...zone, name: text };
-                        setEditZones(newZones);
-                      }}
-                      onEndEditing={() =>
-                        updateHotel({
-                          zones: editZones
-                            .map((z) => ({
-                              name: z.name.trim(),
-                              slots: parseInt(z.slots) || 0,
-                            }))
-                            .filter((z) => z.name),
-                        })
-                      }
-                    />
-                    <TextInput
-                      style={[modalTextInput, { width: rp(100) }]}
-                      placeholder="Slots"
-                      value={zone.slots.toString()}
-                      onChangeText={(text) => {
-                        const newZones = [...editZones];
-                        newZones[index] = { ...zone, slots: text };
-                        setEditZones(newZones);
-                      }}
-                      keyboardType="numeric"
-                      onEndEditing={() =>
-                        updateHotel({
-                          zones: editZones
-                            .map((z) => ({
-                              name: z.name.trim(),
-                              slots: parseInt(z.slots) || 0,
-                            }))
-                            .filter((z) => z.name),
-                        })
-                      }
-                    />
-                    {editZones.length > 1 && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          const newZones = editZones.filter(
-                            (_, i) => i !== index
-                          );
-                          setEditZones(newZones);
-                          updateHotel({
-                            zones: newZones
-                              .map((z) => ({
-                                name: z.name.trim(),
-                                slots: parseInt(z.slots) || 0,
-                              }))
-                              .filter((z) => z.name),
-                          });
+                {editingInfo ? (
+                  <>
+                    {editZones.map((zone, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: rp(8),
+                          marginBottom: rp(8),
                         }}
                       >
-                        <Ionicons
-                          name="close-circle"
-                          size={rs(24)}
-                          color="#F43F5E"
+                        <TextInput
+                          style={[modalTextInput, { flex: 1 }]}
+                          placeholder="Zone name"
+                          value={zone.name}
+                          onChangeText={(text) => {
+                            const newZones = [...editZones];
+                            newZones[index] = { ...zone, name: text };
+                            setEditZones(newZones);
+                          }}
                         />
-                      </TouchableOpacity>
-                    )}
+                        <TextInput
+                          style={[modalTextInput, { width: rp(100) }]}
+                          placeholder="Slots"
+                          value={zone.slots?.toString() || ""}
+                          onChangeText={(text) => {
+                            const newZones = [...editZones];
+                            newZones[index] = { ...zone, slots: text };
+                            setEditZones(newZones);
+                          }}
+                          keyboardType="numeric"
+                        />
+                        {editZones.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              const newZones = editZones.filter(
+                                (_, i) => i !== index
+                              );
+                              setEditZones(newZones);
+                            }}
+                          >
+                            <Ionicons
+                              name="close-circle"
+                              size={rs(24)}
+                              color="#F43F5E"
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setEditZones([...editZones, { name: "", slots: "" }])
+                      }
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: rp(6),
+                        paddingVertical: rp(8),
+                      }}
+                    >
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={rs(20)}
+                        color="#7C3AED"
+                      />
+                      <Text
+                        style={{
+                          color: "#7C3AED",
+                          fontSize: rs(14),
+                          fontWeight: "700",
+                        }}
+                      >
+                        Add Zone
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <View style={{ gap: rp(8), marginTop: rp(4) }}>
+                    {editZones.map((zone, i) => (
+                      <Text key={i} style={{ fontSize: rs(15), fontWeight: "900", color: "#111827" }}>
+                        {zone.name} ({zone.slots} slots)
+                      </Text>
+                    ))}
                   </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() =>
-                    setEditZones([...editZones, { name: "", slots: "" }])
-                  }
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: rp(6),
-                    paddingVertical: rp(8),
-                  }}
-                >
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={rs(20)}
-                    color="#7C3AED"
-                  />
-                  <Text
-                    style={{
-                      color: "#7C3AED",
-                      fontSize: rs(14),
-                      fontWeight: "700",
-                    }}
-                  >
-                    Add Zone
-                  </Text>
-                </TouchableOpacity>
+                )}
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: rp(12) }}>
@@ -1157,12 +1040,14 @@ export default function HotelDetail() {
                     {editHotel?.is_active ? "ACTIVE" : "INACTIVE"}
                   </Text>
                 </View>
-                <Switch
-                  value={editHotel?.is_active}
-                  onValueChange={(v) => updateHotel({ is_active: v })}
-                  trackColor={{ false: "#D1D5DB", true: "#D1FAE5" }}
-                  thumbColor={editHotel?.is_active ? "#059669" : "#9CA3AF"}
-                />
+                {editingInfo && (
+                  <Switch
+                    value={editHotel?.is_active}
+                    onValueChange={(v) => setEditHotel(prev => ({ ...prev, is_active: v }))}
+                    trackColor={{ false: "#D1D5DB", true: "#D1FAE5" }}
+                    thumbColor={editHotel?.is_active ? "#059669" : "#9CA3AF"}
+                  />
+                )}
               </View>
             </View>
           </View>
@@ -1275,97 +1160,7 @@ export default function HotelDetail() {
         )} */}
       </ScrollView>
 
-      {/* Create Driver Modal */}
-      <Modal visible={showCreateDriverModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
-              <View style={{ alignItems: "center", marginBottom: rp(16) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
-              <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#059669", marginBottom: rp(20) }}>Add Driver</Text>
-              <Text style={modalLabel}>NAME</Text>
-              <TextInput value={drvName} onChangeText={setDrvName} placeholder="Full Name" style={modalTextInput} />
-              <Text style={modalLabel}>EMAIL</Text>
-              <TextInput value={drvEmail} onChangeText={setDrvEmail} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={modalTextInput} />
-              <Text style={modalLabel}>PHONE</Text>
-              <TextInput value={drvPhone} onChangeText={setDrvPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
-              <Text style={modalLabel}>4-DIGIT PIN</Text>
-              <TextInput value={drvPin} onChangeText={setDrvPin} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} secureTextEntry style={modalTextInput} />
-              <Text style={modalLabel}>AADHAR NUMBER</Text>
-              <TextInput value={drvAadharNumber} onChangeText={setDrvAadharNumber} placeholder="Aadhar number" autoCapitalize="characters" style={modalTextInput} />
-              <TouchableOpacity onPress={pickDrvAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
-                <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
-                {drvAadharPhotoUri ? (
-                  <View style={{ position: "relative" }}>
-                    <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
-                    <TouchableOpacity
-                      onPress={() => { setDrvAadharPhotoUri(null); }}
-                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
-                    >
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
-                    <Ionicons name="document-outline" size={28} color="#9CA3AF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={saveDriver} disabled={savingDrv} style={{ backgroundColor: "#059669", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}>
-                {savingDrv ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE DRIVER</Text>}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { resetDrvForm(); setShowCreateDriverModal(false); }} style={{ paddingVertical: rp(12), alignItems: "center" }}>
-                <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
 
-      {/* Create Supervisor Modal */}
-      <Modal visible={showCreateSupervisorModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
-              <View style={{ alignItems: "center", marginBottom: rp(16) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
-              <Text style={{ fontSize: rs(20), fontWeight: "900", color: ACCENT_COLOR, marginBottom: rp(20) }}>Add Supervisor</Text>
-              <Text style={modalLabel}>NAME</Text>
-              <TextInput value={supName} onChangeText={setSupName} placeholder="Full Name" style={modalTextInput} />
-              <Text style={modalLabel}>EMAIL</Text>
-              <TextInput value={supEmail} onChangeText={setSupEmail} placeholder="email@example.com" autoCapitalize="none" keyboardType="email-address" style={modalTextInput} />
-              <Text style={modalLabel}>PHONE (OPTIONAL)</Text>
-              <TextInput value={supPhone} onChangeText={setSupPhone} placeholder="10-digit mobile" keyboardType="phone-pad" style={modalTextInput} />
-              {/* <Text style={modalLabel}>PASSWORD</Text>
-              <TextInput value={supPassword} onChangeText={setSupPassword} placeholder="Min 6 characters" secureTextEntry style={modalTextInput} /> */}
-              <Text style={modalLabel}>AADHAR NUMBER</Text>
-              <TextInput value={supAadharNumber} onChangeText={setSupAadharNumber} placeholder="Aadhar number" autoCapitalize="characters" style={modalTextInput} />
-              <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
-                <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
-                {supAadharPhotoUri ? (
-                  <View style={{ position: "relative" }}>
-                    <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
-                    <TouchableOpacity
-                      onPress={() => { setSupAadharPhotoUri(null); }}
-                      style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
-                    >
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: "#E5E7EB", borderStyle: "dashed" }}>
-                    <Ionicons name="document-outline" size={28} color="#9CA3AF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={saveSupervisor} disabled={savingSup} style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}>
-                {savingSup ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900" }}>SAVE SUPERVISOR</Text>}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { resetSupForm(); setShowCreateSupervisorModal(false); }} style={{ paddingVertical: rp(12), alignItems: "center" }}>
-                <Text style={{ color: "#6B7280", fontWeight: "700" }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
 
       {/* Add Special Event Modal */}
       <Modal visible={showAddEventModal} transparent animationType="slide" onRequestClose={() => setShowAddEventModal(false)}>
@@ -1596,8 +1391,6 @@ export default function HotelDetail() {
                   onPress={() => {
                     setShowAddEventModal(false);
                     setNewEventName("");
-                    setNewEventKeyHookStart("51");
-                    setNewEventKeyHookEnd("100");
                     setNewEventGates(["Main Gate"]);
                     setNewEventZones([{ name: "Zone A", slots: "50" }]);
                   }}

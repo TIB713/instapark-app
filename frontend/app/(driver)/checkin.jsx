@@ -397,6 +397,7 @@ export default function CheckIn() {
   const photosRef = useRef(photos);
   useEffect(() => { photosRef.current = photos; }, [photos]);
   const resizedPhotosRef = useRef({});
+  const resizeQueueRef = useRef(Promise.resolve());
   const permissionGrantedRef = useRef(false);
 
   const getUploadReadyPhotos = (photosObj) => {
@@ -617,13 +618,15 @@ export default function CheckIn() {
         }
       }
       // Resize/compress silently in the background — does not block the UI or the next-photo prompt
-      ImageManipulator.manipulateAsync(
-        rawUri,
-        [{ resize: { width: 1280 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-      )
-        .then((resized) => { resizedPhotosRef.current[label] = resized.uri; })
-        .catch(() => { resizedPhotosRef.current[label] = rawUri; });
+      resizeQueueRef.current = resizeQueueRef.current.then(() =>
+        ImageManipulator.manipulateAsync(
+          rawUri,
+          [{ resize: { width: 1280 } }],
+          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        )
+          .then((resized) => { resizedPhotosRef.current[label] = resized.uri; })
+          .catch(() => { resizedPhotosRef.current[label] = rawUri; })
+      );
     }
     AsyncStorage.removeItem("checkin_draft").catch(() => {});
   }, []);

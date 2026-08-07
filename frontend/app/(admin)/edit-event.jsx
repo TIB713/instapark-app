@@ -41,7 +41,6 @@ export default function EditEvent() {
   const [venueLng, setVenueLng] = useState(null);
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
-  const [keyHooks, setKeyHooks] = useState("50");
   const [allowInstantPark, setAllowInstantPark] = useState(false);
   const [zones, setZones] = useState([]);
   const [gates, setGates] = useState([]);
@@ -73,7 +72,6 @@ export default function EditEvent() {
         setVenueLng(data.venue_lng || null);
         setMaxCars(String(data.max_cars || 200));
         setGateTimerMinutes(String(data.gate_timer_minutes || 5));
-        setKeyHooks(String(data.key_hooks || 50));
         setAllowInstantPark(!!data.allow_instant_park);
         setStartTime(data.start_time || "18:00");
         setEndTime(data.end_time || "23:00");
@@ -130,7 +128,6 @@ export default function EditEvent() {
           venue_lat: venueLat,
           venue_lng: venueLng,
           max_cars: parseInt(maxCars) || 200,
-          key_hooks: parseInt(keyHooks) || 50,
           zones: zones.filter((z) => z.name?.trim()),
           gates: gates.filter((g) => g?.trim()),
           gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
@@ -353,20 +350,6 @@ export default function EditEvent() {
             <Ionicons name="add" size={18} color="#7C3AED" />
             <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
           </TouchableOpacity>
-          
-          <Label>KEY HOOKS (Total hooks on key board)</Label>
-          <View style={inputRowStyle}>
-            <Ionicons name="key-outline" size={20} color="#7C3AED" />
-            <TextInput
-              value={keyHooks}
-              onChangeText={setKeyHooks}
-              placeholder="50"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              maxLength={4}
-              style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }}
-            />
-          </View>
 
           <TouchableOpacity
             onPress={save}

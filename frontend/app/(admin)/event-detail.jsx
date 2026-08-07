@@ -84,13 +84,10 @@ export default function EventDetail() {
   const [event, setEvent] = useState(null);
   const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
-  const [slotTab, setSlotTab] = useState("parking");
   const [cars, setCars] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [stats, setStats] = useState(null);
   const [guestCount, setGuestCount] = useState(null);
-  const [keys, setKeys] = useState([]);
-  const [keyStats, setKeyStats] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedCar, setSelectedCar] = useState(null);
@@ -242,16 +239,6 @@ export default function EventDetail() {
     } catch { }
   }, [currentEventId]);
 
-  const fetchKeys = useCallback(async () => {
-    try {
-      const { data } = await api.get(
-        `/events/${currentEventId}/keys`
-      );
-      setKeys(data.keys || []);
-      setKeyStats(data);
-    } catch { }
-  }, [currentEventId]);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([fetchEvent(), fetchCars(), fetchStats(), fetchSlots()]);
@@ -361,7 +348,7 @@ export default function EventDetail() {
   useEffect(() => {
     if (!currentEventId) return;
     // Run all fetches in parallel instead of sequentially
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchGuestCount(), fetchSlots(), fetchIncidents(), fetchKeys()]);
+    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchGuestCount(), fetchSlots(), fetchIncidents()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
@@ -2074,14 +2061,7 @@ export default function EventDetail() {
                 <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#059669" }}>{slots.filter(s => s.is_occupied).length}</Text>
                 <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>SLOTS USED</Text>
               </View>
-              <View style={{ width: "45%" }}>
-                <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#0EA5E9" }}>{keyStats?.total_hooks || 0}</Text>
-                <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>TOTAL KEY HOOKS</Text>
-              </View>
-              <View style={{ width: "45%" }}>
-                <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#F59E0B" }}>{keyStats?.returned || 0}</Text>
-                <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "800" }}>KEYS RETURNED</Text>
-              </View>
+
             </View>
           </View>
 
@@ -2092,32 +2072,6 @@ export default function EventDetail() {
       {tab === "slots" && !isClosed && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
 
-          {/* Internal sub-tab toggle */}
-          <View style={{ backgroundColor: "#fff", flexDirection: "row", borderRadius: rp(18), padding: rp(4), marginBottom: rp(16), ...cardShadow }}>
-            <TouchableOpacity
-              onPress={() => setSlotTab("parking")}
-              style={{
-                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
-                backgroundColor: slotTab === "parking" ? "#7C3AED" : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
-              }}
-            >
-              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "parking" ? "#fff" : "#6B7280" }}>🅿 Parking</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setSlotTab("keys")}
-              style={{
-                flex: 1, paddingVertical: rp(10), borderRadius: rp(14),
-                backgroundColor: slotTab === "keys" ? "#7C3AED" : "transparent",
-                alignItems: "center", flexDirection: "row", justifyContent: "center", gap: rp(6)
-              }}
-            >
-              <Text style={{ fontWeight: "800", fontSize: rs(13), color: slotTab === "keys" ? "#fff" : "#6B7280" }}>🔑 Keys</Text>
-            </TouchableOpacity>
-          </View>
-
-          {slotTab === "parking" ? (
-            <>
               {/* Capacity Summary */}
               {(() => {
                 const total = slots.length;
@@ -2244,163 +2198,7 @@ export default function EventDetail() {
                   </View>
                 );
               })()}
-            </>
-          ) : (
-            <>
-              {/* Summary card */}
-              {keyStats && (
-                <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
-                  {event?.key_hook_start != null && event?.key_hook_end != null && (
-                    <View style={{ backgroundColor: "#EFF6FF", borderRadius: rp(99), paddingHorizontal: rp(12), paddingVertical: rp(6), marginBottom: rp(12), alignSelf: "flex-start" }}>
-                      <Text style={{ color: "#1D4ED8", fontSize: rs(12), fontWeight: "800" }}>
-                        Hook range for this event: {event.key_hook_start} – {event.key_hook_end}
-                      </Text>
-                    </View>
-                  )}
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(14) }}>
-                    KEY BOARD STATUS
-                  </Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(16) }}>
-                    {[
-                      { label: "IN BOOTH", value: keyStats.in_booth, color: "#7C3AED" },
-                      { label: "AVAILABLE", value: keyStats.hooks_available, color: "#059669" },
-                      { label: "RETURNED", value: keyStats.returned, color: "#9CA3AF" },
-                      { label: "TOTAL HOOKS", value: keyStats.total_hooks, color: "#0EA5E9" },
-                    ].map(s => (
-                      <View key={s.label} style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: rs(24), fontWeight: "900", color: s.color }}>{s.value}</Text>
-                        <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5), marginTop: rp(4), textAlign: "center" }}>
-                          {s.label}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
 
-                  {/* Capacity bar */}
-                  {(() => {
-                    const pct = keyStats.total_hooks > 0 ? Math.round((keyStats.in_booth / keyStats.total_hooks) * 100) : 0;
-                    const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#7C3AED";
-                    return (
-                      <>
-                        <View style={{ height: rp(8), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
-                          <View style={{ height: rp(8), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
-                        </View>
-                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(6), textAlign: "right" }}>
-                          {pct}% full
-                        </Text>
-                      </>
-                    );
-                  })()}
-
-                  {/* Full board warning */}
-                  {keyStats.hooks_full && (
-                    <View style={{ backgroundColor: "#FEE2E2", borderRadius: rp(14), padding: rp(12), marginTop: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8) }}>
-                      <Ionicons name="warning" size={18} color="#EF4444" />
-                      <Text style={{ color: "#991B1B", fontWeight: "800", fontSize: rs(13), flex: 1 }}>
-                        Key board is full — no hooks available
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Untagged warning */}
-              {keyStats?.untagged_count > 0 && (
-                <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(16), padding: rp(14), marginBottom: rp(16), flexDirection: "row", alignItems: "center", gap: rp(10), borderWidth: rp(1), borderColor: "#FDE68A" }}>
-                  <Ionicons name="warning" size={20} color="#D97706" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "800", color: "#92400E", fontSize: rs(13) }}>
-                      {keyStats.untagged_count} car(s) have no key tag
-                    </Text>
-                    <Text style={{ color: "#B45309", fontSize: rs(11), marginTop: rp(2) }}>
-                      Ask drivers to add key tag numbers for these cars
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Keys in booth */}
-              {keys.filter(k => k.in_booth).length > 0 && (
-                <>
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3), marginBottom: rp(10) }}>
-                    IN BOOTH ({keys.filter(k => k.in_booth).length})
-                  </Text>
-                  {keys.filter(k => k.in_booth).map(k => (
-                    <View key={k.car_id} style={{
-                      backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8),
-                      flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: "#7C3AED",
-                      ...cardShadow
-                    }}>
-                      <View style={{ backgroundColor: "#F5F3FF", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
-                        <Ionicons name="key" size={16} color="#7C3AED" />
-                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: "#7C3AED", marginTop: rp(1) }}>
-                          #{k.key_tag}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(14) }}>{k.plate}</Text>
-                        <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>
-                          {k.color} {k.make}{k.zone ? ` · Zone ${k.zone} Slot ${k.slot}` : ""}
-                        </Text>
-                      </View>
-                      <View style={{ backgroundColor: "#EDE9FE", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
-                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(1) }}>
-                          {k.status === "RETRIEVAL_REQUESTED" ? "REQUESTED" : k.status === "BEING_FETCHED" ? "FETCHING" : "PARKED"}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )}
-
-              {/* Returned keys */}
-              {keys.filter(k => !k.in_booth).length > 0 && (
-                <>
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#059669", letterSpacing: rs(3), marginTop: rp(8), marginBottom: rp(10) }}>
-                    RETURNED ({keys.filter(k => !k.in_booth).length})
-                  </Text>
-                  {keys.filter(k => !k.in_booth).map(k => (
-                    <View key={k.car_id} style={{
-                      backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(8),
-                      flexDirection: "row", alignItems: "center", borderLeftWidth: rp(4), borderLeftColor: "#D1FAE5",
-                      opacity: 0.75, ...cardShadow
-                    }}>
-                      <View style={{ backgroundColor: "#D1FAE5", borderRadius: rp(12), width: rp(44), height: rp(44), alignItems: "center", justifyContent: "center", marginRight: rp(12) }}>
-                        <Ionicons name="key-outline" size={16} color="#059669" />
-                        <Text style={{ fontSize: rs(10), fontWeight: "900", color: "#059669", marginTop: rp(1) }}>
-                          #{k.key_tag}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: "#374151", fontSize: rs(14) }}>{k.plate}</Text>
-                        <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginTop: rp(2) }}>
-                          {k.color} {k.make} · Delivered
-                        </Text>
-                      </View>
-                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
-                        <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#059669", letterSpacing: rs(1) }}>
-                          RETURNED
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )}
-
-              {/* Empty state */}
-              {keys.length === 0 && (
-                <View style={{ backgroundColor: "#fff", borderRadius: rp(20), padding: rp(40), alignItems: "center", ...cardShadow }}>
-                  <Ionicons name="key-outline" size={44} color="#D1D5DB" />
-                  <Text style={{ color: "#9CA3AF", fontWeight: "700", marginTop: rp(12), fontSize: rs(15) }}>
-                    No key tags recorded yet
-                  </Text>
-                  <Text style={{ color: "#D1D5DB", fontSize: rs(12), marginTop: rp(6), textAlign: "center" }}>
-                    Drivers add key tags from their tasks screen after parking
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
         </ScrollView>
       )}
 

@@ -1,4 +1,6 @@
 // version 3
+import { Audio } from "expo-av";
+import { Vibration } from "react-native";
 import * as Location from "expo-location";
 import { Linking } from "react-native";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -53,15 +55,22 @@ export default function Tasks() {
 
   useEffect(() => {
     const backAction = () => {
+      if (incomingRequest) { setIncomingRequest(null); return true; }
       if (showSOSModal) { setShowSOSModal(false); return true; }
       if (showParkModal) { setShowParkModal(false); return true; }
       router.back(); return true;
     };
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => backHandler.remove();
-  }, [showSOSModal, showParkModal]);
+  }, [showSOSModal, showParkModal, incomingRequest]);
   const { driver, currentEventId } = useAppStore();
   const resolvedDriverId = driver?.id;
+  const [incomingRequest, setIncomingRequest] = useState(null);
+  const [requestQueue, setRequestQueue] = useState([]);
+  const seenRequestIdsRef = useRef(new Set());
+  const requestSoundRef = useRef(null);
+  const hasSeededSeenRef = useRef(false);
+
   const [tab, setTab] = useState("mycars");
   const [cars, setCars] = useState([]);
   const [acceptedCarIds, setAcceptedCarIds] = useState(new Set());
@@ -106,6 +115,7 @@ export default function Tasks() {
   const [nowTick, setNowTick] = useState(Date.now());
   const retrievalsRef = useRef([]);
   const lastExpiryRefetchRef = useRef(0);
+  const resizedParkPhotosRef = useRef({});
 
   useEffect(() => {
     retrievalsRef.current = retrievals;
@@ -135,6 +145,69 @@ export default function Tasks() {
     }
   }, [retrievalRequested]);
 
+  useEffect(() => {
+    let timeout;
+    if (incomingRequest) {
+      Vibration.vibrate([500, 500], true);
+      (async () => {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            require("../../assets/sounds/trip-request.mp3"),
+            { isLooping: true }
+          );
+          requestSoundRef.current = sound;
+          await sound.playAsync();
+        } catch (e) {
+          console.warn("Failed to play trip-request audio", e);
+        }
+      })();
+      timeout = setTimeout(() => {
+        setIncomingRequest(null);
+      }, 18000);
+    } else {
+      Vibration.cancel();
+      if (requestSoundRef.current) {
+        requestSoundRef.current.stopAsync().then(() => requestSoundRef.current.unloadAsync()).catch(() => {});
+        requestSoundRef.current = null;
+      }
+    }
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [incomingRequest]);
+
+  useEffect(() => {
+    if (incomingRequest === null && requestQueue.length > 0) {
+      const [next, ...rest] = requestQueue;
+      setIncomingRequest(next);
+      setRequestQueue(rest);
+    }
+  }, [requestQueue, incomingRequest]);
+
+  const maybeQueueNewRequest = useCallback((car) => {
+    if (!car) return;
+
+    const carData = car.car || car;
+    const carId = carData.id ? String(carData.id) : null;
+
+    if (!carId) return;
+    if (carData.status !== "RETRIEVAL_REQUESTED" || carData.retrieval_driver_id) return;
+
+    // Block if already in seen set
+    if (seenRequestIdsRef.current.has(carId)) return;
+
+    // Block if currently active on screen
+    if (incomingRequest && String(incomingRequest.id) === carId) return;
+
+    seenRequestIdsRef.current.add(carId);
+
+    // Deduplicate state queue
+    setRequestQueue((prev) => {
+      if (prev.some((item) => String(item.id) === carId)) return prev;
+      return [...prev, carData];
+    });
+  }, [incomingRequest]);
+
   const fetchMyCars = useCallback(async () => {
     try {
       const { data } = await api.get(`/cars/event/${currentEventId}`, {
@@ -161,9 +234,20 @@ export default function Tasks() {
   const fetchRetrievals = useCallback(async () => {
     try {
       const { data } = await api.get(`/retrievals/event/${currentEventId}`);
-      setRetrievals(data || []);
+      const fetchedCars = data || [];
+      setRetrievals(fetchedCars);
+      if (!hasSeededSeenRef.current) {
+        fetchedCars.forEach((car) => {
+          if (car.status === "RETRIEVAL_REQUESTED" && car.id) {
+            seenRequestIdsRef.current.add(String(car.id));
+          }
+        });
+        hasSeededSeenRef.current = true;
+      } else {
+        fetchedCars.forEach((car) => maybeQueueNewRequest(car));
+      }
     } catch { }
-  }, [currentEventId]);
+  }, [currentEventId, maybeQueueNewRequest]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -231,7 +315,10 @@ export default function Tasks() {
       if (msg.type === "slot_update") fetchSlots();
     });
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
-      if (msg.type === "retrieval_update") fetchRetrievals();
+      if (msg.type === "retrieval_update") {
+        if (msg.data) maybeQueueNewRequest(msg.data);
+        fetchRetrievals();
+      }
     });
 
     const appStateSub = AppState.addEventListener("change", (nextAppState) => {
@@ -243,7 +330,10 @@ export default function Tasks() {
           if (msg.type === "slot_update") fetchSlots();
         });
         connectWS(`/retrievals/${currentEventId}`, (msg) => {
-          if (msg.type === "retrieval_update") fetchRetrievals();
+          if (msg.type === "retrieval_update") {
+            if (msg.data) maybeQueueNewRequest(msg.data);
+            fetchRetrievals();
+          }
         });
         Promise.all([fetchMyCars(), fetchRetrievals()]);
       }
@@ -286,20 +376,12 @@ export default function Tasks() {
       disconnectWS(`/retrievals/${currentEventId}`);
       unsub();
       notifSub.remove();
-    };
-  }, [currentEventId, fetchEvent, fetchMyCars, fetchRetrievals]);
-
-  useEffect(() => {
-    (async () => {
-      const pending = await AsyncStorage.getItem("pending_handover");
-      if (pending) {
-        await AsyncStorage.removeItem("pending_handover");
-        const { carId } = JSON.parse(pending);
-        const car = retrievals.find((r) => r.id === carId);
-        if (car) handleHandover(car);
+      Vibration.cancel();
+      if (requestSoundRef.current) {
+        requestSoundRef.current.unloadAsync().catch(() => {});
       }
-    })();
-  }, [retrievals]);
+    };
+  }, [currentEventId, fetchEvent, fetchMyCars, fetchRetrievals, maybeQueueNewRequest]);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -321,26 +403,38 @@ export default function Tasks() {
     if (!currentEventId) return;
     setSendingSOS(true);
     try {
-      await api.post(`/sos/event/${currentEventId}`, {
-        alert_type: sosAlertType,
-        note: sosNote,
-        car_id: sosCarId,
-        car_number: sosCarNumber,
-      });
+      let uploadUrl = null;
       if (sosPhoto) {
         try {
           const fd = new FormData();
           fd.append("file", { uri: sosPhoto, type: "image/jpeg", name: "sos.jpg" });
           fd.append("folder", `sos/${currentEventId}`);
-          await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-        } catch { }
+          const { data: uploadData } = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+          uploadUrl = uploadData?.url || null;
+        } catch (uploadErr) {
+          console.warn("SOS photo upload failed", uploadErr);
+        }
       }
+
+      await api.post(`/sos/event/${currentEventId}`, {
+        alert_type: sosAlertType,
+        note: sosNote,
+        car_id: sosCarId,
+        car_number: sosCarNumber,
+        photo_url: uploadUrl,
+      });
+
       setShowSOSModal(false);
       setSosNote("");
       setSosPhoto(null);
       setSosCarId(null);
       setSosCarNumber("");
-      Alert.alert("SOS Sent", "Your supervisor has been notified.");
+      
+      if (sosPhoto && !uploadUrl) {
+        Alert.alert("Photo Upload Failed", "Your SOS was sent, but the photo did not attach. Please inform your supervisor.");
+      } else {
+        Alert.alert("SOS Sent", "Your supervisor has been notified.");
+      }
     } catch {
       Alert.alert("Error", "Failed to send SOS. Please try again.");
     } finally {
@@ -437,8 +531,9 @@ export default function Tasks() {
         // OFFLINE: copy photos first (needed for queue)
         const photoLocalPaths = [];
         for (let i = 0; i < parkPhotos.length; i++) {
+          const sourceUri = resizedParkPhotosRef.current[parkPhotos[i]] || parkPhotos[i];
           const localPath = `${FileSystem.documentDirectory}park_${selectedCar.id}_${i}_${Date.now()}.jpg`;
-          await FileSystem.copyAsync({ from: parkPhotos[i], to: localPath });
+          await FileSystem.copyAsync({ from: sourceUri, to: localPath });
           photoLocalPaths.push(localPath);
         }
         await enqueueParkAction(selectedCar.id, { zone: selectedZone, slot: selectedSlot, parkedDriverId: resolvedDriverId, photoLocalPaths });
@@ -477,8 +572,9 @@ export default function Tasks() {
         try {
           const photoLocalPaths = [];
           for (let i = 0; i < snapshotUris.length; i++) {
+            const sourceUri = resizedParkPhotosRef.current[snapshotUris[i]] || snapshotUris[i];
             const localPath = `${FileSystem.documentDirectory}park_${carId}_${i}_${Date.now()}.jpg`;
-            await FileSystem.copyAsync({ from: snapshotUris[i], to: localPath });
+            await FileSystem.copyAsync({ from: sourceUri, to: localPath });
             photoLocalPaths.push(localPath);
           }
           await uploadParkPhotosInBackground(carId, photoLocalPaths);
@@ -595,11 +691,15 @@ export default function Tasks() {
     });
     setTakingParkPhoto(false);
     if (!result.canceled) {
+      const rawUri = result.assets[0].uri;
       setParkPhotos((prev) => {
-        const next = [...prev, result.assets[0].uri];
+        const next = [...prev, rawUri];
         setLoadingPhotoIdx(next.length - 1);
         return next;
       });
+      ImageManipulator.manipulateAsync(rawUri, [{ resize: { width: 1280 } }], { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG })
+        .then((resized) => { resizedParkPhotosRef.current[rawUri] = resized.uri; })
+        .catch(() => { resizedParkPhotosRef.current[rawUri] = rawUri; });
     }
   };
 
@@ -629,17 +729,42 @@ export default function Tasks() {
   };
 
   const handleHandover = async (car) => {
+    if (handoverUploading) return; // guard against a second tap while the first is still in flight
+    setHandoverUploading(true);
+
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
-    setHandoverUploading(true);  // show loader immediately before camera opens
-    try { await AsyncStorage.setItem("pending_handover", JSON.stringify({ carId: car.id })); } catch { }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: false });
-    try { await AsyncStorage.removeItem("pending_handover"); } catch { }
+    if (!perm.granted) {
+      setHandoverUploading(false);
+      Alert.alert("Camera permission needed");
+      return;
+    }
+
+
+    let result;
+    try {
+      result = await ImagePicker.launchCameraAsync({ 
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+        quality: 0.5, 
+        allowsEditing: false 
+      });
+    } catch (e) {
+      setHandoverUploading(false);
+      Alert.alert("Camera Error", "Could not open camera. Please try again.");
+      return;
+    }
+
     if (result.canceled) {
       setHandoverUploading(false);  // driver cancelled — reset loader
       return;
     }
-    const finalUri = result.assets[0].uri;
+    const rawUri = result.assets[0].uri;
+    let finalUri = rawUri;
+    try {
+      const resized = await ImageManipulator.manipulateAsync(rawUri, [{ resize: { width: 1280 } }], { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG });
+      finalUri = resized.uri;
+    } catch {
+      // fall back to the original full-size photo if resize fails
+    }
     doHandleHandover(car, finalUri);
   };
 
@@ -1454,7 +1579,11 @@ export default function Tasks() {
                             </View>
                           )}
                           <TouchableOpacity
-                            onPress={() => setParkPhotos(parkPhotos.filter((_, k) => k !== i))}
+                            onPress={() => {
+                              const removedUri = parkPhotos[i];
+                              delete resizedParkPhotosRef.current[removedUri];
+                              setParkPhotos(parkPhotos.filter((_, k) => k !== i));
+                            }}
                             style={{ position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: rp(99), width: rp(22), height: rp(22), alignItems: "center", justifyContent: "center" }}
                           >
                             <Ionicons name="close" size={13} color="#fff" />
@@ -1699,6 +1828,88 @@ export default function Tasks() {
             </View>
           </View>
         </View>
+      </Modal>
+      <Modal visible={!!incomingRequest} transparent={false} animationType="slide" onRequestClose={() => {
+        setIncomingRequest(null);
+      }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#0F2044", padding: rp(24), justifyContent: "center" }}>
+          <View style={{ alignItems: "center", marginBottom: rp(32) }}>
+            <Text style={{ fontSize: rs(48), marginBottom: rp(16) }}>🔔</Text>
+            <Text style={{ fontSize: rs(24), fontWeight: "900", color: "#fff", textAlign: "center", letterSpacing: rs(1) }}>New Retrieval Request</Text>
+          </View>
+          
+          <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), ...cardShadow, marginBottom: rp(32) }}>
+            <Text style={{ fontSize: rs(36), fontWeight: "900", color: "#111827", textAlign: "center" }}>{incomingRequest?.plate}</Text>
+            <Text style={{ fontSize: rs(16), color: "#6B7280", textAlign: "center", marginTop: rp(4), marginBottom: rp(16) }}>{incomingRequest?.color} {incomingRequest?.make}</Text>
+            
+            <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(16), padding: rp(16), alignItems: "center" }}>
+              <Text style={{ fontSize: rs(14), fontWeight: "700", color: "#374151" }}>
+                Zone {incomingRequest?.zone} · Slot {incomingRequest?.slot}
+              </Text>
+              <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#059669", marginTop: rp(4) }}>
+                Key Tag #{incomingRequest?.key_tag_number}
+              </Text>
+            </View>
+
+            {incomingRequest?.notes ? (
+              <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(12), padding: rp(12), marginTop: rp(16) }}>
+                <Text style={{ color: "#92400E", fontSize: rs(13), fontWeight: "600", textAlign: "center" }}>{incomingRequest.notes}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={{ gap: rp(12) }}>
+            <TouchableOpacity 
+              disabled={!!pickingUp[incomingRequest?.id]}
+              onPress={async () => {
+                const car = incomingRequest;
+                if (!car) return;
+                const carIdStr = String(car.id);
+
+                // Lock ID immediately against concurrent polling or WS pings
+                seenRequestIdsRef.current.add(carIdStr);
+                setPickingUp((prev) => ({ ...prev, [car.id]: true }));
+
+                try {
+                  await api.patch(`/cars/${car.id}/pickup`, { retrieval_driver_id: resolvedDriverId });
+                  await updateJourney(car.id, "retrieval");
+                  setTab("retrievals");
+                  setIncomingRequest(null);
+                  await fetchRetrievals();
+                } catch (e) {
+                  if (e.response?.status === 409) {
+                    Alert.alert("Too Late", "Already picked up by another driver.");
+                  } else {
+                    Alert.alert("Error", e.response?.data?.detail || "Failed to pick up.");
+                  }
+                  setIncomingRequest(null);
+                } finally {
+                  setPickingUp((prev) => ({ ...prev, [car.id]: false }));
+                }
+              }}
+              style={{ backgroundColor: "#10B981", borderRadius: rp(16), paddingVertical: rp(18), alignItems: "center" }}
+            >
+              {pickingUp[incomingRequest?.id] ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(16), letterSpacing: rs(2) }}>ACCEPT</Text>
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              disabled={!!pickingUp[incomingRequest?.id]}
+              onPress={() => {
+                if (incomingRequest?.id) {
+                  seenRequestIdsRef.current.add(String(incomingRequest.id));
+                }
+                setIncomingRequest(null);
+              }}
+              style={{ backgroundColor: "transparent", borderWidth: rp(2), borderColor: "rgba(255,255,255,0.2)", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: rs(14), letterSpacing: rs(1) }}>SKIP</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );

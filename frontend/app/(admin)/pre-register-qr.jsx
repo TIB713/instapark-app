@@ -108,12 +108,22 @@ export default function PreRegisterQR() {
       }));
   }, [cards]);
 
+  const allGroup = useMemo(() => ({
+    dateKey: "all",
+    label: "All",
+    cards: [...cards].sort((a, b) => {
+      const na = Number(a.key_tag_number), nb = Number(b.key_tag_number);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return String(a.key_tag_number).localeCompare(String(b.key_tag_number));
+    }),
+  }), [cards]);
+
   useEffect(() => {
     if (dateGroups.length === 0) {
       setSelectedDateKey(null);
       return;
     }
-    const stillExists = dateGroups.some(g => g.dateKey === selectedDateKey);
+    const stillExists = selectedDateKey === "all" || dateGroups.some(g => g.dateKey === selectedDateKey);
     if (!stillExists) {
       setSelectedDateKey(dateGroups[0].dateKey);
       setQrPage(1);
@@ -124,7 +134,7 @@ export default function PreRegisterQR() {
     setQrPage(1);
   }, [selectedDateKey]);
 
-  const selectedGroup = dateGroups.find(g => g.dateKey === selectedDateKey) || null;
+  const selectedGroup = selectedDateKey === "all" ? allGroup : (dateGroups.find(g => g.dateKey === selectedDateKey) || null);
   const qrTotalPages = selectedGroup ? Math.max(1, Math.ceil(selectedGroup.cards.length / QR_TAGS_PER_PAGE)) : 1;
   const qrVisibleCards = selectedGroup
     ? selectedGroup.cards.slice((qrPage - 1) * QR_TAGS_PER_PAGE, (qrPage - 1) * QR_TAGS_PER_PAGE + QR_TAGS_PER_PAGE)
@@ -470,7 +480,7 @@ export default function PreRegisterQR() {
                 </TouchableOpacity>
               </View>
               <FlatList
-                data={dateGroups}
+                data={[allGroup, ...dateGroups]}
                 keyExtractor={g => g.dateKey}
                 contentContainerStyle={{ padding: rp(12) }}
                 renderItem={({ item: g }) => (

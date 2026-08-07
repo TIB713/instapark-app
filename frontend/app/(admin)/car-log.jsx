@@ -393,7 +393,7 @@ export default function CarLog() {
                 <TimelineStep
                   key={`asg-${i}`}
                   color="#8B5CF6"
-                  icon="account-switch"
+                  icon="swap-horizontal"
                   label={label}
                   time={step.time}
                   note={subtitle}
