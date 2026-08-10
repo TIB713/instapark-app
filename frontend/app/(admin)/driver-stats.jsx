@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
+import React, { useEffect, useState } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -6,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
   Image,
 } from "react-native";
@@ -130,7 +130,7 @@ export default function DriverStats() {
     const errs = validateDriver();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      Alert.alert("Validation Error", "Please check the highlighted fields");
+      confirmDialog.info("Validation error", "Please check the highlighted fields");
       return;
     }
     setErrors({});
@@ -146,10 +146,10 @@ export default function DriverStats() {
       if (aadharNumber.trim()) body.aadhar_number = aadharNumber.trim();
       if (aadharPhoto) body.aadhar_photo = aadharPhoto;
       await api.patch(`/drivers/${driverId}`, body);
-      Alert.alert("Updated", "Driver updated successfully");
+      confirmDialog.info("Updated", "Driver updated successfully");
       setPin("");
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed");
     }
   };
 
@@ -158,37 +158,31 @@ export default function DriverStats() {
       await api.patch(`/drivers/${driverId}`, { is_active: !driver.is_active });
       setDriver({ ...driver, is_active: !driver.is_active });
     } catch {
-      Alert.alert("Error", "Failed to update driver status");
+      confirmDialog.info("Error", "Failed to update driver status");
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert(
-      "Delete Driver",
+    confirmDialog.destructiveConfirm(
+      "Delete driver",
       "WARNING: This will permanently delete this driver and cannot be undone. Are you sure?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete(`/superadmin/drivers/${driverId}/permanent`);
-              Alert.alert("Deleted", "Driver permanently deleted");
-              router.back();
-            } catch {
-              Alert.alert("Error", "Failed to delete driver");
-            }
-          },
-        },
-      ]
+      async () => {
+        try {
+          await api.delete(`/superadmin/drivers/${driverId}/permanent`);
+          confirmDialog.info("Deleted", "Driver permanently deleted");
+          router.back();
+        } catch {
+          confirmDialog.info("Error", "Failed to delete driver");
+        }
+      },
+      "Delete"
     );
   };
 
   const pickAadharPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
+      confirmDialog.info("Permission needed", "Photo library access is required");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -206,9 +200,9 @@ export default function DriverStats() {
         });
         setAadharPhoto(up.data.url);
         setErrors(prev => ({ ...prev, aadharPhoto: undefined }));
-        Alert.alert("Success", "Aadhar photo uploaded");
+        confirmDialog.info("Success", "Aadhar photo uploaded");
       } catch (e) {
-        Alert.alert("Error", "Failed to upload photo");
+        confirmDialog.info("Error", "Failed to upload photo");
       }
     }
   };
@@ -216,7 +210,7 @@ export default function DriverStats() {
   const pickLicensePhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
+      confirmDialog.info("Permission needed", "Photo library access is required");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -234,9 +228,9 @@ export default function DriverStats() {
         });
         setLicensePhoto(up.data.url);
         setErrors(prev => ({ ...prev, licensePhoto: undefined }));
-        Alert.alert("Success", "License photo uploaded");
+        confirmDialog.info("Success", "License photo uploaded");
       } catch (e) {
-        Alert.alert("Error", "Failed to upload photo");
+        confirmDialog.info("Error", "Failed to upload photo");
       }
     }
   };
@@ -312,7 +306,7 @@ export default function DriverStats() {
           <div class="stat"><div class="stat-val">${stats.cars_checked_in}</div><div class="stat-lbl">Total Check-ins</div></div>
           <div class="stat"><div class="stat-val">${stats.cars_retrieved}</div><div class="stat-lbl">Total Retrievals</div></div>
           <div class="stat"><div class="stat-val">${report.platform_avg_rating || "—"}</div><div class="stat-lbl">Platform Rating</div></div>
-          <div class="stat"><div class="stat-val">${report.driver_avg_rating || "—"}</div><div class="stat-lbl">Driver Rating</div></div>
+          
           <div class="stat"><div class="stat-val" style="color:${incidents.length > 0 ? "#EF4444" : "#111827"}">${incidents.length}</div><div class="stat-lbl">Incidents</div></div>
         </div>
       </div>
@@ -336,7 +330,7 @@ export default function DriverStats() {
       await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: `${driver.name} — Performance Report` });
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Failed to generate PDF report");
+      confirmDialog.info("Error", "Failed to generate PDF report");
     } finally {
       setExportingPDF(false);
     }
@@ -590,15 +584,12 @@ export default function DriverStats() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                Alert.alert(
-                  driver.is_active ? "Deactivate Driver" : "Activate Driver",
+                confirmDialog.confirm(
+                  driver.is_active ? "Deactivate driver" : "Activate driver",
                   driver.is_active
                     ? "This driver will be marked inactive. Continue?"
                     : "This driver will be marked active again. Continue?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Confirm", onPress: toggleActive },
-                  ]
+                  toggleActive
                 );
               }}
               style={{

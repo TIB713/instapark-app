@@ -8,6 +8,7 @@ import { useAppStore } from "../lib/store";
 import { AppState } from "react-native";
 import { checkEventStatusAndStop } from "../lib/locationTracking";
 import { cleanupOldOfflinePhotos } from "../lib/offline";
+import { ConfirmDialogHost } from "../lib/confirmDialog";
 import "../global.css";
 import { Text, TextInput } from "react-native";
 
@@ -82,6 +83,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <ConfirmDialogHost />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)/login" />

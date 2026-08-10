@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useState, useCallback } from "react";
 import {
   View,
@@ -5,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   ActivityIndicator,
   Platform,
 } from "react-native";
@@ -125,10 +125,7 @@ export default function Dashboard() {
       if (typeof window !== "undefined" && window.confirm("Sign out?")) doSignOut();
       return;
     }
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: doSignOut },
-    ]);
+    confirmDialog.destructiveConfirm("Sign out", "Are you sure you want to sign out?", doSignOut, "Sign Out");
   };
 
   const openEvent = async (e) => {

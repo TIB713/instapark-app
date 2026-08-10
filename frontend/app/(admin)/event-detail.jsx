@@ -1,3 +1,5 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -7,7 +9,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Image,
   RefreshControl,
   ActivityIndicator,
@@ -65,6 +66,8 @@ const cardShadow = {
 };
 
 export default function EventDetail() {
+  const insets = useSafeAreaInsets();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -98,6 +101,8 @@ export default function EventDetail() {
   const [assigningDriver, setAssigningDriver] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [slots, setSlots] = useState([]);
+  const [feedback, setFeedback] = useState([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [selectedZone, setSelectedZone] = useState(null);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentCar, setIncidentCar] = useState(null);
@@ -247,7 +252,7 @@ export default function EventDetail() {
 
   const submitResolve = async () => {
     if ((resolveStatus === "RESOLVED" || resolveStatus === "DISMISSED") && !resolveRemark.trim()) {
-      Alert.alert("Required", "Please provide a remark when resolving or dismissing.");
+      confirmDialog.info("Required", "Please provide a remark when resolving or dismissing.");
       return;
     }
     setSubmittingResolve(true);
@@ -261,10 +266,10 @@ export default function EventDetail() {
       setResolveStatus("IN_REVIEW");
       setResolveRemark("");
       fetchIncidents();
-      Alert.alert("Success", "Incident status updated successfully");
+      confirmDialog.info("Success", "Incident status updated successfully");
     } catch (err) {
       console.log(err);
-      Alert.alert("Error", "Failed to update incident status");
+      confirmDialog.info("Error", "Failed to update incident status");
     } finally {
       setSubmittingResolve(false);
     }
@@ -272,15 +277,15 @@ export default function EventDetail() {
 
   const submitIncident = async () => {
     if (!incidentCar) {
-      Alert.alert("Required", "Please select a car");
+      confirmDialog.info("Required", "Please select a car");
       return;
     }
     if (!incidentType) {
-      Alert.alert("Required", "Please select an incident type");
+      confirmDialog.info("Required", "Please select an incident type");
       return;
     }
     if (!incidentDesc.trim()) {
-      Alert.alert("Required", "Please add a description");
+      confirmDialog.info("Required", "Please add a description");
       return;
     }
     setSubmittingIncident(true);
@@ -316,9 +321,9 @@ export default function EventDetail() {
       setIncidentPhoto(null);
       setIncidentCarSearch("");
       fetchIncidents();
-      Alert.alert("Saved", "Incident report saved successfully");
+      confirmDialog.info("Saved", "Incident report saved successfully");
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to save");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to save");
     } finally {
       setSubmittingIncident(false);
     }
@@ -336,7 +341,7 @@ export default function EventDetail() {
   const pickIncidentPhoto = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permission needed", "Camera access required");
+      confirmDialog.info("Permission needed", "Camera access required");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -344,6 +349,16 @@ export default function EventDetail() {
     });
     if (!result.canceled) setIncidentPhoto(result.assets[0].uri);
   };
+
+  useEffect(() => {
+    if (tab === "feedback") {
+      setLoadingFeedback(true);
+      api.get(`/events/${currentEventId}/feedback`)
+        .then(res => setFeedback(res.data))
+        .catch(() => { })
+        .finally(() => setLoadingFeedback(false));
+    }
+  }, [tab, currentEventId]);
 
   useEffect(() => {
     if (!currentEventId) return;
@@ -399,7 +414,7 @@ export default function EventDetail() {
         fetchCars();
         fetchDrivers();
       } catch (err) {
-        Alert.alert("Error", err.response?.data?.detail || "Failed to assign driver");
+        confirmDialog.info("Error", err.response?.data?.detail || "Failed to assign driver");
       } finally {
         setAssigningDriver(false);
       }
@@ -409,13 +424,10 @@ export default function EventDetail() {
       ? `This driver is currently busy${busyPlate ? ` with car ${busyPlate}` : ""}. Assign this car to them anyway?`
       : `Assign ${driverName} to ${selectedCar?.plate}?`;
 
-    Alert.alert(
-      isBusy ? "Driver is busy" : "Confirm Assignment",
+    confirmDialog.confirm(
+      isBusy ? "Driver is busy" : "Confirm assignment",
       message,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: isBusy ? "Assign Anyway" : "Confirm", onPress: doAssign },
-      ]
+      doAssign
     );
   };
 
@@ -428,7 +440,7 @@ export default function EventDetail() {
       const headers = [
         "Plate", "Make", "Color", "Status", "Zone", "Slot",
         "Key Tag", "Check-in Driver", "Retrieval Driver",
-        "Duration (min)", "Retrieval Time (min)", "Platform Rating", "Driver Rating", "Notes",
+        "Duration (min)", "Retrieval Time (min)", "Platform Rating", "Notes",
         "Pre-registered", "Walk-in", "Peak Hour", "Incidents", "Delivered", "Still Parked"
       ].join(",");
       const rows = data.cars.map(c =>
@@ -437,7 +449,7 @@ export default function EventDetail() {
           c.zone || "", c.slot || "", c.key_tag || "",
           c.check_in_driver || "", c.retrieval_driver || "",
           c.duration_minutes || "", c.retrieval_minutes || "",
-          c.rating || "", c.driver_rating || "",
+          c.rating || "",
           `"${(c.notes || "").replace(/"/g, "'")}"`,
           data.summary.pre_registered || 0,
           data.summary.walk_in || 0,
@@ -459,7 +471,7 @@ export default function EventDetail() {
         dialogTitle: `${data.event.name} — Event Report`,
       });
     } catch {
-      Alert.alert("Error", "Failed to generate CSV");
+      confirmDialog.info("Error", "Failed to generate CSV");
     } finally {
       setExportingCSV(false);
     }
@@ -496,7 +508,6 @@ export default function EventDetail() {
         <td>${d.checkins}</td>
         <td>${d.parkings}</td>
         <td>${d.retrievals}</td>
-        <td>${d.avg_rating != null ? d.avg_rating + "★" : "—"}</td>
         <td style="color:${d.incidents > 0 ? "#EF4444" : "#6B7280"
         }">${d.incidents}</td>
       </tr>`
@@ -596,13 +607,7 @@ export default function EventDetail() {
             </div>
             <div class="stat-lbl">Platform Rating</div>
           </div>
-          <div class="stat">
-            <div class="stat-val">
-              ${s.driver_avg_rating > 0
-          ? s.driver_avg_rating + "★" : "—"}
-            </div>
-            <div class="stat-lbl">Driver Rating</div>
-          </div>
+
           <div class="stat">
             <div class="stat-val" style="color:${s.total_incidents > 0 ? "#EF4444" : "#059669"}">${s.total_incidents}</div>
             <div class="stat-lbl">Incidents</div>
@@ -622,7 +627,7 @@ export default function EventDetail() {
         <table><thead><tr>
           <th>Driver</th><th>Emp ID</th>
           <th>Check-ins</th><th>Parkings</th>
-          <th>Retrievals</th><th>Avg Rating</th><th>Incidents</th>
+          <th>Retrievals</th><th>Incidents</th>
         </tr></thead>
         <tbody>${driverRows}</tbody></table>
       </div>
@@ -658,60 +663,43 @@ export default function EventDetail() {
         dialogTitle: `${e.name} — Event Report`,
       });
     } catch {
-      Alert.alert("Error", "Failed to generate PDF");
+      confirmDialog.info("Error", "Failed to generate PDF");
     } finally {
       setExportingPDF(false);
     }
   };
 
   const closeEvent = () => {
-    Alert.alert("Close Event", "Are you sure? This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Close",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.post(`/events/${currentEventId}/close`);
-            router.back();
-          } catch (e) {
-            Alert.alert("Error", "Failed to close event");
-          }
-        },
-      },
-    ]);
+    confirmDialog.destructiveConfirm("Close event", "Are you sure? This cannot be undone.", async () => {
+      try {
+        await api.post(`/events/${currentEventId}/close`);
+        router.back();
+      } catch (e) {
+        confirmDialog.info("Error", "Failed to close event");
+      }
+    }, "Close");
   };
 
   const removeCar = (car) => {
-    Alert.alert("Remove Vehicle", `Remove ${car.plate}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/cars/${car.id}`);
-            setShowCarModal(false);
-            fetchCars();
-          } catch (e) {
-            Alert.alert("Error", "Failed to remove");
-          }
-        },
-      },
-    ]);
+    confirmDialog.destructiveConfirm("Remove vehicle", `Remove ${car.plate}?`, async () => {
+      try {
+        await api.delete(`/cars/${car.id}`);
+        setShowCarModal(false);
+        fetchCars();
+      } catch (e) {
+        confirmDialog.info("Error", "Failed to remove");
+      }
+    }, "Remove");
   };
 
   const [assigningId, setAssigningId] = useState(null);
   const [assigningAll, setAssigningAll] = useState(false);
 
   const toggleAssign = async (d) => {
-    Alert.alert(
-      d.assigned ? "Remove Driver" : "Assign Driver",
+    confirmDialog.confirm(
+      d.assigned ? "Remove driver" : "Assign driver",
       d.assigned ? `Remove ${d.name} from this event?` : `Assign ${d.name} to this event?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doToggleAssign(d) }
-      ]
+      () => doToggleAssign(d)
     );
   };
 
@@ -728,20 +716,17 @@ export default function EventDetail() {
     } catch (e) {
       // Revert optimistic update on failure
       setDrivers(prev => prev.map(drv => drv.id === d.id ? { ...drv, assigned: d.assigned } : drv));
-      Alert.alert("Error", e.response?.data?.detail || "Failed to update assignment");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to update assignment");
     } finally {
       setAssigningId(null);
     }
   };
 
   const toggleAssignSupervisor = async (s) => {
-    Alert.alert(
-      s.assigned ? "Remove Supervisor" : "Assign Supervisor",
+    confirmDialog.confirm(
+      s.assigned ? "Remove supervisor" : "Assign supervisor",
       s.assigned ? `Remove supervisor ${s.name} from this event?` : `Assign supervisor ${s.name} to this event?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doToggleAssignSupervisor(s) }
-      ]
+      () => doToggleAssignSupervisor(s)
     );
   };
 
@@ -756,7 +741,7 @@ export default function EventDetail() {
       await fetchSupervisors();
     } catch (e) {
       const msg = e.response?.data?.detail || "Failed to update assignment";
-      Alert.alert("Error", msg);
+      confirmDialog.info("Error", msg);
     } finally {
       setAssigningSupervisorId(null);
     }
@@ -821,13 +806,10 @@ export default function EventDetail() {
       phoneToSave = isValidIndian ? normalized : supPhone.trim();
     }
 
-    Alert.alert(
-      "Confirm Changes",
+    confirmDialog.confirm(
+      "Confirm changes",
       `Confirm saving changes for supervisor ${supName.trim()}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doSaveSupervisor(phoneToSave) }
-      ]
+      () => doSaveSupervisor(phoneToSave)
     );
   };
 
@@ -844,7 +826,7 @@ export default function EventDetail() {
         });
         uploadedPhotoUrl = up.data.url;
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload photo — please check your connection and try again.");
         setSavingSupervisor(false);
         return;
       }
@@ -855,7 +837,7 @@ export default function EventDetail() {
       try {
         aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload aadhar photo — please check your connection and try again.");
         setSavingSupervisor(false);
         return;
       }
@@ -877,10 +859,10 @@ export default function EventDetail() {
       });
       setShowAddSupervisorModal(false);
       resetSupForm();
-      Alert.alert("Supervisor Added!", `${supName} has been added and will receive login credentials by email.`);
+      confirmDialog.info("Supervisor added!", `${supName} has been added and will receive login credentials by email.`);
       fetchSupervisors();
     } catch (e) {
-      Alert.alert("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
+      confirmDialog.info("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
     } finally {
       setSavingSupervisor(false);
     }
@@ -967,13 +949,10 @@ export default function EventDetail() {
       phoneToSave = isValidIndian ? normalized : drvPhone.trim();
     }
 
-    Alert.alert(
-      "Confirm Changes",
+    confirmDialog.confirm(
+      "Confirm changes",
       `Confirm saving changes for driver ${drvName.trim()}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doSaveDriver(phoneToSave) }
-      ]
+      () => doSaveDriver(phoneToSave)
     );
   };
 
@@ -984,7 +963,7 @@ export default function EventDetail() {
       try {
         photoUrl = await uploadDriverImage(drvPhotoUri, "drivers");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload photo — please check your connection and try again.");
         setSavingDriver(false);
         return;
       }
@@ -994,7 +973,7 @@ export default function EventDetail() {
       try {
         licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload license photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload license photo — please check your connection and try again.");
         setSavingDriver(false);
         return;
       }
@@ -1004,12 +983,12 @@ export default function EventDetail() {
       try {
         aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload aadhar photo — please check your connection and try again.");
         setSavingDriver(false);
         return;
       }
     }
-    
+
     try {
       await api.post("/drivers", {
         name: drvName.trim(),
@@ -1028,10 +1007,10 @@ export default function EventDetail() {
       });
       setShowAddDriverModal(false);
       resetDrvForm();
-      Alert.alert("Driver Added!", `${drvName} has been added successfully.`);
+      confirmDialog.info("Driver added!", `${drvName} has been added successfully.`);
       fetchDrivers();
     } catch (e) {
-      Alert.alert("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
+      confirmDialog.info("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
     } finally {
       setSavingDriver(false);
     }
@@ -1041,13 +1020,10 @@ export default function EventDetail() {
     const available = drivers.filter(d => (d.available || d.assigned) && !d.assigned);
     if (available.length === 0) return;
 
-    Alert.alert(
-      "Assign All Drivers",
+    confirmDialog.confirm(
+      "Assign all drivers",
       `Assign all ${available.length} available drivers to this event?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doAssignAll(available) }
-      ]
+      () => doAssignAll(available)
     );
   };
 
@@ -1060,7 +1036,7 @@ export default function EventDetail() {
     } catch (e) {
       // Refetch on error to get correct state
       fetchDrivers();
-      Alert.alert("Error", "Failed to assign some drivers");
+      confirmDialog.info("Error", "Failed to assign some drivers");
     } finally {
       setAssigningAll(false);
     }
@@ -1204,7 +1180,7 @@ export default function EventDetail() {
                     if (event?.event_type === "hotel_special" || event?.event_type === "hotel_daily" || event?.event_type === "regular") {
                       setShowSpecialEventQRModal(true);
                     } else {
-                      Alert.alert("Notice", "This event type has no specific QR code.");
+                      confirmDialog.info("Notice", "This event type has no specific QR code.");
                     }
                   }}
                 >
@@ -1268,6 +1244,7 @@ export default function EventDetail() {
             ["cars", "Cars"],
             ["stats", "Stats"],
             ["incidents", "Incidents"],
+            ["feedback", "Feedback"],
           ]
           : [
             ["cars", "Cars"],
@@ -1275,6 +1252,7 @@ export default function EventDetail() {
             ["stats", "Stats"],
             ["slots", "Slots"],
             ["incidents", "Incidents"],
+            ["feedback", "Feedback"],
           ]
         ).map(([k, l]) => (
           <TouchableOpacity
@@ -1947,7 +1925,7 @@ export default function EventDetail() {
                   <TouchableOpacity
                     onPress={async () => {
                       if (!event?.host_email) {
-                        Alert.alert("Required", "Please enter host email");
+                        confirmDialog.info("Required", "Please enter host email");
                         return;
                       }
                       try {
@@ -1955,10 +1933,10 @@ export default function EventDetail() {
                           host_name: event.host_name,
                           host_email: event.host_email
                         });
-                        Alert.alert("Success", "Host updated and portal email sent");
+                        confirmDialog.info("Success", "Host updated and portal email sent");
                         fetchEvent();
                       } catch (err) {
-                        Alert.alert("Error", err?.response?.data?.detail || "Failed to update host");
+                        confirmDialog.info("Error", err?.response?.data?.detail || "Failed to update host");
                       }
                     }}
                     style={{ backgroundColor: "#1A3C6E", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
@@ -2069,135 +2047,194 @@ export default function EventDetail() {
         </ScrollView>
       )}
 
+      {tab === "feedback" && (
+        <View style={{ flex: 1, paddingBottom: rp(100) }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: rp(16) }}>
+
+            {loadingFeedback && <ActivityIndicator size="small" color="#7C3AED" />}
+          </View>
+          {!loadingFeedback && feedback.length === 0 ? (
+            <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: rp(60), backgroundColor: "#fff", borderRadius: rp(16), ...cardShadow }}>
+              <Ionicons name="chatbubbles-outline" size={48} color="#D1D5DB" />
+              <Text style={{ fontSize: rs(14), fontWeight: "800", color: "#6B7280", marginTop: rp(12) }}>NO FEEDBACK YET</Text>
+            </View>
+          ) : (
+            feedback.map(item => (
+              <View key={item.id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(16), marginBottom: rp(12), ...cardShadow }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: rp(8) }}>
+                  <View>
+                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(4) }}>
+                      <Text style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4), fontSize: rs(10), fontWeight: "900", color: "#4B5563", marginRight: rp(8) }}>{item.plate}</Text>
+                      <Text style={{ fontSize: rs(14), fontWeight: "800", color: "#111827" }}>{item.guest_name}</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Ionicons key={star} name="star" size={12} color={star <= item.stars ? "#FBBF24" : "#E5E7EB"} />
+                      ))}
+                      <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "600", marginLeft: rp(8) }}>
+                        {new Date(item.created_at).toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+                  {item.driver_name && (
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1) }}>DRIVER</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6), marginTop: rp(2) }}>
+                        <Ionicons name="car-outline" size={12} color="#6B7280" style={{ marginRight: rp(4) }} />
+                        <Text style={{ fontSize: rs(11), fontWeight: "700", color: "#4B5563" }}>{item.driver_name}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+                {item.issues && Object.values(item.issues).some(Boolean) && (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6), marginBottom: rp(8) }}>
+                    {item.issues.extra_money_asked && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Extra money</Text>}
+                    {item.issues.misbehaved && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Misbehaved</Text>}
+                    {item.issues.late_arrival && <Text style={{ backgroundColor: "#FFFBEB", color: "#F59E0B", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Late arrival</Text>}
+                    {item.issues.vehicle_damaged && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Vehicle damaged</Text>}
+                    {item.issues.unauthorized_personal_use && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Unauthorized use</Text>}
+                  </View>
+                )}
+                {item.comment ? (
+                  <View style={{ backgroundColor: "#F9FAFB", padding: rp(12), borderRadius: rp(12) }}>
+                    <Text style={{ fontSize: rs(12), color: "#4B5563", fontStyle: "italic", fontWeight: "500" }}>"{item.comment}"</Text>
+                  </View>
+                ) : null}
+              </View>
+            ))
+          )}
+        </View>
+      )}
+
       {tab === "slots" && !isClosed && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
 
-              {/* Capacity Summary */}
-              {(() => {
-                const total = slots.length;
-                const occupied = slots.filter(s => s.is_occupied).length;
-                const free = total - occupied;
-                const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
-                const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
-                return (
-                  <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
-                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(12) }}>
-                      CAPACITY OVERVIEW
-                    </Text>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(12) }}>
-                      <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827" }}>{occupied}</Text>
-                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
-                      </View>
-                      <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#059669" }}>{free}</Text>
-                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>FREE</Text>
-                      </View>
-                      <View style={{ alignItems: "center" }}>
-                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
-                        <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
-                      </View>
-                    </View>
-                    <View style={{ height: rp(10), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
-                      <View style={{ height: rp(10), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
-                    </View>
-                    <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(8), textAlign: "right" }}>
-                      {pct}% full
-                    </Text>
-                    {pct >= 80 && (
-                      <TouchableOpacity
-                        onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
-                        style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: rp(14), padding: rp(12), marginTop: rp(12), flexDirection: "row", alignItems: "center", justifyContent: "center" }}
-                      >
-                        <Ionicons name="warning-outline" size={16} color={pct >= 90 ? "#EF4444" : "#D97706"} />
-                        <Text style={{ fontWeight: "800", fontSize: rs(12), color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: rp(6) }}>
-                          {pct >= 90 ? "ALMOST FULL — TAP TO ADD MORE SLOTS" : "FILLING UP — TAP TO ADD MORE SLOTS"}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+          {/* Capacity Summary */}
+          {(() => {
+            const total = slots.length;
+            const occupied = slots.filter(s => s.is_occupied).length;
+            const free = total - occupied;
+            const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
+            const barColor = pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "#059669";
+            return (
+              <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(12) }}>
+                  CAPACITY OVERVIEW
+                </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(12) }}>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827" }}>{occupied}</Text>
+                    <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>OCCUPIED</Text>
                   </View>
-                );
-              })()}
-
-              {/* Zone Selector */}
-              {(() => {
-                const zones = [...new Set(slots.map(s => s.zone_name))];
-                if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
-                return (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
-                    {zones.map(z => {
-                      const zSlots = slots.filter(s => s.zone_name === z);
-                      const zOcc = zSlots.filter(s => s.is_occupied).length;
-                      return (
-                        <TouchableOpacity
-                          key={typeof z === "object" ? JSON.stringify(z) : z}
-                          onPress={() => setSelectedZone(z)}
-                          style={{
-                            backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
-                            borderRadius: rp(16),
-                            paddingHorizontal: rp(16),
-                            paddingVertical: rp(10),
-                            marginRight: rp(10),
-                            borderWidth: selectedZone === z ? 0 : 1,
-                            borderColor: "#E5E7EB",
-                            ...cardShadow,
-                          }}
-                        >
-                          <Text style={{ fontWeight: "800", fontSize: rs(13), color: selectedZone === z ? "#fff" : "#111827" }}>
-                            {typeof z === "object" ? z.zone_name || z.name || z.label || JSON.stringify(z) : `Zone ${z}`}
-                          </Text>
-                          <Text style={{ fontSize: rs(11), color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: rp(2) }}>
-                            {zOcc}/{zSlots.length} occupied
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                );
-              })()}
-
-              {/* Slot Grid */}
-              {(() => {
-                const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
-                return (
-                  <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), ...cardShadow }}>
-                    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(16) }}>
-                      ZONE {selectedZone} — SLOT MAP
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#059669" }}>{free}</Text>
+                    <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>FREE</Text>
+                  </View>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#7C3AED" }}>{total}</Text>
+                    <Text style={{ fontSize: rs(11), color: "#6B7280", fontWeight: "700" }}>TOTAL</Text>
+                  </View>
+                </View>
+                <View style={{ height: rp(10), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
+                  <View style={{ height: rp(10), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
+                </View>
+                <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(8), textAlign: "right" }}>
+                  {pct}% full
+                </Text>
+                {pct >= 80 && (
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } })}
+                    style={{ backgroundColor: pct >= 90 ? "#FEE2E2" : "#FEF3C7", borderRadius: rp(14), padding: rp(12), marginTop: rp(12), flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Ionicons name="warning-outline" size={16} color={pct >= 90 ? "#EF4444" : "#D97706"} />
+                    <Text style={{ fontWeight: "800", fontSize: rs(12), color: pct >= 90 ? "#EF4444" : "#D97706", marginLeft: rp(6) }}>
+                      {pct >= 90 ? "ALMOST FULL — TAP TO ADD MORE SLOTS" : "FILLING UP — TAP TO ADD MORE SLOTS"}
                     </Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8) }}>
-                      {zoneSlots.map(s => (
-                        <View
-                          key={s.id}
-                          style={{
-                            width: rp(56),
-                            height: rp(56),
-                            borderRadius: rp(14),
-                            backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            borderWidth: rp(1.5),
-                            borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
-                          }}
-                        >
-                          <Ionicons
-                            name={s.is_occupied ? "car" : "car-outline"}
-                            size={16}
-                            color={s.is_occupied ? "#EF4444" : "#059669"}
-                          />
-                          <Text style={{ fontSize: rs(11), fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: rp(2) }}>
-                            {s.slot_number}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                    {zoneSlots.length === 0 && (
-                      <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>
-                        No slots in this zone
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })()}
+
+          {/* Zone Selector */}
+          {(() => {
+            const zones = [...new Set(slots.map(s => s.zone_name))];
+            if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
+            return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
+                {zones.map(z => {
+                  const zSlots = slots.filter(s => s.zone_name === z);
+                  const zOcc = zSlots.filter(s => s.is_occupied).length;
+                  return (
+                    <TouchableOpacity
+                      key={typeof z === "object" ? JSON.stringify(z) : z}
+                      onPress={() => setSelectedZone(z)}
+                      style={{
+                        backgroundColor: selectedZone === z ? "#7C3AED" : "#fff",
+                        borderRadius: rp(16),
+                        paddingHorizontal: rp(16),
+                        paddingVertical: rp(10),
+                        marginRight: rp(10),
+                        borderWidth: selectedZone === z ? 0 : 1,
+                        borderColor: "#E5E7EB",
+                        ...cardShadow,
+                      }}
+                    >
+                      <Text style={{ fontWeight: "800", fontSize: rs(13), color: selectedZone === z ? "#fff" : "#111827" }}>
+                        {typeof z === "object" ? z.zone_name || z.name || z.label || JSON.stringify(z) : `Zone ${z}`}
                       </Text>
-                    )}
-                  </View>
-                );
-              })()}
+                      <Text style={{ fontSize: rs(11), color: selectedZone === z ? "rgba(255,255,255,0.8)" : "#9CA3AF", marginTop: rp(2) }}>
+                        {zOcc}/{zSlots.length} occupied
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            );
+          })()}
+
+          {/* Slot Grid */}
+          {(() => {
+            const zoneSlots = slots.filter(s => s.zone_name === selectedZone);
+            return (
+              <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(16), ...cardShadow }}>
+                <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(16) }}>
+                  ZONE {selectedZone} — SLOT MAP
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8) }}>
+                  {zoneSlots.map(s => (
+                    <View
+                      key={s.id}
+                      style={{
+                        width: rp(56),
+                        height: rp(56),
+                        borderRadius: rp(14),
+                        backgroundColor: s.is_occupied ? "#FEE2E2" : "#D1FAE5",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: rp(1.5),
+                        borderColor: s.is_occupied ? "#FECACA" : "#A7F3D0",
+                      }}
+                    >
+                      <Ionicons
+                        name={s.is_occupied ? "car" : "car-outline"}
+                        size={16}
+                        color={s.is_occupied ? "#EF4444" : "#059669"}
+                      />
+                      <Text style={{ fontSize: rs(11), fontWeight: "800", color: s.is_occupied ? "#EF4444" : "#059669", marginTop: rp(2) }}>
+                        {s.slot_number}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                {zoneSlots.length === 0 && (
+                  <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: rp(24) }}>
+                    No slots in this zone
+                  </Text>
+                )}
+              </View>
+            );
+          })()}
 
         </ScrollView>
       )}
@@ -2356,7 +2393,7 @@ export default function EventDetail() {
       <Modal visible={showCarModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), maxHeight: "85%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), paddingBottom: rp(20) + (insets?.bottom || 0), maxHeight: "85%" }}>
               <View style={{ alignItems: "center", marginBottom: rp(12) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
@@ -2501,7 +2538,7 @@ export default function EventDetail() {
       <Modal visible={showAddSupervisorModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                   <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
@@ -2525,15 +2562,15 @@ export default function EventDetail() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supName} onChangeText={t => { setSupName(t); if(errors.name) setErrors(prev => ({...prev, name: undefined})); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
+                <TextInput value={supName} onChangeText={t => { setSupName(t); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
                 {errors.name && <Text style={modalErrorText}>* {errors.name}</Text>}
 
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supEmail} onChangeText={t => { setSupEmail(t); if(errors.email) setErrors(prev => ({...prev, email: undefined})); }} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
+                <TextInput value={supEmail} onChangeText={t => { setSupEmail(t); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
                 {errors.email && <Text style={modalErrorText}>* {errors.email}</Text>}
 
                 <Text style={modalLabel}>PHONE</Text>
-                <TextInput value={supPhone} onChangeText={t => { setSupPhone(t); if(errors.phone) setErrors(prev => ({...prev, phone: undefined})); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
+                <TextInput value={supPhone} onChangeText={t => { setSupPhone(t); if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined })); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
                 {errors.phone && <Text style={modalErrorText}>* {errors.phone}</Text>}
 
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
@@ -2559,7 +2596,7 @@ export default function EventDetail() {
                 <TextInput value={supPanNumber} onChangeText={setSupPanNumber} placeholder="ABCDE1234F" autoCapitalize="characters" style={modalInput} />
 
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={supBankAccountNumber} onChangeText={t => { setSupBankAccountNumber(t); if(errors.bankAccount) setErrors(prev => ({...prev, bankAccount: undefined})); }} placeholder="Account Number" keyboardType="numeric" style={[modalInput, errors.bankAccount && modalInputError]} />
+                <TextInput value={supBankAccountNumber} onChangeText={t => { setSupBankAccountNumber(t); if (errors.bankAccount) setErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account Number" keyboardType="numeric" style={[modalInput, errors.bankAccount && modalInputError]} />
                 {errors.bankAccount && <Text style={modalErrorText}>* {errors.bankAccount}</Text>}
 
                 <Text style={modalLabel}>BANK IFSC</Text>
@@ -2598,12 +2635,12 @@ export default function EventDetail() {
                 )}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supAadharNumber} onChangeText={v => { setSupAadharNumber(v.toUpperCase()); if(errors.aadharNumber) setErrors(prev => ({...prev, aadharNumber: undefined})); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, errors.aadharNumber && modalInputError]} />
+                <TextInput value={supAadharNumber} onChangeText={v => { setSupAadharNumber(v.toUpperCase()); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, errors.aadharNumber && modalInputError]} />
                 {errors.aadharNumber && <Text style={modalErrorText}>* {errors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
-                  {errors.aadharPhoto && <Text style={[modalErrorText, {marginTop: rp(-4)}]}>* {errors.aadharPhoto}</Text>}
+                  {errors.aadharPhoto && <Text style={[modalErrorText, { marginTop: rp(-4) }]}>* {errors.aadharPhoto}</Text>}
                   {supAadharPhotoUri ? (
                     <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
@@ -2641,7 +2678,7 @@ export default function EventDetail() {
       <Modal visible={showAddDriverModal} transparent animationType="slide">
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                   <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
@@ -2660,10 +2697,10 @@ export default function EventDetail() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvName} onChangeText={t => { setDrvName(t); if(driverErrors.name) setDriverErrors(prev => ({...prev, name: undefined})); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
+                <TextInput value={drvName} onChangeText={t => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
                 {driverErrors.name && <Text style={modalErrorText}>* {driverErrors.name}</Text>}
                 <Text style={modalLabel}>PHONE <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvPhone} onChangeText={t => { setDrvPhone(t); if(driverErrors.phone) setDriverErrors(prev => ({...prev, phone: undefined})); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
+                <TextInput value={drvPhone} onChangeText={t => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
                 {driverErrors.phone && <Text style={modalErrorText}>* {driverErrors.phone}</Text>}
 
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
@@ -2682,10 +2719,10 @@ export default function EventDetail() {
                   </TouchableOpacity>
                 </View>
                 <Text style={modalLabel}>4-DIGIT PIN <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvPin} onChangeText={t => { setDrvPin(t); if(driverErrors.pin) setDriverErrors(prev => ({...prev, pin: undefined})); }} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
+                <TextInput value={drvPin} onChangeText={t => { setDrvPin(t); if (driverErrors.pin) setDriverErrors(prev => ({ ...prev, pin: undefined })); }} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
                 {driverErrors.pin && <Text style={modalErrorText}>* {driverErrors.pin}</Text>}
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvEmail} onChangeText={t => { setDrvEmail(t); if(driverErrors.email) setDriverErrors(prev => ({...prev, email: undefined})); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
+                <TextInput value={drvEmail} onChangeText={t => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
                 {driverErrors.email && <Text style={modalErrorText}>* {driverErrors.email}</Text>}
                 <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={drvPan} onChangeText={(v) => setDrvPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
@@ -2726,12 +2763,12 @@ export default function EventDetail() {
                   </Text>
                 )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if(driverErrors.licenseNumber) setDriverErrors(prev => ({...prev, licenseNumber: undefined})); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                <TextInput value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
                 {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
                 <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo *</Text>
-                  {driverErrors.licensePhoto && <Text style={[modalErrorText, {marginTop: rp(-4)}]}>* {driverErrors.licensePhoto}</Text>}
+                  {driverErrors.licensePhoto && <Text style={[modalErrorText, { marginTop: rp(-4) }]}>* {driverErrors.licensePhoto}</Text>}
                   {drvLicensePhotoUri ? (
                     <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
@@ -2742,12 +2779,12 @@ export default function EventDetail() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvAadharNumber} onChangeText={v => { setDrvAadharNumber(v.toUpperCase()); if(driverErrors.aadharNumber) setDriverErrors(prev => ({...prev, aadharNumber: undefined})); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput value={drvAadharNumber} onChangeText={v => { setDrvAadharNumber(v.toUpperCase()); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo *</Text>
-                  {driverErrors.aadharPhoto && <Text style={[modalErrorText, {marginTop: rp(-4)}]}>* {driverErrors.aadharPhoto}</Text>}
+                  {driverErrors.aadharPhoto && <Text style={[modalErrorText, { marginTop: rp(-4) }]}>* {driverErrors.aadharPhoto}</Text>}
                   {drvAadharPhotoUri ? (
                     <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
@@ -3132,7 +3169,7 @@ export default function EventDetail() {
       <Modal visible={showResolveModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: (insets?.bottom || 0) }}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>

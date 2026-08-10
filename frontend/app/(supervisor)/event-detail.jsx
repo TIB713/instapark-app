@@ -1,5 +1,7 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Audio } from "expo-av";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { Vibration } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { rs, rp } from '../../utils/responsive';
@@ -10,7 +12,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Image,
   RefreshControl,
   ActivityIndicator,
@@ -65,6 +66,8 @@ const cardShadow = {
 };
 
 export default function SupervisorEventDetail() {
+  const insets = useSafeAreaInsets();
+
   const router = useRouter();
   const { showQr } = useLocalSearchParams();
 
@@ -75,7 +78,7 @@ export default function SupervisorEventDetail() {
       if (showCarModal) { setShowCarModal(false); return true; }
       if (showSOSPanel) { 
         if (sosCount > 0) {
-          Alert.alert("Resolve SOS", "Please resolve active SOS alerts first");
+          confirmDialog.info("Resolve SOS", "Please resolve active SOS alerts first");
           return true;
         }
         setShowSOSPanel(false); 
@@ -114,6 +117,8 @@ export default function SupervisorEventDetail() {
   const [assigningDriver, setAssigningDriver] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [slots, setSlots] = useState([]);
+  const [feedback, setFeedback] = useState([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [selectedZone, setSelectedZone] = useState(null);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentCar, setIncidentCar] = useState(null);
@@ -190,6 +195,16 @@ export default function SupervisorEventDetail() {
     } catch {}
   }, [currentEventId]);
 
+  useEffect(() => {
+    if (tab === "feedback") {
+      setLoadingFeedback(true);
+      api.get(`/events/${currentEventId}/feedback`)
+        .then(res => setFeedback(res.data))
+        .catch(() => {})
+        .finally(() => setLoadingFeedback(false));
+    }
+  }, [tab, currentEventId]);
+
   const fetchSlots = useCallback(async () => {
     try {
       const { data } = await api.get(`/slots/event/${currentEventId}`);
@@ -261,13 +276,10 @@ export default function SupervisorEventDetail() {
   }, [currentEventId]);
 
   const resolveSOSAlert = async (alertId) => {
-    Alert.alert(
-      "Resolve SOS Alert",
+    confirmDialog.confirm(
+      "Resolve SOS alert",
       "Mark this SOS alert as resolved?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doResolveSOSAlert(alertId) }
-      ]
+      () => doResolveSOSAlert(alertId)
     );
   };
 
@@ -277,7 +289,7 @@ export default function SupervisorEventDetail() {
       await api.patch(`/sos/${alertId}/resolve`);
       fetchSOSAlerts();
     } catch {
-      Alert.alert("Error", "Failed to resolve alert.");
+      confirmDialog.info("Error", "Failed to resolve alert.");
     } finally {
       setResolvingSOSId(null);
     }
@@ -336,13 +348,10 @@ export default function SupervisorEventDetail() {
   };
 
   const handleAssignDriver = async (driverId, driverName) => {
-    Alert.alert(
-      "Confirm Assignment",
+    confirmDialog.confirm(
+      "Confirm assignment",
       `Assign ${driverName} to ${selectedCar?.plate}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doAssign(driverId) }
-      ]
+      () => doAssign(driverId)
     );
   };
 
@@ -356,7 +365,7 @@ export default function SupervisorEventDetail() {
       fetchCars();
       fetchDrivers();
     } catch (err) {
-      Alert.alert("Error", err.response?.data?.detail || "Failed to assign driver");
+      confirmDialog.info("Error", err.response?.data?.detail || "Failed to assign driver");
     } finally {
       setAssigningDriver(false);
     }
@@ -381,10 +390,10 @@ export default function SupervisorEventDetail() {
       setResolveRemark("");
       setResolveErrors({});
       fetchIncidents();
-      Alert.alert("Success", "Incident status updated successfully");
+      confirmDialog.info("Success", "Incident status updated successfully");
     } catch (err) {
       console.log(err);
-      Alert.alert("Error", "Failed to update incident status");
+      confirmDialog.info("Error", "Failed to update incident status");
     } finally {
       setSubmittingResolve(false);
     }
@@ -430,9 +439,9 @@ export default function SupervisorEventDetail() {
       setIncidentCarSearch("");
       setIncidentErrors({});
       fetchIncidents();
-      Alert.alert("Saved", "Incident report saved successfully");
+      confirmDialog.info("Saved", "Incident report saved successfully");
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to save");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to save");
     } finally {
       setSubmittingIncident(false);
     }
@@ -441,7 +450,7 @@ export default function SupervisorEventDetail() {
   const pickIncidentPhoto = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permission needed", "Camera access required");
+      confirmDialog.info("Permission needed", "Camera access required");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -454,15 +463,15 @@ export default function SupervisorEventDetail() {
     setExportingCSV(true);
     try {
       const { data } = await api.get(`/events/${currentEventId}/report`);
-      const headers = ["Plate","Make","Color","Status","Zone","Slot","Key Tag","Check-in Driver","Retrieval Driver","Duration (min)","Retrieval Time (min)","Platform Rating","Driver Rating","Notes","Pre-registered","Walk-in","Peak Hour","Still Parked"].join(",");
-      const rows = data.cars.map(c => [c.plate, c.make, c.color, c.status, c.zone || "", c.slot || "", c.key_tag || "", c.check_in_driver || "", c.retrieval_driver || "", c.duration_minutes || "", c.retrieval_minutes || "", c.rating || "", c.driver_rating || "", `"${(c.notes || "").replace(/"/g, "'")}"`, data.summary.pre_registered || 0, data.summary.walk_in || 0, data.summary.peak_hour || "—", data.summary.still_parked || 0].join(","));
+      const headers = ["Plate","Make","Color","Status","Zone","Slot","Key Tag","Check-in Driver","Retrieval Driver","Duration (min)","Retrieval Time (min)","Platform Rating","Notes","Pre-registered","Walk-in","Peak Hour","Still Parked"].join(",");
+      const rows = data.cars.map(c => [c.plate, c.make, c.color, c.status, c.zone || "", c.slot || "", c.key_tag || "", c.check_in_driver || "", c.retrieval_driver || "", c.duration_minutes || "", c.retrieval_minutes || "", c.rating || "", `"${(c.notes || "").replace(/"/g, "'")}"`, data.summary.pre_registered || 0, data.summary.walk_in || 0, data.summary.peak_hour || "—", data.summary.still_parked || 0].join(","));
       const csv = [headers, ...rows].join("\n");
       const filename = `${data.event.name.replace(/\s+/g, "_")}_report.csv`;
       const path = `${FileSystem.documentDirectory}${filename}`;
       await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
       await Sharing.shareAsync(path, { mimeType: "text/csv", dialogTitle: `${data.event.name} — Event Report` });
     } catch {
-      Alert.alert("Error", "Failed to generate CSV");
+      confirmDialog.info("Error", "Failed to generate CSV");
     } finally {
       setExportingCSV(false);
     }
@@ -476,10 +485,10 @@ export default function SupervisorEventDetail() {
       const s = data.summary;
 
       const carRows = data.cars.map(c => `<tr><td>${c.plate}</td><td>${c.color} ${c.make}</td><td>${c.status}</td><td>${c.check_in_driver || "—"}</td><td>${c.retrieval_driver || "—"}</td><td>${c.duration_minutes ? c.duration_minutes + " min" : "—"}</td><td>${c.rating ? "★".repeat(c.rating) : "—"}</td><td>${c.notes || "—"}</td></tr>`).join("");
-      const driverRows = data.drivers.map(d => `<tr><td>${d.name}</td><td>${d.employee_id}</td><td>${d.checkins}</td><td>${d.parkings}</td><td>${d.retrievals}</td><td>${d.avg_rating != null ? d.avg_rating + "★" : "—"}</td><td style="color:${d.incidents > 0 ? "#EF4444" : "#6B7280"}">${d.incidents}</td></tr>`).join("");
+      const driverRows = data.drivers.map(d => `<tr><td>${d.name}</td><td>${d.employee_id}</td><td>${d.checkins}</td><td>${d.parkings}</td><td>${d.retrievals}</td><td style="color:${d.incidents > 0 ? "#EF4444" : "#6B7280"}">${d.incidents}</td></tr>`).join("");
       const incidentRows = data.incidents.length > 0 ? data.incidents.map(i => `<tr><td>${i.plate}</td><td>${i.driver_name || "—"}</td><td>${i.description}</td><td>${new Date(i.created_at).toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</td></tr>`).join("") : `<tr><td colspan="4" style="text-align:center; color:#9CA3AF;">No incidents</td></tr>`;
 
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;font-size:12px;}.header{background:${ACCENT_COLOR};color:white;padding:24px 28px;}.header h1{font-size:22px;font-weight:900;}.header p{opacity:0.8;margin-top:3px;font-size:12px;}.section{padding:20px 28px;border-bottom:1px solid #f3f4f6;}.section h2{font-size:11px;font-weight:800;color:${ACCENT_COLOR};letter-spacing:3px;margin-bottom:12px;text-transform:uppercase;}.stats{display:flex;gap:12px;flex-wrap:wrap;}.stat{background:#f9fafb;border-radius:10px;padding:12px 16px;text-align:center;min-width:100px;}.stat-val{font-size:22px;font-weight:900;color:#111827;}.stat-lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}table{width:100%;border-collapse:collapse;font-size:11px;}th{padding:8px;text-align:left;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb;}td{padding:8px;border-bottom:1px solid #f3f4f6;}.footer{padding:16px 28px;text-align:center;color:#9ca3af;font-size:10px;}</style></head><body><div class="header"><h1>${e.name}</h1><p>${e.date || ""} ${e.start_time ? "· " + e.start_time + " to " + e.end_time : ""} ${e.venue ? "· " + e.venue : ""}</p><p style="margin-top:6px;font-size:10px;opacity:0.6;">Generated ${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</p></div><div class="section"><h2>Summary</h2><div class="stats"><div class="stat"><div class="stat-val">${s.total_cars}</div><div class="stat-lbl">Total Cars</div></div><div class="stat"><div class="stat-val">${s.pre_registered || 0}</div><div class="stat-lbl">Pre-Registered</div></div><div class="stat"><div class="stat-val">${s.walk_in || 0}</div><div class="stat-lbl">Walk-in</div></div><div class="stat"><div class="stat-val">${s.delivered}</div><div class="stat-lbl">Delivered</div></div><div class="stat"><div class="stat-val">${s.still_parked || 0}</div><div class="stat-lbl">Still Parked</div></div><div class="stat"><div class="stat-val">${s.avg_retrieval_minutes}m</div><div class="stat-lbl">Avg Retrieval</div></div><div class="stat"><div class="stat-val">${s.platform_avg_rating > 0 ? s.platform_avg_rating + "★" : "—"}</div><div class="stat-lbl">Platform Rating</div></div><div class="stat"><div class="stat-val">${s.driver_avg_rating > 0 ? s.driver_avg_rating + "★" : "—"}</div><div class="stat-lbl">Driver Rating</div></div><div class="stat"><div class="stat-val">${s.total_incidents}</div><div class="stat-lbl">Incidents</div></div><div class="stat"><div class="stat-val">${s.peak_hour || "—"}</div><div class="stat-lbl">Peak Hour</div></div><div class="stat"><div class="stat-val">${s.total_drivers}</div><div class="stat-lbl">Drivers</div></div></div></div><div class="section"><h2>Driver Performance</h2><table><thead><tr><th>Driver</th><th>Emp ID</th><th>Check-ins</th><th>Parkings</th><th>Retrievals</th><th>Avg Rating</th><th>Incidents</th></tr></thead><tbody>${driverRows}</tbody></table></div><div class="section"><h2>Incidents</h2><table><thead><tr><th>Plate</th><th>Driver</th><th>Description</th><th>Time</th></tr></thead><tbody>${incidentRows}</tbody></table></div><div class="section"><h2>All Vehicles (${s.total_cars})</h2><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Status</th><th>Check-in By</th><th>Retrieved By</th><th>Duration</th><th>Rating</th><th>Notes</th></tr></thead><tbody>${carRows}</tbody></table></div><div class="footer">InstaPark — Smart Valet Operations · ${e.name}</div></body></html>`;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;font-size:12px;}.header{background:${ACCENT_COLOR};color:white;padding:24px 28px;}.header h1{font-size:22px;font-weight:900;}.header p{opacity:0.8;margin-top:3px;font-size:12px;}.section{padding:20px 28px;border-bottom:1px solid #f3f4f6;}.section h2{font-size:11px;font-weight:800;color:${ACCENT_COLOR};letter-spacing:3px;margin-bottom:12px;text-transform:uppercase;}.stats{display:flex;gap:12px;flex-wrap:wrap;}.stat{background:#f9fafb;border-radius:10px;padding:12px 16px;text-align:center;min-width:100px;}.stat-val{font-size:22px;font-weight:900;color:#111827;}.stat-lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}table{width:100%;border-collapse:collapse;font-size:11px;}th{padding:8px;text-align:left;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb;}td{padding:8px;border-bottom:1px solid #f3f4f6;}.footer{padding:16px 28px;text-align:center;color:#9ca3af;font-size:10px;}</style></head><body><div class="header"><h1>${e.name}</h1><p>${e.date || ""} ${e.start_time ? "· " + e.start_time + " to " + e.end_time : ""} ${e.venue ? "· " + e.venue : ""}</p><p style="margin-top:6px;font-size:10px;opacity:0.6;">Generated ${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</p></div><div class="section"><h2>Summary</h2><div class="stats"><div class="stat"><div class="stat-val">${s.total_cars}</div><div class="stat-lbl">Total Cars</div></div><div class="stat"><div class="stat-val">${s.pre_registered || 0}</div><div class="stat-lbl">Pre-Registered</div></div><div class="stat"><div class="stat-val">${s.walk_in || 0}</div><div class="stat-lbl">Walk-in</div></div><div class="stat"><div class="stat-val">${s.delivered}</div><div class="stat-lbl">Delivered</div></div><div class="stat"><div class="stat-val">${s.still_parked || 0}</div><div class="stat-lbl">Still Parked</div></div><div class="stat"><div class="stat-val">${s.avg_retrieval_minutes}m</div><div class="stat-lbl">Avg Retrieval</div></div><div class="stat"><div class="stat-val">${s.platform_avg_rating > 0 ? s.platform_avg_rating + "★" : "—"}</div><div class="stat-lbl">Platform Rating</div></div><div class="stat"><div class="stat-val">${s.total_incidents}</div><div class="stat-lbl">Incidents</div></div><div class="stat"><div class="stat-val">${s.peak_hour || "—"}</div><div class="stat-lbl">Peak Hour</div></div><div class="stat"><div class="stat-val">${s.total_drivers}</div><div class="stat-lbl">Drivers</div></div></div></div><div class="section"><h2>Driver Performance</h2><table><thead><tr><th>Driver</th><th>Emp ID</th><th>Check-ins</th><th>Parkings</th><th>Retrievals</th><th>Incidents</th></tr></thead><tbody>${driverRows}</tbody></table></div><div class="section"><h2>Incidents</h2><table><thead><tr><th>Plate</th><th>Driver</th><th>Description</th><th>Time</th></tr></thead><tbody>${incidentRows}</tbody></table></div><div class="section"><h2>All Vehicles (${s.total_cars})</h2><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Status</th><th>Check-in By</th><th>Retrieved By</th><th>Duration</th><th>Rating</th><th>Notes</th></tr></thead><tbody>${carRows}</tbody></table></div><div class="footer">InstaPark — Smart Valet Operations · ${e.name}</div></body></html>`;
 
       const { uri } = await Print.printToFileAsync({ html });
       const filename = `${e.name.replace(/\s+/g, "_")}_report.pdf`;
@@ -487,7 +496,7 @@ export default function SupervisorEventDetail() {
       await FileSystem.moveAsync({ from: uri, to: dest });
       await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: `${e.name} — Event Report` });
     } catch {
-      Alert.alert("Error", "Failed to generate PDF");
+      confirmDialog.info("Error", "Failed to generate PDF");
     } finally {
       setExportingPDF(false);
     }
@@ -497,13 +506,10 @@ export default function SupervisorEventDetail() {
   const [assigningAll, setAssigningAll] = useState(false);
 
   const toggleAssign = async (d) => {
-    Alert.alert(
-      d.assigned ? "Remove Driver" : "Assign Driver",
+    confirmDialog.confirm(
+      d.assigned ? "Remove driver" : "Assign driver",
       d.assigned ? `Remove ${d.name} from this event?` : `Assign ${d.name} to this event?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doToggleAssign(d) }
-      ]
+      () => doToggleAssign(d)
     );
   };
 
@@ -518,7 +524,7 @@ export default function SupervisorEventDetail() {
       }
     } catch (e) {
       setDrivers(prev => prev.map(drv => drv.id === d.id ? { ...drv, assigned: d.assigned } : drv));
-      Alert.alert("Error", e.response?.data?.detail || "Failed");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed");
     } finally {
       setAssigningId(null);
     }
@@ -527,13 +533,10 @@ export default function SupervisorEventDetail() {
   const assignAll = async () => {
     const available = drivers.filter(d => (d.available || d.assigned) && !d.assigned);
     if (available.length === 0) return;
-    Alert.alert(
-      "Assign All Drivers",
+    confirmDialog.confirm(
+      "Assign all drivers",
       `Assign all ${available.length} available drivers to this event?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doAssignAll(available) }
-      ]
+      () => doAssignAll(available)
     );
   };
 
@@ -544,29 +547,27 @@ export default function SupervisorEventDetail() {
       await Promise.all(available.map(d => api.post(`/events/${currentEventId}/drivers/${d.id}`)));
     } catch (e) {
       fetchDrivers();
-      Alert.alert("Error", "Some drivers could not be assigned");
+      confirmDialog.info("Error", "Some drivers could not be assigned");
     } finally {
       setAssigningAll(false);
     }
   };
 
   const removeCar = (car) => {
-    Alert.alert("Remove Vehicle", `Remove ${car.plate}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/cars/${car.id}`);
-            setShowCarModal(false);
-            fetchCars();
-          } catch (e) {
-            Alert.alert("Error", "Failed to remove");
-          }
-        },
+    confirmDialog.destructiveConfirm(
+      "Remove vehicle",
+      `Remove ${car.plate}?`,
+      async () => {
+        try {
+          await api.delete(`/cars/${car.id}`);
+          setShowCarModal(false);
+          fetchCars();
+        } catch (e) {
+          confirmDialog.info("Error", "Failed to remove");
+        }
       },
-    ]);
+      "Remove"
+    );
   };
 
   return (
@@ -704,6 +705,7 @@ export default function SupervisorEventDetail() {
               ["cars", "Cars"],
               ["stats", "Stats"],
               ["incidents", "Incidents"],
+              ["feedback", "Feedback"],
             ]
           : [
               ["cars", "Cars"],
@@ -711,6 +713,7 @@ export default function SupervisorEventDetail() {
               ["stats", "Stats"],
               ["slots", "Slots"],
               ["incidents", "Incidents"],
+              ["feedback", "Feedback"],
             ]
         ).map(([k, l]) => (
           <TouchableOpacity
@@ -1181,6 +1184,65 @@ export default function SupervisorEventDetail() {
         </ScrollView>
       )}
 
+      {tab === "feedback" && (
+        <View style={{ flex: 1, paddingBottom: rp(100) }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: rp(16) }}>
+            <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#111827", letterSpacing: rs(1) }}>GUEST FEEDBACK</Text>
+            {loadingFeedback && <ActivityIndicator size="small" color={ACCENT_COLOR} />}
+          </View>
+          {!loadingFeedback && feedback.length === 0 ? (
+            <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: rp(60), backgroundColor: "#fff", borderRadius: rp(16), ...cardShadow }}>
+              <Ionicons name="chatbubbles-outline" size={48} color="#D1D5DB" />
+              <Text style={{ fontSize: rs(14), fontWeight: "800", color: "#6B7280", marginTop: rp(12) }}>NO FEEDBACK YET</Text>
+            </View>
+          ) : (
+            feedback.map(item => (
+              <View key={item.id} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(16), marginBottom: rp(12), ...cardShadow }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: rp(8) }}>
+                  <View>
+                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(4) }}>
+                      <Text style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4), fontSize: rs(10), fontWeight: "900", color: "#4B5563", marginRight: rp(8) }}>{item.plate}</Text>
+                      <Text style={{ fontSize: rs(14), fontWeight: "800", color: "#111827" }}>{item.guest_name}</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Ionicons key={star} name="star" size={12} color={star <= item.stars ? "#FBBF24" : "#E5E7EB"} />
+                      ))}
+                      <Text style={{ fontSize: rs(10), color: "#9CA3AF", fontWeight: "600", marginLeft: rp(8) }}>
+                        {new Date(item.created_at).toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+                  {item.driver_name && (
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={{ fontSize: rs(9), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1) }}>DRIVER</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(6), marginTop: rp(2) }}>
+                        <Ionicons name="car-outline" size={12} color="#6B7280" style={{ marginRight: rp(4) }} />
+                        <Text style={{ fontSize: rs(11), fontWeight: "700", color: "#4B5563" }}>{item.driver_name}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+                {item.issues && Object.values(item.issues).some(Boolean) && (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6), marginBottom: rp(8) }}>
+                    {item.issues.extra_money_asked && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Extra money</Text>}
+                    {item.issues.misbehaved && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Misbehaved</Text>}
+                    {item.issues.late_arrival && <Text style={{ backgroundColor: "#FFFBEB", color: "#F59E0B", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Late arrival</Text>}
+                    {item.issues.vehicle_damaged && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Vehicle damaged</Text>}
+                    {item.issues.unauthorized_personal_use && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Unauthorized use</Text>}
+                  </View>
+                )}
+                {item.comment ? (
+                  <View style={{ backgroundColor: "#F9FAFB", padding: rp(12), borderRadius: rp(12) }}>
+                    <Text style={{ fontSize: rs(12), color: "#4B5563", fontStyle: "italic", fontWeight: "500" }}>"{item.comment}"</Text>
+                  </View>
+                ) : null}
+              </View>
+            ))
+          )}
+        </View>
+      )}
+
       {tab === "slots" && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
           
@@ -1284,7 +1346,7 @@ export default function SupervisorEventDetail() {
       <Modal visible={showCarModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "85%" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), paddingBottom: rp(20) + (insets?.bottom || 0), maxHeight: "85%" }}>
             <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
             <ScrollView>
               {selectedCar && (
@@ -1373,7 +1435,7 @@ export default function SupervisorEventDetail() {
       <Modal visible={showIncidentModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), maxHeight: "92%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(20), paddingBottom: rp(20) + (insets?.bottom || 0), maxHeight: "92%" }}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(99), padding: rp(8), marginRight: rp(10) }}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
@@ -1504,14 +1566,14 @@ export default function SupervisorEventDetail() {
       <Modal visible={showSOSPanel} transparent animationType="slide">
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: "80%" }}>
+          <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 24 + (insets?.bottom || 0), maxHeight: "80%" }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <Text style={{ fontSize: rs(18), fontWeight: "700", color: "#0F2044" }}>
                 🚨 SOS Alerts {sosCount > 0 ? `(${sosCount} active)` : ""}
               </Text>
               <TouchableOpacity onPress={() => {
                 if (sosCount > 0) {
-                  Alert.alert("Resolve SOS", "Please resolve active SOS alerts first");
+                  confirmDialog.info("Resolve SOS", "Please resolve active SOS alerts first");
                 } else {
                   setShowSOSPanel(false);
                 }
@@ -1627,7 +1689,7 @@ export default function SupervisorEventDetail() {
                     setForcedSOSAlert(null);
                     fetchSOSAlerts();
                   } catch {
-                    Alert.alert("Error", "Failed to resolve alert.");
+                    confirmDialog.info("Error", "Failed to resolve alert.");
                   } finally {
                     setResolvingForcedSOS(false);
                   }
@@ -1649,7 +1711,7 @@ export default function SupervisorEventDetail() {
       <Modal visible={showResolveModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: (insets?.bottom || 0) }}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>

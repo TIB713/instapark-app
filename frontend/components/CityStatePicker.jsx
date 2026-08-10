@@ -1,9 +1,12 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from "react";
 import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, StyleSheet } from "react-native";
 import { State, City } from "country-state-city";
 import { rs, rp } from "../utils/responsive";
 
 export default function CityStatePicker({ state, city, onStateChange, onCityChange }) {
+  const insets = useSafeAreaInsets();
+
   const [showState, setShowState] = useState(false);
   const [showCity, setShowCity] = useState(false);
   const [search, setSearch] = useState("");
@@ -20,7 +23,7 @@ export default function CityStatePicker({ state, city, onStateChange, onCityChan
   const PickerModal = ({ visible, data, onSelect, onClose, title }) => (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: rp(20) + (insets?.bottom || 0) }]}>
           <Text style={styles.title}>{title}</Text>
           <TextInput
             style={styles.search}

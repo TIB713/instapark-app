@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { rs, rp } from '../../utils/responsive'; 
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   ActivityIndicator, 
-  Alert, 
   TextInput, 
   FlatList, 
   Modal,
@@ -20,7 +21,9 @@ import * as FileSystem from "expo-file-system";
 import api from "../../lib/api"; 
 import { useAppStore } from "../../lib/store";
 
-export default function PreRegisterQR() { 
+export default function PreRegisterQR() {
+  const insets = useSafeAreaInsets();
+ 
   const router = useRouter(); 
   const { user } = useAppStore();
   const [resolvedProviderType, setResolvedProviderType] = useState(null);
@@ -56,7 +59,7 @@ export default function PreRegisterQR() {
     setLoading(true);
     api.get("/qr-cards/me", { params: { search: debouncedSearch || undefined } })
       .then(({ data }) => setCards(data.cards || []))
-      .catch(() => Alert.alert("Error", "Failed to load QR cards"))
+      .catch(() => confirmDialog.info("Error", "Failed to load QR cards"))
       .finally(() => setLoading(false));
   };
 
@@ -157,7 +160,7 @@ export default function PreRegisterQR() {
   const handleDownloadDateGroup = async (group) => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Please allow photo library access to save QR codes.");
+      confirmDialog.info("Permission needed", "Please allow photo library access to save QR codes.");
       return;
     }
     setExportBusy(true);
@@ -195,9 +198,9 @@ export default function PreRegisterQR() {
     setExportMode(null);
     setExportQueue([]);
     if (saved === group.cards.length) {
-      Alert.alert("Saved", `Saved all ${saved} QR code(s) from ${group.label} to your gallery (album "InstaPark QR Codes").`);
+      confirmDialog.info("Saved", `Saved all ${saved} QR code(s) from ${group.label} to your gallery (album "InstaPark QR Codes").`);
     } else {
-      Alert.alert("Partially saved", `Saved ${saved} of ${group.cards.length} QR code(s) from ${group.label}. Some failed.`);
+      confirmDialog.info("Partially saved", `Saved ${saved} of ${group.cards.length} QR code(s) from ${group.label}. Some failed.`);
     }
   };
 
@@ -206,7 +209,7 @@ export default function PreRegisterQR() {
     try {
       await Share.share({ message: `QR Codes added on ${group.label} (${group.cards.length} tag(s)):\n\n${links}` });
     } catch {
-      Alert.alert("Error", "Failed to share QR codes for this date.");
+      confirmDialog.info("Error", "Failed to share QR codes for this date.");
     }
   };
 
@@ -215,14 +218,14 @@ export default function PreRegisterQR() {
     setSubmittingReport(true);
     api.post(`/qr-cards/${modalCard.id}/report-incident`, { reason: reportReason, note: reportNote })
       .then(() => {
-        Alert.alert("Success", "Incident reported successfully");
+        confirmDialog.info("Success", "Incident reported successfully");
         setModalCard(null);
         setIsReporting(false);
         setReportNote("");
         fetchCards();
       })
       .catch((err) => {
-        Alert.alert("Error", err.response?.data?.detail || "Failed to report incident");
+        confirmDialog.info("Error", err.response?.data?.detail || "Failed to report incident");
       })
       .finally(() => setSubmittingReport(false));
   };
@@ -472,7 +475,7 @@ export default function PreRegisterQR() {
 
         <Modal visible={dateModalVisible} transparent animationType="slide" onRequestClose={() => setDateModalVisible(false)}>
           <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }} activeOpacity={1} onPress={() => setDateModalVisible(false)}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "70%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "70%", paddingBottom: (insets?.bottom || 0) }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: rp(20), borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}>
                 <Text style={{ fontSize: rs(17), fontWeight: "900", color: "#111827" }}>Select Date</Text>
                 <TouchableOpacity onPress={() => setDateModalVisible(false)}>

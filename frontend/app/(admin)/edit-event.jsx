@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useEffect, useState } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -6,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -80,7 +80,7 @@ export default function EditEvent() {
         setZones(data.zones || []);
         setGates(data.gates || []);
       } catch (e) {
-        Alert.alert("Error", "Failed to load event");
+        confirmDialog.info("Error", "Failed to load event");
       } finally {
         setLoading(false);
       }
@@ -98,12 +98,12 @@ export default function EditEvent() {
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (endDT <= startDT) {
-      Alert.alert("Invalid", "End must be after start");
+      confirmDialog.info("Invalid", "End must be after start");
       return;
     }
     if (totalSlots > maxCarsInt) {
-      Alert.alert(
-        "Invalid Zones",
+      confirmDialog.info(
+        "Invalid zones",
         `Total slots (${totalSlots}) cannot exceed max cars (${maxCarsInt}). Please reduce zone slots.`
       );
       return;
@@ -136,7 +136,7 @@ export default function EditEvent() {
       }
       router.back();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Save failed");
+      confirmDialog.info("Error", e.response?.data?.detail || "Save failed");
     } finally {
       setSaving(false);
     }

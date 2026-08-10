@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, memo } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -560,21 +560,15 @@ export default function CheckIn() {
   };
 
   const clearGuestOnly = () => {
-    Alert.alert(
-      "Clear Guest Details?",
+    confirmDialog.destructiveConfirm(
+      "Clear guest details?",
       "This will remove the guest name and phone number. The car details will stay the same.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Yes, Clear",
-          style: "destructive",
-          onPress: () => {
+      () => {
             setGuestName("");
             setGuestPhone("");
             setAltGuestPhone("");
           },
-        },
-      ]
+      "Yes, Clear"
     );
   };
 
@@ -593,7 +587,7 @@ export default function CheckIn() {
   const takePhoto = useCallback(async (label) => {
     if (!permissionGrantedRef.current) {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
+      if (!perm.granted) { confirmDialog.info("Camera permission needed", ""); return; }
       permissionGrantedRef.current = true;
     }
     const d = draftRef.current;
@@ -697,13 +691,14 @@ export default function CheckIn() {
       return;
     }
 
-    Alert.alert(
-      "Confirm Check-In",
+    setSubmitting(false);
+    confirmDialog.confirm(
+      "Confirm check-in",
       `Confirm check-in for ${plate}?`,
-      [
-        { text: "Cancel", style: "cancel", onPress: () => setSubmitting(false) },
-        { text: "Confirm", onPress: () => doSubmit(phoneToSave, altPhoneToSave) }
-      ]
+      () => {
+        setSubmitting(true);
+        doSubmit(phoneToSave, altPhoneToSave);
+      }
     );
   };
 
@@ -740,7 +735,7 @@ export default function CheckIn() {
         });
         await AsyncStorage.removeItem("checkin_draft");
         await AsyncStorage.removeItem("checkin_photos");
-        Alert.alert("Saved Offline", "Vehicle check-in queued. Will sync when connected.");
+        confirmDialog.info("Saved offline", "Vehicle check-in queued. Will sync when connected.");
         router.back();
         return;
       }
@@ -787,7 +782,7 @@ export default function CheckIn() {
         car = data;
         if (car.warning) {
           await new Promise((resolve) => {
-            Alert.alert("⚠️ Almost Full", "This event is almost at capacity.", [{ text: "OK", onPress: resolve }]);
+            confirmDialog.info("⚠️ Almost full", "This event is almost at capacity.", resolve);
           });
         }
       }
@@ -848,24 +843,24 @@ export default function CheckIn() {
           });
           await AsyncStorage.removeItem("checkin_draft");
           await AsyncStorage.removeItem("checkin_photos");
-          Alert.alert("Saved for Retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
+          confirmDialog.info("Saved for retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
           router.back();
           return;
         } catch {
-          Alert.alert("Error", "Could not save this check-in for retry. Please check your connection and try again.");
+          confirmDialog.info("Error", "Could not save this check-in for retry. Please check your connection and try again.");
         }
       } else {
         const msg = err.response?.data?.detail || "Check-in failed";
         const isAlreadyCheckedIn = typeof msg === "string" && msg.includes("already active in this event");
         if (typeof msg === "string" && msg.includes("full")) {
-          Alert.alert("Event Full", "No more cars can be checked in.");
+          confirmDialog.info("Event full", "No more cars can be checked in.");
         } else if (isAlreadyCheckedIn || (typeof msg === "string" && msg.includes("Duplicate"))) {
-          Alert.alert(
-            "Already Checked In",
-            "This vehicle appears to already be checked in for this event — it may have been created by a previous attempt. Please check the car list before re-submitting.",
+          confirmDialog.info(
+            "Already checked in",
+            "This vehicle appears to already be checked in for this event — it may have been created by a previous attempt. Please check the car list before re-submitting."
           );
         } else {
-          Alert.alert("Error", typeof msg === "string" ? msg : "Failed");
+          confirmDialog.info("Error", typeof msg === "string" ? msg : "Failed");
         }
         // Clear stale draft so the NEXT check-in doesn't inherit this one's photos/fields
         try { await AsyncStorage.removeItem("checkin_draft"); } catch { }

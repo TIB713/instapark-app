@@ -1,6 +1,7 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useState, useEffect } from "react";
 import { rs, rp } from '../../utils/responsive';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,18 +16,11 @@ export default function FailedSyncs() {
   }, []);
 
   const dismiss = (idx) => {
-    Alert.alert("Dismiss", "Remove this failed item? The check-in will not be saved.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
+    confirmDialog.destructiveConfirm("Dismiss", "Remove this failed item? The check-in will not be saved.", async () => {
           await clearFailedItem(idx);
           const updated = await getFailedQueue();
           setItems(updated);
-        },
-      },
-    ]);
+        }, "Remove");
   };
 
   return (

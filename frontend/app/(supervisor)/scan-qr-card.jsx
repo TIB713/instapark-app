@@ -1,6 +1,7 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive'; 
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native"; 
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native"; 
 import { CameraView, useCameraPermissions } from "expo-camera"; 
 import { useRouter, useLocalSearchParams } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
@@ -42,10 +43,10 @@ export default function ScanQrCard() {
       } else if (data.includes("/v/")) {
         token = data.split("/v/")[1].split("?")[0].trim();
       } else if (data.includes("/pass/")) {
-        Alert.alert(
-          "Not a Key-Tag Card",
+        confirmDialog.info(
+          "Not a key-tag card",
           "This QR is a pre-registration pass, not a vehicle key-tag.",
-          [{ text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } }]
+          () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; }
         );
         return;
       }
@@ -62,10 +63,7 @@ export default function ScanQrCard() {
       });
     } catch (err) {
       const msg = err.response?.data?.detail || "Could not verify QR card";
-      Alert.alert("Invalid QR", msg, [
-        { text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } },
-        { text: "Cancel", onPress: () => router.back() },
-      ]);
+      confirmDialog.confirm("Invalid QR", msg, () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; });
     } finally {
       setLoading(false);
     }

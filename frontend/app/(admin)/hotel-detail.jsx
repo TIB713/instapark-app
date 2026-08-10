@@ -1,4 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import { fmtDateTime, todayIST, toISTDateString } from '../../utils/time';
 import {
@@ -8,7 +10,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Switch,
@@ -68,6 +69,8 @@ function InfoRow({ label, value, editing, onChange, keyboardType = "default" }) 
 }
 
 export default function HotelDetail() {
+  const insets = useSafeAreaInsets();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -235,7 +238,7 @@ export default function HotelDetail() {
       setHotel(data);
       setEditHotel(data);
     } catch (e) {
-      Alert.alert("Error", "Failed to update hotel");
+      confirmDialog.info("Error", "Failed to update hotel");
     }
   };
 
@@ -246,27 +249,20 @@ export default function HotelDetail() {
       await api.post(`/hotels/${hid}/${type}/${memberId}`);
       fetchHotel();
     } catch (e) {
-      Alert.alert("Error", "Failed to add member");
+      confirmDialog.info("Error", "Failed to add member");
     }
   };
 
   const removeMember = (memberId) => {
-    Alert.alert("Remove Member", "Are you sure you want to remove this member from the hotel?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
+    confirmDialog.destructiveConfirm("Remove member", "Are you sure you want to remove this member from the hotel?", async () => {
           try {
             const type = teamTab === "drivers" ? "drivers" : "supervisors";
             await api.delete(`/hotels/${hid}/${type}/${memberId}`);
             fetchHotel();
           } catch (e) {
-            Alert.alert("Error", "Failed to remove member");
+            confirmDialog.info("Error", "Failed to remove member");
           }
-        },
-      },
-    ]);
+        }, "Remove");
   };
 
   const uploadGuests = async () => {
@@ -294,10 +290,10 @@ export default function HotelDetail() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      Alert.alert("Success", `Uploaded! SMS sent to ${data.sms_sent_count} guests.`);
+      confirmDialog.info("Success", `Uploaded! SMS sent to ${data.sms_sent_count} guests.`);
       fetchGuests();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to upload guests");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to upload guests");
     } finally {
       setUploadingGuests(false);
     }
@@ -312,24 +308,24 @@ export default function HotelDetail() {
 
   const saveSpecialEvent = async () => {
     if (!newEventName.trim()) {
-      Alert.alert("Required", "Please enter the event name");
+      confirmDialog.info("Required", "Please enter the event name");
       return;
     }
     if (!newEventDate) {
-      Alert.alert("Required", "Please select a date");
+      confirmDialog.info("Required", "Please select a date");
       return;
     }
     if (!newEventStartTime) {
-      Alert.alert("Required", "Please select a start time");
+      confirmDialog.info("Required", "Please select a start time");
       return;
     }
     if (!newEventEndTime) {
-      Alert.alert("Required", "Please select an end time");
+      confirmDialog.info("Required", "Please select an end time");
       return;
     }
     const maxCarsNum = parseInt(newEventMaxCars);
     if (isNaN(maxCarsNum) || maxCarsNum < 1) {
-      Alert.alert("Required", "Please enter a valid number for max cars");
+      confirmDialog.info("Required", "Please enter a valid number for max cars");
       return;
     }
     setSavingEvent(true);
@@ -357,7 +353,7 @@ export default function HotelDetail() {
             host_email: newEventHostEmail.trim()
           });
         } catch (err) {
-          Alert.alert("Host Invite Failed", "Event created, but host invite failed to send.");
+          confirmDialog.info("Host invite failed", "Event created, but host invite failed to send.");
         }
       }
       setShowAddEventModal(false);
@@ -367,7 +363,7 @@ export default function HotelDetail() {
       setNewEventGates(["Main Gate"]);
       setNewEventZones([{ name: "Zone A", slots: "50" }]);
       fetchEvents();
-      Alert.alert("Success", "Special event created");
+      confirmDialog.info("Success", "Special event created");
     } catch (e) {
       const detail = e.response?.data?.detail;
       const message = Array.isArray(detail)
@@ -375,7 +371,11 @@ export default function HotelDetail() {
         : typeof detail === "string"
           ? detail
           : "Failed to create special event";
-      Alert.alert("Error", message);
+      if (message && message.toLowerCase().includes("event limit reached")) {
+        confirmDialog.info("Event limit reached", "You've used up your available events for this account. Contact your admin to increase your limit, or archive an old event to free up space.");
+      } else {
+        confirmDialog.info("Couldn't create event", message);
+      }
     } finally {
       setSavingEvent(false);
     }
@@ -395,7 +395,7 @@ export default function HotelDetail() {
       setEventQRToken(data.event_qr_token);
     } catch (e) {
       console.error("Error fetching event QR:", e);
-      Alert.alert("Error", "Failed to load event QR");
+      confirmDialog.info("Error", "Failed to load event QR");
     } finally {
       setLoadingEventQR(false);
     }
@@ -1166,7 +1166,7 @@ export default function HotelDetail() {
       <Modal visible={showAddEventModal} transparent animationType="slide" onRequestClose={() => setShowAddEventModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24), paddingBottom: rp(24) + (insets?.bottom || 0) }}>
               <View style={{ alignItems: "center", marginBottom: rp(16) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>

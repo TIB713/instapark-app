@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive'; 
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native"; 
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native"; 
 import { CameraView, useCameraPermissions } from "expo-camera"; 
 import { useRouter, useLocalSearchParams } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
@@ -40,10 +41,10 @@ export default function Scanner() {
       if (data.includes("/pass/")) {
         passToken = data.split("/pass/")[1].split("?")[0].trim();
       } else if (data.includes("/v/")) {
-        Alert.alert(
-          "Not a Pre-Registration Pass",
+        confirmDialog.info(
+          "Not a pre-registration pass",
           "This QR is a retrieval code, not a pre-registration pass.",
-          [{ text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } }]
+          () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; }
         );
         return;
       }
@@ -51,20 +52,19 @@ export default function Scanner() {
       const { data: pass } = await api.get(`/pass/${passToken}`);
 
       if (pass.status !== "PRE_REGISTERED") {
-        Alert.alert(
-          "Already Checked In",
+        confirmDialog.info(
+          "Already checked in",
           `This vehicle (${pass.plate}) has already been checked in.`,
-          [{ text: "OK", onPress: () => router.back() }]
+          () => router.back()
         );
         return;
       }
 
       if (currentEventId && pass.event_id !== currentEventId) {
-        Alert.alert(
-          "Not Registered For This Event",
+        confirmDialog.confirm(
+          "Not registered for this event",
           `${pass.guest_name || "This guest"} is pre-registered for "${pass.event_name}", not the event you're currently assigned to.`,
-          [{ text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } },
-           { text: "Cancel", onPress: () => router.back() }]
+          () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; }
         );
         return;
       }
@@ -85,10 +85,7 @@ export default function Scanner() {
       });
     } catch (err) {
       const msg = err.response?.data?.detail || "Could not load pass details";
-      Alert.alert("Invalid QR", msg, [
-        { text: "Scan Again", onPress: () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; } },
-        { text: "Cancel", onPress: () => router.back() },
-      ]);
+      confirmDialog.confirm("Invalid QR", msg, () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; });
     } finally {
       setLoading(false);
     }

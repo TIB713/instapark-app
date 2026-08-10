@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -6,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -47,7 +47,7 @@ export default function Hotels() {
 
   useEffect(() => {
     if (action === "add_special") {
-      Alert.alert("Add Special Event", "Please select a hotel from the list to create a special event for it.");
+      confirmDialog.info("Add special event", "Please select a hotel from the list to create a special event for it.");
     }
   }, [action]);
 
@@ -116,8 +116,6 @@ export default function Hotels() {
 
     setZones([{ name: "A", slots: "" }]);
     setGates(["Main Gate"]);
-    setKeyHookStart("1");
-    setKeyHookEnd("50");
     setErrors({});
   };
 
@@ -157,9 +155,9 @@ export default function Hotels() {
       setShowAddModal(false);
       resetForm();
       fetchHotels();
-      Alert.alert("Success", "Hotel added successfully");
+      confirmDialog.info("Success", "Hotel added successfully");
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to add hotel");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to add hotel");
     } finally {
       setSaving(false);
     }
@@ -194,27 +192,27 @@ export default function Hotels() {
     <View style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: ACCENT_COLOR }}>
         <View
-                style={{
-                  backgroundColor: ACCENT_COLOR,
-                  borderBottomLeftRadius: rp(44),
-                  borderBottomRightRadius: rp(44),
-                  paddingHorizontal: rp(20),
-                  paddingTop: rp(8),
-                  paddingBottom: rp(24),
-                }}
-              >
+          style={{
+            backgroundColor: ACCENT_COLOR,
+            borderBottomLeftRadius: rp(44),
+            borderBottomRightRadius: rp(44),
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(24),
+          }}
+        >
           <View
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  borderBottomLeftRadius: rp(44),
-                  borderBottomRightRadius: rp(44),
-                }}
-              />
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255,255,255,0.1)",
+              borderBottomLeftRadius: rp(44),
+              borderBottomRightRadius: rp(44),
+            }}
+          />
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={() => router.back()}

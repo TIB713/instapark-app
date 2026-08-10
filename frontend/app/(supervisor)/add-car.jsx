@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -120,9 +120,7 @@ export default function AddCar() {
       setQrCardId(params.prefill_qr_card_id || "");
     }
     if (!params.prefill_plate && !params.prefill_qr_token) {
-      Alert.alert("Missing QR Card", "Please scan a vehicle key-tag first.", [
-        { text: "OK", onPress: () => router.replace("/(supervisor)/scan-qr-card") }
-      ]);
+      confirmDialog.info("Missing QR card", "Please scan a vehicle key-tag first.", () => router.replace("/(supervisor)/scan-qr-card"));
     }
   }, [params.prefill_plate, params.prefill_qr_token, params.prefill_key_tag_number, params.prefill_qr_card_id, router]);
 
@@ -176,13 +174,10 @@ export default function AddCar() {
 
   const handlePickDriver = (driver) => {
     if (driver.duty_status === "busy") {
-      Alert.alert(
+      confirmDialog.confirm(
         "Driver is busy",
         `${driver.name} is currently busy${driver.current_car_plate ? ` with car ${driver.current_car_plate}` : ""}. Assign this car to them anyway?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Assign Anyway", onPress: () => setSelectedDriverId(driver.id) },
-        ]
+        () => setSelectedDriverId(driver.id)
       );
       return;
     }
@@ -218,27 +213,21 @@ export default function AddCar() {
   };
 
   const clearGuestOnly = () => {
-    Alert.alert(
-      "Clear Guest Details?",
+    confirmDialog.destructiveConfirm(
+      "Clear guest details?",
       "This will remove the guest name and phone number. The car details will stay the same.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Yes, Clear",
-          style: "destructive",
-          onPress: () => {
+      () => {
             setGuestName("");
             setGuestPhone("");
             setAltGuestPhone("");
           },
-        },
-      ]
+      "Yes, Clear"
     );
   };
 
   const takePhoto = async (label) => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Camera permission needed"); return; }
+    if (!perm.granted) { confirmDialog.info("Camera permission needed", ""); return; }
     const currentDraft = { plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName };
     try {
       await AsyncStorage.setItem("add_car_draft", JSON.stringify(currentDraft));
@@ -257,7 +246,7 @@ export default function AddCar() {
       if (idx !== -1) {
         const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
         if (nextLabel) {
-          Alert.alert("Next Photo", `Now capture the ${nextLabel.toUpperCase()} of the vehicle.`, [{ text: "OK", onPress: () => takePhoto(nextLabel) }]);
+          confirmDialog.info("Next photo", `Now capture the ${nextLabel.toUpperCase()} of the vehicle.`, () => takePhoto(nextLabel));
         }
       }
     }
@@ -329,13 +318,14 @@ export default function AddCar() {
       return;
     }
 
-    Alert.alert(
-      "Confirm Check-In",
+    setSubmitting(false);
+    confirmDialog.confirm(
+      "Confirm check-in",
       `Confirm check-in for ${plate}?`,
-      [
-        { text: "Cancel", style: "cancel", onPress: () => setSubmitting(false) },
-        { text: "Confirm", onPress: () => doSubmit(phoneToSave, altPhoneToSave) }
-      ]
+      () => {
+        setSubmitting(true);
+        doSubmit(phoneToSave, altPhoneToSave);
+      }
     );
   };
 
@@ -372,7 +362,7 @@ export default function AddCar() {
         });
         await AsyncStorage.removeItem("add_car_draft");
         await AsyncStorage.removeItem("add_car_photos");
-        Alert.alert("Saved Offline", "Vehicle check-in queued. Will sync when connected.");
+        confirmDialog.info("Saved offline", "Vehicle check-in queued. Will sync when connected.");
         router.back();
         return;
       }
@@ -416,7 +406,7 @@ export default function AddCar() {
         car = data;
         if (car.warning) {
           await new Promise((resolve) => {
-            Alert.alert("⚠️ Almost Full", "This event is almost at capacity.", [{ text: "OK", onPress: resolve }]);
+            confirmDialog.info("⚠️ Almost full", "This event is almost at capacity.", resolve);
           });
         }
       }
@@ -462,17 +452,17 @@ export default function AddCar() {
           });
           await AsyncStorage.removeItem("checkin_draft");
           await AsyncStorage.removeItem("checkin_photos");
-          Alert.alert("Saved for Retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
+          confirmDialog.info("Saved for retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
           router.back();
           return;
         } catch {
-          Alert.alert("Error", "Could not save this check-in for retry. Please check your connection and try again.");
+          confirmDialog.info("Error", "Could not save this check-in for retry. Please check your connection and try again.");
         }
       } else {
         const msg = err.response?.data?.detail || "Check-in failed";
-        if (typeof msg === "string" && msg.includes("full")) Alert.alert("Event Full", "No more cars can be checked in.");
-        else if (typeof msg === "string" && msg.includes("Duplicate")) Alert.alert("Duplicate", "Plate already checked in.");
-        else Alert.alert("Error", typeof msg === "string" ? msg : "Failed");
+        if (typeof msg === "string" && msg.includes("full")) confirmDialog.info("Event full", "No more cars can be checked in.");
+        else if (typeof msg === "string" && msg.includes("Duplicate")) confirmDialog.info("Duplicate", "Plate already checked in.");
+        else confirmDialog.info("Error", typeof msg === "string" ? msg : "Failed");
       }
     } finally { setSubmitting(false); }
   };

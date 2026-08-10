@@ -1,3 +1,5 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useState } from "react";
 import { rs, rp } from '../../utils/responsive'; 
 import { 
@@ -8,7 +10,6 @@ import {
   Modal, 
   TextInput, 
   ActivityIndicator, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform, 
 } from "react-native"; 
@@ -18,7 +19,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg"; 
 import api from "../../lib/api"; 
  
-export default function AdminQRDisplay() { 
+export default function AdminQRDisplay() {
+  const insets = useSafeAreaInsets();
+ 
   const router = useRouter(); 
   const { token, plate, carId, guestPhone: initialPhone } = useLocalSearchParams(); 
   const guestUrl = `${process.env.EXPO_PUBLIC_GUEST_URL}/v/${token}`; 
@@ -50,17 +53,17 @@ export default function AdminQRDisplay() {
     } 
     setPhoneError(null);
     if (!carId) { 
-      Alert.alert("Error", "Car ID not available. Cannot send SMS."); 
+      confirmDialog.info("Error", "Car ID not available. Cannot send SMS."); 
       return; 
     } 
     setSending(true); 
     try { 
       await api.post(`/cars/${carId}/send-sms`, { phone: phone.trim() });
       setSmsModalVisible(false); 
-      Alert.alert("SMS Sent", `Retrieval link sent to ${phone.trim()}`); 
+      confirmDialog.info("SMS sent", `Retrieval link sent to ${phone.trim()}`); 
     } catch (err) { 
       const msg = err.response?.data?.detail || "Failed to send SMS"; 
-      Alert.alert("Error", typeof msg === "string" ? msg : "Failed to send SMS"); 
+      confirmDialog.info("Error", typeof msg === "string" ? msg : "Failed to send SMS"); 
     } finally { 
       setSending(false); 
     } 
@@ -175,7 +178,8 @@ export default function AdminQRDisplay() {
               backgroundColor: "#fff", 
               borderTopLeftRadius: 28, 
               borderTopRightRadius: 28, 
-              padding: rp(28), 
+              padding: rp(28),
+              paddingBottom: rp(28) + (insets?.bottom || 0),
               shadowColor: "#000", 
               shadowOpacity: 0.15, 
               shadowRadius: rp(20), 

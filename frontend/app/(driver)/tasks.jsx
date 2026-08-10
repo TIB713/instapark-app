@@ -1,5 +1,7 @@
 // version 3
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from "expo-av";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { Vibration } from "react-native";
 import * as Location from "expo-location";
 import { Linking } from "react-native";
@@ -14,7 +16,6 @@ import {
   Image,
   Modal,
   FlatList,
-  Alert,
   RefreshControl,
   ActivityIndicator,
   Platform,
@@ -49,6 +50,8 @@ const cardShadow = {
 
 
 export default function Tasks() {
+  const insets = useSafeAreaInsets();
+
   const router = useRouter();
   const blinkAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -112,6 +115,7 @@ export default function Tasks() {
   const [verifyingOtp, setVerifyingOtp] = useState({});
   const [arrivingAtGate, setArrivingAtGate] = useState(null);
   const [pickingUp, setPickingUp] = useState({});
+  const [skipping, setSkipping] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
   const retrievalsRef = useRef([]);
   const lastExpiryRefetchRef = useRef(0);
@@ -283,7 +287,7 @@ export default function Tasks() {
       setParkPhotos([]);
       setParkingPhotoStep(false);
       setSelectedSlot(null);
-      Alert.alert(
+      confirmDialog.info(
         "Guest is back at the gate!",
         `${selectedCar.plate} — bring the car back to the gate instead. No need to re-park it.`
       );
@@ -304,20 +308,30 @@ export default function Tasks() {
     setFailedCount(failed.length);
   };
 
+  const fetchMyCarsRef = useRef(fetchMyCars);
+  const fetchRetrievalsRef = useRef(fetchRetrievals);
+  const fetchEventRef = useRef(fetchEvent);
+  const maybeQueueNewRequestRef = useRef(maybeQueueNewRequest);
+  
+  useEffect(() => { fetchMyCarsRef.current = fetchMyCars; }, [fetchMyCars]);
+  useEffect(() => { fetchRetrievalsRef.current = fetchRetrievals; }, [fetchRetrievals]);
+  useEffect(() => { fetchEventRef.current = fetchEvent; }, [fetchEvent]);
+  useEffect(() => { maybeQueueNewRequestRef.current = maybeQueueNewRequest; }, [maybeQueueNewRequest]);
+
   useEffect(() => {
     if (!currentEventId) return;
     api.post(`/slots/event/${currentEventId}/initialize`).catch(() => { });
-    fetchEvent();
-    Promise.all([fetchMyCars(), fetchRetrievals()]);
+    fetchEventRef.current();
+    Promise.all([fetchMyCarsRef.current(), fetchRetrievalsRef.current()]);
     refreshPending();
     connectWS(`/event/${currentEventId}`, (msg) => {
-      if (msg.type === "car_update") fetchMyCars();
+      if (msg.type === "car_update") fetchMyCarsRef.current();
       if (msg.type === "slot_update") fetchSlots();
     });
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
       if (msg.type === "retrieval_update") {
-        if (msg.data) maybeQueueNewRequest(msg.data);
-        fetchRetrievals();
+        if (msg.data) maybeQueueNewRequestRef.current(msg.data);
+        fetchRetrievalsRef.current();
       }
     });
 
@@ -326,20 +340,20 @@ export default function Tasks() {
         disconnectWS(`/event/${currentEventId}`);
         disconnectWS(`/retrievals/${currentEventId}`);
         connectWS(`/event/${currentEventId}`, (msg) => {
-          if (msg.type === "car_update") fetchMyCars();
+          if (msg.type === "car_update") fetchMyCarsRef.current();
           if (msg.type === "slot_update") fetchSlots();
         });
         connectWS(`/retrievals/${currentEventId}`, (msg) => {
           if (msg.type === "retrieval_update") {
-            if (msg.data) maybeQueueNewRequest(msg.data);
-            fetchRetrievals();
+            if (msg.data) maybeQueueNewRequestRef.current(msg.data);
+            fetchRetrievalsRef.current();
           }
         });
-        Promise.all([fetchMyCars(), fetchRetrievals()]);
+        Promise.all([fetchMyCarsRef.current(), fetchRetrievalsRef.current()]);
       }
     });
 
-    const pollRetrievalsInterval = setInterval(fetchRetrievals, 15000);
+    const pollRetrievalsInterval = setInterval(() => fetchRetrievalsRef.current(), 15000);
 
     const unsub = NetInfo.addEventListener(async (state) => {
       if (state.isConnected) {
@@ -360,10 +374,10 @@ export default function Tasks() {
       const stillActive = await checkEventStatusAndStop();
       if (!stillActive) {
         clearInterval(eventStatusInterval);
-        Alert.alert(
-          "Event Closed",
+        confirmDialog.info(
+          "Event closed",
           "This event has been closed. Location tracking has stopped.",
-          [{ text: "OK", onPress: () => router.back() }]
+          () => router.back()
         );
       }
     }, 60000);
@@ -431,12 +445,12 @@ export default function Tasks() {
       setSosCarNumber("");
       
       if (sosPhoto && !uploadUrl) {
-        Alert.alert("Photo Upload Failed", "Your SOS was sent, but the photo did not attach. Please inform your supervisor.");
+        confirmDialog.info("Photo upload failed", "Your SOS was sent, but the photo did not attach. Please inform your supervisor.");
       } else {
-        Alert.alert("SOS Sent", "Your supervisor has been notified.");
+        confirmDialog.info("SOS sent", "Your supervisor has been notified.");
       }
     } catch {
-      Alert.alert("Error", "Failed to send SOS. Please try again.");
+      confirmDialog.info("Error", "Failed to send SOS. Please try again.");
     } finally {
       setSendingSOS(false);
     }
@@ -458,13 +472,13 @@ export default function Tasks() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission Denied", "Location permission is needed to save GPS pin.");
+        confirmDialog.info("Permission denied", "Location permission is needed to save GPS pin.");
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setCapturedGPS({ lat: loc.coords.latitude, lng: loc.coords.longitude });
     } catch {
-      Alert.alert("Error", "Could not get GPS location. You can still park without it.");
+      confirmDialog.info("Error", "Could not get GPS location. You can still park without it.");
     } finally {
       setCapturingGPS(false);
     }
@@ -474,7 +488,7 @@ export default function Tasks() {
     try {
       const { data } = await api.get(`/cars/${carId}/gps-pin`);
       if (!data.gps_lat || !data.gps_lng) {
-        Alert.alert("No GPS Pin", "This car does not have a GPS pin saved.");
+        confirmDialog.info("No GPS pin", "This car does not have a GPS pin saved.");
         return;
       }
       const url = `https://www.google.com/maps?q=${data.gps_lat},${data.gps_lng}`;
@@ -482,10 +496,10 @@ export default function Tasks() {
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert("Error", "Could not open Google Maps.");
+        confirmDialog.info("Error", "Could not open Google Maps.");
       }
     } catch {
-      Alert.alert("Error", "Failed to get car location.");
+      confirmDialog.info("Error", "Failed to get car location.");
     }
   };
 
@@ -506,19 +520,14 @@ export default function Tasks() {
     if (!selectedSlot) return;
 
     if (parkPhotos.length === 0) {
-      Alert.alert("Photo Required", "Please take at least one parking photo before confirming.", [
-        { text: "OK" },
-      ]);
+      confirmDialog.info("Photo required", "Please take at least one parking photo before confirming.");
       return;
     }
 
-    Alert.alert(
-      "Confirm Parking",
+    confirmDialog.confirm(
+      "Confirm parking",
       `Confirm parking ${selectedCar?.plate} in Zone ${selectedZone}, Slot ${selectedSlot}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doConfirmPark() }
-      ]
+      () => doConfirmPark()
     );
   };
 
@@ -543,7 +552,7 @@ export default function Tasks() {
         setParkPhotos([]);
         setParkingPhotoStep(false);
         refreshPending();
-        Alert.alert("Saved Offline", "Parking recorded. Will sync when connected.");
+        confirmDialog.info("Saved offline", "Parking recorded. Will sync when connected.");
         return;
       }
 
@@ -581,20 +590,17 @@ export default function Tasks() {
         } catch {}
       })();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to park");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to park");
     } finally {
       setConfirmingPark(false);
     }
   };
 
   const pickup = async (car) => {
-    Alert.alert(
+    confirmDialog.confirm(
       "Pick up this car?",
       `Confirm you're picking up ${car.plate}.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doPickup(car) }
-      ]
+      () => doPickup(car)
     );
   };
 
@@ -605,20 +611,17 @@ export default function Tasks() {
       await updateJourney(car.id, "retrieval");
       fetchRetrievals();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed");
     } finally {
       setPickingUp((prev) => ({ ...prev, [car.id]: false }));
     }
   };
 
   const arriveAtGate = async (car) => {
-    Alert.alert(
+    confirmDialog.confirm(
       "Arrive at gate",
       `Mark arrived at gate for ${car.plate}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doArriveAtGate(car) }
-      ]
+      () => doArriveAtGate(car)
     );
   };
 
@@ -628,7 +631,7 @@ export default function Tasks() {
       await api.patch(`/cars/${car.id}/arrive-at-gate`);
       fetchRetrievals();
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Could not mark arrived at gate");
+      confirmDialog.info("Error", e.response?.data?.detail || "Could not mark arrived at gate");
     } finally {
       setArrivingAtGate(null);
     }
@@ -636,14 +639,11 @@ export default function Tasks() {
 
   const verifyDeliveryOtp = async (car) => {
     const code = (otpInput[car.id] || "").trim();
-    if (!code) { Alert.alert("Enter the code", "Ask the guest for their code and enter it."); return; }
-    Alert.alert(
-      "Confirm Handover",
+    if (!code) { confirmDialog.info("Enter the code", "Ask the guest for their code and enter it."); return; }
+    confirmDialog.confirm(
+      "Confirm handover",
       `Confirm handover code for ${car.plate}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => doVerifyDeliveryOtp(car, code) }
-      ]
+      () => doVerifyDeliveryOtp(car, code)
     );
   };
 
@@ -653,7 +653,7 @@ export default function Tasks() {
       await api.post(`/cars/${car.id}/verify-delivery-otp`, { otp: code });
       fetchRetrievals();
     } catch (e) {
-      Alert.alert("Incorrect Code", e.response?.data?.detail || "Could not verify code");
+      confirmDialog.info("Incorrect code", e.response?.data?.detail || "Could not verify code");
     } finally {
       setVerifyingOtp((prev) => ({ ...prev, [car.id]: false }));
     }
@@ -675,12 +675,12 @@ export default function Tasks() {
 
   const takeParkPhoto = async () => {
     if (parkPhotos.length >= 5) {
-      Alert.alert("Max 5 photos", "Maximum 5 parking photos allowed");
+      confirmDialog.info("Max 5 photos", "Maximum 5 parking photos allowed");
       return;
     }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permission needed", "Camera access required");
+      confirmDialog.info("Permission needed", "Camera access required");
       return;
     }
     setTakingParkPhoto(true);
@@ -735,7 +735,7 @@ export default function Tasks() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
       setHandoverUploading(false);
-      Alert.alert("Camera permission needed");
+      confirmDialog.info("Camera permission needed");
       return;
     }
 
@@ -749,7 +749,7 @@ export default function Tasks() {
       });
     } catch (e) {
       setHandoverUploading(false);
-      Alert.alert("Camera Error", "Could not open camera. Please try again.");
+      confirmDialog.info("Camera error", "Could not open camera. Please try again.");
       return;
     }
 
@@ -776,8 +776,8 @@ export default function Tasks() {
         await FileSystem.copyAsync({ from: finalUri, to: localPath });
         await enqueueHandover(car.id, localPath);
         await refreshPending();
-        Alert.alert("Saved Offline", "Photo saved. Will upload when connected.");
-      } catch (e) { Alert.alert("Error", "Failed to save offline"); }
+        confirmDialog.info("Saved offline", "Photo saved. Will upload when connected.");
+      } catch (e) { confirmDialog.info("Error", "Failed to save offline"); }
       setHandoverUploading(false);
       return;
     }
@@ -814,7 +814,7 @@ export default function Tasks() {
       })();
 
     } catch (e) {
-      Alert.alert("Handover Failed", e.response?.data?.detail || "Could not complete handover. Try again.");
+      confirmDialog.info("Handover failed", e.response?.data?.detail || "Could not complete handover. Try again.");
       setHandoverUploading(false);
     } finally {
       await updateJourney(null, "idle"); // always clear journey context, even if delivery fails
@@ -1367,7 +1367,7 @@ export default function Tasks() {
                           );
                         })()}
                         <TouchableOpacity
-                          onPress={() => Alert.alert("Coming Soon", "In-app masked calling will be available in a future update.")}
+                          onPress={() => confirmDialog.info("Coming soon", "In-app masked calling will be available in a future update.")}
                           style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#EFF6FF", borderRadius: rp(14), paddingVertical: rp(10), marginBottom: rp(10), borderWidth: rp(1), borderColor: "#BFDBFE" }}
                         >
                           <Ionicons name="call" size={16} color="#1D4ED8" />
@@ -1457,7 +1457,7 @@ export default function Tasks() {
       <Modal visible={showParkModal} transparent animationType="slide">
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingTop: rp(20) }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingTop: rp(20), paddingBottom: (insets?.bottom || 0) }}>
               {/* Fixed Header */}
               <View style={{ paddingHorizontal: rp(20) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}>
@@ -1664,7 +1664,7 @@ export default function Tasks() {
 
       <Modal visible={showSOSModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 }}>
+          <View style={{ backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 24 + (insets?.bottom || 0) }}>
             <Text style={{ fontSize: rs(20), fontWeight: "700", color: "#DC2626", marginBottom: 4 }}>
               🚨 Send SOS Alert
             </Text>
@@ -1760,7 +1760,7 @@ export default function Tasks() {
 
       <Modal visible={showParkSuccessModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24) }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24), paddingBottom: rp(24) + (insets?.bottom || 0) }}>
             <View style={{ alignItems: "center" }}>
               <Ionicons name="checkmark-circle" size={rs(64)} color="#059669" />
               <Text style={{ fontSize: rs(22), fontWeight: "900", color: "#111827", textAlign: "center", marginTop: rp(12) }}>
@@ -1866,25 +1866,25 @@ export default function Tasks() {
                 if (!car) return;
                 const carIdStr = String(car.id);
 
-                // Lock ID immediately against concurrent polling or WS pings
                 seenRequestIdsRef.current.add(carIdStr);
                 setPickingUp((prev) => ({ ...prev, [car.id]: true }));
 
                 try {
                   await api.patch(`/cars/${car.id}/pickup`, { retrieval_driver_id: resolvedDriverId });
-                  await updateJourney(car.id, "retrieval");
                   setTab("retrievals");
                   setIncomingRequest(null);
-                  await fetchRetrievals();
+                  setPickingUp((prev) => ({ ...prev, [car.id]: false }));
+                  
+                  updateJourney(car.id, "retrieval").catch(() => {});
+                  fetchRetrievals().catch(() => {});
                 } catch (e) {
+                  setPickingUp((prev) => ({ ...prev, [car.id]: false }));
                   if (e.response?.status === 409) {
-                    Alert.alert("Too Late", "Already picked up by another driver.");
+                    confirmDialog.info("Too late", "Already picked up by another driver.");
                   } else {
-                    Alert.alert("Error", e.response?.data?.detail || "Failed to pick up.");
+                    confirmDialog.info("Error", e.response?.data?.detail || "Failed to pick up.");
                   }
                   setIncomingRequest(null);
-                } finally {
-                  setPickingUp((prev) => ({ ...prev, [car.id]: false }));
                 }
               }}
               style={{ backgroundColor: "#10B981", borderRadius: rp(16), paddingVertical: rp(18), alignItems: "center" }}
@@ -1897,16 +1897,21 @@ export default function Tasks() {
             </TouchableOpacity>
             
             <TouchableOpacity 
-              disabled={!!pickingUp[incomingRequest?.id]}
+              disabled={!!pickingUp[incomingRequest?.id] || skipping}
               onPress={() => {
-                if (incomingRequest?.id) {
-                  seenRequestIdsRef.current.add(String(incomingRequest.id));
-                }
+                if (skipping || !incomingRequest) return;
+                setSkipping(true);
+                seenRequestIdsRef.current.add(String(incomingRequest.id));
                 setIncomingRequest(null);
+                setSkipping(false);
               }}
               style={{ backgroundColor: "transparent", borderWidth: rp(2), borderColor: "rgba(255,255,255,0.2)", borderRadius: rp(16), paddingVertical: rp(16), alignItems: "center" }}
             >
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: rs(14), letterSpacing: rs(1) }}>SKIP</Text>
+              {skipping ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: rs(14), letterSpacing: rs(1) }}>SKIP</Text>
+              )}
             </TouchableOpacity>
           </View>
         </SafeAreaView>

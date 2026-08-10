@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -6,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -86,17 +86,17 @@ export default function CreateEvent() {
     if (Object.keys(errs).length > 0) return;
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (startDT < new Date()) {
-      Alert.alert("Invalid", "Start date and time has already passed");
+      confirmDialog.info("Invalid", "Start date and time has already passed");
       return;
     }
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     if (endDT <= startDT) {
-      Alert.alert("Invalid", "End must be after start");
+      confirmDialog.info("Invalid", "End must be after start");
       return;
     }
     if (totalSlots > maxCarsInt) {
-      Alert.alert(
-        "Invalid Zones",
+      confirmDialog.info(
+        "Invalid zones",
         `Total slots (${totalSlots}) cannot exceed max cars (${maxCarsInt}). Please reduce zone slots.`
       );
       return;
@@ -121,7 +121,7 @@ export default function CreateEvent() {
       let res;
       if (isHotelOwner) {
         if (!myHotel) {
-          Alert.alert("No hotel found", "Please contact support.");
+          confirmDialog.info("No hotel found", "Please contact support.");
           setSaving(false);
           return;
         }
@@ -142,7 +142,7 @@ export default function CreateEvent() {
             host_email: hostEmail.trim()
           });
         } catch (err) {
-          Alert.alert("Host Invite Failed", "Event created, but host invite failed to send.");
+          confirmDialog.info("Host invite failed", "Event created, but host invite failed to send.");
         }
       }
       setCurrentEventId(data.id);
@@ -155,7 +155,11 @@ export default function CreateEvent() {
         : typeof detail === "string"
           ? detail
           : "Failed to create event";
-      Alert.alert("Error", message);
+      if (message && message.toLowerCase().includes("event limit reached")) {
+        confirmDialog.info("Event limit reached", "You've used up your available events for this account. Contact your admin to increase your limit, or archive an old event to free up space.");
+      } else {
+        confirmDialog.info("Couldn't create event", message);
+      }
     } finally {
       setSaving(false);
     }

@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useState, useCallback, useEffect } from "react";
 import { rs, rp } from '../../utils/responsive';
 import { todayIST } from '../../utils/time';
@@ -7,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   ActivityIndicator,
   Platform,
 } from "react-native";
@@ -113,10 +113,7 @@ export default function SupervisorDashboard() {
       if (typeof window !== "undefined" && window.confirm("Sign out?")) doSignOut();
       return;
     }
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: doSignOut },
-    ]);
+    confirmDialog.destructiveConfirm("Sign out", "Are you sure you want to sign out?", doSignOut, "Sign Out");
   };
 
   const openEvent = async (e, showQr = false) => {
@@ -159,7 +156,7 @@ export default function SupervisorDashboard() {
         if (assignedEvents.length > 0) {
           openEvent(assignedEvents[0], true);
         } else {
-          Alert.alert("No Assigned Event", "You don't have any active or upcoming assigned events to show a QR for.");
+          confirmDialog.info("No assigned event", "You don't have any active or upcoming assigned events to show a QR for.");
         }
       }
     },

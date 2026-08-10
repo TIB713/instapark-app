@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -5,7 +6,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   RefreshControl,
   ActivityIndicator,
   Platform,
@@ -84,10 +84,7 @@ export default function DriverHome() {
       if (typeof window !== "undefined" && window.confirm("Sign out?")) doSignOut();
       return;
     }
-    Alert.alert("Sign Out", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: doSignOut },
-    ]);
+    confirmDialog.destructiveConfirm("Sign out", "Are you sure?", doSignOut, "Sign Out");
   };
 
   const openEvent = async (e) => {

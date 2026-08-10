@@ -1,4 +1,6 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState, useCallback } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -7,7 +9,6 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -32,6 +33,8 @@ const cardShadow = {
 };
 
 export default function ManageEmployees() {
+  const insets = useSafeAreaInsets();
+
   const router = useRouter();
   const { tab: initialTab } = useLocalSearchParams();
   const [tab, setTab] = useState(initialTab === "drivers" ? "drivers" : "supervisors");
@@ -224,7 +227,7 @@ export default function ManageEmployees() {
         });
         photoUrl = up.data.url;
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload photo — please check your connection and try again.");
         setSavingSup(false);
         return;
       }
@@ -234,7 +237,7 @@ export default function ManageEmployees() {
       try {
         aadharPhotoUrl = await uploadDriverImage(supAadharPhotoUri, "aadhar_photos");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload aadhar photo — please check your connection and try again.");
         setSavingSup(false);
         return;
       }
@@ -258,7 +261,7 @@ export default function ManageEmployees() {
       resetSupForm(); setErrors({});
       fetchAll();
     } catch (e) {
-      Alert.alert("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
+      confirmDialog.info("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
     } finally {
       setSavingSup(false);
     }
@@ -297,7 +300,7 @@ export default function ManageEmployees() {
       try {
         photoUrl = await uploadDriverImage(drvPhotoUri, "drivers");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload photo — please check your connection and try again.");
         setSavingDrv(false);
         return;
       }
@@ -307,7 +310,7 @@ export default function ManageEmployees() {
       try {
         licensePhotoUrl = await uploadDriverImage(drvLicensePhotoUri, "drivers/licenses");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload license photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload license photo — please check your connection and try again.");
         setSavingDrv(false);
         return;
       }
@@ -317,7 +320,7 @@ export default function ManageEmployees() {
       try {
         aadharPhotoUrl = await uploadDriverImage(drvAadharPhotoUri, "aadhar_photos");
       } catch (e) {
-        Alert.alert("Upload Failed", "Failed to upload aadhar photo — please check your connection and try again.");
+        confirmDialog.info("Upload failed", "Failed to upload aadhar photo — please check your connection and try again.");
         setSavingDrv(false);
         return;
       }
@@ -343,7 +346,7 @@ export default function ManageEmployees() {
       resetDrvForm();
       fetchAll();
     } catch (e) {
-      Alert.alert("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
+      confirmDialog.info("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
     } finally {
       setSavingDrv(false);
     }
@@ -353,48 +356,44 @@ export default function ManageEmployees() {
 
   const handleSupervisorLongPress = (s) => {
     const action = s.is_active ? "Deactivate" : "Activate";
-    Alert.alert("Supervisor Options", s.name, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: action,
-        style: s.is_active ? "destructive" : "default",
-        onPress: async () => {
-          setProcessingId(s.id);
-          try {
-            await api.patch(`/supervisors/${s.id}`, { is_active: !s.is_active });
-            Alert.alert("Success", `${action}d successfully`);
-            fetchAll();
-          } catch (e) {
-            Alert.alert("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
-          } finally {
-            setProcessingId(null);
-          }
-        },
-      },
-    ]);
+    const onConfirm = async () => {
+      setProcessingId(s.id);
+      try {
+        await api.patch(`/supervisors/${s.id}`, { is_active: !s.is_active });
+        confirmDialog.info("Success", `${action}d successfully`);
+        fetchAll();
+      } catch (e) {
+        confirmDialog.info("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
+      } finally {
+        setProcessingId(null);
+      }
+    };
+    if (s.is_active) {
+      confirmDialog.destructiveConfirm("Supervisor options", s.name, onConfirm, action);
+    } else {
+      confirmDialog.confirm("Supervisor options", s.name, onConfirm);
+    }
   };
 
   const handleDriverLongPress = (d) => {
     const action = d.is_active ? "Deactivate" : "Activate";
-    Alert.alert("Driver Options", d.name, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: action,
-        style: d.is_active ? "destructive" : "default",
-        onPress: async () => {
-          setProcessingId(d.id);
-          try {
-            await api.patch(`/drivers/${d.id}`, { is_active: !d.is_active });
-            Alert.alert("Success", `${action}d successfully`);
-            fetchAll();
-          } catch (e) {
-            Alert.alert("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
-          } finally {
-            setProcessingId(null);
-          }
-        },
-      },
-    ]);
+    const onConfirm = async () => {
+      setProcessingId(d.id);
+      try {
+        await api.patch(`/drivers/${d.id}`, { is_active: !d.is_active });
+        confirmDialog.info("Success", `${action}d successfully`);
+        fetchAll();
+      } catch (e) {
+        confirmDialog.info("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
+      } finally {
+        setProcessingId(null);
+      }
+    };
+    if (d.is_active) {
+      confirmDialog.destructiveConfirm("Driver options", d.name, onConfirm, action);
+    } else {
+      confirmDialog.confirm("Driver options", d.name, onConfirm);
+    }
   };
 
   return (
@@ -570,7 +569,7 @@ export default function ManageEmployees() {
       <Modal visible={showSupModal} transparent animationType="slide">
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
                 <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#7C3AED", marginBottom: rp(16) }}>Add Supervisor</Text>
@@ -714,7 +713,7 @@ export default function ManageEmployees() {
       <Modal visible={showDrvModal} transparent animationType="slide">
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%" }}>
+            <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
               <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
                 <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#059669", marginBottom: rp(16) }}>Add Driver</Text>

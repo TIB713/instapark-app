@@ -1,6 +1,7 @@
+import { confirmDialog } from "../../lib/confirmDialog";
 import { useEffect, useState } from "react";
 import { rs, rp } from '../../utils/responsive';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -63,32 +64,26 @@ export default function AllEvents() {
 
   const cloneEvent = async (e, evt) => {
     e.stopPropagation();
-    Alert.alert(
-      "Clone Event",
+    confirmDialog.confirm(
+      "Clone event",
       `Create a copy of "${evt.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clone",
-          onPress: async () => {
+      async () => {
             setCloningId(evt.id);
             try {
               const { data } = await api.post(
                 `/events/${evt.id}/clone`
               );
               setEvents(prev => [data, ...prev]);
-              Alert.alert(
+              confirmDialog.info(
                 "Cloned!",
                 `"${data.name}" created successfully.`
               );
             } catch {
-              Alert.alert("Error", "Failed to clone event");
+              confirmDialog.info("Error", "Failed to clone event");
             } finally {
               setCloningId(null);
             }
-          },
-        },
-      ]
+          }
     );
   };
 

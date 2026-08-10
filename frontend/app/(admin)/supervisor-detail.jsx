@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -9,8 +10,7 @@ import {
   Image,
   RefreshControl,
   TextInput,
-  Alert,
-} from "react-native";
+  } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -108,7 +108,7 @@ export default function SupervisorDetail() {
     const errs = validateSupervisor();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      Alert.alert("Validation Error", "Please check the highlighted fields");
+      confirmDialog.info("Validation error", "Please check the highlighted fields");
       return;
     }
     setErrors({});
@@ -123,10 +123,10 @@ export default function SupervisorDetail() {
       if (aadharNumber.trim()) body.aadhar_number = aadharNumber.trim();
       if (aadharPhoto) body.aadhar_photo = aadharPhoto;
       await api.patch(`/supervisors/${supervisorId}`, body);
-      Alert.alert("Updated", "Supervisor updated successfully");
+      confirmDialog.info("Updated", "Supervisor updated successfully");
       setPassword("");
     } catch (e) {
-      Alert.alert("Error", e.response?.data?.detail || "Failed to update");
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to update");
     } finally {
       setSaving(false);
     }
@@ -135,7 +135,7 @@ export default function SupervisorDetail() {
   const pickAadharPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permission needed", "Photo library access is required");
+      confirmDialog.info("Permission needed", "Photo library access is required");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -153,9 +153,9 @@ export default function SupervisorDetail() {
         });
         setAadharPhoto(up.data.url);
         setErrors(prev => ({ ...prev, aadharPhoto: undefined }));
-        Alert.alert("Success", "Aadhar photo uploaded");
+        confirmDialog.info("Success", "Aadhar photo uploaded");
       } catch (e) {
-        Alert.alert("Error", "Failed to upload photo");
+        confirmDialog.info("Error", "Failed to upload photo");
       }
     }
   };
@@ -165,30 +165,24 @@ export default function SupervisorDetail() {
       await api.patch(`/supervisors/${supervisorId}`, { is_active: !supervisor.is_active });
       setSupervisor({ ...supervisor, is_active: !supervisor.is_active });
     } catch {
-      Alert.alert("Error", "Failed to update supervisor status");
+      confirmDialog.info("Error", "Failed to update supervisor status");
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert(
-      "Delete Supervisor",
+    confirmDialog.destructiveConfirm(
+      "Delete supervisor",
       "WARNING: This will permanently delete this supervisor and cannot be undone. Are you sure?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete(`/superadmin/supervisors/${supervisorId}/permanent`);
-              Alert.alert("Deleted", "Supervisor permanently deleted");
-              router.back();
-            } catch {
-              Alert.alert("Error", "Failed to delete supervisor");
-            }
-          },
-        },
-      ]
+      async () => {
+        try {
+          await api.delete(`/superadmin/supervisors/${supervisorId}/permanent`);
+          confirmDialog.info("Deleted", "Supervisor permanently deleted");
+          router.back();
+        } catch {
+          confirmDialog.info("Error", "Failed to delete supervisor");
+        }
+      },
+      "Delete"
     );
   };
 
@@ -288,7 +282,7 @@ export default function SupervisorDetail() {
       await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: `${supervisor.name} — Performance Report` });
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Failed to generate PDF report");
+      confirmDialog.info("Error", "Failed to generate PDF report");
     } finally {
       setExportingPDF(false);
     }
@@ -532,15 +526,12 @@ export default function SupervisorDetail() {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
-                  Alert.alert(
-                    supervisor.is_active ? "Deactivate Supervisor" : "Activate Supervisor",
+                  confirmDialog.confirm(
+                    supervisor.is_active ? "Deactivate supervisor" : "Activate supervisor",
                     supervisor.is_active
                       ? "This supervisor will be marked inactive. Continue?"
                       : "This supervisor will be marked active again. Continue?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Confirm", onPress: toggleActive },
-                    ]
+                    toggleActive
                   );
                 }}
                 style={{
