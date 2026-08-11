@@ -1,3 +1,5 @@
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState, useCallback } from "react";
 import { confirmDialog } from "../../lib/confirmDialog";
@@ -19,7 +21,9 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import api from "../../lib/api";
+import { getItem } from "../../lib/secure";
 import { pickImageHelper } from "../../utils/imagePicker";
 
 const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
@@ -123,6 +127,83 @@ export default function ManageEmployees() {
     setSupPan(""); setSupBankAccount(""); setSupBankIfsc(""); setSupAadharNumber("");
     setSupAadharPhotoUri(null); setSupPhoto(null); setSupPhotoUri(null);
     setSupIfscInfo(null); setSupIfscChecking(false);
+  };
+
+  const handleDownloadSample = async () => {
+    try {
+      setLoading(true);
+      const token = await getItem("auth_token");
+      const fileUri = FileSystem.documentDirectory + "driver_bulk_template.xlsx";
+      const { uri, status } = await FileSystem.downloadAsync(
+        `${api.defaults.baseURL}/drivers/bulk-template`,
+        fileUri,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (status !== 200) {
+        throw new Error(`Download failed with status ${status}`);
+      }
+      await Sharing.shareAsync(uri, { mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    } catch (e) {
+      confirmDialog.info("Error", "Failed to download sample template");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkUpload = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"],
+        copyToCacheDirectory: true,
+      });
+      if (res.canceled || !res.assets || res.assets.length === 0) return;
+      const file = res.assets[0];
+      
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name || "bulk_drivers.xlsx",
+        type: file.mimeType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+      
+      const { data } = await api.post("/drivers/bulk-upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      const warnedCount = (data.results || []).filter(r => r.status === "Added (with warnings)").length;
+        let msg = `Inserted: ${data.inserted}`;
+        if (warnedCount > 0) {
+          msg += ` (${warnedCount} with warnings — check the downloaded file for details)`;
+        }
+        msg += `\nSkipped: ${data.skipped}`;
+      confirmDialog.info("Bulk Upload Result", msg);
+      
+      let csv = "Row,Name,Phone,Status,Reason\n";
+      (data.results || []).forEach(r => {
+        csv += `${r.row},"${r.name || ""}","${r.phone || ""}",${r.status},"${r.reason || ""}"\n`;
+      });
+      const fn = FileSystem.documentDirectory + `bulk_upload_result_${new Date().toISOString().split('T')[0]}.csv`;
+      await FileSystem.writeAsStringAsync(fn, csv, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(fn, { mimeType: "text/csv" });
+      fetchAll();
+    } catch (e) {
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to upload file");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivateDriver = async (did) => {
+    try {
+      setProcessingId(did);
+      await api.patch(`/drivers/${did}/activate`);
+      fetchAll();
+    } catch (e) {
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed to activate driver");
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const resetDrvForm = () => {
@@ -436,18 +517,60 @@ export default function ManageEmployees() {
         </View>
       </SafeAreaView>
 
-      <View style={{ paddingHorizontal: rp(20), paddingVertical: rp(12) }}>
-        <View style={{ backgroundColor: "#fff", borderRadius: rp(16), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(14) }}>
-          <Ionicons name="search-outline" size={18} color="#7C3AED" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder={`Search ${tab}...`}
-            placeholderTextColor="#9CA3AF"
-            style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(12), fontSize: rs(14), color: "#111827" }}
-          />
+        <View style={{ paddingHorizontal: rp(20), paddingVertical: rp(12), gap: rp(10) }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: rp(16), borderWidth: rp(1), borderColor: "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(14) }}>
+              <Ionicons name="search-outline" size={18} color="#7C3AED" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder={`Search ${tab}...`}
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(12), fontSize: rs(14), color: "#111827" }}
+              />
+            </View>
+          </View>
+          {tab === "drivers" && (
+            <View style={{ flexDirection: "row", gap: rp(10) }}>
+              <TouchableOpacity
+                onPress={handleDownloadSample}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: rp(6),
+                  backgroundColor: "#fff",
+                  borderWidth: rp(1.5),
+                  borderColor: "#0F2044",
+                  borderRadius: rp(16),
+                  paddingHorizontal: rp(12),
+                  paddingVertical: rp(12),
+                }}
+              >
+                <Ionicons name="download-outline" size={18} color="#0F2044" />
+                <Text style={{ color: "#0F2044", fontWeight: "800", fontSize: rs(12) }}>Sample</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleBulkUpload}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: rp(6),
+                  backgroundColor: "#0F2044",
+                  borderRadius: rp(16),
+                  paddingHorizontal: rp(12),
+                  paddingVertical: rp(12),
+                }}
+              >
+                <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>Bulk Add</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-      </View>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: rp(16) }}>
         {loading ? (
@@ -482,19 +605,17 @@ export default function ManageEmployees() {
                           {s.is_active ? "ACTIVE" : "INACTIVE"}
                         </Text>
                       </View>
-                      {!s.is_verified && (
-                        <View style={{
-                          backgroundColor: "#FEF3C7",
-                          borderRadius: rp(99),
-                          paddingHorizontal: rp(6),
-                          paddingVertical: rp(2),
-                          marginLeft: rp(2),
-                        }}>
-                          <Text style={{ color: "#D97706", fontSize: rs(9), fontWeight: "800" }}>
-                            UNVERIFIED
-                          </Text>
-                        </View>
-                      )}
+                      <View style={{
+                        backgroundColor: s.is_verified ? "#D1FAE5" : "#FEF3C7",
+                        borderRadius: rp(99),
+                        paddingHorizontal: rp(6),
+                        paddingVertical: rp(2),
+                        marginLeft: rp(2),
+                      }}>
+                        <Text style={{ color: s.is_verified ? "#059669" : "#D97706", fontSize: rs(9), fontWeight: "800" }}>
+                          {s.is_verified ? "VERIFIED" : "UNVERIFIED"}
+                        </Text>
+                      </View>
                     </View>
                     <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>
                       {s.email}
@@ -534,6 +655,31 @@ export default function ManageEmployees() {
                           {d.is_active ? "ACTIVE" : "INACTIVE"}
                         </Text>
                       </View>
+                      <View style={{
+                        backgroundColor: d.is_verified ? "#D1FAE5" : "#FEF3C7",
+                        borderRadius: rp(99),
+                        paddingHorizontal: rp(6),
+                        paddingVertical: rp(2),
+                        marginLeft: rp(2),
+                      }}>
+                        <Text style={{ color: d.is_verified ? "#059669" : "#D97706", fontSize: rs(9), fontWeight: "800" }}>
+                          {d.is_verified ? "VERIFIED" : "UNVERIFIED"}
+                        </Text>
+                      </View>
+                      {!d.is_active && (
+                        <TouchableOpacity 
+                          onPress={() => handleActivateDriver(d.id)}
+                          style={{
+                            backgroundColor: "#3B82F6",
+                            borderRadius: rp(99),
+                            paddingHorizontal: rp(8),
+                            paddingVertical: rp(4),
+                            marginLeft: rp(6)
+                          }}
+                        >
+                          <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "800" }}>ACTIVATE</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                     <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(2) }}>ID: {d.employee_id}</Text>
                   </View>

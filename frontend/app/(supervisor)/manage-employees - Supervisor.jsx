@@ -168,12 +168,7 @@ export default function SupervisorManageEmployees() {
         headers: { "Content-Type": "multipart/form-data" }
       });
       
-      const warnedCount = (data.results || []).filter(r => r.status === "Added (with warnings)").length;
-        let msg = `Inserted: ${data.inserted}`;
-        if (warnedCount > 0) {
-          msg += ` (${warnedCount} with warnings — check the downloaded file for details)`;
-        }
-        msg += `\nSkipped: ${data.skipped}`;
+      let msg = `Inserted: ${data.inserted}\nSkipped: ${data.skipped}`;
       confirmDialog.info("Bulk Upload Result", msg);
       
       let csv = "Row,Name,Phone,Status,Reason\n";

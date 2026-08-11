@@ -34,9 +34,11 @@ export default function ConfirmDialog({
   const renderButtons = () => {
     if (variant === 'info') {
       return (
-        <TouchableOpacity style={styles.primaryButton} onPress={onConfirm} activeOpacity={0.8}>
-          <Text style={styles.primaryButtonText}>{getConfirmLabel()}</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.primaryButton} onPress={onConfirm} activeOpacity={0.8}>
+            <Text style={styles.primaryButtonText}>{getConfirmLabel()}</Text>
+          </TouchableOpacity>
+        </View>
       );
     }
 

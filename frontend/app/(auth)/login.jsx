@@ -313,6 +313,8 @@ export default function Login() {
                       placeholder="••••••••"
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showPwd}
+                      keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                      maxLength={accountRole === "driver" ? 4 : undefined}
                       style={styles.textInput}
                     />
                     <TouchableOpacity onPress={() => setShowPwd((s) => !s)}>
@@ -361,6 +363,8 @@ export default function Login() {
                       placeholder="••••••••"
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showPwd}
+                      keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                      maxLength={accountRole === "driver" ? 4 : undefined}
                       style={styles.textInput}
                     />
                     <TouchableOpacity onPress={() => setShowPwd((s) => !s)}>
@@ -377,6 +381,8 @@ export default function Login() {
                       placeholder="••••••••"
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showPwd}
+                      keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                      maxLength={accountRole === "driver" ? 4 : undefined}
                       style={styles.textInput}
                     />
                   </View>
@@ -451,6 +457,8 @@ export default function Login() {
                           placeholder="••••••••"
                           placeholderTextColor="#9CA3AF"
                           secureTextEntry={!showPwd}
+                          keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                          maxLength={accountRole === "driver" ? 4 : undefined}
                           style={styles.textInput}
                         />
                         <TouchableOpacity onPress={() => setShowPwd((s) => !s)}>
@@ -467,6 +475,8 @@ export default function Login() {
                           placeholder="••••••••"
                           placeholderTextColor="#9CA3AF"
                           secureTextEntry={!showPwd}
+                          keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                          maxLength={accountRole === "driver" ? 4 : undefined}
                           style={styles.textInput}
                         />
                       </View>
