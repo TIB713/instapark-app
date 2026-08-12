@@ -14,7 +14,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.instapark.app"
+      "bundleIdentifier": "com.instapark.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"]
+      }
     },
     "android": {
       "googleServicesFile": "./google-services.json",

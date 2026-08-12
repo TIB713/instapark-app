@@ -309,7 +309,7 @@ export default function Dashboard() {
               <View style={{ backgroundColor: "rgba(15,32,68,0.1)", borderRadius: rp(99), padding: rp(8), alignSelf: "center" }}>
                 <Ionicons name="people-outline" size={rs(18)} color="#0F2044" />
               </View>
-              <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12), textAlign: "center" }}>Employees</Text>
+              <Text numberOfLines={1} style={{ fontWeight: "800", color: "#111827", marginTop: rp(8), fontSize: rs(12), textAlign: "center" }}>Team</Text>
               <Text numberOfLines={1} style={{ color: "#9CA3AF", fontSize: rs(10), marginTop: rp(2), textAlign: "center" }}>Manage team</Text>
             </TouchableOpacity>
           </View>

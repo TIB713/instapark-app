@@ -485,7 +485,7 @@ export default function ManageEmployees() {
             <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12) }}>Employees</Text>
+            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12) }}>Team</Text>
           </View>
 
           <View style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.1)", borderRadius: rp(16), padding: rp(4) }}>

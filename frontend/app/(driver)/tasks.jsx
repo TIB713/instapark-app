@@ -1,4 +1,5 @@
 // version 3
+import { configureBackgroundAudio } from "../../lib/audio";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from "expo-av";
 import { confirmDialog } from "../../lib/confirmDialog";
@@ -148,6 +149,10 @@ export default function Tasks() {
       scaleAnim.setValue(1);
     }
   }, [retrievalRequested]);
+
+  useEffect(() => {
+    configureBackgroundAudio();
+  }, []);
 
   useEffect(() => {
     let timeout;
@@ -330,7 +335,20 @@ export default function Tasks() {
     });
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
       if (msg.type === "retrieval_update") {
-        if (msg.data) maybeQueueNewRequestRef.current(msg.data);
+        if (msg.data) {
+          const carId = String((msg.data.car || msg.data).id);
+          const status = (msg.data.car || msg.data).status;
+          if (status !== "RETRIEVAL_REQUESTED") {
+            seenRequestIdsRef.current.delete(carId);
+            setRequestQueue((prev) => prev.filter((item) => String(item.id) !== carId));
+          }
+          if (!["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(status)) {
+            setRetrievals(prev => prev.filter(c => String(c.id) !== carId));
+          } else {
+            setRetrievals(prev => prev.map(c => String(c.id) === carId ? { ...c, ...(msg.data.car || msg.data) } : c));
+          }
+          maybeQueueNewRequestRef.current(msg.data);
+        }
         fetchRetrievalsRef.current();
       }
     });
@@ -345,7 +363,20 @@ export default function Tasks() {
         });
         connectWS(`/retrievals/${currentEventId}`, (msg) => {
           if (msg.type === "retrieval_update") {
-            if (msg.data) maybeQueueNewRequestRef.current(msg.data);
+            if (msg.data) {
+              const carId = String((msg.data.car || msg.data).id);
+              const status = (msg.data.car || msg.data).status;
+              if (status !== "RETRIEVAL_REQUESTED") {
+                seenRequestIdsRef.current.delete(carId);
+                setRequestQueue((prev) => prev.filter((item) => String(item.id) !== carId));
+              }
+              if (!["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(status)) {
+                setRetrievals(prev => prev.filter(c => String(c.id) !== carId));
+              } else {
+                setRetrievals(prev => prev.map(c => String(c.id) === carId ? { ...c, ...(msg.data.car || msg.data) } : c));
+              }
+              maybeQueueNewRequestRef.current(msg.data);
+            }
             fetchRetrievalsRef.current();
           }
         });
@@ -395,7 +426,7 @@ export default function Tasks() {
         requestSoundRef.current.unloadAsync().catch(() => {});
       }
     };
-  }, [currentEventId, fetchEvent, fetchMyCars, fetchRetrievals, maybeQueueNewRequest]);
+  }, [currentEventId]);
 
   const fetchEvent = useCallback(async () => {
     try {

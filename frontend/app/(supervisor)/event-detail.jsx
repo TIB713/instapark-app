@@ -5,6 +5,7 @@ import { confirmDialog } from "../../lib/confirmDialog";
 import { Vibration } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { rs, rp } from '../../utils/responsive';
+import { configureBackgroundAudio } from "../../lib/audio";
 import {
   View,
   Text,
@@ -23,6 +24,14 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+
+const FEEDBACK_QUESTIONS = [
+  { key: 'extra_money_asked', label: 'Did the driver ask for extra money?' },
+  { key: 'misbehaved', label: 'Was the driver rude or misbehaving?' },
+  { key: 'late_arrival', label: 'Did the driver arrive late to retrieve your car?' },
+  { key: 'vehicle_damaged', label: 'Was your vehicle damaged?' },
+  { key: 'unauthorized_personal_use', label: 'Did you notice the driver using your vehicle without permission?' },
+];
 import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -151,6 +160,10 @@ export default function SupervisorEventDetail() {
   const seenSOSIdsRef = useRef(new Set());
   const hasSeededSOSRef = useRef(false);
   const sosSoundRef = useRef(null);
+
+  useEffect(() => {
+    configureBackgroundAudio();
+  }, []);
 
   useEffect(() => {
     if (forcedSOSAlert === null && activeSOSQueue.length > 0) {
@@ -709,7 +722,7 @@ export default function SupervisorEventDetail() {
             ]
           : [
               ["cars", "Cars"],
-              ["employees", "Employees"],
+              ["employees", "Team"],
               ["stats", "Stats"],
               ["slots", "Slots"],
               ["incidents", "Incidents"],
@@ -1223,13 +1236,25 @@ export default function SupervisorEventDetail() {
                     </View>
                   )}
                 </View>
-                {item.issues && Object.values(item.issues).some(Boolean) && (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6), marginBottom: rp(8) }}>
-                    {item.issues.extra_money_asked && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Extra money</Text>}
-                    {item.issues.misbehaved && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Misbehaved</Text>}
-                    {item.issues.late_arrival && <Text style={{ backgroundColor: "#FFFBEB", color: "#F59E0B", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Late arrival</Text>}
-                    {item.issues.vehicle_damaged && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Vehicle damaged</Text>}
-                    {item.issues.unauthorized_personal_use && <Text style={{ backgroundColor: "#FEF2F2", color: "#EF4444", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(20), fontSize: rs(10), fontWeight: "800" }}>Unauthorized use</Text>}
+                {item.issues && (
+                  <View style={{ marginBottom: rp(8), gap: rp(6) }}>
+                    {FEEDBACK_QUESTIONS.map(q => {
+                      const answer = item.issues[q.key];
+                      if (answer === undefined) return null;
+                      return (
+                        <View key={q.key} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#F9FAFB", paddingHorizontal: rp(10), paddingVertical: rp(8), borderRadius: rp(10) }}>
+                          <Text style={{ fontSize: rs(11), color: "#4B5563", flex: 1, marginRight: rp(8) }}>{q.label}</Text>
+                          <Text style={{
+                            backgroundColor: answer ? "#FEF2F2" : "#ECFDF5",
+                            color: answer ? "#EF4444" : "#059669",
+                            paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(20),
+                            fontSize: rs(10), fontWeight: "800"
+                          }}>
+                            {answer ? "Yes" : "No"}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 )}
                 {item.comment ? (
