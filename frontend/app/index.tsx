@@ -1,3 +1,4 @@
+// code before full redesign
 import { useEffect, useState, useRef } from "react";
 import { View, Text, Animated, Easing, Image } from "react-native";
 import { getItem, setItem, deleteItem as secureDelete } from "../lib/secure";
