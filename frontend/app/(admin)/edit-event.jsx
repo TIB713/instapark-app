@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 
-          
+
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -88,13 +88,11 @@ export default function EditEvent() {
   }, [eventId]);
 
   const save = async () => {
-    if (!isHotelDailyEdit) {
-      const errs = {};
-      if (!name.trim()) errs.name = "Event name is required";
-      if (!venue.trim()) errs.venue = "Venue is required";
-      setFormErrors(errs);
-      if (Object.keys(errs).length > 0) return;
-    }
+    const errs = {};
+    if (!isHotelDailyEdit && !name.trim()) errs.name = "Event name is required";
+    if (!venue.trim()) errs.venue = "Venue is required";
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (endDT <= startDT) {
@@ -114,6 +112,14 @@ export default function EditEvent() {
         await api.patch(`/events/${eventId}`, {
           gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
           allow_instant_park: allowInstantPark,
+          start_time: startTime,
+          end_time: endTime,
+          venue: venue.trim(),
+          venue_place_id: venuePlaceId,
+          venue_address: venueAddress,
+          venue_lat: venueLat,
+          venue_lng: venueLng,
+          gates: gates.filter((g) => g?.trim()),
         });
       } else {
         await api.patch(`/events/${eventId}`, {
@@ -180,23 +186,6 @@ export default function EditEvent() {
               </View>
               {formErrors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.name}</Text>}
 
-              <Label>VENUE</Label>
-              <View style={[inputRowStyle, formErrors.venue && { borderColor: "#EF4444" }]}>
-                <Ionicons name="location-outline" size={18} color="#7C3AED" />
-                <VenuePicker
-                  value={venue}
-                  onSelect={(val) => {
-                    setVenue(val.venue || "");
-                    setVenuePlaceId(val.venue_place_id);
-                    setVenueAddress(val.venue_address);
-                    setVenueLat(val.venue_lat);
-                    setVenueLng(val.venue_lng);
-                    if (formErrors.venue) setFormErrors(prev => ({ ...prev, venue: null }));
-                  }}
-                  placeholder="Search venue e.g. ITC Narmada"
-                />
-              </View>
-              {formErrors.venue && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.venue}</Text>}
 
               <View style={{ flexDirection: "row", gap: rp(12) }}>
                 <View style={{ flex: 1 }}>
@@ -219,6 +208,24 @@ export default function EditEvent() {
             </>
           )}
 
+          <Label>VENUE</Label>
+          <View style={[inputRowStyle, formErrors.venue && { borderColor: "#EF4444" }]}>
+            <Ionicons name="location-outline" size={18} color="#7C3AED" />
+            <VenuePicker
+              value={venue}
+              onSelect={(val) => {
+                setVenue(val.venue || "");
+                setVenuePlaceId(val.venue_place_id);
+                setVenueAddress(val.venue_address);
+                setVenueLat(val.venue_lat);
+                setVenueLng(val.venue_lng);
+                if (formErrors.venue) setFormErrors(prev => ({ ...prev, venue: null }));
+              }}
+              placeholder="Search venue e.g. ITC Narmada"
+            />
+          </View>
+          {formErrors.venue && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.venue}</Text>}
+
           <View style={{ flexDirection: "row", gap: rp(12) }}>
             <View style={{ flex: 1 }}>
               <Label>START TIME</Label>
@@ -238,11 +245,15 @@ export default function EditEvent() {
             </View>
           </View>
 
-          <Label>MAX CARS</Label>
-          <View style={inputRowStyle}>
-            <Ionicons name="car-outline" size={18} color="#7C3AED" />
-            <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
-          </View>
+          {!isHotelDailyEdit && (
+            <>
+              <Label>MAX CARS</Label>
+              <View style={inputRowStyle}>
+                <Ionicons name="car-outline" size={18} color="#7C3AED" />
+                <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }} />
+              </View>
+            </>
+          )}
           <Label>GATE WAIT TIMER (MINUTES)</Label>
           <View style={inputRowStyle}>
             <Ionicons name="timer-outline" size={18} color="#7C3AED" />
@@ -264,64 +275,68 @@ export default function EditEvent() {
             </TouchableOpacity>
           </View>
 
-          <Label>PARKING ZONES</Label>
-          {zones.length === 0 && (
-            <Text style={{ color: "#9CA3AF", fontSize: rs(14), textAlign: "center", marginBottom: rp(8) }}>
-              No parking zones added yet. Tap Add Zone to create one.
-            </Text>
-          )}
-          {zones.map((z, i) => (
-            <View key={i} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
-              <Ionicons name="location" size={18} color="#7C3AED" />
-              <TextInput
-                value={z.name}
-                onChangeText={(v) => {
-                  const n = [...zones];
-                  n[i].name = v;
-                  setZones(n);
+          {!isHotelDailyEdit && (
+            <>
+              <Label>PARKING ZONES</Label>
+              {zones.length === 0 && (
+                <Text style={{ color: "#9CA3AF", fontSize: rs(14), textAlign: "center", marginBottom: rp(8) }}>
+                  No parking zones added yet. Tap Add Zone to create one.
+                </Text>
+              )}
+              {zones.map((z, i) => (
+                <View key={i} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
+                  <Ionicons name="location" size={18} color="#7C3AED" />
+                  <TextInput
+                    value={z.name}
+                    onChangeText={(v) => {
+                      const n = [...zones];
+                      n[i].name = v;
+                      setZones(n);
+                    }}
+                    placeholder="Zone"
+                    placeholderTextColor="#9CA3AF"
+                    style={{ flex: 1, borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10) }}
+                  />
+                  <TextInput
+                    value={String(z.slots)}
+                    onChangeText={(v) => {
+                      const n = [...zones];
+                      n[i].slots = parseInt(v) || 0;
+                      setZones(n);
+                    }}
+                    keyboardType="numeric"
+                    placeholder="Slots"
+                    placeholderTextColor="#9CA3AF"
+                    style={{ width: rp(70), borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center" }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setZones(zones.filter((_, idx) => idx !== i))}
+                    style={{ padding: rp(4) }}
+                  >
+                    <Ionicons name="remove-circle-outline" size={20} color="#F43F5E" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <Text
+                style={{
+                  color: totalSlots > maxCarsInt ? "#F43F5E" : "#059669",
+                  fontWeight: "700",
+                  fontSize: rs(13),
+                  textAlign: "right",
+                  marginBottom: rp(8),
                 }}
-                placeholder="Zone"
-                placeholderTextColor="#9CA3AF"
-                style={{ flex: 1, borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10) }}
-              />
-              <TextInput
-                value={String(z.slots)}
-                onChangeText={(v) => {
-                  const n = [...zones];
-                  n[i].slots = parseInt(v) || 0;
-                  setZones(n);
-                }}
-                keyboardType="numeric"
-                placeholder="Slots"
-                placeholderTextColor="#9CA3AF"
-                style={{ width: rp(70), borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center" }}
-              />
-              <TouchableOpacity
-                onPress={() => setZones(zones.filter((_, idx) => idx !== i))}
-                style={{ padding: rp(4) }}
               >
-                <Ionicons name="remove-circle-outline" size={20} color="#F43F5E" />
+                Total slots: {totalSlots} / {maxCarsInt}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setZones([...zones, { name: `Zone ${String.fromCharCode(65 + zones.length)}`, slots: 50 }])}
+                style={{ flexDirection: "row", alignItems: "center", gap: rp(6), paddingVertical: rp(10) }}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#7C3AED" />
+                <Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: rs(13) }}>Add Zone</Text>
               </TouchableOpacity>
-            </View>
-          ))}
-          <Text
-            style={{
-              color: totalSlots > maxCarsInt ? "#F43F5E" : "#059669",
-              fontWeight: "700",
-              fontSize: rs(13),
-              textAlign: "right",
-              marginBottom: rp(8),
-            }}
-          >
-            Total slots: {totalSlots} / {maxCarsInt}
-          </Text>
-          <TouchableOpacity
-            onPress={() => setZones([...zones, { name: `Zone ${String.fromCharCode(65 + zones.length)}`, slots: 50 }])}
-            style={{ flexDirection: "row", alignItems: "center", gap: rp(6), paddingVertical: rp(10) }}
-          >
-            <Ionicons name="add-circle-outline" size={20} color="#7C3AED" />
-            <Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: rs(13) }}>Add Zone</Text>
-          </TouchableOpacity>
+            </>
+          )}
 
           <Label>ENTRY GATES</Label>
           {gates.map((g, i) => (

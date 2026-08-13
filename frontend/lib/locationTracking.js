@@ -1,6 +1,7 @@
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { theme } from "../utils/theme";
 
 export const LOCATION_TASK_NAME = "driver-location-tracking";
 
@@ -56,14 +57,12 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 export const startLocationTracking = async () => {
   try {
     const { status: fg } = await Location.requestForegroundPermissionsAsync();
-    if (fg !== "granted") return;
+    if (fg !== "granted") return false;
     const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-    if (bg !== "granted") return;
+    if (bg !== "granted") return false;
 
-    const already = await Location.hasStartedLocationUpdatesAsync(
-      LOCATION_TASK_NAME
-    ).catch(() => false);
-    if (already) return;
+    const already = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+    if (already) return true;
 
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy: Location.Accuracy.Balanced,
@@ -72,10 +71,13 @@ export const startLocationTracking = async () => {
       foregroundService: {
         notificationTitle: "InstaPark",
         notificationBody: "Tracking your location for active event",
-        notificationColor: "#059669",
+        notificationColor: theme.colors.primary,
       },
     });
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 // ── Stop tracking ────────────────────────────────────────────────────────────
@@ -102,7 +104,7 @@ export const stopLocationTracking = async () => {
 export const updateJourney = async (carId, journeyType) => {
   try {
     await Promise.all([
-      AsyncStorage.setItem("current_car_id", carId || ""),
+      AsyncStorage.setItem("current_car_id", carId ? String(carId) : ""),
       AsyncStorage.setItem("current_journey_type", journeyType || "idle"),
     ]);
   } catch {}

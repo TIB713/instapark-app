@@ -83,6 +83,10 @@ export default function Login() {
     await setItem("last_known_role", data.user.role);
     try { registerForPushNotifications(api); } catch { }
 
+    if (data.user.role === "driver") {
+      await useAppStore.getState().fetchEvents();
+    }
+
     const route = getRouteForRole(data.user.role);
     router.replace(route);
   };

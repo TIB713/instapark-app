@@ -17,29 +17,33 @@ export const theme = {
     // ---- Brand (ONE primary color, used everywhere: headers, primary
     // buttons, active tab, active nav state, links). Do not introduce
     // blue/navy/green as a second "brand" color anywhere in the app.
-    primary: '#7C3AED',        // main purple — headers, primary buttons, active states
-    primaryDark: '#5B21B6',    // pressed/active state of primary buttons
-    primaryLight: '#F5F3FF',   // tinted backgrounds behind purple icons/badges
+    primary: '#24113F',
+    primaryDark: '#3B1E63',       // was primaryDark, now serves as "pressed/soft" state
+    primaryLight: '#EFECF5',      // tinted background behind purple content
+
+    accent: '#FFC928',            // NEW — brand accent (yellow), used for primary CTA buttons
+    accentLight: '#FFF4C7',       // NEW — tinted background behind accent content
+    accentForeground: '#24113F',  // NEW — text/icon color to use on top of accent backgrounds
 
     // ---- Status colors (meaning, not decoration — never use these as
     // branding, only to indicate a state)
-    success: '#059669',
-    successLight: '#D1FAE5',
+    success: '#20A464',
+    successLight: '#E3F6EC',
     warning: '#D97706',
     warningLight: '#FEF3C7',
-    danger: '#DC2626',
-    dangerLight: '#FEE2E2',
+    danger: '#D64545',
+    dangerLight: '#FBEAEA',
     info: '#0284C7',
     infoLight: '#E0F2FE',
 
     // ---- Neutrals (text, borders, surfaces)
-    textPrimary: '#111827',
-    textSecondary: '#6B7280',
+    textPrimary: '#18151D',
+    textSecondary: '#6F6A78',
     textMuted: '#9CA3AF',
-    border: '#E5E7EB',
+    border: '#E7E3EC',
     surface: '#FFFFFF',        // cards
-    surfaceAlt: '#F9FAFB',     // page background
-    overlay: 'rgba(17,24,39,0.5)', // modal/bottom-sheet backdrop
+    surfaceAlt: '#F7F6FA',     // page background
+    overlay: 'rgba(24,21,29,0.5)', // modal/bottom-sheet backdrop
   },
 
   // Type scale — 6 sizes only. Every screen's fontSize must come from
@@ -72,12 +76,13 @@ export const theme = {
     xxxl: 32,
   },
 
-  // Corner radius — 3 sizes only.
+  // Corner radius
   radius: {
-    sm: 8,    // inputs, small buttons, chips
-    md: 12,   // cards
-    lg: 16,   // bottom sheets, large cards
-    pill: 999, // pill buttons/badges
+    sm: 12,
+    md: 16,
+    lg: 20,
+    xl: 24,
+    pill: 999,
   },
 
   // Reusable component style rules (reference, not literal RN style

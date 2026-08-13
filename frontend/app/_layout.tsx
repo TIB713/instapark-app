@@ -36,7 +36,7 @@ export default function RootLayout() {
       if (!data?.screen) return;
       switch (data.screen) {
         case 'retrievals':
-          router.push('/(driver)/tasks');
+          router.push('/(driver)/(tabs)' as any);
           break;
         case 'sos':
           router.push('/(supervisor)/event-detail');
@@ -62,7 +62,10 @@ export default function RootLayout() {
         const eventId = await AsyncStorage.getItem("current_event_id");
         const driverStr = await AsyncStorage.getItem("driver_session");
         if (eventId) useAppStore.getState().setCurrentEventId(eventId);
-        if (driverStr) useAppStore.getState().setDriver(JSON.parse(driverStr));
+        if (driverStr) {
+          useAppStore.getState().setDriver(JSON.parse(driverStr));
+          useAppStore.getState().fetchEvents();
+        }
       } catch (e) {
         console.error("Hydration error:", e);
       }
@@ -105,11 +108,10 @@ export default function RootLayout() {
         <Stack.Screen name="(supervisor)/event-detail" />
         <Stack.Screen name="(supervisor)/add-car" />
         <Stack.Screen name="(supervisor)/manage-employees" />
-        <Stack.Screen name="(driver)/index" />
-        <Stack.Screen name="(driver)/checkin" />
+        <Stack.Screen name="(driver)/(tabs)" />
         <Stack.Screen name="(driver)/qr-display" />
-        <Stack.Screen name="(driver)/tasks" />
         <Stack.Screen name="(driver)/failed-syncs" />
+        <Stack.Screen name="(driver)/scan-qr-card" />
       </Stack>
     </SafeAreaProvider>
   );

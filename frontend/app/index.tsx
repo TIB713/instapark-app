@@ -62,7 +62,7 @@ export default function Index() {
             }
 
             setChecking(false);
-            router.replace(getRouteForRole(role));
+            router.replace(getRouteForRole(role) as any);
             return;
 
           } catch (err: any) {
@@ -82,14 +82,14 @@ export default function Index() {
                   useAppStore.getState().setDriver(d);
                   if (eid) useAppStore.getState().setCurrentEventId(eid);
                   setChecking(false);
-                  router.replace("/(driver)");
+                  router.replace("/(driver)/(tabs)" as any);
                   return;
                 } else {
                   await AsyncStorage.removeItem("driver_session");
                 }
               } else if (lastRole && ["supervisor", "admin", "superadmin", "owner"].includes(lastRole)) {
                 setChecking(false);
-                router.replace(getRouteForRole(lastRole));
+                router.replace(getRouteForRole(lastRole) as any);
                 return;
               } else {
                 setChecking(false);
@@ -112,7 +112,7 @@ export default function Index() {
           useAppStore.getState().setDriver(d);
           if (eid) useAppStore.getState().setCurrentEventId(eid);
           setChecking(false);
-          router.replace("/(driver)");
+          router.replace("/(driver)/(tabs)" as any);
           return;
         }
       } catch { }

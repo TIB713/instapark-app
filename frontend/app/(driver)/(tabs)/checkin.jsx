@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback, memo } from "react";
-import { confirmDialog } from "../../lib/confirmDialog";
-import { rs, rp } from '../../utils/responsive';
+import { confirmDialog } from "../../../lib/confirmDialog";
+import { Screen, TopBar, Card, Btn, Modal, Sheet, EmptyState } from '../../../components/valet/ui';
+import { theme } from '../../../utils/theme';
+import { rs, rp } from '../../../utils/responsive';
 import {
   View,
   Text,
@@ -11,7 +13,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Modal,
+  Modal as RNModal,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,10 +24,11 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../../lib/api";
-import { useAppStore } from "../../lib/store";
-import { enqueueCheckinAction } from "../../lib/offline";
-import { updateJourney, markJourneyAccepted } from "../../lib/locationTracking";
+import api from "../../../lib/api";
+import { useAppStore } from "../../../lib/store";
+import { enqueueCheckinAction } from "../../../lib/offline";
+import { useDriverTasksContext } from "../../../context/DriverTasksContext";
+import { updateJourney, markJourneyAccepted } from "../../../lib/locationTracking";
 
 const REQUIRED_PHOTO_ORDER = ["front", "right", "back", "left"];
 
@@ -52,17 +55,17 @@ const DAMAGE_OPTIONS = [
 
 function Lbl({ children }) {
   return (
-    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8), marginTop: rp(4) }}>
+    <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(3), marginBottom: rp(8), marginTop: rp(4) }}>
       {children}
     </Text>
   );
 }
 
 const inputRow = {
-  backgroundColor: "#fff",
+  backgroundColor: theme.colors.surface,
   borderRadius: rp(16),
   borderWidth: rp(1),
-  borderColor: "#E5E7EB",
+  borderColor: theme.colors.border,
   flexDirection: "row",
   alignItems: "center",
   paddingHorizontal: rp(14),
@@ -73,7 +76,7 @@ const textInput = {
   paddingVertical: rp(14),
   marginLeft: rp(10),
   fontSize: rs(15),
-  color: "#111827",
+  color: theme.colors.textPrimary,
 };
 
 const VehicleDetailsSection = memo(({
@@ -84,8 +87,8 @@ const VehicleDetailsSection = memo(({
   return (
     <>
       <Lbl>LICENSE PLATE *</Lbl>
-      <View style={[inputRow, errors.plate && { borderColor: "#EF4444", marginBottom: 0 }]}>
-        <Ionicons name="car-outline" size={20} color="#059669" />
+      <View style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+        <Ionicons name="car-outline" size={20} color={theme.colors.primary} />
         <TextInput
           testID="plate-input"
           value={plate}
@@ -109,45 +112,45 @@ const VehicleDetailsSection = memo(({
           }}
           onBlur={() => lookupPlate(plate.trim().toUpperCase())}
           placeholder="GJ01AB1234"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.colors.textMuted}
           autoCapitalize="characters"
           maxLength={11}
           style={textInput}
         />
       </View>
-      {errors.plate && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
+      {errors.plate && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
       {pendingLookup && (
-        <View style={{ backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
+        <View style={{ backgroundColor: theme.colors.successLight, borderWidth: rp(1), borderColor: theme.colors.success, borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
-            <Ionicons name="help-circle" size={20} color="#059669" />
+            <Ionicons name="help-circle" size={20} color={theme.colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>PREVIOUS VISIT FOUND</Text>
-              <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>PREVIOUS VISIT FOUND</Text>
+              <Text style={{ fontSize: rs(11), color: theme.colors.success, marginTop: rp(1) }}>
                 {pendingLookup.guest_name ? `${pendingLookup.guest_name} — ` : ""}Use these saved details?
               </Text>
             </View>
           </View>
           <View style={{ flexDirection: "row", gap: rp(12), marginTop: rp(10) }}>
-            <TouchableOpacity onPress={confirmLookup} activeOpacity={0.7} style={{ backgroundColor: "#059669", borderRadius: rp(10), paddingVertical: rp(6), paddingHorizontal: rp(14) }}>
-              <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#fff" }}>Use These Details</Text>
+            <TouchableOpacity onPress={confirmLookup} activeOpacity={0.7} style={{ backgroundColor: theme.colors.primary, borderRadius: rp(10), paddingVertical: rp(6), paddingHorizontal: rp(14) }}>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#FFFFFF" }}>Use These Details</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={rejectLookup} style={{ paddingVertical: rp(6), paddingHorizontal: rp(4) }}>
-              <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#6B7280" }}>Not This Guest</Text>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: theme.colors.textSecondary }}>Not This Guest</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
       {lookupApplied && !pendingLookup && (
         <View style={{ marginBottom: rp(16) }}>
-          <Text style={{ fontSize: rs(11), color: "#059669", marginBottom: rp(8) }}>
+          <Text style={{ fontSize: rs(11), color: theme.colors.primary, marginBottom: rp(8) }}>
             ✓ Details filled from previous visit
           </Text>
           <TouchableOpacity
             onPress={clearGuestOnly}
             style={{
               borderWidth: rp(1),
-              borderColor: "#FCA5A5",
-              backgroundColor: "#FEF2F2",
+              borderColor: theme.colors.danger,
+              backgroundColor: theme.colors.dangerLight,
               borderRadius: rp(10),
               paddingVertical: rp(8),
               paddingHorizontal: rp(14),
@@ -157,31 +160,31 @@ const VehicleDetailsSection = memo(({
               gap: rp(6),
             }}
           >
-            <Ionicons name="person-remove-outline" size={14} color="#DC2626" />
-            <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#DC2626" }}>
+            <Ionicons name="person-remove-outline" size={14} color={theme.colors.danger} />
+            <Text style={{ fontSize: rs(12), fontWeight: "800", color: theme.colors.danger }}>
               Not this guest? Clear name &amp; phone
             </Text>
           </TouchableOpacity>
         </View>
       )}
       <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST NAME (OPTIONAL)" : "GUEST NAME *"}</Lbl>
-      <View style={[inputRow, errors.guestName && { borderColor: "#EF4444", marginBottom: 0 }]}>
-        <Ionicons name="person-outline" size={20} color="#059669" />
-        <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor="#9CA3AF" style={textInput} />
+      <View style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+        <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
+        <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
-      {errors.guestName && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
+      {errors.guestName && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
       <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE COLOR (OPTIONAL)" : "VEHICLE COLOR *"}</Lbl>
-      <View style={[inputRow, errors.color && { borderColor: "#EF4444", marginBottom: 0 }]}>
-        <Ionicons name="color-palette-outline" size={20} color="#059669" />
-        <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor="#9CA3AF" style={textInput} />
+      <View style={[inputRow, errors.color && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+        <Ionicons name="color-palette-outline" size={20} color={theme.colors.primary} />
+        <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
-      {errors.color && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
+      {errors.color && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
       <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE MAKE/MODEL (OPTIONAL)" : "VEHICLE MAKE/MODEL *"}</Lbl>
-      <View style={[inputRow, errors.make && { borderColor: "#EF4444", marginBottom: 0 }]}>
-        <Ionicons name="construct-outline" size={20} color="#059669" />
-        <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor="#9CA3AF" style={textInput} />
+      <View style={[inputRow, errors.make && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+        <Ionicons name="construct-outline" size={20} color={theme.colors.primary} />
+        <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
-      {errors.make && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
+      {errors.make && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
       <Lbl>CAR TYPE *</Lbl>
       <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
         {["normal", "premium"].map((ct) => (
@@ -192,24 +195,24 @@ const VehicleDetailsSection = memo(({
               paddingHorizontal: rp(14),
               paddingVertical: rp(8),
               borderRadius: rp(99),
-              backgroundColor: carType === ct ? "#059669" : "#fff",
+              backgroundColor: carType === ct ? theme.colors.primary : "#FFFFFF",
               borderWidth: rp(1),
-              borderColor: "#059669",
+              borderColor: theme.colors.primary,
             }}
           >
-            <Text style={{ fontSize: rs(12), fontWeight: "800", color: carType === ct ? "#fff" : "#059669", letterSpacing: rs(0.5), textTransform: "capitalize" }}>{ct}</Text>
+            <Text style={{ fontSize: rs(12), fontWeight: "800", color: carType === ct ? "#FFFFFF" : theme.colors.textSecondary, letterSpacing: rs(0.5), textTransform: "capitalize" }}>{ct}</Text>
           </TouchableOpacity>
         ))}
       </View>
       <Lbl>NOTES</Lbl>
       <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
-        <Ionicons name="document-text-outline" size={20} color="#059669" />
+        <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
         <TextInput
           value={notes}
           onChangeText={setNotes}
           multiline
           placeholder="Special notes..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.colors.textMuted}
           style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
         />
       </View>
@@ -222,11 +225,11 @@ const DamageSection = memo(({ hasDamage, setHasDamage, damageTypes, setDamageTyp
     <>
       <Lbl>EXISTING SCRATCH / DAMAGE?</Lbl>
       <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
-        <TouchableOpacity onPress={() => setHasDamage(true)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
-          <Text style={{ fontSize: rs(12), fontWeight: "800", color: hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Yes</Text>
+        <TouchableOpacity onPress={() => setHasDamage(true)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: hasDamage ? theme.colors.primary : "#FFFFFF", borderWidth: rp(1), borderColor: theme.colors.primary }}>
+          <Text style={{ fontSize: rs(12), fontWeight: "800", color: hasDamage ? "#FFFFFF" : theme.colors.textSecondary, letterSpacing: rs(0.5) }}>Yes</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setHasDamage(false)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: !hasDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}>
-          <Text style={{ fontSize: rs(12), fontWeight: "800", color: !hasDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>No</Text>
+        <TouchableOpacity onPress={() => setHasDamage(false)} style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: !hasDamage ? theme.colors.primary : "#FFFFFF", borderWidth: rp(1), borderColor: theme.colors.primary }}>
+          <Text style={{ fontSize: rs(12), fontWeight: "800", color: !hasDamage ? "#FFFFFF" : theme.colors.textSecondary, letterSpacing: rs(0.5) }}>No</Text>
         </TouchableOpacity>
       </View>
       {hasDamage && (
@@ -239,30 +242,30 @@ const DamageSection = memo(({ hasDamage, setHasDamage, damageTypes, setDamageTyp
                 <TouchableOpacity
                   key={opt}
                   onPress={() => setDamageTypes(prev => selected ? prev.filter(t => t !== opt) : [...prev, opt])}
-                  style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: selected ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
+                  style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: selected ? theme.colors.primary : "#FFFFFF", borderWidth: rp(1), borderColor: theme.colors.primary }}
                 >
-                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: selected ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{opt}</Text>
+                  <Text style={{ fontSize: rs(12), fontWeight: "800", color: selected ? "#FFFFFF" : theme.colors.textSecondary, letterSpacing: rs(0.5) }}>{opt}</Text>
                 </TouchableOpacity>
               );
             })}
             <TouchableOpacity
               onPress={() => setShowOtherDamage(!showOtherDamage)}
-              style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: showOtherDamage ? "#059669" : "#fff", borderWidth: rp(1), borderColor: "#059669" }}
+              style={{ paddingHorizontal: rp(14), paddingVertical: rp(8), borderRadius: rp(99), backgroundColor: showOtherDamage ? theme.colors.primary : "#FFFFFF", borderWidth: rp(1), borderColor: theme.colors.primary }}
             >
-              <Text style={{ fontSize: rs(12), fontWeight: "800", color: showOtherDamage ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>Other</Text>
+              <Text style={{ fontSize: rs(12), fontWeight: "800", color: showOtherDamage ? "#FFFFFF" : theme.colors.textSecondary, letterSpacing: rs(0.5) }}>Other</Text>
             </TouchableOpacity>
           </View>
           {showOtherDamage && (
             <>
               <Lbl>OTHER DAMAGE (DESCRIBE)</Lbl>
               <View style={[inputRow, { alignItems: "flex-start", paddingTop: rp(12) }]}>
-                <Ionicons name="alert-circle-outline" size={20} color="#059669" />
+                <Ionicons name="alert-circle-outline" size={20} color={theme.colors.primary} />
                 <TextInput
                   value={damageNotes}
                   onChangeText={setDamageNotes}
                   multiline
                   placeholder="Describe scratches, dents, etc..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={theme.colors.textMuted}
                   style={[textInput, { minHeight: 60, textAlignVertical: "top" }]}
                 />
               </View>
@@ -278,33 +281,33 @@ const GuestContactSection = memo(({ guestPhone, setGuestPhone, altGuestPhone, se
   return (
     <>
       <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST MOBILE (OPTIONAL)" : "GUEST MOBILE *"}</Lbl>
-      <View style={[inputRow, errors.guestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
-        <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
+      <View style={[inputRow, errors.guestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+        <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
         <TextInput
           value={guestPhone}
           onChangeText={(text) => { setGuestPhone(text); if (errors.guestPhone) setErrors(prev => ({ ...prev, guestPhone: undefined })); }}
           placeholder="10-digit mobile number"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.colors.textMuted}
           keyboardType="phone-pad"
           maxLength={10}
           style={textInput}
         />
       </View>
-      {errors.guestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
+      {errors.guestPhone && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
       <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
-      <View style={[inputRow, errors.altGuestPhone && { borderColor: "#EF4444", marginBottom: 0 }]}>
-        <Ionicons name="phone-portrait-outline" size={20} color="#059669" />
+      <View style={[inputRow, errors.altGuestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+        <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
         <TextInput
           value={altGuestPhone}
           onChangeText={(text) => { setAltGuestPhone(text); if (errors.altGuestPhone) setErrors(prev => ({ ...prev, altGuestPhone: undefined })); }}
           placeholder="10-digit mobile number"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.colors.textMuted}
           keyboardType="phone-pad"
           maxLength={10}
           style={textInput}
         />
       </View>
-      {errors.altGuestPhone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
+      {errors.altGuestPhone && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
     </>
   );
 });
@@ -323,12 +326,12 @@ const EntryGateSection = memo(({ eventGates, selectedGate, setSelectedGate }) =>
               paddingHorizontal: rp(14),
               paddingVertical: rp(8),
               borderRadius: rp(99),
-              backgroundColor: selectedGate === g ? "#059669" : "#fff",
+              backgroundColor: selectedGate === g ? theme.colors.primary : "#FFFFFF",
               borderWidth: rp(1),
-              borderColor: "#059669",
+              borderColor: theme.colors.primary,
             }}
           >
-            <Text style={{ fontSize: rs(12), fontWeight: "800", color: selectedGate === g ? "#fff" : "#059669", letterSpacing: rs(0.5) }}>{g}</Text>
+            <Text style={{ fontSize: rs(12), fontWeight: "800", color: selectedGate === g ? "#FFFFFF" : theme.colors.textSecondary, letterSpacing: rs(0.5) }}>{g}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -340,17 +343,17 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
   return (
     <>
       <Lbl>VEHICLE PHOTOS * (ALL REQUIRED EXCEPT EXTRA)</Lbl>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: errors.photos ? 0 : rp(16), borderWidth: errors.photos ? rp(1) : 0, borderColor: "#EF4444", borderRadius: rp(16), padding: errors.photos ? rp(8) : 0 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(10), marginBottom: errors.photos ? 0 : rp(16), borderWidth: errors.photos ? rp(1) : 0, borderColor: theme.colors.danger, borderRadius: rp(16), padding: errors.photos ? rp(8) : 0 }}>
         {["front", "right", "back", "left", "extra"].map((label) => (
           <View key={label} style={{ width: rp(80), height: rp(80) }}>
             {photos[label] ? (
               <>
-                <Image source={{ uri: photos[label] }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16) }} />
+                <Image source={{ uri: photos[label] }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16), borderWidth: rp(1.5), borderColor: theme.colors.success, borderStyle: "dashed" }} />
                 <TouchableOpacity
                   onPress={() => onRemovePhoto(label)}
                   style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
                 >
-                  <Ionicons name="close-circle" size={24} color="#EF4444" />
+                  <Ionicons name="close-circle" size={24} color={theme.colors.danger} />
                 </TouchableOpacity>
               </>
             ) : (
@@ -358,25 +361,25 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
                 onPress={() => takePhoto(label)}
                 style={{
                   width: rp(80), height: rp(80), borderRadius: rp(16),
-                  backgroundColor: "#F3F4F6", borderWidth: rp(1), borderColor: "#D1D5DB",
+                  backgroundColor: theme.colors.surface, borderWidth: rp(1.5), borderColor: theme.colors.border,
                   borderStyle: "dashed", alignItems: "center", justifyContent: "center"
                 }}
               >
-                <Ionicons name="camera-outline" size={28} color="#9CA3AF" />
-                <Text style={{ color: "#6B7280", fontSize: rs(10), fontWeight: "800", marginTop: rp(4), textTransform: "uppercase" }}>{label}</Text>
+                <Ionicons name="camera-outline" size={28} color={theme.colors.textSecondary} />
+                <Text style={{ color: theme.colors.textSecondary, fontSize: rs(10), fontWeight: "800", marginTop: rp(4), textTransform: "uppercase" }}>{label}</Text>
               </TouchableOpacity>
             )}
           </View>
         ))}
       </View>
-      {errors.photos && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
+      {errors.photos && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.photos}</Text>}
     </>
   );
 });
 
 export default function CheckIn() {
-
   const router = useRouter();
+  const { openParkModal } = useDriverTasksContext();
   const { driver, currentEventId } = useAppStore();
   const resolvedDriverId = driver?.id;
   const [plate, setPlate] = useState("");
@@ -412,6 +415,12 @@ export default function CheckIn() {
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [phoneToSaveState, setPhoneToSaveState] = useState("");
+  const [altPhoneToSaveState, setAltPhoneToSaveState] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successCarId, setSuccessCarId] = useState(null);
+  const [successCar, setSuccessCar] = useState(null);
 
   const [showVideoCamera, setShowVideoCamera] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -431,12 +440,12 @@ export default function CheckIn() {
       fd.append("file", { uri, type: "video/mp4", name: "walkaround.mp4" });
       fd.append("folder", `checkin-video-test/${plate || "unknown"}`);
       fd.append("frame_count", "6");
-      
+
       const response = await api.post("/upload/checkin-video", fd, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 60000
       });
-      
+
       setCheckinVideoUrl(response.data.video_url);
       setVideoExtractedPhotos(response.data.photo_urls || []);
       setVideoUploadStatus("done");
@@ -452,19 +461,19 @@ export default function CheckIn() {
   const [isPreRegistered, setIsPreRegistered] = useState(false);
   const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
   const [instantPark, setInstantPark] = useState(false);
-  
+
   const [qrToken, setQrToken] = useState("");
   const [keyTagNumber, setKeyTagNumber] = useState("");
   const [qrCardId, setQrCardId] = useState("");
-  
+
   const params = useLocalSearchParams();
 
   useEffect(() => {
     const emptyPhotos = { front: null, back: null, left: null, right: null, extra: null };
     setPhotos(emptyPhotos);
     photosRef.current = emptyPhotos;
-    AsyncStorage.removeItem("checkin_photos").catch(() => {});
-    AsyncStorage.removeItem("checkin_draft").catch(() => {});
+    AsyncStorage.removeItem("checkin_photos").catch(() => { });
+    AsyncStorage.removeItem("checkin_draft").catch(() => { });
 
     if (params.prefill_plate) {
       setPlate(params.prefill_plate || "");
@@ -483,7 +492,7 @@ export default function CheckIn() {
       setQrCardId(params.prefill_qr_card_id || "");
     }
     if (!params.prefill_plate && !params.prefill_qr_token) {
-      router.replace("/(driver)/scan-qr-card");
+      router.push("/(driver)/scan-qr-card");
       return;
     }
   }, [params.prefill_plate, params.prefill_qr_token, params.prefill_key_tag_number, params.prefill_qr_card_id, router]);
@@ -524,7 +533,7 @@ export default function CheckIn() {
             photosRef.current = parsed;
           } else {
             // Different car — discard stale photos
-            AsyncStorage.removeItem("checkin_photos").catch(() => {});
+            AsyncStorage.removeItem("checkin_photos").catch(() => { });
           }
         }
       } catch { }
@@ -564,10 +573,10 @@ export default function CheckIn() {
       "Clear guest details?",
       "This will remove the guest name and phone number. The car details will stay the same.",
       () => {
-            setGuestName("");
-            setGuestPhone("");
-            setAltGuestPhone("");
-          },
+        setGuestName("");
+        setGuestPhone("");
+        setAltGuestPhone("");
+      },
       "Yes, Clear"
     );
   };
@@ -591,8 +600,8 @@ export default function CheckIn() {
       permissionGrantedRef.current = true;
     }
     const d = draftRef.current;
-    AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate: d.plate, color: d.color, make: d.make, notes: d.notes, guestPhone: d.guestPhone, selectedGate: d.selectedGate, carType: d.carType, altGuestPhone: d.altGuestPhone, hasDamage: d.hasDamage, damageNotes: d.damageNotes, damageTypes: d.damageTypes, guestName: d.guestName })).catch(() => {});
-    AsyncStorage.setItem("checkin_photos", JSON.stringify(photosRef.current)).catch(() => {});
+    AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate: d.plate, color: d.color, make: d.make, notes: d.notes, guestPhone: d.guestPhone, selectedGate: d.selectedGate, carType: d.carType, altGuestPhone: d.altGuestPhone, hasDamage: d.hasDamage, damageNotes: d.damageNotes, damageTypes: d.damageTypes, guestName: d.guestName })).catch(() => { });
+    AsyncStorage.setItem("checkin_photos", JSON.stringify(photosRef.current)).catch(() => { });
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
     if (!result.canceled) {
       const rawUri = result.assets[0].uri;
@@ -603,7 +612,7 @@ export default function CheckIn() {
       if (d.errors.photos && np.front && np.back && np.left && np.right) {
         setErrors(prev => ({ ...prev, photos: undefined }));
       }
-      AsyncStorage.setItem("checkin_photos", JSON.stringify(np)).catch(() => {});
+      AsyncStorage.setItem("checkin_photos", JSON.stringify(np)).catch(() => { });
       const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
       if (idx !== -1) {
         const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
@@ -622,7 +631,7 @@ export default function CheckIn() {
           .catch(() => { resizedPhotosRef.current[label] = rawUri; })
       );
     }
-    AsyncStorage.removeItem("checkin_draft").catch(() => {});
+    AsyncStorage.removeItem("checkin_draft").catch(() => { });
   }, []);
 
   const uploadPhotosInBackground = async (carId, photosObj) => {
@@ -692,14 +701,9 @@ export default function CheckIn() {
     }
 
     setSubmitting(false);
-    confirmDialog.confirm(
-      "Confirm check-in",
-      `Confirm check-in for ${plate}?`,
-      () => {
-        setSubmitting(true);
-        doSubmit(phoneToSave, altPhoneToSave);
-      }
-    );
+    setPhoneToSaveState(phoneToSave);
+    setAltPhoneToSaveState(altPhoneToSave);
+    setShowConfirmModal(true);
   };
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
@@ -797,18 +801,12 @@ export default function CheckIn() {
       Promise.all(Object.entries(getUploadReadyPhotos(photos)).map(async ([label, uri]) => {
         if (!uri) return;
         const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
-        try { await FileSystem.copyAsync({ from: uri, to: localPath }); photoLocalPaths[label] = localPath; } catch {}
-      })).catch(() => {});
+        try { await FileSystem.copyAsync({ from: uri, to: localPath }); photoLocalPaths[label] = localPath; } catch { }
+      })).catch(() => { });
 
-      router.replace({
-        pathname: "/(driver)/qr-display",
-        params: {
-          token: car.qr_token,
-          plate: car.plate,
-          carId: car.id,
-          ...(phoneToSave ? { guestPhone: phoneToSave } : {}),
-        },
-      });
+      setSuccessCar(car);
+      setSuccessCarId(car.id);
+      setShowSuccessModal(true);
       // Use original photo URIs for online background upload
       uploadPhotosInBackground(car.id, getUploadReadyPhotos(photos)).finally(() => {
         Object.values(photoLocalPaths).forEach(path => {
@@ -873,69 +871,105 @@ export default function CheckIn() {
   };
 
 
-  return (
-    <View style={{ flex: 1, backgroundColor: "#ECFDF5" }} testID="checkin-screen">
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#059669" }}>
-        <View
-          style={{
-            backgroundColor: "#059669",
-            borderBottomLeftRadius: 44,
-            borderBottomRightRadius: 44,
-            paddingHorizontal: rp(20),
-            paddingTop: rp(8),
-            paddingBottom: rp(24),
-          }}
-        >
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(8,145,178,0.5)",
-              borderBottomLeftRadius: 44,
-              borderBottomRightRadius: 44,
-            }}
-          />
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}
-            >
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
-              Check In Vehicle
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(driver)/scanner")}
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8), marginLeft: "auto" }}
-            >
-              <Ionicons name="qr-code-outline" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeAreaView>
+  if (!currentEventId) {
+    return (
+      <Screen>
+        <TopBar title="Check In" />
+        <EmptyState
+          icon={<Ionicons name="calendar-outline" size={64} color={theme.colors.textMuted} />}
+          title="No event selected"
+          body="Select an event from your Profile to start checking in cars."
+          cta={<Btn onPress={() => router.push('/(driver)/(tabs)/profile')}>Go to Profile</Btn>}
+        />
 
+        {/* Confirm Check-in Modal */}
+        <Modal open={showConfirmModal} onClose={() => setShowConfirmModal(false)} title="Confirm Check-In">
+          <View style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, padding: rp(16), marginBottom: rp(24) }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Vehicle</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{plate}</Text>
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Guest</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestName || "N/A"}</Text>
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Mobile</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestPhone || "N/A"}</Text>
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Gate</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{selectedGate || "N/A"}</Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: "row", gap: rp(12) }}>
+            <Btn style={{ flex: 1 }} variant="ghost" onPress={() => setShowConfirmModal(false)}>Cancel</Btn>
+            <Btn style={{ flex: 1 }} variant="accent" disabled={submitting} onPress={() => { setShowConfirmModal(false); setSubmitting(true); doSubmit(phoneToSaveState, altPhoneToSaveState); }}>
+              Confirm
+            </Btn>
+          </View>
+        </Modal>
+
+        {/* Success Modal */}
+        <Modal open={showSuccessModal} onClose={() => { }} title="">
+          <View style={{ alignItems: "center", marginBottom: rp(24) }}>
+            <View style={{ width: rp(64), height: rp(64), borderRadius: rp(32), backgroundColor: theme.colors.successLight, alignItems: "center", justifyContent: "center", marginBottom: rp(16) }}>
+              <Ionicons name="checkmark" size={32} color={theme.colors.success} />
+            </View>
+            <Text style={{ fontSize: rs(20), fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: rp(8) }}>Check-in Successful</Text>
+            <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, textAlign: "center" }}>Vehicle {plate} has been successfully checked in.</Text>
+          </View>
+
+          <View style={{ gap: rp(12) }}>
+            <Btn variant="accent" onPress={() => { setShowSuccessModal(false); router.push("/(driver)/(tabs)/park"); }}>Continue to parking</Btn>
+            <Btn variant="ghost" onPress={() => { setShowSuccessModal(false); router.replace("/(driver)/(tabs)/checkin"); }}>Stay here</Btn>
+          </View>
+        </Modal>
+
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen testID="checkin-screen">
+      <TopBar
+        title="Check In"
+        onBack={() => router.back()}
+        rightNode={
+          <TouchableOpacity onPress={() => router.push("/(driver)/scanner")}>
+            <Ionicons name="qr-code-outline" size={24} color={theme.colors.textPrimary} />
+          </TouchableOpacity>
+        }
+      />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-          <ScrollView
+        <ScrollView
           style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: rp(100) }}
         >
+          {/* <TouchableOpacity onPress={() => router.push("/(driver)/scanner")} style={{ marginBottom: rp(16) }}>
+            <Card style={{ backgroundColor: theme.colors.primary, borderRadius: theme.radius.xl, flexDirection: "row", alignItems: "center", padding: rp(16) }}>
+              <View style={{ backgroundColor: "rgba(0,0,0,0.2)", borderRadius: rp(12), padding: rp(10), marginRight: rp(14) }}>
+                <Ionicons name="scan" size={24} color={theme.colors.accent} />
+              </View>
+              <Text style={{ color: "#FFFFFF", fontSize: rs(15), fontWeight: "bold", flex: 1 }}>Scan number plate</Text>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+            </Card>
+          </TouchableOpacity> */}
+
           {keyTagNumber ? (
             <View style={{
-              backgroundColor: "#EFF6FF", borderWidth: rp(1), borderColor: "#BFDBFE",
+              backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: theme.colors.border,
               borderRadius: rp(16), padding: rp(12), marginBottom: rp(16),
               flexDirection: "row", alignItems: "center", gap: rp(10)
             }}>
               <Ionicons name="pricetag" size={20} color="#3B82F6" />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#1D4ED8" }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>
                   KEY TAG SCANNED
                 </Text>
-                <Text style={{ fontSize: rs(18), color: "#1E3A8A", marginTop: rp(2), fontWeight: "bold", letterSpacing: rs(1) }}>
+                <Text style={{ fontSize: rs(18), color: theme.colors.primary, marginTop: rp(2), fontWeight: "bold", letterSpacing: rs(1) }}>
                   #{keyTagNumber}
                 </Text>
               </View>
@@ -943,17 +977,17 @@ export default function CheckIn() {
           ) : null}
           {isPreRegistered && (
             <View style={{
-              backgroundColor: "#ECFDF5", borderWidth: rp(1), borderColor: "#6EE7B7",
+              backgroundColor: theme.colors.successLight, borderWidth: rp(1), borderColor: theme.colors.success,
               borderRadius: rp(16), padding: rp(12), marginBottom: rp(16),
               flexDirection: "row", alignItems: "center", gap: rp(10)
             }}>
-              <Ionicons name="checkmark-circle" size={20} color="#059669" />
+              <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#059669" }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>
                   PRE-REGISTERED GUEST
                 </Text>
                 {guestName ? (
-                  <Text style={{ fontSize: rs(11), color: "#065F46", marginTop: rp(1) }}>
+                  <Text style={{ fontSize: rs(11), color: theme.colors.success, marginTop: rp(1) }}>
                     {guestName} — details pre-filled, please verify
                   </Text>
                 ) : null}
@@ -962,9 +996,9 @@ export default function CheckIn() {
           )}
           {isPreRegistered && guestNotes ? (
             <View style={{
-              backgroundColor: "#FEF3C7",
+              backgroundColor: theme.colors.warningLight,
               borderWidth: rp(1),
-              borderColor: "#FDE68A",
+              borderColor: theme.colors.warning,
               borderRadius: rp(16),
               padding: rp(12),
               marginBottom: rp(16),
@@ -973,17 +1007,17 @@ export default function CheckIn() {
               gap: rp(10),
             }}>
               <Ionicons name="information-circle"
-                size={20} color="#D97706"
+                size={20} color={theme.colors.warning}
                 style={{ marginTop: rp(1) }} />
               <View style={{ flex: 1 }}>
                 <Text style={{
                   fontSize: rs(12), fontWeight: "900",
-                  color: "#92400E"
+                  color: theme.colors.warning
                 }}>
                   GUEST INSTRUCTIONS
                 </Text>
                 <Text style={{
-                  fontSize: rs(13), color: "#78350F",
+                  fontSize: rs(13), color: theme.colors.warning,
                   marginTop: rp(4), lineHeight: 18
                 }}>
                   {guestNotes}
@@ -992,108 +1026,95 @@ export default function CheckIn() {
             </View>
           ) : null}
           {eventAllowsInstantPark && (
-            <View style={{ backgroundColor: "#EEF2FF", borderWidth: rp(1), borderColor: "#C7D2FE", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: "#C7D2FE", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flex: 1, marginRight: rp(10) }}>
-                <Text style={{ fontSize: rs(12), fontWeight: "900", color: "#3730A3" }}>⚡ INSTANT PARK</Text>
-                <Text style={{ fontSize: rs(11), color: "#4338CA", marginTop: rp(2) }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>⚡ INSTANT PARK</Text>
+                <Text style={{ fontSize: rs(11), color: theme.colors.primary, marginTop: rp(2) }}>
                   Guest doesn't want to share personal details — skip name & phone
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setInstantPark(v => !v)}
-                style={{ width: rp(52), height: rp(30), borderRadius: rp(15), padding: rp(3), backgroundColor: instantPark ? "#4F46E5" : "#E5E7EB" }}
+                style={{ width: rp(52), height: rp(30), borderRadius: rp(15), padding: rp(3), backgroundColor: instantPark ? theme.colors.primary : theme.colors.border }}
               >
-                <View style={{ width: rp(24), height: rp(24), borderRadius: rp(12), backgroundColor: "#fff", marginLeft: instantPark ? rp(22) : 0 }} />
+                <View style={{ width: rp(24), height: rp(24), borderRadius: rp(12), backgroundColor: theme.colors.surface, marginLeft: instantPark ? rp(22) : 0 }} />
               </TouchableOpacity>
             </View>
           )}
-          <VehicleDetailsSection
-            plate={plate} setPlate={setPlate}
-            guestName={guestName} setGuestName={setGuestName}
-            color={color} setColor={setColor}
-            make={make} setMake={setMake}
-            carType={carType} setCarType={setCarType}
-            notes={notes} setNotes={setNotes}
-            errors={errors} setErrors={setErrors}
-            instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
-            pendingLookup={pendingLookup} setPendingLookup={setPendingLookup}
-            lookupApplied={lookupApplied} setLookupApplied={setLookupApplied}
-            plateLookedUp={plateLookedUp} setPlateLookedUp={setPlateLookedUp}
-            setGuestPhone={setGuestPhone} setAltGuestPhone={setAltGuestPhone}
-            lookupPlate={lookupPlate} confirmLookup={confirmLookup} rejectLookup={rejectLookup} clearGuestOnly={clearGuestOnly}
-          />
-          <DamageSection
-            hasDamage={hasDamage} setHasDamage={setHasDamage}
-            damageTypes={damageTypes} setDamageTypes={setDamageTypes}
-            damageNotes={damageNotes} setDamageNotes={setDamageNotes}
-            showOtherDamage={showOtherDamage} setShowOtherDamage={setShowOtherDamage}
-          />
-          <GuestContactSection
-            guestPhone={guestPhone} setGuestPhone={setGuestPhone}
-            altGuestPhone={altGuestPhone} setAltGuestPhone={setAltGuestPhone}
-            errors={errors} setErrors={setErrors}
-            instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
-          />
-          <EntryGateSection
-            eventGates={eventGates} selectedGate={selectedGate} setSelectedGate={setSelectedGate}
-          />
-          <PhotoGridSection
-            photos={photos} errors={errors} takePhoto={takePhoto} onRemovePhoto={onRemovePhoto}
-          />
+          <Card style={{ marginBottom: rp(16) }}>
+            <VehicleDetailsSection
+              plate={plate} setPlate={setPlate}
+              guestName={guestName} setGuestName={setGuestName}
+              color={color} setColor={setColor}
+              make={make} setMake={setMake}
+              carType={carType} setCarType={setCarType}
+              notes={notes} setNotes={setNotes}
+              errors={errors} setErrors={setErrors}
+              instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+              pendingLookup={pendingLookup} setPendingLookup={setPendingLookup}
+              lookupApplied={lookupApplied} setLookupApplied={setLookupApplied}
+              plateLookedUp={plateLookedUp} setPlateLookedUp={setPlateLookedUp}
+              setGuestPhone={setGuestPhone} setAltGuestPhone={setAltGuestPhone}
+              lookupPlate={lookupPlate} confirmLookup={confirmLookup} rejectLookup={rejectLookup} clearGuestOnly={clearGuestOnly}
+            />
+          </Card>
+          <Card style={{ marginBottom: rp(16) }}>
+            <DamageSection
+              hasDamage={hasDamage} setHasDamage={setHasDamage}
+              damageTypes={damageTypes} setDamageTypes={setDamageTypes}
+              damageNotes={damageNotes} setDamageNotes={setDamageNotes}
+              showOtherDamage={showOtherDamage} setShowOtherDamage={setShowOtherDamage}
+            />
+          </Card>
+          <Card style={{ marginBottom: rp(16) }}>
+            <GuestContactSection
+              guestPhone={guestPhone} setGuestPhone={setGuestPhone}
+              altGuestPhone={altGuestPhone} setAltGuestPhone={setAltGuestPhone}
+              errors={errors} setErrors={setErrors}
+              instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+            />
+          </Card>
+          <Card style={{ marginBottom: rp(16) }}>
+            <EntryGateSection
+              eventGates={eventGates} selectedGate={selectedGate} setSelectedGate={setSelectedGate}
+            />
+          </Card>
+          <Card style={{ marginBottom: rp(16) }}>
+            <PhotoGridSection
+              photos={photos} errors={errors} takePhoto={takePhoto} onRemovePhoto={onRemovePhoto}
+            />
+          </Card>
 
           {/* Video Walkaround Test */}
           <View style={{ marginTop: rp(16), marginBottom: rp(16) }}>
             <Lbl>🧪 TESTING: Video Walkaround</Lbl>
             <View style={{ flexDirection: "row", alignItems: "center", gap: rp(12) }}>
-              <TouchableOpacity
-                onPress={async () => {
-                  if (!cameraPermission?.granted) {
-                    const req = await requestCameraPermission();
-                    if (!req.granted) return;
-                  }
-                  setShowVideoCamera(true);
-                }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#fff",
-                  borderRadius: rp(12),
-                  padding: rp(12),
-                  borderWidth: rp(1),
-                  borderColor: "#059669",
-                  alignSelf: "flex-start",
-                }}
-              >
-                <Ionicons name="videocam-outline" size={rs(18)} color="#059669" />
-                <Text style={{ color: "#059669", fontWeight: "800", marginLeft: rp(8), fontSize: rs(12) }}>
-                  Record Walkaround
-                </Text>
-              </TouchableOpacity>
-              
+              <Btn variant={videoUploadStatus === "done" ? "success" : "outline"} onPress={async () => { if (!cameraPermission?.granted) { const req = await requestCameraPermission(); if (!req.granted) return; } setShowVideoCamera(true); }}>{videoUploadStatus === "done" ? "Walkaround Recorded ✓" : "Record Walkaround"}</Btn>
+
               {videoUploadStatus === "uploading" && (
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <ActivityIndicator size="small" color="#6B7280" />
-                  <Text style={{ fontSize: rs(11), color: "#6B7280", marginLeft: rp(6) }}>Uploading in background…</Text>
+                  <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginLeft: rp(6) }}>Uploading in background…</Text>
                 </View>
               )}
               {videoUploadStatus === "error" && (
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Ionicons name="warning" size={rs(16)} color="#EF4444" />
-                  <Text style={{ fontSize: rs(11), color: "#EF4444", marginLeft: rp(4), marginRight: rp(8) }}>{videoUploadError}</Text>
+                  <Ionicons name="warning" size={rs(16)} color={theme.colors.danger} />
+                  <Text style={{ fontSize: rs(11), color: theme.colors.danger, marginLeft: rp(4), marginRight: rp(8) }}>{videoUploadError}</Text>
                   <TouchableOpacity onPress={() => {
                     if (lastRecordedVideoUriRef.current) uploadWalkaroundVideoInBackground(lastRecordedVideoUriRef.current);
                   }}>
-                    <Text style={{ fontSize: rs(11), color: "#059669", fontWeight: "700" }}>Retry</Text>
+                    <Text style={{ fontSize: rs(11), color: theme.colors.primary, fontWeight: "700" }}>Retry</Text>
                   </TouchableOpacity>
                 </View>
               )}
             </View>
-            
+
             {videoUploadStatus === "done" && (
               <View style={{ marginTop: rp(12) }}>
                 <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(8) }}>
-                  <Ionicons name="checkmark-circle" size={rs(16)} color="#059669" />
-                  <Text style={{ fontSize: rs(12), color: "#059669", fontWeight: "700", marginLeft: rp(4) }}>
+                  <Ionicons name="checkmark-circle" size={rs(16)} color={theme.colors.success} />
+                  <Text style={{ fontSize: rs(12), color: theme.colors.success, fontWeight: "700", marginLeft: rp(4) }}>
                     Video processed ({videoExtractedPhotos.length} frames)
                   </Text>
                 </View>
@@ -1108,11 +1129,11 @@ export default function CheckIn() {
             )}
           </View>
 
-          <Modal visible={!!nextPhotoLabel} transparent animationType="none">
+          <RNModal visible={!!nextPhotoLabel} transparent animationType="none">
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-              <View style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(20), width: "80%", alignItems: "center" }}>
-                <Ionicons name="camera-outline" size={32} color="#059669" />
-                <Text style={{ fontSize: rs(16), fontWeight: "800", color: "#111827", marginTop: rp(10), textAlign: "center" }}>
+              <View style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), padding: rp(20), width: "80%", alignItems: "center" }}>
+                <Ionicons name="camera-outline" size={32} color={theme.colors.primary} />
+                <Text style={{ fontSize: rs(16), fontWeight: "800", color: theme.colors.textPrimary, marginTop: rp(10), textAlign: "center" }}>
                   Now capture the {nextPhotoLabel?.toUpperCase()} of the vehicle
                 </Text>
                 <TouchableOpacity
@@ -1122,29 +1143,29 @@ export default function CheckIn() {
                     takePhoto(label);
                   }}
                   activeOpacity={0.7}
-                  style={{ backgroundColor: "#059669", borderRadius: rp(12), paddingVertical: rp(12), paddingHorizontal: rp(32), marginTop: rp(16) }}
+                  style={{ backgroundColor: theme.colors.primary, borderRadius: rp(12), paddingVertical: rp(12), paddingHorizontal: rp(32), marginTop: rp(16) }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(14) }}>Continue</Text>
+                  <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: rs(14) }}>Continue</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </Modal>
+          </RNModal>
 
-          <Modal visible={showVideoCamera} animationType="slide">
+          <RNModal visible={showVideoCamera} animationType="slide">
             <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
               <View style={{ flex: 1 }}>
                 <CameraView ref={cameraRef} mode="video" style={{ flex: 1 }} />
-                
+
                 {/* Cancel Button */}
                 {!isRecording && (
                   <TouchableOpacity
                     onPress={() => setShowVideoCamera(false)}
                     style={{ position: "absolute", top: rp(16), left: rp(16), backgroundColor: "rgba(0,0,0,0.5)", padding: rp(12), borderRadius: rp(99) }}
                   >
-                    <Ionicons name="close" size={24} color="#fff" />
+                    <Ionicons name="close" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
                 )}
-                
+
                 {/* Controls */}
                 <View style={{ position: "absolute", bottom: rp(40), left: 0, right: 0, alignItems: "center" }}>
                   {recordingStuck ? (
@@ -1155,14 +1176,14 @@ export default function CheckIn() {
                         setRecordingStuck(false);
                       }}
                       style={{
-                        backgroundColor: "#F97316",
+                        backgroundColor: theme.colors.warning,
                         paddingVertical: rp(12),
                         paddingHorizontal: rp(24),
                         borderRadius: rp(99),
                         alignItems: "center"
                       }}
                     >
-                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(14) }}>Force Close (Discard Recording)</Text>
+                      <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: rs(14) }}>Force Close (Discard Recording)</Text>
                     </TouchableOpacity>
                   ) : isRecording ? (
                     <TouchableOpacity
@@ -1176,7 +1197,7 @@ export default function CheckIn() {
                         justifyContent: "center"
                       }}
                     >
-                      <View style={{ width: rp(30), height: rp(30), backgroundColor: "#EF4444", borderRadius: rp(4) }} />
+                      <View style={{ width: rp(30), height: rp(30), backgroundColor: theme.colors.danger, borderRadius: rp(4) }} />
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -1193,10 +1214,10 @@ export default function CheckIn() {
                               return current;
                             });
                           }, 35000);
-                          
+
                           // mute: true avoids needing microphone permission — walkaround video doesn't need audio. Also note: expo-camera video recording can be less reliable in Expo Go vs a custom dev client/EAS build — if issues persist, test on a dev build.
                           const video = await cameraRef.current.recordAsync({ maxDuration: 30, mute: true });
-                          
+
                           setIsRecording(false);
                           setRecordingStuck(false);
                           setShowVideoCamera(false);
@@ -1211,45 +1232,77 @@ export default function CheckIn() {
                         height: rp(70),
                         borderRadius: rp(35),
                         borderWidth: rp(4),
-                        borderColor: "#fff",
+                        borderColor: "#FFFFFF",
                         alignItems: "center",
                         justifyContent: "center"
                       }}
                     >
-                      <View style={{ width: rp(54), height: rp(54), backgroundColor: "#EF4444", borderRadius: rp(27) }} />
+                      <View style={{ width: rp(54), height: rp(54), backgroundColor: theme.colors.danger, borderRadius: rp(27) }} />
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
             </SafeAreaView>
-          </Modal>
+          </RNModal>
 
-          <TouchableOpacity
+          <Btn
+            variant="accent"
             onPress={submit}
             disabled={submitting}
             testID="submit-checkin"
-            activeOpacity={0.7}
-            style={{
-              backgroundColor: "#059669",
-              borderRadius: rp(16),
-              paddingVertical: rp(16),
-              alignItems: "center",
-              marginBottom: rp(16),
-              shadowColor: "#059669",
-              shadowOpacity: 0.3,
-              shadowRadius: rp(14),
-              shadowOffset: { width: 0, height: rp(6) },
-              elevation: 6,
-            }}
+            style={{ marginBottom: rp(16) }}
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(15), letterSpacing: rs(2) }}>CHECK IN VEHICLE</Text>}
-          </TouchableOpacity>
+            {submitting ? "CHECKING IN..." : "CHECK IN VEHICLE"}
+          </Btn>
           <View style={{ height: rp(40) }} />
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+
+      {/* Confirm Check-in Modal */}
+      <Modal open={showConfirmModal} onClose={() => setShowConfirmModal(false)} title="Confirm Check-In">
+        <View style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, padding: rp(16), marginBottom: rp(24) }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Vehicle</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{plate}</Text>
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Guest</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestName || "N/A"}</Text>
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Mobile</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestPhone || "N/A"}</Text>
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Gate</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{selectedGate || "N/A"}</Text>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: "row", gap: rp(12) }}>
+          <Btn style={{ flex: 1 }} variant="ghost" onPress={() => setShowConfirmModal(false)}>Cancel</Btn>
+          <Btn style={{ flex: 1 }} variant="accent" disabled={submitting} onPress={() => { setShowConfirmModal(false); setSubmitting(true); doSubmit(phoneToSaveState, altPhoneToSaveState); }}>
+            Confirm
+          </Btn>
+        </View>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal open={showSuccessModal} onClose={() => { }} title="">
+        <View style={{ alignItems: "center", marginBottom: rp(24) }}>
+          <View style={{ width: rp(64), height: rp(64), borderRadius: rp(32), backgroundColor: theme.colors.successLight, alignItems: "center", justifyContent: "center", marginBottom: rp(16) }}>
+            <Ionicons name="checkmark" size={32} color={theme.colors.success} />
+          </View>
+          <Text style={{ fontSize: rs(20), fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: rp(8) }}>Check-in Successful</Text>
+          <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, textAlign: "center" }}>Vehicle {plate} has been successfully checked in.</Text>
+        </View>
+
+        <View style={{ gap: rp(12) }}>
+          <Btn variant="accent" onPress={() => { setShowSuccessModal(false); if (successCar) openParkModal(successCar); router.push("/(driver)/(tabs)/park"); }}>Continue to parking</Btn>
+          <Btn variant="ghost" onPress={() => { setShowSuccessModal(false); router.push("/(driver)/scan-qr-card"); }}>Stay here</Btn>
+        </View>
+      </Modal>
+
+    </Screen>
   );
 }
-
-
-

@@ -17,6 +17,7 @@ export const connectWS = async (channel, onMessage) => {
   const connect = () => {
     if (generations[channel] !== myGeneration) return; // superseded, stop
     const ws = new WebSocket(wsUrl);
+    console.log(`[DUP_DEBUG] new WS connection opened for channel ${channel}, generation ${myGeneration}`);
     connections[channel] = ws;
 
     ws.onopen = () => {
@@ -41,6 +42,7 @@ export const connectWS = async (channel, onMessage) => {
 };
 
 export const disconnectWS = (channel) => {
+  console.log(`[DUP_DEBUG] disconnectWS called for channel ${channel}`);
   generations[channel] = (generations[channel] || 0) + 1; // invalidate any pending reconnects
   clearTimeout(retryTimers[channel]);
   connections[channel]?.close();

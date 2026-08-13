@@ -13,7 +13,7 @@ export default function Scanner() {
   const router = useRouter(); 
   const { currentEventId } = useAppStore();
   const { returnTo } = useLocalSearchParams();
-  const targetScreen = returnTo || "/(driver)/checkin"; 
+  const targetScreen = returnTo || "/(driver)/(tabs)/checkin"; 
   const [permission, requestPermission] = useCameraPermissions(); 
   const [scanComplete, setScanComplete] = useState(false);
   const [loading, setLoading] = useState(false);

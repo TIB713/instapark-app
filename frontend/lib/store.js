@@ -1,15 +1,42 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "./api";
 
-export const useAppStore = create((set) => ({
+export const useAppStore = create((set, get) => ({
   user: null,
   driver: null,
   token: null,
   currentEventId: null,
   currentCarId: null,
   currentJourneyType: "idle",
+  events: [],
   setUser: (user) => set({ user }),
   setDriver: (driver) => set({ driver }),
+  setEvents: (events) => set({ events }),
+  fetchEvents: async () => {
+    const driver = get().driver;
+    const driverId = driver?.id || driver?.user_id;
+    if (!driverId) return;
+    try {
+      const { data } = await api.get(`/drivers/${driverId}/events`);
+      set({ events: data || [] });
+    } catch (e) {
+      console.warn("Failed to fetch driver events", e);
+    }
+  },
+  fetchDriverProfile: async () => {
+    const driver = get().driver;
+    const driverId = driver?.id || driver?.user_id;
+    if (!driverId) return;
+    try {
+      const { data } = await api.get(`/drivers/${driverId}`);
+      const newDriver = { ...driver, ...data };
+      set({ driver: newDriver });
+      await AsyncStorage.setItem("driver_session", JSON.stringify(newDriver));
+    } catch (e) {
+      console.warn("Failed to fetch driver profile", e);
+    }
+  },
   setToken: (token) => set({ token }),
   setCurrentEventId: (id) => {
     set({ currentEventId: id });

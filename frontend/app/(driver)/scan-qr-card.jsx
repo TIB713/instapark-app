@@ -1,7 +1,7 @@
 import { confirmDialog } from "../../lib/confirmDialog";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive'; 
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native"; 
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandler } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera"; 
 import { useRouter, useLocalSearchParams } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
@@ -13,14 +13,22 @@ export default function ScanQrCard() {
   const router = useRouter(); 
   const { currentEventId } = useAppStore();
   const { returnTo } = useLocalSearchParams();
-  const targetScreen = returnTo || "/(driver)/checkin"; 
+  const targetScreen = returnTo || "/(driver)/(tabs)/checkin"; 
   const [permission, requestPermission] = useCameraPermissions(); 
   const [scanComplete, setScanComplete] = useState(false);
   const [loading, setLoading] = useState(false);
   const scanned = useRef(false);
   const lastScannedValue = useRef(null);
 
-  useEffect(() => { 
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      router.replace("/(driver)/(tabs)");
+      return true;
+    });
+    return () => sub.remove();
+  }, [router]);
+
+  useEffect(() => {
     if (permission && !permission.granted) { 
       requestPermission(); 
     } 
@@ -99,7 +107,7 @@ export default function ScanQrCard() {
     <View style={{ flex: 1, backgroundColor: "#000" }}> 
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#000" }}> 
         <View style={{ flexDirection: "row", alignItems: "center", padding: rp(16) }}> 
-          <TouchableOpacity onPress={() => router.back()} 
+          <TouchableOpacity onPress={() => router.replace("/(driver)/(tabs)")} 
             style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}> 
             <Ionicons name="chevron-back" size={22} color="#fff" /> 
           </TouchableOpacity> 
