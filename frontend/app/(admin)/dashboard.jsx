@@ -116,9 +116,7 @@ export default function Dashboard() {
 
   const handleSignOut = () => {
     const doSignOut = async () => {
-      await secureDelete("auth_token");
-      await AsyncStorage.multiRemove(["driver_session", "current_event_id"]);
-      signOut();
+      await useAppStore.getState().signOut();
       router.replace("/(auth)/login");
     };
     if (Platform.OS === "web") {

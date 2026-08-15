@@ -15,7 +15,8 @@ import {
   Platform,
   Modal as RNModal,
 } from "react-native";
-import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -27,8 +28,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
 import { enqueueCheckinAction } from "../../../lib/offline";
-import { useDriverTasksContext } from "../../../context/DriverTasksContext";
-import { updateJourney, markJourneyAccepted } from "../../../lib/locationTracking";
 
 const REQUIRED_PHOTO_ORDER = ["front", "right", "back", "left"];
 
@@ -52,6 +51,12 @@ const DAMAGE_OPTIONS = [
   "Taillight Damage",
   "Wheel Rim Scratch",
 ];
+
+function statusMeta(duty_status) {
+  if (duty_status === "available") return { color: theme.colors.success, bg: theme.colors.successLight, label: "Available" };
+  if (duty_status === "busy") return { color: theme.colors.warning, bg: theme.colors.warningLight, label: "Busy" };
+  return { color: theme.colors.textSecondary, bg: theme.colors.surfaceAlt, label: "Offline" };
+}
 
 function Lbl({ children }) {
   return (
@@ -377,11 +382,10 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
   );
 });
 
-export default function CheckIn() {
+export default function AddCar() {
   const router = useRouter();
-  const { openParkModal } = useDriverTasksContext();
-  const { driver, currentEventId } = useAppStore();
-  const resolvedDriverId = driver?.id;
+  const tabBarHeight = useBottomTabBarHeight();
+  const { currentEventId } = useAppStore();
   const [plate, setPlate] = useState("");
   const [color, setColor] = useState("");
   const [make, setMake] = useState("");
@@ -396,64 +400,18 @@ export default function CheckIn() {
   const [damageNotes, setDamageNotes] = useState("");
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
+  
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
   const photosRef = useRef(photos);
   useEffect(() => { photosRef.current = photos; }, [photos]);
   const resizedPhotosRef = useRef({});
   const resizeQueueRef = useRef(Promise.resolve());
-  const permissionGrantedRef = useRef(false);
-
-  const getUploadReadyPhotos = (photosObj) => {
-    const out = {};
-    for (const [label, uri] of Object.entries(photosObj)) {
-      out[label] = uri ? (resizedPhotosRef.current[label] || uri) : uri;
-    }
-    return out;
-  };
+  
   const [nextPhotoLabel, setNextPhotoLabel] = useState(null);
   const [pendingLookup, setPendingLookup] = useState(null);
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [phoneToSaveState, setPhoneToSaveState] = useState("");
-  const [altPhoneToSaveState, setAltPhoneToSaveState] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successCarId, setSuccessCarId] = useState(null);
-  const [successCar, setSuccessCar] = useState(null);
-
-  const [showVideoCamera, setShowVideoCamera] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [videoUploadStatus, setVideoUploadStatus] = useState("idle");
-  const [checkinVideoUrl, setCheckinVideoUrl] = useState(null);
-  const [videoExtractedPhotos, setVideoExtractedPhotos] = useState([]);
-  const [videoUploadError, setVideoUploadError] = useState(null);
-  const [recordingStuck, setRecordingStuck] = useState(false);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const cameraRef = useRef(null);
-  const lastRecordedVideoUriRef = useRef(null);
-
-  const uploadWalkaroundVideoInBackground = async (uri) => {
-    setVideoUploadStatus("uploading");
-    try {
-      const fd = new FormData();
-      fd.append("file", { uri, type: "video/mp4", name: "walkaround.mp4" });
-      fd.append("folder", `checkin-video-test/${plate || "unknown"}`);
-      fd.append("frame_count", "6");
-
-      const response = await api.post("/upload/checkin-video", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-        timeout: 60000
-      });
-
-      setCheckinVideoUrl(response.data.video_url);
-      setVideoExtractedPhotos(response.data.photo_urls || []);
-      setVideoUploadStatus("done");
-    } catch (e) {
-      setVideoUploadError("Could not upload video.");
-      setVideoUploadStatus("error");
-    }
-  };
   const [errors, setErrors] = useState({});
   const [prefilledCarId, setPrefilledCarId] = useState(null);
   const [passToken, setPassToken] = useState(null);
@@ -461,24 +419,28 @@ export default function CheckIn() {
   const [isPreRegistered, setIsPreRegistered] = useState(false);
   const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
   const [instantPark, setInstantPark] = useState(false);
-
+  
   const [qrToken, setQrToken] = useState("");
   const [keyTagNumber, setKeyTagNumber] = useState("");
   const [qrCardId, setQrCardId] = useState("");
-
-  const [hasScannedThisSession, setHasScannedThisSession] = useState(false);
+  
   const params = useLocalSearchParams();
+  const returnTo = params.returnTo || "/(supervisor)/(tabs)/scan";
+
+  // Driver assignment
+  const [drivers, setDrivers] = useState([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
+  const [selectedDriverId, setSelectedDriverId] = useState(null);
+
+  // Camera state
+  const [showPhotoCamera, setShowPhotoCamera] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef(null);
+  const [currentCameraLabel, setCurrentCameraLabel] = useState(null);
+  const [isTakingPicture, setIsTakingPicture] = useState(false);
 
   useEffect(() => {
-    const emptyPhotos = { front: null, back: null, left: null, right: null, extra: null };
-    setPhotos(emptyPhotos);
-    photosRef.current = emptyPhotos;
-    setHasScannedThisSession(false);
-    AsyncStorage.removeItem("checkin_photos").catch(() => { });
-    AsyncStorage.removeItem("checkin_draft").catch(() => { });
-
     if (params.prefill_plate) {
-      setHasScannedThisSession(true);
       setPlate(params.prefill_plate || "");
       setMake(params.prefill_make || "");
       setColor(params.prefill_color || "");
@@ -490,14 +452,14 @@ export default function CheckIn() {
       setGuestNotes(params.prefill_guest_notes || "");
     }
     if (params.prefill_qr_token) {
-      setHasScannedThisSession(true);
       setQrToken(params.prefill_qr_token || "");
       setKeyTagNumber(params.prefill_key_tag_number || "");
       setQrCardId(params.prefill_qr_card_id || "");
     }
-  }, [params.prefill_plate, params.prefill_qr_token, params.prefill_key_tag_number, params.prefill_qr_card_id]);
-
-
+    if (!params.prefill_plate && !params.prefill_qr_token) {
+      confirmDialog.info("Missing QR card", "Please scan a vehicle key-tag first.", () => router.replace("/(supervisor)/(tabs)/scan"));
+    }
+  }, [params.prefill_plate, params.prefill_qr_token, params.prefill_key_tag_number, params.prefill_qr_card_id, router]);
 
   useEffect(() => {
     (async () => {
@@ -508,8 +470,8 @@ export default function CheckIn() {
         setEventAllowsInstantPark(!!data.allow_instant_park);
       } catch { }
       try {
-        const draft = await AsyncStorage.getItem("checkin_draft");
-        const savedPhotos = await AsyncStorage.getItem("checkin_photos");
+        const draft = await AsyncStorage.getItem("add_car_draft");
+        const savedPhotos = await AsyncStorage.getItem("add_car_photos");
         if (draft) {
           const d = JSON.parse(draft);
           setPlate(d.plate || "");
@@ -526,21 +488,41 @@ export default function CheckIn() {
           if (d.guestName) setGuestName(d.guestName);
         }
         if (savedPhotos) {
-          const parsed = JSON.parse(savedPhotos);
-          const draft = await AsyncStorage.getItem("checkin_draft");
-          const d = draft ? JSON.parse(draft) : null;
-          // Only restore photos if they belong to the same plate currently being checked in
-          if (d?.plate && params.prefill_plate && d.plate.trim().toUpperCase() === params.prefill_plate.trim().toUpperCase()) {
-            setPhotos(parsed);
-            photosRef.current = parsed;
-          } else {
-            // Different car — discard stale photos
-            AsyncStorage.removeItem("checkin_photos").catch(() => { });
-          }
+          setPhotos(JSON.parse(savedPhotos));
+          photosRef.current = JSON.parse(savedPhotos);
         }
       } catch { }
     })();
   }, [currentEventId]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get(`/events/${currentEventId}/drivers`);
+        const roster = (data || []).filter((d) => d.assigned);
+        const rank = { available: 0, busy: 1, offline: 2 };
+        roster.sort((a, b) => {
+          const r = (rank[a.duty_status] ?? 2) - (rank[b.duty_status] ?? 2);
+          if (r !== 0) return r;
+          return new Date(a.duty_status_updated_at || 0) - new Date(b.duty_status_updated_at || 0);
+        });
+        setDrivers(roster);
+      } catch { }
+      setLoadingDrivers(false);
+    })();
+  }, [currentEventId]);
+
+  const handlePickDriver = (driver) => {
+    if (driver.duty_status === "busy") {
+      confirmDialog.confirm(
+        "Driver is busy",
+        `${driver.name} is currently busy${driver.current_car_plate ? ` with car ${driver.current_car_plate}` : ""}. Assign this car to them anyway?`,
+        () => setSelectedDriverId(driver.id)
+      );
+      return;
+    }
+    setSelectedDriverId(driver.id);
+  };
 
   const lookupPlate = async (plateValue) => {
     if (!validatePlate(plateValue) || plateValue === plateLookedUp) return;
@@ -575,10 +557,10 @@ export default function CheckIn() {
       "Clear guest details?",
       "This will remove the guest name and phone number. The car details will stay the same.",
       () => {
-        setGuestName("");
-        setGuestPhone("");
-        setAltGuestPhone("");
-      },
+            setGuestName("");
+            setGuestPhone("");
+            setAltGuestPhone("");
+          },
       "Yes, Clear"
     );
   };
@@ -596,45 +578,76 @@ export default function CheckIn() {
   }, []);
 
   const takePhoto = useCallback(async (label) => {
-    if (!permissionGrantedRef.current) {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) { confirmDialog.info("Camera permission needed", ""); return; }
-      permissionGrantedRef.current = true;
-    }
-    const d = draftRef.current;
-    AsyncStorage.setItem("checkin_draft", JSON.stringify({ plate: d.plate, color: d.color, make: d.make, notes: d.notes, guestPhone: d.guestPhone, selectedGate: d.selectedGate, carType: d.carType, altGuestPhone: d.altGuestPhone, hasDamage: d.hasDamage, damageNotes: d.damageNotes, damageTypes: d.damageTypes, guestName: d.guestName })).catch(() => { });
-    AsyncStorage.setItem("checkin_photos", JSON.stringify(photosRef.current)).catch(() => { });
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false, mediaTypes: ImagePicker.MediaTypeOptions.Images });
-    if (!result.canceled) {
-      const rawUri = result.assets[0].uri;
-      // Show the photo in the form immediately — no processing wait
-      const np = { ...photosRef.current, [label]: rawUri };
-      photosRef.current = np;
-      setPhotos(np);
-      if (d.errors.photos && np.front && np.back && np.left && np.right) {
-        setErrors(prev => ({ ...prev, photos: undefined }));
+    if (!cameraPermission?.granted) {
+      const req = await requestCameraPermission();
+      if (!req.granted) {
+        confirmDialog.info("Camera permission needed", "");
+        return;
       }
-      AsyncStorage.setItem("checkin_photos", JSON.stringify(np)).catch(() => { });
-      const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
-      if (idx !== -1) {
-        const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
-        if (nextLabel) {
-          setNextPhotoLabel(nextLabel);
+    }
+    setCurrentCameraLabel(label);
+    setShowPhotoCamera(true);
+  }, [cameraPermission]);
+
+  const capturePhoto = async () => {
+    if (cameraRef.current && !isTakingPicture && currentCameraLabel) {
+      setIsTakingPicture(true);
+      try {
+        const d = draftRef.current;
+        AsyncStorage.setItem("add_car_draft", JSON.stringify({ plate: d.plate, color: d.color, make: d.make, notes: d.notes, guestPhone: d.guestPhone, selectedGate: d.selectedGate, carType: d.carType, altGuestPhone: d.altGuestPhone, hasDamage: d.hasDamage, damageNotes: d.damageNotes, damageTypes: d.damageTypes, guestName: d.guestName })).catch(() => { });
+        
+        const photo = await cameraRef.current.takePictureAsync({ skipProcessing: true });
+        
+        if (photo && photo.uri) {
+          const rawUri = photo.uri;
+          const label = currentCameraLabel;
+          
+          const np = { ...photosRef.current, [label]: rawUri };
+          photosRef.current = np;
+          setPhotos(np);
+          
+          if (d.errors.photos && np.front && np.back && np.left && np.right) {
+            setErrors(prev => ({ ...prev, photos: undefined }));
+          }
+          AsyncStorage.setItem("add_car_photos", JSON.stringify(np)).catch(() => { });
+          
+          const idx = REQUIRED_PHOTO_ORDER.indexOf(label);
+          if (idx !== -1) {
+            const nextLabel = REQUIRED_PHOTO_ORDER.slice(idx + 1).find(l => !np[l]);
+            if (nextLabel) {
+              setCurrentCameraLabel(nextLabel);
+            } else {
+              setShowPhotoCamera(false);
+            }
+          } else {
+            setShowPhotoCamera(false);
+          }
+          
+          resizeQueueRef.current = resizeQueueRef.current.then(() =>
+            ImageManipulator.manipulateAsync(
+              rawUri,
+              [{ resize: { width: 1280 } }],
+              { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+            )
+              .then((resized) => { resizedPhotosRef.current[label] = resized.uri; })
+              .catch(() => { resizedPhotosRef.current[label] = rawUri; })
+          );
         }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsTakingPicture(false);
       }
-      // Resize/compress silently in the background — does not block the UI or the next-photo prompt
-      resizeQueueRef.current = resizeQueueRef.current.then(() =>
-        ImageManipulator.manipulateAsync(
-          rawUri,
-          [{ resize: { width: 1280 } }],
-          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-        )
-          .then((resized) => { resizedPhotosRef.current[label] = resized.uri; })
-          .catch(() => { resizedPhotosRef.current[label] = rawUri; })
-      );
     }
-    AsyncStorage.removeItem("checkin_draft").catch(() => { });
-  }, []);
+  };
+
+  const getUploadReadyPhotos = (photosObj) => {
+    const out = {};
+    for (const [label, uri] of Object.entries(photosObj)) {
+      out[label] = uri ? (resizedPhotosRef.current[label] || uri) : uri;
+    }
+    return out;
+  };
 
   const uploadPhotosInBackground = async (carId, photosObj) => {
     try {
@@ -669,6 +682,7 @@ export default function CheckIn() {
     if (!make.trim() && !(eventAllowsInstantPark && instantPark)) errs.make = "Vehicle make/model is required";
     const skipGuestDetails = eventAllowsInstantPark && instantPark;
     if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
+    if (!selectedDriverId) errs.driver = "Please select a driver to hand this car to";
     let phoneToSave = "";
     if (!skipGuestDetails && !guestPhone.trim()) errs.guestPhone = "Guest mobile number is required";
     else if (guestPhone.trim()) {
@@ -695,7 +709,6 @@ export default function CheckIn() {
       }
     }
     if (!photos.front || !photos.back || !photos.left || !photos.right) errs.photos = "Front, back, left, and right photos are all required";
-
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setSubmitting(false);
@@ -703,9 +716,14 @@ export default function CheckIn() {
     }
 
     setSubmitting(false);
-    setPhoneToSaveState(phoneToSave);
-    setAltPhoneToSaveState(altPhoneToSave);
-    setShowConfirmModal(true);
+    confirmDialog.confirm(
+      "Confirm check-in",
+      `Confirm check-in for ${plate}?`,
+      () => {
+        setSubmitting(true);
+        doSubmit(phoneToSave, altPhoneToSave);
+      }
+    );
   };
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
@@ -713,7 +731,6 @@ export default function CheckIn() {
     try {
       const net = await NetInfo.fetch();
       if (!net.isConnected) {
-        // OFFLINE: copy photos first (needed for offline queue)
         await Promise.all(Object.entries(getUploadReadyPhotos(photos)).map(async ([label, uri]) => {
           if (!uri) return;
           const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
@@ -728,7 +745,7 @@ export default function CheckIn() {
           notes: notes.trim(),
           gate: selectedGate,
           guestPhone: phoneToSave,
-          checkInDriverId: resolvedDriverId,
+          checkInDriverId: selectedDriverId,
           photoLocalPaths,
           isPreRegistered,
           prefilledCarId,
@@ -739,8 +756,8 @@ export default function CheckIn() {
           damageTypes,
           guestName: guestName.trim(),
         });
-        await AsyncStorage.removeItem("checkin_draft");
-        await AsyncStorage.removeItem("checkin_photos");
+        await AsyncStorage.removeItem("add_car_draft");
+        await AsyncStorage.removeItem("add_car_photos");
         confirmDialog.info("Saved offline", "Vehicle check-in queued. Will sync when connected.");
         router.back();
         return;
@@ -748,10 +765,8 @@ export default function CheckIn() {
 
       let car;
       if (isPreRegistered && prefilledCarId) {
-        // Complete check-in for PRE_REGISTERED car 
         const { data } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, {
-          event_id: currentEventId,
-          check_in_driver_id: resolvedDriverId,
+          check_in_driver_id: selectedDriverId,
           gate: selectedGate || "",
           make: make.trim(),
           color: color.trim(),
@@ -766,7 +781,6 @@ export default function CheckIn() {
         });
         car = data;
       } else {
-        // Normal check-in 
         const { data } = await api.post("/cars", {
           qr_token: qrToken,
           plate: plate.trim().toUpperCase(),
@@ -775,7 +789,7 @@ export default function CheckIn() {
           notes: notes.trim(),
           gate: selectedGate || "",
           event_id: currentEventId,
-          check_in_driver_id: resolvedDriverId,
+          check_in_driver_id: selectedDriverId,
           car_type: carType,
           alt_guest_phone: altPhoneToSave || null,
           has_damage: hasDamage,
@@ -792,34 +806,31 @@ export default function CheckIn() {
           });
         }
       }
-      api.post(`/slots/event/${currentEventId}/initialize`).catch(() => { });
-      try { await AsyncStorage.removeItem("checkin_photos"); } catch { }
-      try { await AsyncStorage.removeItem("checkin_draft"); } catch { }
-      // Start GPS journey tracking from this moment — driver now walks to park the car
-      updateJourney(car.id, "checkin").catch(() => { });
-      markJourneyAccepted(car.id).catch(() => { });
-
-      // AFTER API succeeds: copy photos for cleanup tracking (fire and forget, don't await)
+      try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch { }
+      
       Promise.all(Object.entries(getUploadReadyPhotos(photos)).map(async ([label, uri]) => {
         if (!uri) return;
         const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim()}_${label}_${Date.now()}.jpg`;
         try { await FileSystem.copyAsync({ from: uri, to: localPath }); photoLocalPaths[label] = localPath; } catch { }
       })).catch(() => { });
-
-      setSuccessCar(car);
-      setSuccessCarId(car.id);
-      setShowSuccessModal(true);
-      setHasScannedThisSession(false);
-      // Use original photo URIs for online background upload
+      
+      try { await AsyncStorage.removeItem("add_car_photos"); } catch { }
+      try { await AsyncStorage.removeItem("add_car_draft"); } catch { }
+      router.replace({
+        pathname: "/(supervisor)/(tabs)/qr-display",
+        params: {
+          token: car.qr_token,
+          plate: car.plate,
+          carId: car.id,
+          ...(phoneToSave ? { guestPhone: phoneToSave } : {}),
+        },
+      });
       uploadPhotosInBackground(car.id, getUploadReadyPhotos(photos)).finally(() => {
         Object.values(photoLocalPaths).forEach(path => {
           if (path) FileSystem.deleteAsync(path, { idempotent: true }).catch(() => { });
         });
       });
     } catch (err) {
-      console.log("CHECKIN ERROR STATUS:", err.response?.status);
-      console.log("CHECKIN ERROR DATA:", JSON.stringify(err.response?.data));
-      console.log("CHECKIN ERROR MESSAGE:", err.message);
       const gotServerResponse = !!err.response;
       if (!gotServerResponse) {
         try {
@@ -831,7 +842,7 @@ export default function CheckIn() {
             notes: notes.trim(),
             gate: selectedGate,
             guestPhone: phoneToSave,
-            checkInDriverId: resolvedDriverId,
+            checkInDriverId: selectedDriverId,
             photoLocalPaths,
             isPreRegistered,
             prefilledCarId,
@@ -842,8 +853,8 @@ export default function CheckIn() {
             damageTypes,
             guestName: guestName.trim(),
           });
-          await AsyncStorage.removeItem("checkin_draft");
-          await AsyncStorage.removeItem("checkin_photos");
+          await AsyncStorage.removeItem("add_car_draft");
+          await AsyncStorage.removeItem("add_car_photos");
           confirmDialog.info("Saved for retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically — you don't need to redo it.");
           router.back();
           return;
@@ -852,136 +863,27 @@ export default function CheckIn() {
         }
       } else {
         const msg = err.response?.data?.detail || "Check-in failed";
-        const isAlreadyCheckedIn = typeof msg === "string" && msg.includes("already active in this event");
-        if (typeof msg === "string" && msg.includes("full")) {
-          confirmDialog.info("Event full", "No more cars can be checked in.");
-        } else if (isAlreadyCheckedIn || (typeof msg === "string" && msg.includes("Duplicate"))) {
-          confirmDialog.info(
-            "Already checked in",
-            "This vehicle appears to already be checked in for this event — it may have been created by a previous attempt. Please check the car list before re-submitting."
-          );
-        } else {
-          confirmDialog.info("Error", typeof msg === "string" ? msg : "Failed");
-        }
-        // Clear stale draft so the NEXT check-in doesn't inherit this one's photos/fields
-        try { await AsyncStorage.removeItem("checkin_draft"); } catch { }
-        try { await AsyncStorage.removeItem("checkin_photos"); } catch { }
-        const empty = { front: null, back: null, left: null, right: null, extra: null };
-        setPhotos(empty);
-        photosRef.current = empty;
+        if (typeof msg === "string" && msg.includes("full")) confirmDialog.info("Event full", "No more cars can be checked in.");
+        else if (typeof msg === "string" && msg.includes("Duplicate")) confirmDialog.info("Duplicate", "Plate already checked in.");
+        else confirmDialog.info("Error", typeof msg === "string" ? msg : "Failed");
       }
     } finally { setSubmitting(false); }
   };
 
-
-  if (!currentEventId) {
-    return (
-      <Screen>
-        <TopBar title="Check In" />
-        <EmptyState
-          icon={<Ionicons name="calendar-outline" size={64} color={theme.colors.textMuted} />}
-          title="No event selected"
-          body="Select an event from your Profile to start checking in cars."
-          cta={<Btn onPress={() => router.push('/(driver)/(tabs)/profile')}>Go to Profile</Btn>}
-        />
-
-        {/* Confirm Check-in Modal */}
-        <Modal open={showConfirmModal} onClose={() => setShowConfirmModal(false)} title="Confirm Check-In">
-          <View style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, padding: rp(16), marginBottom: rp(24) }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Vehicle</Text>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{plate}</Text>
-            </View>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Guest</Text>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestName || "N/A"}</Text>
-            </View>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Mobile</Text>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestPhone || "N/A"}</Text>
-            </View>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Gate</Text>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{selectedGate || "N/A"}</Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: "row", gap: rp(12) }}>
-            <Btn style={{ flex: 1 }} variant="ghost" onPress={() => setShowConfirmModal(false)}>Cancel</Btn>
-            <Btn style={{ flex: 1 }} variant="accent" disabled={submitting} onPress={() => { setShowConfirmModal(false); setSubmitting(true); doSubmit(phoneToSaveState, altPhoneToSaveState); }}>
-              Confirm
-            </Btn>
-          </View>
-        </Modal>
-
-        {/* Success Modal */}
-        <Modal open={showSuccessModal} onClose={() => { }} title="">
-          <View style={{ alignItems: "center", marginBottom: rp(24) }}>
-            <View style={{ width: rp(64), height: rp(64), borderRadius: rp(32), backgroundColor: theme.colors.successLight, alignItems: "center", justifyContent: "center", marginBottom: rp(16) }}>
-              <Ionicons name="checkmark" size={32} color={theme.colors.success} />
-            </View>
-            <Text style={{ fontSize: rs(20), fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: rp(8) }}>Check-in Successful</Text>
-            <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, textAlign: "center" }}>Vehicle {plate} has been successfully checked in.</Text>
-          </View>
-
-          <View style={{ gap: rp(12) }}>
-            <Btn variant="accent" onPress={() => { setShowSuccessModal(false); if (successCar) openParkModal(successCar); router.push("/(driver)/(tabs)/park"); }}>Continue to parking</Btn>
-            <Btn variant="ghost" onPress={() => { setShowSuccessModal(false); router.push("/(driver)/scan-qr-card"); }}>Stay here</Btn>
-          </View>
-        </Modal>
-
-      </Screen>
-    );
-  }
-
-  if (!hasScannedThisSession) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: "center", justifyContent: "center", padding: rp(32) }}>
-        <Ionicons name="qr-code-outline" size={64} color={theme.colors.primary} />
-        <Text style={{ fontSize: rs(18), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(16), textAlign: "center" }}>
-          Scan a Vehicle QR Card
-        </Text>
-        <Text style={{ fontSize: rs(13), color: theme.colors.textSecondary, marginTop: rp(8), textAlign: "center" }}>
-          You need to scan the vehicle's key-tag QR card before checking it in.
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.push("/(driver)/scan-qr-card")}
-          activeOpacity={0.7}
-          style={{ backgroundColor: theme.colors.primary, borderRadius: rp(14), paddingVertical: rp(14), paddingHorizontal: rp(32), marginTop: rp(24) }}
-        >
-          <Text style={{ color: "#FFFFFF", fontWeight: "900", fontSize: rs(14), letterSpacing: rs(1) }}>SCAN QR CARD</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
-    <Screen testID="checkin-screen">
+    <Screen scroll={false} testID="add-car-screen">
       <TopBar
-        title="Check In"
-        onBack={() => router.back()}
+        title="Add Car & Assign Driver"
+        onBack={() => router.replace(returnTo)}
         rightNode={
-          <TouchableOpacity onPress={() => router.push("/(driver)/scanner")}>
+          <TouchableOpacity onPress={() => router.push({ pathname: "/(supervisor)/(tabs)/scan", params: { returnTo } })}>
             <Ionicons name="qr-code-outline" size={24} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         }
       />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView
-          style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: rp(100) }}
-        >
-          {/* <TouchableOpacity onPress={() => router.push("/(driver)/scanner")} style={{ marginBottom: rp(16) }}>
-            <Card style={{ backgroundColor: theme.colors.primary, borderRadius: theme.radius.xl, flexDirection: "row", alignItems: "center", padding: rp(16) }}>
-              <View style={{ backgroundColor: "rgba(0,0,0,0.2)", borderRadius: rp(12), padding: rp(10), marginRight: rp(14) }}>
-                <Ionicons name="scan" size={24} color={theme.colors.accent} />
-              </View>
-              <Text style={{ color: "#FFFFFF", fontSize: rs(15), fontWeight: "bold", flex: 1 }}>Scan number plate</Text>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
-            </Card>
-          </TouchableOpacity> */}
-
+        <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(100)  + tabBarHeight}}>
+          
           {keyTagNumber ? (
             <View style={{
               backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: theme.colors.border,
@@ -1030,22 +932,10 @@ export default function CheckIn() {
               alignItems: "flex-start",
               gap: rp(10),
             }}>
-              <Ionicons name="information-circle"
-                size={20} color={theme.colors.warning}
-                style={{ marginTop: rp(1) }} />
+              <Ionicons name="information-circle" size={20} color={theme.colors.warning} style={{ marginTop: rp(1) }} />
               <View style={{ flex: 1 }}>
-                <Text style={{
-                  fontSize: rs(12), fontWeight: "900",
-                  color: theme.colors.warning
-                }}>
-                  GUEST INSTRUCTIONS
-                </Text>
-                <Text style={{
-                  fontSize: rs(13), color: theme.colors.warning,
-                  marginTop: rp(4), lineHeight: 18
-                }}>
-                  {guestNotes}
-                </Text>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.warning }}>GUEST INSTRUCTIONS</Text>
+                <Text style={{ fontSize: rs(13), color: theme.colors.warning, marginTop: rp(4), lineHeight: 18 }}>{guestNotes}</Text>
               </View>
             </View>
           ) : null}
@@ -1065,6 +955,7 @@ export default function CheckIn() {
               </TouchableOpacity>
             </View>
           )}
+
           <Card style={{ marginBottom: rp(16) }}>
             <VehicleDetailsSection
               plate={plate} setPlate={setPlate}
@@ -1109,224 +1000,78 @@ export default function CheckIn() {
             />
           </Card>
 
-          {/* Video Walkaround Test */}
-          <View style={{ marginTop: rp(16), marginBottom: rp(16) }}>
-            <Lbl>🧪 TESTING: Video Walkaround</Lbl>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: rp(12) }}>
-              <Btn variant={videoUploadStatus === "done" ? "success" : "outline"} onPress={async () => { if (!cameraPermission?.granted) { const req = await requestCameraPermission(); if (!req.granted) return; } setShowVideoCamera(true); }}>{videoUploadStatus === "done" ? "Walkaround Recorded ✓" : "Record Walkaround"}</Btn>
-
-              {videoUploadStatus === "uploading" && (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <ActivityIndicator size="small" color="#6B7280" />
-                  <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginLeft: rp(6) }}>Uploading in background…</Text>
-                </View>
-              )}
-              {videoUploadStatus === "error" && (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Ionicons name="warning" size={rs(16)} color={theme.colors.danger} />
-                  <Text style={{ fontSize: rs(11), color: theme.colors.danger, marginLeft: rp(4), marginRight: rp(8) }}>{videoUploadError}</Text>
-                  <TouchableOpacity onPress={() => {
-                    if (lastRecordedVideoUriRef.current) uploadWalkaroundVideoInBackground(lastRecordedVideoUriRef.current);
-                  }}>
-                    <Text style={{ fontSize: rs(11), color: theme.colors.primary, fontWeight: "700" }}>Retry</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-
-            {videoUploadStatus === "done" && (
-              <View style={{ marginTop: rp(12) }}>
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(8) }}>
-                  <Ionicons name="checkmark-circle" size={rs(16)} color={theme.colors.success} />
-                  <Text style={{ fontSize: rs(12), color: theme.colors.success, fontWeight: "700", marginLeft: rp(4) }}>
-                    Video processed ({videoExtractedPhotos.length} frames)
-                  </Text>
-                </View>
-                {videoExtractedPhotos.length > 0 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
-                    {videoExtractedPhotos.map((url, i) => (
-                      <Image key={i} source={{ uri: url }} style={{ width: rp(60), height: rp(60), borderRadius: rp(8) }} />
-                    ))}
-                  </ScrollView>
-                )}
+          <Card style={{ marginBottom: rp(24) }}>
+            <Lbl>ASSIGN TO DRIVER *</Lbl>
+            {loadingDrivers ? (
+              <ActivityIndicator style={{ marginTop: rp(10), marginBottom: rp(16) }} color={theme.colors.primary} />
+            ) : drivers.length === 0 ? (
+              <Text style={{ color: theme.colors.textMuted, fontSize: rs(13), marginBottom: rp(16) }}>No drivers rostered on this event yet.</Text>
+            ) : (
+              <View style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), borderWidth: rp(1), borderColor: errors.driver ? theme.colors.danger : theme.colors.border, overflow: "hidden" }}>
+                {drivers.map((d, idx) => {
+                  const meta = statusMeta(d.duty_status);
+                  const selected = selectedDriverId === d.id;
+                  return (
+                    <TouchableOpacity key={d.id} onPress={() => { handlePickDriver(d); if (errors.driver) setErrors(prev => ({ ...prev, driver: undefined })); }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(14), paddingHorizontal: rp(16), borderTopWidth: idx === 0 ? 0 : rp(1), borderTopColor: theme.colors.border, backgroundColor: selected ? theme.colors.successLight : theme.colors.surface }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: "800", color: theme.colors.textPrimary, fontSize: rs(14) }}>{d.name}</Text>
+                        {d.duty_status === "busy" && d.current_car_plate && (
+                          <Text style={{ color: theme.colors.textMuted, fontSize: rs(11), marginTop: rp(2) }}>Busy with {d.current_car_plate}</Text>
+                        )}
+                      </View>
+                      <View style={{ backgroundColor: meta.bg, paddingHorizontal: rp(10), paddingVertical: rp(8), borderRadius: rp(99), marginRight: rp(10) }}>
+                        <Text style={{ color: meta.color, fontWeight: "800", fontSize: rs(10) }}>{meta.label}</Text>
+                      </View>
+                      {selected && <Ionicons name="checkmark-circle" size={22} color={theme.colors.success} />}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
-          </View>
+            {errors.driver && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4) }}>* {errors.driver}</Text>}
+          </Card>
 
-          <RNModal visible={!!nextPhotoLabel} transparent animationType="none">
-            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-              <View style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), padding: rp(20), width: "80%", alignItems: "center" }}>
-                <Ionicons name="camera-outline" size={32} color={theme.colors.primary} />
-                <Text style={{ fontSize: rs(16), fontWeight: "800", color: theme.colors.textPrimary, marginTop: rp(10), textAlign: "center" }}>
-                  Now capture the {nextPhotoLabel?.toUpperCase()} of the vehicle
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    const label = nextPhotoLabel;
-                    setNextPhotoLabel(null);
-                    takePhoto(label);
-                  }}
-                  activeOpacity={0.7}
-                  style={{ backgroundColor: theme.colors.primary, borderRadius: rp(12), paddingVertical: rp(12), paddingHorizontal: rp(32), marginTop: rp(16) }}
-                >
-                  <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: rs(14) }}>Continue</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </RNModal>
-
-          <RNModal visible={showVideoCamera} animationType="slide">
-            <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
-              <View style={{ flex: 1 }}>
-                <CameraView ref={cameraRef} mode="video" style={{ flex: 1 }} />
-
-                {/* Cancel Button */}
-                {!isRecording && (
-                  <TouchableOpacity
-                    onPress={() => setShowVideoCamera(false)}
-                    style={{ position: "absolute", top: rp(16), left: rp(16), backgroundColor: "rgba(0,0,0,0.5)", padding: rp(12), borderRadius: rp(99) }}
-                  >
-                    <Ionicons name="close" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                )}
-
-                {/* Controls */}
-                <View style={{ position: "absolute", bottom: rp(40), left: 0, right: 0, alignItems: "center" }}>
-                  {recordingStuck ? (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setShowVideoCamera(false);
-                        setIsRecording(false);
-                        setRecordingStuck(false);
-                      }}
-                      style={{
-                        backgroundColor: theme.colors.warning,
-                        paddingVertical: rp(12),
-                        paddingHorizontal: rp(24),
-                        borderRadius: rp(99),
-                        alignItems: "center"
-                      }}
-                    >
-                      <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: rs(14) }}>Force Close (Discard Recording)</Text>
-                    </TouchableOpacity>
-                  ) : isRecording ? (
-                    <TouchableOpacity
-                      onPress={() => cameraRef.current?.stopRecording()}
-                      style={{
-                        width: rp(70),
-                        height: rp(70),
-                        borderRadius: rp(35),
-                        backgroundColor: "rgba(255,255,255,0.3)",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-                      <View style={{ width: rp(30), height: rp(30), backgroundColor: theme.colors.danger, borderRadius: rp(4) }} />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={async () => {
-                        if (cameraRef.current) {
-                          setIsRecording(true);
-                          setRecordingStuck(false);
-                          setTimeout(() => {
-                            if (cameraRef.current) cameraRef.current.stopRecording();
-                          }, 30000);
-                          setTimeout(() => {
-                            setIsRecording((current) => {
-                              if (current) setRecordingStuck(true);
-                              return current;
-                            });
-                          }, 35000);
-
-                          // mute: true avoids needing microphone permission — walkaround video doesn't need audio. Also note: expo-camera video recording can be less reliable in Expo Go vs a custom dev client/EAS build — if issues persist, test on a dev build.
-                          const video = await cameraRef.current.recordAsync({ maxDuration: 30, mute: true });
-
-                          setIsRecording(false);
-                          setRecordingStuck(false);
-                          setShowVideoCamera(false);
-                          if (video && video.uri) {
-                            lastRecordedVideoUriRef.current = video.uri;
-                            uploadWalkaroundVideoInBackground(video.uri);
-                          }
-                        }
-                      }}
-                      style={{
-                        width: rp(70),
-                        height: rp(70),
-                        borderRadius: rp(35),
-                        borderWidth: rp(4),
-                        borderColor: "#FFFFFF",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-                      <View style={{ width: rp(54), height: rp(54), backgroundColor: theme.colors.danger, borderRadius: rp(27) }} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </SafeAreaView>
-          </RNModal>
-
-          <Btn
-            variant="accent"
-            onPress={submit}
-            disabled={submitting}
-            testID="submit-checkin"
-            style={{ marginBottom: rp(16) }}
-          >
+          <Btn variant="accent" onPress={submit} disabled={submitting} style={{ marginBottom: rp(16) }}>
             {submitting ? "CHECKING IN..." : "CHECK IN VEHICLE"}
           </Btn>
           <View style={{ height: rp(40) }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Confirm Check-in Modal */}
-      <Modal open={showConfirmModal} onClose={() => setShowConfirmModal(false)} title="Confirm Check-In">
-        <View style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, padding: rp(16), marginBottom: rp(24) }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Vehicle</Text>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{plate}</Text>
-          </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Guest</Text>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestName || "N/A"}</Text>
-          </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Mobile</Text>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{guestPhone || "N/A"}</Text>
-          </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(8) }}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), fontWeight: "800", textTransform: "uppercase" }}>Gate</Text>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(13), fontWeight: "bold" }}>{selectedGate || "N/A"}</Text>
-          </View>
-        </View>
+      <RNModal visible={showPhotoCamera} animationType="slide">
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
+          <View style={{ flex: 1 }}>
+            <CameraView ref={cameraRef} mode="picture" style={{ flex: 1 }} />
+            
+            <View style={{ position: "absolute", top: rp(16), left: rp(16), right: rp(16), alignItems: "center" }}>
+              <View style={{ backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: rp(16), paddingVertical: rp(8), borderRadius: rp(99) }}>
+                <Text style={{ color: "#FFF", fontSize: rs(14), fontWeight: "800" }}>Take {currentCameraLabel?.toUpperCase()} photo</Text>
+              </View>
+            </View>
 
-        <View style={{ flexDirection: "row", gap: rp(12) }}>
-          <Btn style={{ flex: 1 }} variant="ghost" onPress={() => setShowConfirmModal(false)}>Cancel</Btn>
-          <Btn style={{ flex: 1 }} variant="accent" disabled={submitting} onPress={() => { setShowConfirmModal(false); setSubmitting(true); doSubmit(phoneToSaveState, altPhoneToSaveState); }}>
-            Confirm
-          </Btn>
-        </View>
-      </Modal>
+            <TouchableOpacity
+              onPress={() => setShowPhotoCamera(false)}
+              style={{ position: "absolute", top: rp(16), left: rp(16), backgroundColor: "rgba(0,0,0,0.5)", padding: rp(12), borderRadius: rp(99) }}
+            >
+              <Ionicons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
 
-      {/* Success Modal */}
-      <Modal open={showSuccessModal} onClose={() => { }} title="">
-        <View style={{ alignItems: "center", marginBottom: rp(24) }}>
-          <View style={{ width: rp(64), height: rp(64), borderRadius: rp(32), backgroundColor: theme.colors.successLight, alignItems: "center", justifyContent: "center", marginBottom: rp(16) }}>
-            <Ionicons name="checkmark" size={32} color={theme.colors.success} />
+            <View style={{ position: "absolute", bottom: rp(40), left: 0, right: 0, alignItems: "center" }}>
+              <TouchableOpacity
+                disabled={isTakingPicture}
+                onPress={capturePhoto}
+                style={{ width: rp(70), height: rp(70), borderRadius: rp(35), borderWidth: rp(4), borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+              >
+                {isTakingPicture ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <View style={{ width: rp(54), height: rp(54), backgroundColor: "#FFFFFF", borderRadius: rp(27) }} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text style={{ fontSize: rs(20), fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: rp(8) }}>Check-in Successful</Text>
-          <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, textAlign: "center" }}>Vehicle {plate} has been successfully checked in.</Text>
-        </View>
-
-        <View style={{ gap: rp(12) }}>
-          <Btn variant="accent" onPress={() => { setShowSuccessModal(false); if (successCar) openParkModal(successCar); router.push("/(driver)/(tabs)/park"); }}>Continue to parking</Btn>
-          <Btn variant="ghost" onPress={() => { setShowSuccessModal(false); router.push("/(driver)/scan-qr-card"); }}>Stay here</Btn>
-        </View>
-      </Modal>
-
+        </SafeAreaView>
+      </RNModal>
     </Screen>
   );
 }

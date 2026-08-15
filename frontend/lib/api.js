@@ -21,7 +21,7 @@ api.interceptors.response.use(
     const url = err.config?.url || "";
     const isAuthEndpoint = url.includes("/auth/");
 
-    if (err.response?.status === 401 && !isAuthEndpoint) {
+    if ((err.response?.status === 401 || err.response?.status === 403) && !isAuthEndpoint) {
       try {
         await deleteItem("auth_token");
         const { useAppStore } = require("./store");

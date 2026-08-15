@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
-
+import { deleteItem as secureDelete } from "./secure";
 export const useAppStore = create((set, get) => ({
   user: null,
   driver: null,
@@ -50,14 +50,17 @@ export const useAppStore = create((set, get) => ({
     set({ currentJourneyType: type });
     AsyncStorage.setItem("current_journey_type", type || "idle").catch(() => {});
   },
-  signOut: () => {
-    // Clear AsyncStorage keys that the background task reads
-    AsyncStorage.multiRemove([
+  signOut: async () => {
+    await secureDelete("auth_token").catch(() => {});
+    await secureDelete("last_known_role").catch(() => {});
+    await AsyncStorage.multiRemove([
       "auth_token",
       "api_url",
       "current_event_id",
       "current_car_id",
       "current_journey_type",
+      "driver_session",
+      "admin_session",
     ]).catch(() => {});
     set({ user: null, driver: null, token: null, currentEventId: null, currentCarId: null, currentJourneyType: "idle" });
   },

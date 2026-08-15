@@ -22,7 +22,7 @@ export default function ScanQrCard() {
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      router.replace("/(driver)/(tabs)");
+      router.back();
       return true;
     });
     return () => sub.remove();
@@ -59,7 +59,16 @@ export default function ScanQrCard() {
         return;
       }
 
-      const { data: card } = await api.get(`/qr-cards/lookup/${token}?event_id=${currentEventId}`);
+      const { data: card } = await api.get(`/qr-cards/lookup/${token}?event_id=${currentEventId}&include_bound=true`);
+
+      if (card.status && card.status !== "empty") {
+        confirmDialog.info(
+          "Vehicle Already Checked In",
+          `This QR is already linked to ${card.plate || 'a vehicle'}. Retrieval requests must be sent by a supervisor.`,
+          () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; }
+        );
+        return;
+      }
 
       router.replace({
         pathname: targetScreen,
@@ -107,7 +116,7 @@ export default function ScanQrCard() {
     <View style={{ flex: 1, backgroundColor: "#000" }}> 
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#000" }}> 
         <View style={{ flexDirection: "row", alignItems: "center", padding: rp(16) }}> 
-          <TouchableOpacity onPress={() => router.replace("/(driver)/(tabs)")} 
+          <TouchableOpacity onPress={() => router.back()} 
             style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(8) }}> 
             <Ionicons name="chevron-back" size={22} color="#fff" /> 
           </TouchableOpacity> 

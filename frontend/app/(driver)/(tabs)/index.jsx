@@ -368,8 +368,9 @@ export default function Tasks() {
       ) : (
         <>
           <TopBar
-            title="Tasks"
-            subtitle={useAppStore.getState().events?.find(e => e.id === currentEventId)?.name || "Active Event"}
+            align="left"
+            eyebrow="TASKS"
+            title={useAppStore.getState().events?.find(e => e.id === currentEventId)?.name || "Active Event"}
             rightNode={
               <TouchableOpacity
                 onPress={() => openSOS()}
@@ -383,7 +384,7 @@ export default function Tasks() {
           <View style={{
             backgroundColor: "#FFFFFF",
             marginHorizontal: rp(16),
-            marginTop: rp(-20),
+            marginTop: rp(12),
             borderRadius: rp(12),
             paddingVertical: rp(16),
             flexDirection: "row",
@@ -412,14 +413,12 @@ export default function Tasks() {
             </View>
           </View>
 
-          <View style={{ paddingHorizontal: rp(16), marginTop: rp(16), marginBottom: rp(12) }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
-              <Chip label="All" active={tab === "all"} onPress={() => setTab("all")} />
-              <Chip label="Requested" active={tab === "requested"} onPress={() => setTab("requested")} />
-              <Chip label="At gate" active={tab === "at_gate"} onPress={() => setTab("at_gate")} />
-              <Chip label="Parked" active={tab === "parked"} onPress={() => setTab("parked")} />
-              <Chip label="Re-park" active={tab === "repark"} onPress={() => setTab("repark")} />
-            </ScrollView>
+          <View style={{ flexDirection: "row", paddingHorizontal: rp(16), marginTop: rp(16), marginBottom: rp(12), gap: rp(6) }}>
+            <Chip style={{ flex: 1, marginRight: 0, alignItems: "center", paddingHorizontal: rp(4) }} textStyle={{ fontSize: rs(10) }} label="All" active={tab === "all"} onPress={() => setTab("all")} />
+            <Chip style={{ flex: 1, marginRight: 0, alignItems: "center", paddingHorizontal: rp(4) }} textStyle={{ fontSize: rs(10) }} label="Requested" active={tab === "requested"} onPress={() => setTab("requested")} />
+            <Chip style={{ flex: 1, marginRight: 0, alignItems: "center", paddingHorizontal: rp(4) }} textStyle={{ fontSize: rs(10) }} label="At gate" active={tab === "at_gate"} onPress={() => setTab("at_gate")} />
+            <Chip style={{ flex: 1, marginRight: 0, alignItems: "center", paddingHorizontal: rp(4) }} textStyle={{ fontSize: rs(10) }} label="Parked" active={tab === "parked"} onPress={() => setTab("parked")} />
+            <Chip style={{ flex: 1, marginRight: 0, alignItems: "center", paddingHorizontal: rp(4) }} textStyle={{ fontSize: rs(10) }} label="Re-park" active={tab === "repark"} onPress={() => setTab("repark")} />
           </View>
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: rp(16), marginBottom: rp(12) }}>

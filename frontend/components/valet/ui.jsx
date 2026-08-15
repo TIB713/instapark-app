@@ -32,6 +32,10 @@ export function Btn({ variant = 'primary', disabled = false, onPress, children, 
       bgColor = theme.colors.dangerLight;
       textColor = theme.colors.danger;
       break;
+    case 'secondary':
+      bgColor = theme.colors.primaryLight;
+      textColor = theme.colors.primary;
+      break;
     case 'success':
       bgColor = theme.colors.success;
       break;
@@ -61,7 +65,14 @@ export function Btn({ variant = 'primary', disabled = false, onPress, children, 
           { backgroundColor: bgColor, borderColor, borderWidth: variant === 'outline' && !disabled ? 1 : 0, transform: [{ scale }] },
         ]}
       >
-        <Text style={[styles.btnText, { color: textColor }]}>{children}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          {React.Children.map(children, child => {
+            if (typeof child === 'string' || typeof child === 'number') {
+              return <Text style={[styles.btnText, { color: textColor }]}>{child}</Text>;
+            }
+            return child;
+          })}
+        </View>
       </Animated.View>
     </Pressable>
   );
@@ -76,9 +87,8 @@ export function Card({ children, style, onPress }) {
         onPressIn={() => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
         onPress={onPress}
-        style={style}
       >
-        <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+        <Animated.View style={[styles.card, style, { transform: [{ scale }] }]}>
           {children}
         </Animated.View>
       </Pressable>
@@ -92,7 +102,7 @@ export function Card({ children, style, onPress }) {
   );
 }
 
-export function TopBar({ title, subtitle, onBack, rightNode, style }) {
+export function TopBar({ eyebrow, title, subtitle, onBack, rightNode, style, children, align = "center" }) {
   return (
     <View style={[styles.topBar, style]}>
       <SafeAreaView edges={['top']} />
@@ -104,14 +114,16 @@ export function TopBar({ title, subtitle, onBack, rightNode, style }) {
         ) : (
           <View style={styles.topBarBack} />
         )}
-        <View style={styles.topBarCenter}>
-          <Text style={styles.topBarTitle} numberOfLines={1}>{title}</Text>
-          {subtitle ? <Text style={styles.topBarSubtitle} numberOfLines={1}>{subtitle}</Text> : null}
+        <View style={[styles.topBarCenter, align === "left" && { alignItems: "flex-start" }]}>
+          {eyebrow ? <Text style={[styles.topBarEyebrow, align === "left" && { textAlign: "left" }]}>{eyebrow}</Text> : null}
+          <Text style={[styles.topBarTitle, align === "left" && { textAlign: "left" }]} numberOfLines={1}>{title}</Text>
+          {subtitle ? (typeof subtitle === 'string' ? <Text style={[styles.topBarSubtitle, align === "left" && { textAlign: "left" }]} numberOfLines={1}>{subtitle}</Text> : subtitle) : null}
         </View>
         <View style={styles.topBarRight}>
           {rightNode}
         </View>
       </View>
+      {children && <View style={styles.topBarChildren}>{children}</View>}
     </View>
   );
 }
@@ -165,6 +177,10 @@ export function StatusPill({ label, tone = 'primary', style }) {
       bgColor = theme.colors.surfaceAlt;
       textColor = theme.colors.textSecondary;
       break;
+    case 'onDark':
+      bgColor = 'rgba(255,255,255,0.15)';
+      textColor = '#FFFFFF';
+      break;
     case 'primary':
     default:
       bgColor = theme.colors.primaryLight;
@@ -214,6 +230,14 @@ export function ProgressBar({ value = 0, label, style }) {
   );
 }
 
+function useSafeTabBarHeight() {
+  try {
+    return useBottomTabBarHeight();
+  } catch {
+    return 0;
+  }
+}
+
 export function Screen({ children, scroll = true, style }) {
   const Wrapper = scroll ? ScrollView : View;
   return (
@@ -250,17 +274,19 @@ export function Modal({ open, onClose, title, children }) {
   );
 }
 
-export function Chip({ label, active, onPress }) {
+export function Chip({ label, active, onPress, style, textStyle }) {
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      style={[
-        styles.chip,
-        active ? styles.chipActive : styles.chipInactive
-      ]}
+      style={[styles.chip, active ? styles.chipActive : styles.chipInactive, style]}
     >
-      <Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{label}</Text>
+      <Text
+        numberOfLines={1}
+        style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive, textStyle]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -312,6 +338,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  topBarEyebrow: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: rs(theme.fontSize.caption),
+    fontWeight: theme.fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: rp(4),
+  },
   topBarTitle: {
     color: '#FFFFFF',
     fontSize: rs(theme.fontSize.subtitle),
@@ -320,12 +354,16 @@ const styles = StyleSheet.create({
   topBarSubtitle: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: rs(theme.fontSize.caption),
-    marginTop: rp(2),
+    marginTop: rp(4),
   },
   topBarRight: {
     width: rp(40),
     alignItems: 'flex-end',
     justifyContent: 'center',
+  },
+  topBarChildren: {
+    paddingHorizontal: rp(theme.spacing.lg),
+    paddingTop: rp(theme.spacing.md),
   },
   sheetOverlay: {
     flex: 1,

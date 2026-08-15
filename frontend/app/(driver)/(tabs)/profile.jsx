@@ -35,9 +35,7 @@ export default function ProfileScreen() {
           api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "offline" }).catch(() => {});
         }
         await stopLocationTracking();
-        await deleteItem("auth_token");
-        await deleteItem("driver_session");
-        signOut();
+        await useAppStore.getState().signOut();
       } catch (e) {
         console.warn("Failed to clear auth storage", e);
       }

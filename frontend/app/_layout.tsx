@@ -39,10 +39,10 @@ export default function RootLayout() {
           router.push('/(driver)/(tabs)' as any);
           break;
         case 'sos':
-          router.push('/(supervisor)/event-detail');
+          router.push('/(supervisor)/(tabs)/event-detail');
           break;
         case 'incidents':
-          router.push('/(supervisor)/event-detail');
+          router.push('/(supervisor)/(tabs)/event-detail');
           break;
         case 'event_detail':
           router.push('/(admin)/event-detail');
@@ -104,10 +104,7 @@ export default function RootLayout() {
         <Stack.Screen name="(admin)/manage-employees" />
         <Stack.Screen name="(admin)/pre-register-qr" />
         <Stack.Screen name="(driver)/scanner" />
-        <Stack.Screen name="(supervisor)/dashboard" />
-        <Stack.Screen name="(supervisor)/event-detail" />
-        <Stack.Screen name="(supervisor)/add-car" />
-        <Stack.Screen name="(supervisor)/manage-employees" />
+        <Stack.Screen name="(supervisor)" />
         <Stack.Screen name="(driver)/(tabs)" />
         <Stack.Screen name="(driver)/qr-display" />
         <Stack.Screen name="(driver)/failed-syncs" />

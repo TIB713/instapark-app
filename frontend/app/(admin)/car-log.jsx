@@ -7,21 +7,16 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context"; 
-import api from "../../lib/api"; 
+import api from "../../lib/api";
+import { theme } from "../../utils/theme"; 
  
 const STATUS_CONFIG = { 
-  PRE_REGISTERED: { color: "#8B5CF6", icon: "time-outline", 
-    label: "Pre-Registered" }, 
-  CHECKED_IN:     { color: "#0EA5E9", icon: "log-in-outline", 
-    label: "Checked In" }, 
-  PARKED:         { color: "#059669", icon: "car-outline", 
-    label: "Parked" }, 
-  RETRIEVAL_REQUESTED: { color: "#F59E0B", 
-    icon: "notifications-outline", label: "Retrieval Requested" }, 
-  BEING_FETCHED:  { color: "#F97316", icon: "walk-outline", 
-    label: "Being Fetched" }, 
-  DELIVERED:      { color: "#10B981", icon: "checkmark-circle", 
-    label: "Delivered" }, 
+  PRE_REGISTERED: { color: "#8B5CF6", icon: "time-outline", label: "Pre-Registered" }, 
+  CHECKED_IN:     { color: "#0EA5E9", icon: "log-in-outline", label: "Checked In" }, 
+  PARKED:         { color: theme.colors.success, icon: "car-outline", label: "Parked" }, 
+  RETRIEVAL_REQUESTED: { color: "#F59E0B", icon: "notifications-outline", label: "Retrieval Requested" }, 
+  BEING_FETCHED:  { color: "#F97316", icon: "walk-outline", label: "Being Fetched" }, 
+  DELIVERED:      { color: theme.colors.textMuted, icon: "checkmark-circle", label: "Delivered" }, 
 }; 
  
 function fmt(iso) { 
@@ -57,8 +52,8 @@ function TimelineStep({ color, icon, label, time, driver,
         <View style={{ flexDirection: "row", 
           justifyContent: "space-between", alignItems: "center" }}> 
           <Text style={{ fontWeight: "900", fontSize: rs(15), 
-            color: "#111827" }}>{label}</Text> 
-          <Text style={{ fontSize: rs(11), color: "#9CA3AF", 
+            color: theme.colors.textPrimary }}>{label}</Text> 
+          <Text style={{ fontSize: rs(11), color: theme.colors.textMuted, 
             fontWeight: "700" }}>{fmt(time)}</Text> 
         </View> 
  
@@ -66,17 +61,17 @@ function TimelineStep({ color, icon, label, time, driver,
           <View style={{ flexDirection: "row", 
             alignItems: "center", marginTop: rp(4) }}> 
             <Ionicons name="person-outline" size={12} 
-              color="#6B7280" /> 
-            <Text style={{ color: "#6B7280", fontSize: rs(12), 
+              color={theme.colors.textSecondary} /> 
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), 
               marginLeft: rp(4), fontWeight: "700" }}>{driver}</Text> 
           </View> 
         )} 
  
         {note ? ( 
-          <View style={{ backgroundColor: "#FEF9C3", 
+          <View style={{ backgroundColor: theme.colors.warningLight, 
             borderRadius: rp(10), padding: rp(10), marginTop: rp(8), 
-            borderLeftWidth: rp(3), borderLeftColor: "#FDE047" }}> 
-            <Text style={{ color: "#713F12", fontSize: rs(12), 
+            borderLeftWidth: rp(3), borderLeftColor: theme.colors.warning }}> 
+            <Text style={{ color: theme.colors.warning, fontSize: rs(12), 
               fontStyle: "italic" }}>"{note}"</Text> 
           </View> 
         ) : null} 
@@ -107,7 +102,7 @@ function IncidentStep({ incident, isLast, onPhotoPress }) {
     <View style={{ flexDirection: "row" }}> 
       <View style={{ width: rp(40), alignItems: "center" }}> 
         <View style={{ width: rp(36), height: rp(36), borderRadius: rp(18), 
-          backgroundColor: "#EF4444", alignItems: "center", 
+          backgroundColor: theme.colors.danger, alignItems: "center", 
           justifyContent: "center", zIndex: 1 }}> 
           <Ionicons name="warning" size={18} color="#fff" /> 
         </View> 
@@ -121,25 +116,25 @@ function IncidentStep({ incident, isLast, onPhotoPress }) {
         <View style={{ flexDirection: "row", 
           justifyContent: "space-between", alignItems: "center" }}> 
           <Text style={{ fontWeight: "900", fontSize: rs(15), 
-            color: "#EF4444" }}>Incident Reported</Text> 
-          <Text style={{ fontSize: rs(11), color: "#9CA3AF", 
+            color: theme.colors.danger }}>Incident Reported</Text> 
+          <Text style={{ fontSize: rs(11), color: theme.colors.textMuted, 
             fontWeight: "700" }}>{fmt(incident.created_at)}</Text> 
         </View> 
         {incident.driver_name && ( 
           <View style={{ flexDirection: "row", 
             alignItems: "center", marginTop: rp(4) }}> 
             <Ionicons name="person-outline" size={12} 
-              color="#6B7280" /> 
-            <Text style={{ color: "#6B7280", fontSize: rs(12), 
+              color={theme.colors.textSecondary} /> 
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), 
               marginLeft: rp(4), fontWeight: "700" }}> 
               {incident.driver_name} 
             </Text> 
           </View> 
         )} 
-        <View style={{ backgroundColor: "#FEE2E2", 
+        <View style={{ backgroundColor: theme.colors.dangerLight, 
           borderRadius: rp(10), padding: rp(10), marginTop: rp(8), 
-          borderLeftWidth: rp(3), borderLeftColor: "#EF4444" }}> 
-          <Text style={{ color: "#991B1B", fontSize: rs(12) }}> 
+          borderLeftWidth: rp(3), borderLeftColor: theme.colors.danger }}> 
+          <Text style={{ color: theme.colors.danger, fontSize: rs(12) }}> 
             {incident.description} 
           </Text> 
         </View> 
@@ -149,7 +144,7 @@ function IncidentStep({ incident, isLast, onPhotoPress }) {
             style={{ marginTop: rp(10) }}> 
             <Image source={{ uri: incident.photo_url }} 
               style={{ width: rp(80), height: rp(80), borderRadius: rp(12), 
-                borderWidth: rp(1.5), borderColor: "#FECACA" }} /> 
+                borderWidth: rp(1.5), borderColor: theme.colors.dangerLight }} /> 
           </TouchableOpacity> 
         )} 
       </View> 
@@ -174,14 +169,14 @@ export default function CarLog() {
   if (loading) return ( 
     <View style={{ flex: 1, backgroundColor: "#F8F7FF", 
       justifyContent: "center", alignItems: "center" }}> 
-      <ActivityIndicator size="large" color="#7C3AED" /> 
+      <ActivityIndicator size="large" color={theme.colors.primary} /> 
     </View> 
   ); 
  
   if (!log) return ( 
     <View style={{ flex: 1, backgroundColor: "#F8F7FF", 
       justifyContent: "center", alignItems: "center" }}> 
-      <Text style={{ color: "#6B7280" }}>Log not available</Text> 
+      <Text style={{ color: theme.colors.textSecondary }}>Log not available</Text> 
     </View> 
   ); 
  
@@ -221,10 +216,16 @@ export default function CarLog() {
   if (car.status === "RETRIEVAL_REQUESTED" ||
       car.status === "BEING_FETCHED" ||
       car.status === "DELIVERED") {
+    
+    let retrievalNote = "Guest scanned QR code";
+    if (car.retrieval_requested_via === "supervisor_scan") {
+      retrievalNote = `Requested by Supervisor ${car.retrieval_requested_by?.name || "Unknown"} (in-app scanner)`;
+    }
+
     steps.push({ type: "status",
       status: "RETRIEVAL_REQUESTED",
       time: car.retrieval_requested_at || null,
-      note: "Guest scanned QR code", photos: [] });
+      note: retrievalNote, photos: [] });
   }
 
   if (car.retrieval_driver_id) {
@@ -278,88 +279,80 @@ export default function CarLog() {
   const cfg = STATUS_CONFIG[car.status] || STATUS_CONFIG.CHECKED_IN; 
  
   return ( 
-    <View style={{ flex: 1, backgroundColor: "#F8F7FF" }}> 
-      <SafeAreaView edges={["top"]}> 
-        {/* Header */} 
-        <View style={{ flexDirection: "row", alignItems: "center", 
-          paddingHorizontal: rp(20), paddingTop: rp(8), paddingBottom: rp(16) }}> 
-          <TouchableOpacity onPress={() => router.back()} 
-            style={{ backgroundColor: "rgba(124,58,237,0.1)", 
-              borderRadius: rp(99), padding: rp(10) }}> 
-            <Ionicons name="chevron-back" size={22} 
-              color="#7C3AED" /> 
-          </TouchableOpacity> 
-          <View style={{ marginLeft: rp(14), flex: 1 }}> 
-            <Text style={{ fontSize: rs(22), fontWeight: "900", 
-              color: "#111827" }}>{car.plate}</Text> 
-            <Text style={{ color: "#6B7280", fontSize: rs(13) }}> 
-              {car.color} {car.make} 
-            </Text> 
-          </View> 
-          <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(6), 
-            borderRadius: rp(99), backgroundColor: cfg.color }}> 
-            <Text style={{ color: "#fff", fontWeight: "900", 
-              fontSize: rs(11), letterSpacing: rs(1) }}> 
-              {cfg.label.toUpperCase()} 
-            </Text> 
-          </View> 
-        </View> 
-      </SafeAreaView> 
- 
-      <ScrollView contentContainerStyle={{ 
-        paddingHorizontal: rp(20), paddingBottom: rp(60) }}> 
- 
-        {/* Summary card */} 
-        <View style={{ backgroundColor: "#7C3AED", 
-          borderRadius: rp(24), padding: rp(20), marginBottom: rp(24), 
-          shadowColor: "#7C3AED", shadowOpacity: 0.3, 
-          shadowRadius: rp(16), shadowOffset: { width: 0, height: rp(8) }, 
-          elevation: 8 }}> 
-          <Text style={{ fontSize: rs(11), fontWeight: "800", 
-            color: "rgba(255,255,255,0.7)", letterSpacing: rs(3) }}> 
-            VEHICLE JOURNEY SUMMARY 
-          </Text> 
-          <View style={{ flexDirection: "row", marginTop: rp(16), 
-            justifyContent: "space-between" }}> 
-            {[ 
-              { label: "TOTAL TIME", 
-                value: total_minutes 
-                  ? `${total_minutes}m` : "Active" }, 
-              { label: "RATING", 
-                value: rating ? `${rating}/5 ⭐` : "—" }, 
-              { label: "INCIDENTS", 
-                value: incidents.length.toString() }, 
-            ].map(s => ( 
-              <View key={s.label} style={{ alignItems: "center" }}> 
+    <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt }}> 
+      <View style={{ zIndex: 10 }}>
+        <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.primary }}> 
+          <View style={{
+            backgroundColor: theme.colors.primary,
+            paddingHorizontal: rp(20),
+            paddingTop: rp(8),
+            paddingBottom: rp(36),
+          }}>
+            {/* Header */} 
+            <View style={{ flexDirection: "row", alignItems: "center" }}> 
+              <TouchableOpacity onPress={() => router.back()} 
+                style={{ backgroundColor: "rgba(255,255,255,0.1)", 
+                  borderRadius: rp(99), padding: rp(10) }}> 
+                <Ionicons name="chevron-back" size={22} 
+                  color="#fff" /> 
+              </TouchableOpacity> 
+              <View style={{ marginLeft: rp(14), flex: 1 }}> 
                 <Text style={{ fontSize: rs(22), fontWeight: "900", 
-                  color: "#fff" }}>{s.value}</Text> 
-                <Text style={{ fontSize: rs(10), fontWeight: "800", 
-                  color: "rgba(255,255,255,0.6)", 
-                  letterSpacing: rs(2), marginTop: rp(4) }}> 
-                  {s.label} 
+                  color: "#fff" }}>{car.plate}</Text> 
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(13) }}> 
+                  {car.color} {car.make} 
                 </Text> 
               </View> 
-            ))} 
-          </View> 
-          {car.guest_name && ( 
-            <View style={{ marginTop: rp(14), paddingTop: rp(14), 
-              borderTopWidth: rp(1), 
-              borderTopColor: "rgba(255,255,255,0.2)", 
-              flexDirection: "row", alignItems: "center" }}> 
-              <Ionicons name="person-circle-outline" size={16} 
-                color="rgba(255,255,255,0.7)" /> 
-              <Text style={{ color: "rgba(255,255,255,0.8)", 
-                fontSize: rs(13), marginLeft: rp(6) }}> 
-                {car.guest_name} 
-                {car.guest_phone ? ` · ${car.guest_phone}` : ""} 
-              </Text> 
+              <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(6), 
+                borderRadius: rp(99), backgroundColor: cfg.color }}> 
+                <Text style={{ color: "#fff", fontWeight: "900", 
+                  fontSize: rs(11), letterSpacing: rs(1) }}> 
+                  {cfg.label.toUpperCase()} 
+                </Text> 
+              </View> 
             </View> 
-          )} 
-        </View> 
+            
+            {/* Guest info right below header if exists */}
+            {car.guest_name && ( 
+              <View style={{ marginTop: rp(14), paddingTop: rp(14), 
+                borderTopWidth: rp(1), 
+                borderTopColor: "rgba(255,255,255,0.2)", 
+                flexDirection: "row", alignItems: "center" }}> 
+                <Ionicons name="person-circle-outline" size={16} 
+                  color="rgba(255,255,255,0.7)" /> 
+                <Text style={{ color: "rgba(255,255,255,0.8)", 
+                  fontSize: rs(13), marginLeft: rp(6) }}> 
+                  {car.guest_name} 
+                  {car.guest_phone ? ` · ${car.guest_phone}` : ""} 
+                </Text> 
+              </View> 
+            )} 
+
+            {/* Journey Summary Pills */}
+            <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(16) }}>
+              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
+                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>{total_minutes ? `${total_minutes}m` : "Active"}</Text>
+                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>TOTAL TIME</Text>
+              </View>
+              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
+                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>{rating ? `${rating} ⭐` : "—"}</Text>
+                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>RATING</Text>
+              </View>
+              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
+                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>{incidents.length}</Text>
+                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>INCIDENTS</Text>
+              </View>
+            </View>
+          </View>
+        </SafeAreaView> 
+      </View>
+
+      <ScrollView contentContainerStyle={{ 
+        paddingHorizontal: rp(20), paddingBottom: rp(60) + (insets?.bottom || 0) + rp(64), paddingTop: rp(24) }}> 
  
         {/* Timeline */} 
         <Text style={{ fontSize: rs(11), fontWeight: "800", 
-          color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(20) }}> 
+          color: theme.colors.textSecondary, letterSpacing: rs(3), marginBottom: rp(20) }}> 
           VEHICLE TIMELINE 
         </Text> 
  
@@ -418,17 +411,17 @@ export default function CarLog() {
                   />
                   {step.rating_comment && (
                     <View style={{
-                      backgroundColor: "#F0FDF4",
+                      backgroundColor: theme.colors.successLight,
                       borderRadius: rp(10),
                       padding: rp(10),
                       marginTop: rp(8),
                       marginBottom: isLast ? 0 : 24,
                       marginLeft: rp(54),
                       borderLeftWidth: rp(3),
-                      borderLeftColor: "#059669",
+                      borderLeftColor: theme.colors.success,
                     }}>
                       <Text style={{
-                        color: "#065F46",
+                        color: theme.colors.success,
                         fontSize: rs(12),
                         fontStyle: "italic",
                       }}>
@@ -484,4 +477,4 @@ export default function CarLog() {
   ); 
 }
 
-
+

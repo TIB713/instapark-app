@@ -5,9 +5,7 @@ import { rs, rp } from '../../utils/responsive';
 import { 
   View, 
   Text, 
-  TouchableOpacity, 
   Share, 
-  Modal, 
   TextInput, 
   ActivityIndicator, 
   KeyboardAvoidingView, 
@@ -15,9 +13,10 @@ import {
 } from "react-native"; 
 import { useRouter, useLocalSearchParams } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
-import { SafeAreaView } from "react-native-safe-area-context"; 
 import QRCode from "react-native-qrcode-svg"; 
 import api from "../../lib/api"; 
+import { Screen, TopBar, Btn, Sheet } from '../../components/valet/ui';
+import { theme } from '../../utils/theme';
  
 export default function AdminQRDisplay() {
   const insets = useSafeAreaInsets();
@@ -70,189 +69,116 @@ export default function AdminQRDisplay() {
   }; 
  
   return ( 
-    <View style={{ flex: 1, backgroundColor: "#7C3AED" }} testID="qr-screen"> 
-      <View 
-        style={{ 
-          position: "absolute", 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          backgroundColor: "rgba(79,70,229,0.5)", 
-        }} 
-      /> 
-      <SafeAreaView edges={["top"]} style={{ flex: 1 }}> 
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: rp(20), paddingTop: rp(8) }}> 
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            style={{ backgroundColor: "rgba(255,255,255,0.18)", borderRadius: rp(99), padding: rp(10) }} 
-          > 
-            <Ionicons name="chevron-back" size={22} color="#fff" /> 
-          </TouchableOpacity> 
-          <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(14), flex: 1, letterSpacing: rs(0.5) }}> 
-            Guest QR Code 
-          </Text> 
-        </View> 
- 
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: rp(24) }}> 
-          <View 
-            style={{ 
-              backgroundColor: "#fff", 
-              borderRadius: rp(32), 
-              padding: rp(32), 
-              alignItems: "center", 
-              width: "100%", 
-              shadowColor: "#000", 
-              shadowOpacity: 0.2, 
-              shadowRadius: rp(24), 
-              shadowOffset: { width: 0, height: rp(12) }, 
-              elevation: 12, 
-            }} 
-          > 
-            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}> 
-              GUEST QR CODE 
-            </Text> 
-            <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827", marginTop: rp(6) }}>{plate}</Text> 
-            <Text style={{ color: "#9CA3AF", marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>Show this to the guest</Text> 
-            <View style={{ padding: rp(14), backgroundColor: "#F5F3FF", borderRadius: rp(20) }}> 
-              <QRCode value={guestUrl} size={220} color="#4F46E5" /> 
-            </View> 
-            <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(18), textAlign: "center" }}> 
-              Guest scans this to request their car 
-            </Text> 
-          </View> 
- 
-          {/* Share button */} 
-          <TouchableOpacity 
-            onPress={() => Share.share({ message: `Valet QR for ${plate}. Scan to request: ${guestUrl}` })} 
-            style={{ 
-              backgroundColor: "rgba(255,255,255,0.15)", 
-              borderWidth: rp(1.5), 
-              borderColor: "#fff", 
-              borderRadius: rp(16), 
-              paddingVertical: rp(14), 
-              marginTop: rp(24), 
-              width: "100%", 
-              flexDirection: "row", 
-              alignItems: "center", 
-              justifyContent: "center", 
-            }} 
-          > 
-            <Ionicons name="share-outline" size={20} color="#fff" /> 
-            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>SHARE</Text> 
-          </TouchableOpacity> 
- 
-          {/* Send SMS button */} 
-          <TouchableOpacity 
-            onPress={handleOpenSmsModal} 
-            style={{ 
-              backgroundColor: "#fff", 
-              borderRadius: rp(16), 
-              paddingVertical: rp(14), 
-              marginTop: rp(12), 
-              width: "100%", 
-              flexDirection: "row", 
-              alignItems: "center", 
-              justifyContent: "center", 
-            }} 
-          > 
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#7C3AED" /> 
-            <Text style={{ color: "#7C3AED", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>SEND SMS TO GUEST</Text> 
-          </TouchableOpacity> 
-        </View> 
-      </SafeAreaView> 
- 
-      {/* SMS Modal */} 
-      <Modal 
-        visible={smsModalVisible} 
-        transparent 
-        animationType="slide" 
-        onRequestClose={() => setSmsModalVisible(false)} 
-      > 
+    <View style={{ flex: 1, backgroundColor: theme.colors.primary }} testID="qr-screen"> 
+      <TopBar 
+        title="Guest QR Code" 
+        onBack={() => router.back()} 
+      />
+
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: rp(24) }}>
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: theme.radius?.xl || rp(32),
+            padding: rp(32),
+            alignItems: "center",
+            width: "100%",
+            shadowColor: "#000",
+            shadowOpacity: 0.2,
+            shadowRadius: rp(24),
+            shadowOffset: { width: 0, height: rp(12) },
+            elevation: 12,
+          }}
+        >
+          <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(3) }}>
+            GUEST QR CODE
+          </Text>
+          <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(6) }}>{plate}</Text>
+          <Text style={{ color: theme.colors.textSecondary, marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>
+            Show this to the guest
+          </Text>
+          <View style={{ padding: rp(14), backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(20) }}>
+            <QRCode value={guestUrl} size={220} color={theme.colors.primary} />
+          </View>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), marginTop: rp(18), textAlign: "center" }}>
+            Guest scans this to request their car
+          </Text>
+        </View>
+
+        <View style={{ width: "100%", marginTop: rp(20), gap: rp(10) }}>
+          <Btn 
+            variant="dark" 
+            onPress={() => Share.share({ message: `Valet QR for ${plate}. Scan to request: ${guestUrl}` })}
+          >
+            <Ionicons name="share-outline" size={20} color="#fff" /> SHARE
+          </Btn>
+          <Btn 
+            variant="outline" 
+            onPress={handleOpenSmsModal}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#fff" /> SEND SMS TO GUEST
+          </Btn>
+        </View>
+      </View>
+
+      <Sheet open={smsModalVisible} onClose={() => setSmsModalVisible(false)}>
         <KeyboardAvoidingView 
           behavior={Platform.OS === "ios" ? "padding" : "height"} 
-          style={{ flex: 1, justifyContent: "flex-end" }} 
-        > 
-          <View 
-            style={{ 
-              backgroundColor: "#fff", 
-              borderTopLeftRadius: 28, 
-              borderTopRightRadius: 28, 
-              padding: rp(28),
-              paddingBottom: rp(28) + (insets?.bottom || 0),
-              shadowColor: "#000", 
-              shadowOpacity: 0.15, 
-              shadowRadius: rp(20), 
-              elevation: 20, 
-            }} 
-          > 
+        >
+          <View style={{ paddingBottom: rp(10) }}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(20) }}> 
-              <Ionicons name="chatbubble-ellipses-outline" size={22} color="#7C3AED" /> 
-              <Text style={{ fontSize: rs(17), fontWeight: "900", color: "#111827", marginLeft: rp(10), flex: 1 }}> 
-                Send Retrieval Link via SMS 
+              <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.primary} /> 
+              <Text style={{ fontSize: rs(17), fontWeight: "900", color: theme.colors.textPrimary, marginLeft: rp(10), flex: 1 }}> 
+                Send Retrieval Link
               </Text> 
-              <TouchableOpacity onPress={() => setSmsModalVisible(false)}> 
-                <Ionicons name="close" size={22} color="#6B7280" /> 
-              </TouchableOpacity> 
             </View> 
- 
-            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8) }}> 
+  
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(3), marginBottom: rp(8) }}> 
               GUEST MOBILE NUMBER 
             </Text> 
             <View 
               style={{ 
-                backgroundColor: "#F9FAFB", 
+                backgroundColor: theme.colors.surfaceAlt, 
                 borderRadius: rp(14), 
                 borderWidth: rp(1), 
-                borderColor: phoneError ? "#EF4444" : "#E5E7EB", 
+                borderColor: phoneError ? theme.colors.danger : theme.colors.border, 
                 flexDirection: "row", 
                 alignItems: "center", 
                 paddingHorizontal: rp(14), 
                 marginBottom: rp(20), 
               }} 
             > 
-               <Ionicons name="phone-portrait-outline" size={18} color="#7C3AED" /> 
+               <Ionicons name="phone-portrait-outline" size={18} color={theme.colors.primary} /> 
               {loadingPhone ? ( 
-                <ActivityIndicator color="#7C3AED" style={{ paddingVertical: rp(14), paddingLeft: rp(10) }} /> 
+                <ActivityIndicator color={theme.colors.primary} style={{ paddingVertical: rp(14), paddingLeft: rp(10) }} /> 
               ) : ( 
                 <TextInput 
                   value={phone} 
                   onChangeText={(txt) => { setPhone(txt); if (phoneError) setPhoneError(null); }} 
                   placeholder="10-digit mobile number" 
-                  placeholderTextColor="#9CA3AF" 
+                  placeholderTextColor={theme.colors.textMuted} 
                   keyboardType="phone-pad" 
                   maxLength={10} 
-                  style={{ flex: 1, fontSize: rs(16), paddingVertical: rp(14), paddingLeft: rp(10), color: "#111827" }} 
+                  style={{ flex: 1, fontSize: rs(16), paddingVertical: rp(14), paddingLeft: rp(10), color: theme.colors.textPrimary }} 
                 /> 
               )} 
             </View> 
-            {phoneError && <Text style={{ color: "#EF4444", fontSize: rs(12), marginTop: rp(4), marginBottom: rp(8) }}>* {phoneError}</Text>}
- 
-            <Text style={{ fontSize: rs(12), color: "#9CA3AF", marginBottom: rp(20), lineHeight: 18 }}> 
+            {phoneError && <Text style={{ color: theme.colors.danger, fontSize: rs(12), marginTop: rp(-12), marginBottom: rp(12) }}>* {phoneError}</Text>}
+  
+            <Text style={{ fontSize: rs(12), color: theme.colors.textMuted, marginBottom: rp(20), lineHeight: 18 }}> 
               The guest will receive a link to request retrieval of their {plate} when ready. 
             </Text> 
- 
-            <TouchableOpacity 
-              onPress={handleSendSms} 
-              disabled={sending} 
-              style={{ 
-                backgroundColor: "#7C3AED", 
-                borderRadius: rp(14), 
-                paddingVertical: rp(15), 
-                alignItems: "center", 
-              }} 
-            > 
+  
+            <Btn onPress={handleSendSms} disabled={sending}>
               {sending ? ( 
                 <ActivityIndicator color="#fff" /> 
               ) : ( 
-                <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(14), letterSpacing: rs(2) }}> 
-                  SEND SMS 
-                </Text> 
+                "SEND SMS"
               )} 
-            </TouchableOpacity> 
-          </View> 
-        </KeyboardAvoidingView> 
-      </Modal> 
-    </View> 
-  ); 
-} 
+            </Btn>
+          </View>
+        </KeyboardAvoidingView>
+      </Sheet>
+    </View>
+  );
+}

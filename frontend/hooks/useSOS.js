@@ -4,6 +4,31 @@ import api from '../lib/api';
 import { confirmDialog } from '../lib/confirmDialog';
 import { useAppStore } from '../lib/store';
 
+const uploadSosPhoto = async (photoUri, eventId) => {
+  const fd = new FormData();
+  fd.append("file", { uri: photoUri, type: "image/jpeg", name: "sos.jpg" });
+  fd.append("folder", `sos/${eventId}`);
+  const { data } = await api.post("/upload", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 20000,
+  });
+  return data?.url || null;
+};
+
+const uploadSosPhotoWithRetry = async (photoUri, eventId, maxAttempts = 3) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const url = await uploadSosPhoto(photoUri, eventId);
+      if (url) return url;
+    } catch (uploadErr) {
+      console.warn(`SOS photo upload failed (attempt ${attempt}/${maxAttempts})`, uploadErr);
+      if (attempt === maxAttempts) return null;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+  }
+  return null;
+};
+
 export function useSOS() {
   const { currentEventId } = useAppStore();
   const [showSOSModal, setShowSOSModal] = useState(false);
@@ -48,15 +73,7 @@ export function useSOS() {
     try {
       let uploadUrl = null;
       if (sosPhoto) {
-        try {
-          const fd = new FormData();
-          fd.append("file", { uri: sosPhoto, type: "image/jpeg", name: "sos.jpg" });
-          fd.append("folder", `sos/${currentEventId}`);
-          const { data: uploadData } = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-          uploadUrl = uploadData?.url || null;
-        } catch (uploadErr) {
-          console.warn("SOS photo upload failed", uploadErr);
-        }
+        uploadUrl = await uploadSosPhotoWithRetry(sosPhoto, currentEventId);
       }
 
       await api.post(`/sos/event/${currentEventId}`, {

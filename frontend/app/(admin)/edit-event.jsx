@@ -50,8 +50,7 @@ export default function EditEvent() {
   const [showETP, setShowETP] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
-  const isHotelDailyEdit =
-    user?.provider_type === "hotel_owner" && eventData?.event_type === "hotel_daily";
+  const isHotelDailyEdit = eventData?.event_type === "hotel_daily";
 
   const totalSlots = zones.reduce((sum, z) => sum + (parseInt(z.slots) || 0), 0);
   const maxCarsInt = parseInt(maxCars) || 200;

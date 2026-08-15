@@ -32,39 +32,42 @@ export default function Index() {
 
   useEffect(() => {
     const restore = async () => {
+      const handleSuccess = async (data) => {
+        const role = data.role;
+        if (role === "admin" || role === "superadmin" || role === "owner") {
+          await AsyncStorage.removeItem("driver_session");
+          useAppStore.getState().setUser(data);
+          useAppStore.getState().setDriver(null);
+        } else if (role === "supervisor") {
+          await AsyncStorage.removeItem("driver_session");
+          useAppStore.getState().setUser(data);
+          useAppStore.getState().setDriver(null);
+        } else if (role === "driver") {
+          await AsyncStorage.removeItem("admin_session");
+          const driverData = {
+            id: data.user_id || data.id,
+            name: data.name,
+            role: data.role,
+            provider_id: data.provider_id,
+          };
+          await AsyncStorage.setItem("driver_session", JSON.stringify(driverData));
+          const eid = await AsyncStorage.getItem("current_event_id");
+          useAppStore.getState().setUser(null);
+          useAppStore.getState().setDriver(driverData);
+          if (eid) useAppStore.getState().setCurrentEventId(eid);
+        }
+
+        setChecking(false);
+        router.replace(getRouteForRole(role) as any);
+      };
+
       try {
         const token = await getItem("auth_token");
         if (token) {
           try {
             const { data } = await api.get("/auth/me", { timeout: 20000 });
-            const role = data.role;
-
-            if (role === "admin" || role === "superadmin" || role === "owner") {
-              await AsyncStorage.removeItem("driver_session");
-              useAppStore.getState().signOut();
-              useAppStore.getState().setUser(data);
-            } else if (role === "supervisor") {
-              await AsyncStorage.removeItem("driver_session");
-              useAppStore.getState().setUser(data);
-            } else if (role === "driver") {
-              await AsyncStorage.removeItem("admin_session");
-              const driverData = {
-                id: data.user_id || data.id,
-                name: data.name,
-                role: data.role,
-                provider_id: data.provider_id,
-              };
-              await AsyncStorage.setItem("driver_session", JSON.stringify(driverData));
-              const eid = await AsyncStorage.getItem("current_event_id");
-              useAppStore.getState().signOut();
-              useAppStore.getState().setDriver(driverData);
-              if (eid) useAppStore.getState().setCurrentEventId(eid);
-            }
-
-            setChecking(false);
-            router.replace(getRouteForRole(role) as any);
+            await handleSuccess(data);
             return;
-
           } catch (err: any) {
             if (err.response && (err.response.status === 401 || err.response.status === 403)) {
               await secureDelete("auth_token");
@@ -73,32 +76,43 @@ export default function Index() {
               router.replace("/(auth)/login");
               return;
             } else {
-              const ds = await AsyncStorage.getItem("driver_session");
-              const lastRole = await getItem("last_known_role");
-              const eid = await AsyncStorage.getItem("current_event_id");
-              if (ds && lastRole === "driver") {
-                const d = JSON.parse(ds);
-                if (d?.id && d?.role === "driver") {
-                  useAppStore.getState().setDriver(d);
-                  if (eid) useAppStore.getState().setCurrentEventId(eid);
+              // Retry once after 800ms
+              try {
+                await new Promise(r => setTimeout(r, 800));
+                const { data } = await api.get("/auth/me", { timeout: 20000 });
+                await handleSuccess(data);
+                return;
+              } catch (err2) {
+                // Fallback to stale cache
+                const ds = await AsyncStorage.getItem("driver_session");
+                const lastRole = await getItem("last_known_role");
+                const eid = await AsyncStorage.getItem("current_event_id");
+                if (ds && lastRole === "driver") {
+                  const d = JSON.parse(ds);
+                  if (d?.id && d?.role === "driver") {
+                    useAppStore.getState().setDriver(d);
+                    if (eid) useAppStore.getState().setCurrentEventId(eid);
+                    setChecking(false);
+                    router.replace("/(driver)/(tabs)" as any);
+                    return;
+                  } else {
+                    await AsyncStorage.removeItem("driver_session");
+                  }
+                } else if (lastRole && ["supervisor", "admin", "superadmin", "owner"].includes(lastRole)) {
                   setChecking(false);
-                  router.replace("/(driver)/(tabs)" as any);
+                  router.replace(getRouteForRole(lastRole) as any);
                   return;
                 } else {
-                  await AsyncStorage.removeItem("driver_session");
+                  setChecking(false);
+                  router.replace("/(auth)/login");
+                  return;
                 }
-              } else if (lastRole && ["supervisor", "admin", "superadmin", "owner"].includes(lastRole)) {
-                setChecking(false);
-                router.replace(getRouteForRole(lastRole) as any);
-                return;
-              } else {
-                setChecking(false);
-                router.replace("/(auth)/login");
-                return;
               }
             }
           }
         }
+        
+        // No token, fallback to legacy cached driver_session check
         const ds = await AsyncStorage.getItem("driver_session");
         const eid = await AsyncStorage.getItem("current_event_id");
         if (ds) {
