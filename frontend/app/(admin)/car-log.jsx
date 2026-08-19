@@ -6,9 +6,10 @@ import {
 } from "react-native"; 
 import { useLocalSearchParams, useRouter } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
-import { SafeAreaView } from "react-native-safe-area-context"; 
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"; 
 import api from "../../lib/api";
 import { theme } from "../../utils/theme"; 
+import { fmtDuration } from "../../utils/time";
  
 const STATUS_CONFIG = { 
   PRE_REGISTERED: { color: "#8B5CF6", icon: "time-outline", label: "Pre-Registered" }, 
@@ -16,6 +17,8 @@ const STATUS_CONFIG = {
   PARKED:         { color: theme.colors.success, icon: "car-outline", label: "Parked" }, 
   RETRIEVAL_REQUESTED: { color: "#F59E0B", icon: "notifications-outline", label: "Retrieval Requested" }, 
   BEING_FETCHED:  { color: "#F97316", icon: "walk-outline", label: "Being Fetched" }, 
+  ARRIVED_AT_GATE: { color: "#10B981", icon: "location-outline", label: "Arrived At Gate" },
+  AWAITING_REPARK: { color: theme.colors.danger, icon: "alert-circle-outline", label: "Needs Re-Park" },
   DELIVERED:      { color: theme.colors.textMuted, icon: "checkmark-circle", label: "Delivered" }, 
 }; 
  
@@ -30,9 +33,9 @@ function fmt(iso) {
 } 
  
 function TimelineStep({ color, icon, label, time, driver, 
-  note, photos, isLast, onPhotoPress }) { 
-  return ( 
-    <View style={{ flexDirection: "row" }}> 
+    note, durationCaption, photos, isLast, onPhotoPress }) { 
+    return ( 
+      <View style={{ flexDirection: "row" }}> 
       {/* Line + dot */} 
       <View style={{ width: rp(40), alignItems: "center" }}> 
         <View style={{ width: rp(36), height: rp(36), borderRadius: rp(18), 
@@ -76,6 +79,12 @@ function TimelineStep({ color, icon, label, time, driver,
           </View> 
         ) : null} 
  
+        {durationCaption ? (
+          <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginTop: rp(4), fontStyle: "italic" }}>
+            {durationCaption}
+          </Text>
+        ) : null}
+
         {photos && photos.length > 0 && ( 
           <ScrollView horizontal 
             showsHorizontalScrollIndicator={false} 
@@ -153,6 +162,7 @@ function IncidentStep({ incident, isLast, onPhotoPress }) {
 } 
  
 export default function CarLog() { 
+  const insets = useSafeAreaInsets();
   const { car_id } = useLocalSearchParams(); 
   const router = useRouter(); 
   const [log, setLog] = useState(null); 
@@ -181,7 +191,9 @@ export default function CarLog() {
   ); 
  
   const { car, drivers_map, photos_by_type, incidents, 
-    rating, total_minutes } = log; 
+    rating, total_minutes, park_minutes, dispatch_wait_minutes,
+    fetch_minutes, retrieval_to_gate_minutes, gate_wait_minutes,
+    repark_minutes } = log; 
  
   // Build timeline steps 
   const steps = []; 
@@ -206,10 +218,19 @@ export default function CarLog() {
       car.zone ? `Zone ${car.zone} · Slot ${car.slot}` : null, 
       car.key_tag ? `Key Tag #${car.key_tag}` : null, 
     ].filter(Boolean).join("  ·  "); 
+
+    let durationCaption = null;
+    if (car.awaiting_repark_at && new Date(car.parked_at) > new Date(car.awaiting_repark_at)) {
+      if (repark_minutes != null) durationCaption = `Re-parked in ${fmtDuration(repark_minutes)}`;
+    } else {
+      if (park_minutes != null) durationCaption = `${fmtDuration(park_minutes)} after check-in`;
+    }
+
     steps.push({ type: "status", status: "PARKED", 
       time: car.parked_at, 
       driver: drivers_map[car.parked_driver_id], 
       note: parkNote || null, 
+      durationCaption,
       photos: photos_by_type["parked"] || [] }); 
   } 
  
@@ -235,10 +256,26 @@ export default function CarLog() {
       photos: [] });
   }
 
+  if (car.gate_arrival_time) {
+    steps.push({ type: "status", status: "ARRIVED_AT_GATE",
+      time: car.gate_arrival_time,
+      driver: drivers_map[car.retrieval_driver_id],
+      durationCaption: retrieval_to_gate_minutes != null ? `${fmtDuration(retrieval_to_gate_minutes)} after retrieval requested` : null,
+      photos: [] });
+  }
+
+  if (car.awaiting_repark_at) {
+    steps.push({ type: "status", status: "AWAITING_REPARK",
+      time: car.awaiting_repark_at,
+      note: "Guest didn't arrive in time — car needs to be re-parked",
+      photos: [] });
+  }
+
   if (car.status === "DELIVERED") {
     steps.push({ type: "status", status: "DELIVERED",
       time: car.delivered_at,
       driver: drivers_map[car.retrieval_driver_id],
+      durationCaption: gate_wait_minutes != null ? `${fmtDuration(gate_wait_minutes)} at the gate` : null,
       photos: photos_by_type["handover"] || [],
       rating_comment: log.rating_comment || null });
   }
@@ -405,6 +442,7 @@ export default function CarLog() {
                     time={step.time} 
                     driver={step.driver} 
                     note={step.note} 
+                    durationCaption={step.durationCaption}
                     photos={step.photos || []} 
                     isLast={isLast} 
                     onPhotoPress={setLightboxUrl} 
@@ -441,6 +479,7 @@ export default function CarLog() {
                 time={step.time} 
                 driver={step.driver} 
                 note={step.note} 
+                durationCaption={step.durationCaption}
                 photos={step.photos || []} 
                 isLast={isLast} 
                 onPhotoPress={setLightboxUrl} 

@@ -54,10 +54,11 @@ export default function SupervisorTabsLayout() {
           title: "QR Display"
         }}
       />
-      <Tabs.Screen name="car-found" options={{ href: null }} />
+
       <Tabs.Screen name="retrieval-sent" options={{ href: null }} />
       <Tabs.Screen name="driver-new" options={{ href: null }} />
       <Tabs.Screen name="driver-edit" options={{ href: null }} />
+      <Tabs.Screen name="driver-stats" options={{ href: null, title: "Driver Profile" }} />
       <Tabs.Screen name="driver-bulk" options={{ href: null }} />
       <Tabs.Screen
         name="index"
@@ -89,9 +90,9 @@ export default function SupervisorTabsLayout() {
       <Tabs.Screen
         name="scan"
         options={{
-          title: "Scan",
+          title: "Check In",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "qr-code" : "qr-code-outline"} size={24} color={color} />
+            <Ionicons name={focused ? "checkmark-circle" : "checkmark-circle-outline"} size={24} color={color} />
           ),
         }}
       />

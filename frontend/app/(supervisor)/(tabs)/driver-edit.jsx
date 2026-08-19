@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect , useRef} from "react";
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { scrollToFirstError } from "../../../lib/scrollToFirstError";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,7 +22,6 @@ export default function DriverEdit() {
   const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
   const [drvGender, setDrvGender] = useState("");
-  const [drvPassword, setDrvPassword] = useState("");
   const [drvPhoto, setDrvPhoto] = useState(null);
   const [drvPhotoUri, setDrvPhotoUri] = useState(null);
   const [drvLicenseNumber, setDrvLicenseNumber] = useState("");
@@ -37,9 +37,13 @@ export default function DriverEdit() {
   const [drvIfscInfo, setDrvIfscInfo] = useState(null);
   const [drvIfscChecking, setDrvIfscChecking] = useState(false);
   const [driverErrors, setDriverErrors] = useState({});
+  const [drvIsActive, setDrvIsActive] = useState(true);
 
   const { driverId } = useLocalSearchParams();
   const [loadingDriver, setLoadingDriver] = useState(true);
+
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
 
   useEffect(() => {
     const fetchDriver = async () => {
@@ -55,10 +59,11 @@ export default function DriverEdit() {
           setDrvPan(drv.pan_number || "");
           setDrvBankAccount(drv.bank_account_number || "");
           setDrvBankIfsc(drv.bank_ifsc || "");
-          setDrvLicenseNumber(drv.license_number || "");
+          setDrvLicenseNumber(drv.driving_license_number || "");
           setDrvAadharNumber(drv.aadhar_number || "");
+          setDrvIsActive(drv.is_active ?? true);
           if (drv.driver_photo) setDrvPhotoUri(drv.driver_photo);
-          if (drv.license_photo) setDrvLicensePhotoUri(drv.license_photo);
+          if (drv.driving_license_photo) setDrvLicensePhotoUri(drv.driving_license_photo);
           if (drv.aadhar_photo) setDrvAadharPhotoUri(drv.aadhar_photo);
         }
       } catch (e) {
@@ -75,8 +80,6 @@ export default function DriverEdit() {
     if (!drvName.trim()) errs.name = "Name is required";
     if (!drvEmail.trim()) errs.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) errs.email = "Please enter a valid email address";
-    if (!drvPassword.trim()) errs.pin = "PIN is required";
-    else if (drvPassword.length !== 4 || !/^\d{4}$/.test(drvPassword)) errs.pin = "PIN must be exactly 4 digits";
     if (!drvGender) errs.gender = "Please select gender";
     if (!drvPhone.trim()) errs.phone = "Phone is required";
     else if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
@@ -123,7 +126,10 @@ export default function DriverEdit() {
   const saveDriver = async () => {
     const errs = validateDriver();
     setDriverErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(['name', 'phone', 'gender', 'email', 'pan', 'bankAccount', 'bankIfsc', 'licenseNumber', 'licensePhoto', 'aadharNumber', 'aadharPhoto'], errs, fieldRefs, scrollViewRef);
+      return;
+    }
     setSavingDrv(true);
     let photoUrl;
     if (drvPhotoUri && !drvPhotoUri.startsWith('http')) {
@@ -168,19 +174,18 @@ export default function DriverEdit() {
         email: drvEmail.trim().toLowerCase(),
         phone: drvPhone.trim(),
         gender: drvGender,
-        pin: drvPassword,
         driver_photo: photoUrl || undefined,
         pan_number: drvPan.trim() || undefined,
         bank_account_number: drvBankAccount.trim() || undefined,
         bank_ifsc: drvBankIfsc.trim() || undefined,
-        license_number: drvLicenseNumber.trim(),
-        license_photo: licensePhotoUrl,
+        driving_license_number: drvLicenseNumber.trim(),
+        driving_license_photo: licensePhotoUrl,
         aadhar_number: drvAadharNumber.trim(),
         aadhar_photo: aadharPhotoUrl,
       });
       router.replace("/(supervisor)/(tabs)/team");
     } catch (e) {
-      confirmDialog.info("Error", `Failed to update driver: ${e?.response?.data?.detail || "Failed to update driver"}`);
+      confirmDialog.info("Couldn't update driver", e?.response?.data?.detail || "Failed to update driver" || "Something went wrong. Please check your connection and try again.");
     } finally {
       setSavingDrv(false);
     }
@@ -202,7 +207,7 @@ export default function DriverEdit() {
     <Screen scroll={false}>
       <TopBar title="Edit Driver" onBack={() => router.replace("/(supervisor)/(tabs)/team")} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(theme.spacing.xl), paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
+        <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(theme.spacing.xl), paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
 
                 
 
@@ -226,13 +231,13 @@ export default function DriverEdit() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput value={drvName} onChangeText={(t) => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }} value={drvName} onChangeText={(t) => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
                 {driverErrors.name && <Text style={modalErrorText}>* {driverErrors.name}</Text>}
                 <Text style={modalLabel}>PHONE <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput value={drvPhone} onChangeText={(t) => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }} value={drvPhone} onChangeText={(t) => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
                 {driverErrors.phone && <Text style={modalErrorText}>* {driverErrors.phone}</Text>}
                 <Text style={modalLabel}>GENDER <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(theme.spacing.lg) }}>
+                <View ref={el => { if (fieldRefs.current) fieldRefs.current.gender = el; }} style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(theme.spacing.lg) }}>
                   <TouchableOpacity
                     style={{ flex: 1, paddingVertical: rp(theme.spacing.md), borderRadius: rp(theme.spacing.md), borderWidth: rp(1), borderColor: driverErrors.gender && !drvGender ? theme.colors.danger : (drvGender === 'male' ? theme.colors.info : theme.colors.border), backgroundColor: drvGender === 'male' ? theme.colors.infoLight : theme.colors.surface, alignItems: 'center' }}
                     onPress={() => { setDrvGender('male'); if (driverErrors.gender) setDriverErrors(prev => ({ ...prev, gender: undefined })); }}
@@ -247,20 +252,17 @@ export default function DriverEdit() {
                   </TouchableOpacity>
                 </View>
                 {driverErrors.gender && <Text style={modalErrorText}>* {driverErrors.gender}</Text>}
-                <Text style={modalLabel}>4-DIGIT PIN <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput value={drvPassword} onChangeText={(t) => { setDrvPassword(t); if (driverErrors.pin) setDriverErrors(prev => ({ ...prev, pin: undefined })); }} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
-                {driverErrors.pin && <Text style={modalErrorText}>* {driverErrors.pin}</Text>}
                 <Text style={modalLabel}>EMAIL <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput value={drvEmail} onChangeText={(t) => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }} value={drvEmail} onChangeText={(t) => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
                 {driverErrors.email && <Text style={modalErrorText}>* {driverErrors.email}</Text>}
                 <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
-                <TextInput value={drvPan} onChangeText={(v) => { setDrvPan(v.toUpperCase()); if (driverErrors.pan) setDriverErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, driverErrors.pan && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.pan = el; }} value={drvPan} onChangeText={(v) => { setDrvPan(v.toUpperCase()); if (driverErrors.pan) setDriverErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, driverErrors.pan && modalInputError]} />
                 {driverErrors.pan && <Text style={modalErrorText}>* {driverErrors.pan}</Text>}
-                <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={drvBankAccount} onChangeText={(t) => { setDrvBankAccount(t); if (driverErrors.bankAccount) setDriverErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account number" keyboardType="numeric" maxLength={18} style={[modalInput, driverErrors.bankAccount && modalInputError]} />
+                <Text style={modalLabel}>BANK ACCOUNT NUMBER (OPTIONAL)</Text>
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }} value={drvBankAccount} onChangeText={(t) => { setDrvBankAccount(t); if (driverErrors.bankAccount) setDriverErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account number" keyboardType="numeric" maxLength={18} style={[modalInput, driverErrors.bankAccount && modalInputError]} />
                 {driverErrors.bankAccount && <Text style={modalErrorText}>* {driverErrors.bankAccount}</Text>}
-                <Text style={modalLabel}>BANK IFSC CODE</Text>
-                <TextInput value={drvBankIfsc} onChangeText={(v) => {
+                <Text style={modalLabel}>BANK IFSC CODE (OPTIONAL)</Text>
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.bankIfsc = el; }} value={drvBankIfsc} onChangeText={(v) => {
                   const upper = v.toUpperCase();
                   setDrvBankIfsc(upper);
                   if (driverErrors.bankIfsc) setDriverErrors(prev => ({ ...prev, bankIfsc: undefined }));
@@ -296,11 +298,11 @@ export default function DriverEdit() {
                     IFSC code not found
                   </Text>
                 )}
-                <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput value={drvLicenseNumber} onChangeText={(v) => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                <Text style={modalLabel}>DRIVING LICENSE NUMBER <Text style={{ color: theme.colors.danger }}>*</Text></Text>
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.licenseNumber = el; }} value={drvLicenseNumber} onChangeText={(v) => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL1420110012345" autoCapitalize="characters" maxLength={16} style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
                 {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
-                <TouchableOpacity onPress={() => { pickLicensePhoto(); if (driverErrors.licensePhoto) setDriverErrors(prev => ({ ...prev, licensePhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(theme.spacing.lg) }}>
+                <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.licensePhoto = el; }} onPress={() => { pickLicensePhoto(); if (driverErrors.licensePhoto) setDriverErrors(prev => ({ ...prev, licensePhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(theme.spacing.lg) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo <Text style={{ color: theme.colors.danger }}>*</Text></Text>
                   {drvLicensePhotoUri ? (
                     <View style={{ position: "relative" }}>
@@ -321,10 +323,10 @@ export default function DriverEdit() {
                 {driverErrors.licensePhoto && <Text style={[modalErrorText, { textAlign: 'center' }]}>* {driverErrors.licensePhoto}</Text>}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput value={drvAadharNumber} onChangeText={(t) => { setDrvAadharNumber(t); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }} value={drvAadharNumber} onChangeText={(v) => { setDrvAadharNumber(v); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="12-digit Aadhar" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
-                <TouchableOpacity onPress={() => { pickAadharPhoto(); if (driverErrors.aadharPhoto) setDriverErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(theme.spacing.lg) }}>
+                <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }} onPress={() => { pickAadharPhoto(); if (driverErrors.aadharPhoto) setDriverErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(theme.spacing.lg) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo <Text style={{ color: theme.colors.danger }}>*</Text></Text>
                   {drvAadharPhotoUri ? (
                     <View style={{ position: "relative" }}>
@@ -350,19 +352,34 @@ export default function DriverEdit() {
 
         <View style={{ marginTop: rp(theme.spacing.xxxl), borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: rp(theme.spacing.xl) }}>
             <Btn variant="outline" onPress={async () => {
-                confirmDialog.confirm("Toggle Status", "Change driver's active status?", async () => {
+                const action = drvIsActive ? "Deactivate" : "Activate";
+                confirmDialog.confirm(`${action} Driver`, `Are you sure you want to ${action.toLowerCase()} this driver?`, async () => {
                     try {
-                        const { data } = await api.get('/drivers');
-                        const drv = data.find(d => d.id === parseInt(driverId) || d.id === driverId);
-                        if (drv) {
-                            await api.patch(`/drivers/${driverId}`, { is_active: !drv.is_active });
-                            router.replace("/(supervisor)/(tabs)/team");
+                        if (drvIsActive) {
+                            await api.delete(`/drivers/${driverId}`);
+                        } else {
+                            await api.patch(`/drivers/${driverId}/activate`);
                         }
+                        router.replace("/(supervisor)/(tabs)/team");
                     } catch(e) {
-                        confirmDialog.info("Error", "Failed to change status");
+                        confirmDialog.info("Operation failed", `Failed to ${action.toLowerCase()} driver`);
                     }
                 });
-            }}>Toggle Active Status</Btn>
+            }}>{drvIsActive ? "Deactivate Driver" : "Activate Driver"}</Btn>
+            <Btn variant="danger" onPress={() => {
+                confirmDialog.confirm(
+                    "Delete Driver",
+                    "This will permanently delete this driver and cannot be undone. Are you sure?",
+                    async () => {
+                        try {
+                            await api.delete(`/drivers/${driverId}/permanent`);
+                            router.replace("/(supervisor)/(tabs)/team");
+                        } catch (e) {
+                            confirmDialog.info("Couldn't delete driver", "Something went wrong deleting the account. Check your connection and try again.");
+                        }
+                    }
+                );
+            }} style={{ marginTop: rp(theme.spacing.md) }}>Delete Driver</Btn>
         </View>
 
         </ScrollView>

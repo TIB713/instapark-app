@@ -79,7 +79,7 @@ export default function AllEvents() {
                 `"${data.name}" created successfully.`
               );
             } catch {
-              confirmDialog.info("Error", "Failed to clone event");
+              confirmDialog.info("Couldn't clone event", "Something went wrong cloning the event. Check your connection and try again.");
             } finally {
               setCloningId(null);
             }

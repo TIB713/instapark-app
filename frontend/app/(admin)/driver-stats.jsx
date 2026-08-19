@@ -1,5 +1,5 @@
 import { confirmDialog } from "../../lib/confirmDialog";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState , useRef} from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -21,6 +21,8 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 const cardShadow = {
   shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
@@ -33,6 +35,9 @@ export default function DriverStats() {
   const router = useRouter();
   const { driverId, driverName } = useLocalSearchParams();
   const { setCurrentEventId } = useAppStore();
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [tab, setTab] = useState("performance");
   const [stats, setStats] = useState({ cars_checked_in: 0, cars_retrieved: 0 });
   const [filter, setFilter] = useState("all");
@@ -130,6 +135,7 @@ export default function DriverStats() {
     const errs = validateDriver();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
+      scrollToFirstError(["name", "phone", "pin", "email", "panNumber", "bankAccount", "bankIfsc", "licenseNumber", "licensePhoto", "aadharNumber", "aadharPhoto"], errs, fieldRefs, scrollViewRef);
       confirmDialog.info("Validation error", "Please check the highlighted fields");
       return;
     }
@@ -149,7 +155,7 @@ export default function DriverStats() {
       confirmDialog.info("Updated", "Driver updated successfully");
       setPin("");
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed");
+      confirmDialog.info("Operation failed", e.response?.data?.detail || "Failed");
     }
   };
 
@@ -158,7 +164,7 @@ export default function DriverStats() {
       await api.patch(`/drivers/${driverId}`, { is_active: !driver.is_active });
       setDriver({ ...driver, is_active: !driver.is_active });
     } catch {
-      confirmDialog.info("Error", "Failed to update driver status");
+      confirmDialog.info("Couldn't update status", "Something went wrong updating the driver. Check your connection and try again.");
     }
   };
 
@@ -172,7 +178,7 @@ export default function DriverStats() {
           confirmDialog.info("Deleted", "Driver permanently deleted");
           router.back();
         } catch {
-          confirmDialog.info("Error", "Failed to delete driver");
+          confirmDialog.info("Couldn't delete driver", "Something went wrong deleting the account. Check your connection and try again.");
         }
       },
       "Delete"
@@ -202,7 +208,7 @@ export default function DriverStats() {
         setErrors(prev => ({ ...prev, aadharPhoto: undefined }));
         confirmDialog.info("Success", "Aadhar photo uploaded");
       } catch (e) {
-        confirmDialog.info("Error", "Failed to upload photo");
+        confirmDialog.info("Couldn't upload photo", "Something went wrong uploading the photo. Check your connection and try again.");
       }
     }
   };
@@ -230,7 +236,7 @@ export default function DriverStats() {
         setErrors(prev => ({ ...prev, licensePhoto: undefined }));
         confirmDialog.info("Success", "License photo uploaded");
       } catch (e) {
-        confirmDialog.info("Error", "Failed to upload photo");
+        confirmDialog.info("Couldn't upload photo", "Something went wrong uploading the photo. Check your connection and try again.");
       }
     }
   };
@@ -330,7 +336,7 @@ export default function DriverStats() {
       await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: `${driver.name} — Performance Report` });
     } catch (e) {
       console.error(e);
-      confirmDialog.info("Error", "Failed to generate PDF report");
+      confirmDialog.info("Couldn't generate PDF", "Something went wrong creating the file. Please try again.");
     } finally {
       setExportingPDF(false);
     }
@@ -445,12 +451,12 @@ export default function DriverStats() {
       )}
 
       {tab === "performance" ? (
-        <ScrollView
+        <ScrollView ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}
         >
           <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(10) }}>TIME RANGE</Text>
-          <ScrollView horizontal contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }} showsHorizontalScrollIndicator={false}>
+          <ScrollView ref={scrollViewRef} horizontal contentContainerStyle={{ gap: rp(8), paddingBottom: rp(4) }} showsHorizontalScrollIndicator={false}>
             {[["week", "This Week"], ["month", "This Month"], ["quarter", "Last 3 Months"], ["all", "All Time"]].map(([f, l]) => (
               <TouchableOpacity
                 key={f}
@@ -485,49 +491,49 @@ export default function DriverStats() {
               <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginTop: rp(24), marginBottom: rp(10) }}>EDIT DRIVER</Text>
           <View style={[{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(18) }, cardShadow]}>
             <Text style={miniLabel}>NAME <Text style={{ color: "#EF4444" }}>*</Text></Text>
-            <View style={[miniInput, errors.name && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  style={[miniInput, errors.name && { borderColor: "#EF4444" }]}>
               <Ionicons name="person-outline" size={16} color="#7C3AED" />
               <TextInput value={name} onChangeText={setName} style={miniInputText} />
             </View>
             {errors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.name}</Text>}
             <Text style={miniLabel}>PHONE <Text style={{ color: "#EF4444" }}>*</Text></Text>
-            <View style={[miniInput, errors.phone && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  style={[miniInput, errors.phone && { borderColor: "#EF4444" }]}>
               <Ionicons name="call-outline" size={16} color="#7C3AED" />
               <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={miniInputText} />
             </View>
             {errors.phone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.phone}</Text>}
             <Text style={miniLabel}>NEW PIN (LEAVE BLANK TO KEEP)</Text>
-            <View style={[miniInput, errors.pin && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.pin = el; }}  style={[miniInput, errors.pin && { borderColor: "#EF4444" }]}>
               <Ionicons name="keypad-outline" size={16} color="#7C3AED" />
               <TextInput value={pin} onChangeText={setPin} keyboardType="numeric" maxLength={4} secureTextEntry style={miniInputText} />
             </View>
             {errors.pin && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.pin}</Text>}
             <Text style={miniLabel}>EMAIL</Text>
-            <View style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
               <Ionicons name="mail-outline" size={16} color="#7C3AED" />
               <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="email@example.com" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
             {errors.email && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.email}</Text>}
             <Text style={miniLabel}>PAN CARD NUMBER</Text>
-            <View style={[miniInput, errors.panNumber && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.panNumber = el; }}  style={[miniInput, errors.panNumber && { borderColor: "#EF4444" }]}>
               <Ionicons name="card-outline" size={16} color="#7C3AED" />
               <TextInput value={panNumber} onChangeText={v => setPanNumber(v.toUpperCase())} autoCapitalize="characters" maxLength={10} placeholder="ABCDE1234F" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
             {errors.panNumber && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.panNumber}</Text>}
             <Text style={miniLabel}>BANK ACCOUNT NUMBER</Text>
-            <View style={[miniInput, errors.bankAccount && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }}  style={[miniInput, errors.bankAccount && { borderColor: "#EF4444" }]}>
               <Ionicons name="business-outline" size={16} color="#7C3AED" />
               <TextInput value={bankAccount} onChangeText={setBankAccount} keyboardType="numeric" placeholder="Account number" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
             {errors.bankAccount && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankAccount}</Text>}
             <Text style={miniLabel}>BANK IFSC CODE</Text>
-            <View style={[miniInput, errors.bankIfsc && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.bankIfsc = el; }}  style={[miniInput, errors.bankIfsc && { borderColor: "#EF4444" }]}>
               <Ionicons name="business-outline" size={16} color="#7C3AED" />
               <TextInput value={bankIfsc} onChangeText={v => setBankIfsc(v.toUpperCase())} autoCapitalize="characters" maxLength={11} placeholder="SBIN0001234" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
             {errors.bankIfsc && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankIfsc}</Text>}
             <Text style={miniLabel}>DRIVING LICENSE NUMBER <Text style={{ color: "#EF4444" }}>*</Text></Text>
-            <View style={[miniInput, errors.licenseNumber && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.licenseNumber = el; }}  style={[miniInput, errors.licenseNumber && { borderColor: "#EF4444" }]}>
               <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
               <TextInput value={licenseNumber} onChangeText={setLicenseNumber} autoCapitalize="characters" placeholder="DL number" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
@@ -545,14 +551,14 @@ export default function DriverStats() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
+                <View ref={el => { if (fieldRefs.current) fieldRefs.current.licensePhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
                   <Ionicons name="image-outline" size={28} color="#9CA3AF" />
                 </View>
               )}
             </TouchableOpacity>
             {errors.licensePhoto && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", textAlign: 'center', marginTop: rp(4) }}>* {errors.licensePhoto}</Text>}
             <Text style={miniLabel}>AADHAR NUMBER <Text style={{ color: "#EF4444" }}>*</Text></Text>
-            <View style={[miniInput, errors.aadharNumber && { borderColor: "#EF4444" }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  style={[miniInput, errors.aadharNumber && { borderColor: "#EF4444" }]}>
               <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
               <TextInput value={aadharNumber} onChangeText={setAadharNumber} autoCapitalize="none" placeholder="Aadhar number" placeholderTextColor="#9CA3AF" style={miniInputText} />
             </View>
@@ -570,7 +576,7 @@ export default function DriverStats() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
+                <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
                   <Ionicons name="image-outline" size={28} color="#9CA3AF" />
                 </View>
               )}
@@ -630,11 +636,11 @@ export default function DriverStats() {
           <View style={{ height: rp(40) }} />
         </ScrollView>
       ) : (
-        <ScrollView
+        <ScrollView ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}
         >
-          <ScrollView horizontal contentContainerStyle={{ gap: rp(8) }} showsHorizontalScrollIndicator={false}>
+          <ScrollView ref={scrollViewRef} horizontal contentContainerStyle={{ gap: rp(8) }} showsHorizontalScrollIndicator={false}>
             {["all", "active", "closed"].map((f) => (
               <TouchableOpacity
                 key={f}

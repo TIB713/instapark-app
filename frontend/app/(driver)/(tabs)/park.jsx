@@ -38,7 +38,7 @@ export default function ParkScreen() {
 
   useEffect(() => {
     if (!showParkModal) {
-      router.push("/(driver)/(tabs)");
+      router.push("/(driver)/(tabs)/checkin");
     }
   }, [showParkModal, router]);
 

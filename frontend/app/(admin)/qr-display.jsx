@@ -52,7 +52,7 @@ export default function AdminQRDisplay() {
     } 
     setPhoneError(null);
     if (!carId) { 
-      confirmDialog.info("Error", "Car ID not available. Cannot send SMS."); 
+      confirmDialog.info("Cannot send SMS", "Car ID not available. Please try again."); 
       return; 
     } 
     setSending(true); 
@@ -62,7 +62,7 @@ export default function AdminQRDisplay() {
       confirmDialog.info("SMS sent", `Retrieval link sent to ${phone.trim()}`); 
     } catch (err) { 
       const msg = err.response?.data?.detail || "Failed to send SMS"; 
-      confirmDialog.info("Error", typeof msg === "string" ? msg : "Failed to send SMS"); 
+      confirmDialog.info("Couldn't send SMS", "Something went wrong sending the SMS. Check your connection and try again."); 
     } finally { 
       setSending(false); 
     } 

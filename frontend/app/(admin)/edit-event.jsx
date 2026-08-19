@@ -22,10 +22,15 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import VenuePicker from "../../components/VenuePicker";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 export default function EditEvent() {
   const router = useRouter();
   const { user } = useAppStore();
   const { eventId } = useLocalSearchParams();
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -79,7 +84,7 @@ export default function EditEvent() {
         setZones(data.zones || []);
         setGates(data.gates || []);
       } catch (e) {
-        confirmDialog.info("Error", "Failed to load event");
+        confirmDialog.info("Couldn't load event", "Something went wrong loading the event details. Check your connection and try again.");
       } finally {
         setLoading(false);
       }
@@ -91,11 +96,14 @@ export default function EditEvent() {
     if (!isHotelDailyEdit && !name.trim()) errs.name = "Event name is required";
     if (!venue.trim()) errs.venue = "Venue is required";
     setFormErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "venue"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (endDT <= startDT) {
-      confirmDialog.info("Invalid", "End must be after start");
+      confirmDialog.info("End time before start time", "The event's end time must be after the start time.");
       return;
     }
     if (totalSlots > maxCarsInt) {
@@ -141,7 +149,7 @@ export default function EditEvent() {
       }
       router.back();
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Save failed");
+      confirmDialog.info("Couldn't save", e.response?.data?.detail || "Something went wrong saving. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -172,11 +180,11 @@ export default function EditEvent() {
       </SafeAreaView>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
           {!isHotelDailyEdit && (
             <>
               <Label>EVENT NAME</Label>
-              <View style={[inputRowStyle, formErrors.name && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  style={[inputRowStyle, formErrors.name && { borderColor: "#EF4444" }]}>
                 <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
                 <TextInput value={name} onChangeText={(txt) => {
                   setName(txt);
@@ -208,7 +216,7 @@ export default function EditEvent() {
           )}
 
           <Label>VENUE</Label>
-          <View style={[inputRowStyle, formErrors.venue && { borderColor: "#EF4444" }]}>
+          <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }}  style={[inputRowStyle, formErrors.venue && { borderColor: "#EF4444" }]}>
             <Ionicons name="location-outline" size={18} color="#7C3AED" />
             <VenuePicker
               value={venue}

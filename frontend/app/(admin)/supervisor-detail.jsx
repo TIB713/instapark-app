@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback , useRef} from "react";
 import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -22,6 +22,8 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 const NAVY = "#7C3AED";
 const PURPLE = "#7C3AED";
 
@@ -38,6 +40,9 @@ export default function SupervisorDetail() {
   const { supervisorId, supervisorName } = useLocalSearchParams();
   const { setCurrentEventId } = useAppStore();
   
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [supervisor, setSupervisor] = useState(null);
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
@@ -108,6 +113,7 @@ export default function SupervisorDetail() {
     const errs = validateSupervisor();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
+      scrollToFirstError(["name", "phone", "password", "email", "panNumber", "bankAccount", "bankIfsc", "aadharNumber", "aadharPhoto"], errs, fieldRefs, scrollViewRef);
       confirmDialog.info("Validation error", "Please check the highlighted fields");
       return;
     }
@@ -126,7 +132,7 @@ export default function SupervisorDetail() {
       confirmDialog.info("Updated", "Supervisor updated successfully");
       setPassword("");
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to update");
+      confirmDialog.info("Couldn't update", e.response?.data?.detail || "Something went wrong making the update. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -155,7 +161,7 @@ export default function SupervisorDetail() {
         setErrors(prev => ({ ...prev, aadharPhoto: undefined }));
         confirmDialog.info("Success", "Aadhar photo uploaded");
       } catch (e) {
-        confirmDialog.info("Error", "Failed to upload photo");
+        confirmDialog.info("Couldn't upload photo", "Something went wrong uploading the photo. Check your connection and try again.");
       }
     }
   };
@@ -165,7 +171,7 @@ export default function SupervisorDetail() {
       await api.patch(`/supervisors/${supervisorId}`, { is_active: !supervisor.is_active });
       setSupervisor({ ...supervisor, is_active: !supervisor.is_active });
     } catch {
-      confirmDialog.info("Error", "Failed to update supervisor status");
+      confirmDialog.info("Couldn't update status", "Something went wrong updating the supervisor. Check your connection and try again.");
     }
   };
 
@@ -179,7 +185,7 @@ export default function SupervisorDetail() {
           confirmDialog.info("Deleted", "Supervisor permanently deleted");
           router.back();
         } catch {
-          confirmDialog.info("Error", "Failed to delete supervisor");
+          confirmDialog.info("Couldn't delete supervisor", "Something went wrong deleting the account. Check your connection and try again.");
         }
       },
       "Delete"
@@ -282,7 +288,7 @@ export default function SupervisorDetail() {
       await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: `${supervisor.name} — Performance Report` });
     } catch (e) {
       console.error(e);
-      confirmDialog.info("Error", "Failed to generate PDF report");
+      confirmDialog.info("Couldn't generate PDF", "Something went wrong creating the file. Please try again.");
     } finally {
       setExportingPDF(false);
     }
@@ -428,7 +434,7 @@ export default function SupervisorDetail() {
         </View> 
       )} 
 
-      <ScrollView
+      <ScrollView ref={scrollViewRef}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: rp(40) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />}
@@ -451,49 +457,49 @@ export default function SupervisorDetail() {
                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginTop: rp(24), marginBottom: rp(10), marginHorizontal: rp(16) }}>EDIT SUPERVISOR</Text>
             <View style={[{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(18), marginHorizontal: rp(16) }, cardShadow]}>
               <Text style={miniLabel}>NAME <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <View style={[miniInput, errors.name && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  style={[miniInput, errors.name && { borderColor: "#EF4444" }]}>
                 <Ionicons name="person-outline" size={16} color="#7C3AED" />
                 <TextInput value={name} onChangeText={setName} style={miniInputText} />
               </View>
               {errors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.name}</Text>}
               <Text style={miniLabel}>PHONE <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <View style={[miniInput, errors.phone && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  style={[miniInput, errors.phone && { borderColor: "#EF4444" }]}>
                 <Ionicons name="call-outline" size={16} color="#7C3AED" />
                 <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={miniInputText} />
               </View>
               {errors.phone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.phone}</Text>}
               <Text style={miniLabel}>NEW PASSWORD (LEAVE BLANK TO KEEP)</Text>
-              <View style={[miniInput, errors.password && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.password = el; }}  style={[miniInput, errors.password && { borderColor: "#EF4444" }]}>
                 <Ionicons name="keypad-outline" size={16} color="#7C3AED" />
                 <TextInput value={password} onChangeText={setPassword} secureTextEntry style={miniInputText} />
               </View>
               {errors.password && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.password}</Text>}
               <Text style={miniLabel}>EMAIL</Text>
-              <View style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
                 <Ionicons name="mail-outline" size={16} color="#7C3AED" />
                 <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={miniInputText} />
               </View>
               {errors.email && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.email}</Text>}
               <Text style={miniLabel}>PAN CARD NUMBER</Text>
-              <View style={[miniInput, errors.panNumber && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.panNumber = el; }}  style={[miniInput, errors.panNumber && { borderColor: "#EF4444" }]}>
                 <Ionicons name="card-outline" size={16} color="#7C3AED" />
                 <TextInput value={panNumber} onChangeText={v => setPanNumber(v.toUpperCase())} autoCapitalize="characters" maxLength={10} placeholder="ABCDE1234F" placeholderTextColor="#9CA3AF" style={miniInputText} />
               </View>
               {errors.panNumber && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.panNumber}</Text>}
               <Text style={miniLabel}>BANK ACCOUNT NUMBER</Text>
-              <View style={[miniInput, errors.bankAccount && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }}  style={[miniInput, errors.bankAccount && { borderColor: "#EF4444" }]}>
                 <Ionicons name="business-outline" size={16} color="#7C3AED" />
                 <TextInput value={bankAccount} onChangeText={setBankAccount} keyboardType="numeric" placeholder="Account number" placeholderTextColor="#9CA3AF" style={miniInputText} />
               </View>
               {errors.bankAccount && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankAccount}</Text>}
               <Text style={miniLabel}>BANK IFSC CODE</Text>
-              <View style={[miniInput, errors.bankIfsc && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.bankIfsc = el; }}  style={[miniInput, errors.bankIfsc && { borderColor: "#EF4444" }]}>
                 <Ionicons name="business-outline" size={16} color="#7C3AED" />
                 <TextInput value={bankIfsc} onChangeText={v => setBankIfsc(v.toUpperCase())} autoCapitalize="characters" maxLength={11} placeholder="SBIN0001234" placeholderTextColor="#9CA3AF" style={miniInputText} />
               </View>
               {errors.bankIfsc && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankIfsc}</Text>}
               <Text style={miniLabel}>AADHAR NUMBER <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <View style={[miniInput, errors.aadharNumber && { borderColor: "#EF4444" }]}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  style={[miniInput, errors.aadharNumber && { borderColor: "#EF4444" }]}>
                 <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
                 <TextInput value={aadharNumber} onChangeText={setAadharNumber} autoCapitalize="none" placeholder="Aadhar number" placeholderTextColor="#9CA3AF" style={miniInputText} />
               </View>
@@ -511,7 +517,7 @@ export default function SupervisorDetail() {
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
+                  <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed", marginTop: rp(8) }}>
                     <Ionicons name="image-outline" size={28} color="#9CA3AF" />
                   </View>
                 )}
@@ -575,7 +581,7 @@ export default function SupervisorDetail() {
         {tab === "events" && ( 
           <View style={{ paddingHorizontal: rp(16), paddingTop: rp(16) }}> 
             {/* Filter chips — same as driver-stats */} 
-            <ScrollView horizontal contentContainerStyle={{ gap: rp(8), marginBottom: rp(16) }} showsHorizontalScrollIndicator={false}> 
+            <ScrollView ref={scrollViewRef} horizontal contentContainerStyle={{ gap: rp(8), marginBottom: rp(16) }} showsHorizontalScrollIndicator={false}> 
               {["all", "active", "closed"].map((f) => ( 
                 <TouchableOpacity 
                   key={f} 

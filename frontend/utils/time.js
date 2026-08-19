@@ -22,3 +22,12 @@ export const toISTDateString = (date) => {
 };
 
 export const todayIST = () => toISTDateString(new Date());
+
+export const fmtDuration = (mins) => {
+  if (mins == null || isNaN(mins)) return "—";
+  const m = Math.max(0, Math.floor(mins));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return `${h}h ${rem}m`;
+};

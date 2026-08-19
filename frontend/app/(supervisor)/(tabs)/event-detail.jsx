@@ -37,7 +37,7 @@ import * as FileSystem from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { formatDistanceToNow } from "date-fns";
-import { fmtDateTime } from "../../../utils/time";
+import { fmtDateTime, fmtDuration } from "../../../utils/time";
 import { useEventCars } from "../../../hooks/useEventCars";
 import { useEventIncidents } from "../../../hooks/useEventIncidents";
 import { useEventSOS } from "../../../hooks/useEventSOS";
@@ -62,6 +62,7 @@ const ACCENT_COLOR = theme.colors.primary;
 
 const STATUS_CONFIG = {
   PRE_REGISTERED: { color: "#8B5CF6", label: "Pre-Registered" },
+  REGISTERED: { color: "#F59E0B", label: "Registered" },
   CHECKED_IN: { color: "#0EA5E9", label: "Checked In" },
   PARKED: { color: theme.colors.success, label: "Parked" },
   RETRIEVAL_REQUESTED: { color: "#F59E0B", label: "Requested" },
@@ -69,7 +70,7 @@ const STATUS_CONFIG = {
   DELIVERED: { color: theme.colors.textMuted, label: "Delivered" },
 };
 
-const FILTERS = ["ALL", "PRE_REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
+const FILTERS = ["ALL", "PRE_REGISTERED", "REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
 
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
@@ -171,7 +172,7 @@ export default function SupervisorEventDetail() {
       setDeliveryOtp(data.otp);
     } catch (err) {
       const msg = err.response?.data?.detail || "Could not fetch delivery code";
-      confirmDialog.info("Error", msg);
+      confirmDialog.info("Operation failed", msg || "Something went wrong. Please try again.");
     } finally {
       setLoadingOtp(false);
     }
@@ -249,7 +250,7 @@ export default function SupervisorEventDetail() {
       await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
       await Sharing.shareAsync(path, { mimeType: "text/csv", dialogTitle: `${data.event.name} — Event Report` });
     } catch {
-      confirmDialog.info("Error", "Failed to generate CSV");
+      confirmDialog.info("Couldn't generate CSV", "Something went wrong creating the file. Please try again.");
     } finally {
       setExportingCSV(false);
     }
@@ -262,7 +263,7 @@ export default function SupervisorEventDetail() {
       const e = data.event;
       const s = data.summary;
 
-      const carRows = data.cars.map(c => `<tr><td>${c.plate}</td><td>${c.color} ${c.make}</td><td>${c.status}</td><td>${c.check_in_driver || "—"}</td><td>${c.retrieval_driver || "—"}</td><td>${c.duration_minutes ? c.duration_minutes + " min" : "—"}</td><td>${c.rating ? "★".repeat(c.rating) : "—"}</td><td>${c.notes || "—"}</td></tr>`).join("");
+      const carRows = data.cars.map(c => `<tr><td>${c.plate}</td><td>${c.color} ${c.make}</td><td>${c.status}</td><td>${c.check_in_driver || "—"}</td><td>${c.retrieval_driver || "—"}</td><td>${c.duration_minutes != null ? fmtDuration(c.duration_minutes) : "—"}</td><td>${c.rating ? "★".repeat(c.rating) : "—"}</td><td>${c.notes || "—"}</td></tr>`).join("");
       const driverRows = data.drivers.map(d => `<tr><td>${d.name}</td><td>${d.employee_id}</td><td>${d.checkins}</td><td>${d.parkings}</td><td>${d.retrievals}</td><td style="color:${d.incidents > 0 ? theme.colors.danger : theme.colors.textSecondary}">${d.incidents}</td></tr>`).join("");
       const incidentRows = data.incidents.length > 0 ? data.incidents.map(i => `<tr><td>${i.plate}</td><td>${i.driver_name || "—"}</td><td>${i.description}</td><td>${new Date(i.created_at).toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</td></tr>`).join("") : `<tr><td colspan="4" style="text-align:center; color:#9CA3AF;">No incidents</td></tr>`;
 
@@ -274,7 +275,7 @@ export default function SupervisorEventDetail() {
       await FileSystem.moveAsync({ from: uri, to: newPath });
       await Sharing.shareAsync(newPath, { UTI: ".pdf", mimeType: "application/pdf" });
     } catch {
-      confirmDialog.info("Error", "Failed to generate PDF");
+      confirmDialog.info("Couldn't generate PDF", "Something went wrong creating the file. Please try again.");
     } finally {
       setExportingPDF(false);
     }
@@ -491,7 +492,7 @@ export default function SupervisorEventDetail() {
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(16), marginBottom: rp(16) }}
               >
                 <Ionicons name="add" size={20} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(1), marginLeft: rp(8) }}>ADD CAR & ASSIGN DRIVER</Text>
+                <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(1), marginLeft: rp(8) }}>CHECK IN CAR</Text>
               </TouchableOpacity>
             )}
 
@@ -1362,7 +1363,7 @@ export default function SupervisorEventDetail() {
                     setForcedSOSAlert(null);
                     fetchSOSAlerts();
                   } catch {
-                    confirmDialog.info("Error", "Failed to resolve alert.");
+                    confirmDialog.info("Couldn't resolve alert", "Something went wrong resolving the alert. Check your connection and try again.");
                   } finally {
                     setResolvingForcedSOS(false);
                   }

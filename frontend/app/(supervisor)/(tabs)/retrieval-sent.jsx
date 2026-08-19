@@ -49,7 +49,7 @@ export default function RetrievalSent() {
 
           <Btn 
             variant="outline" 
-            onPress={() => router.replace("/(supervisor)/(tabs)/index")} 
+            onPress={() => router.replace("/(supervisor)/(tabs)")} 
             style={styles.actionBtn}
           >
             Done

@@ -63,6 +63,7 @@ export function Btn({ variant = 'primary', disabled = false, onPress, children, 
         style={[
           styles.btn,
           { backgroundColor: bgColor, borderColor, borderWidth: variant === 'outline' && !disabled ? 1 : 0, transform: [{ scale }] },
+          style,
         ]}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
@@ -156,7 +157,7 @@ export function Sheet({ open, onClose, children }) {
   );
 }
 
-export function StatusPill({ label, tone = 'primary', style }) {
+export function StatusPill({ label, tone = 'primary', style, icon }) {
   let bgColor = theme.colors.primaryLight;
   let textColor = theme.colors.primary;
 
@@ -172,6 +173,10 @@ export function StatusPill({ label, tone = 'primary', style }) {
     case 'danger':
       bgColor = theme.colors.dangerLight;
       textColor = theme.colors.danger;
+      break;
+    case 'warning':
+      bgColor = theme.colors.warningLight;
+      textColor = theme.colors.warning;
       break;
     case 'neutral':
       bgColor = theme.colors.surfaceAlt;
@@ -190,6 +195,7 @@ export function StatusPill({ label, tone = 'primary', style }) {
 
   return (
     <View style={[styles.statusPill, { backgroundColor: bgColor }, style]}>
+      {icon && <Ionicons name={icon} size={12} color={textColor} style={{ marginRight: 4 }} />}
       <Text style={[styles.statusPillText, { color: textColor }]}>{label}</Text>
     </View>
   );
@@ -407,6 +413,8 @@ const styles = StyleSheet.create({
     paddingVertical: rp(theme.spacing.xs),
     borderRadius: theme.radius.pill,
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statusPillText: {
     fontSize: rs(theme.fontSize.caption),

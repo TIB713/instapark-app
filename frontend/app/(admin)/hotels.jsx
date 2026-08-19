@@ -1,5 +1,5 @@
 import { confirmDialog } from "../../lib/confirmDialog";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback , useRef} from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -23,6 +23,8 @@ import { todayIST } from "../../utils/time";
 import CityStatePicker from "../../components/CityStatePicker";
 import { State } from "country-state-city";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 const ACCENT_COLOR = "#1D4ED8";
 
 const cardShadow = {
@@ -37,6 +39,9 @@ export default function Hotels() {
   const router = useRouter();
   const { action } = useLocalSearchParams();
   const { user, setCurrentEventId } = useAppStore();
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [hotels, setHotels] = useState([]);
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -131,7 +136,10 @@ export default function Hotels() {
     if (contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) errs.contactEmail = "Please enter a valid contact email address";
     if (!totalSlots) errs.totalSlots = "Total valet slots is required";
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "address", "city", "state", "contactName", "contactPhone", "contactEmail", "totalSlots"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -157,7 +165,7 @@ export default function Hotels() {
       fetchHotels();
       confirmDialog.info("Success", "Hotel added successfully");
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to add hotel");
+      confirmDialog.info("Couldn't add hotel", e.response?.data?.detail || "Something went wrong adding the hotel. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -259,7 +267,7 @@ export default function Hotels() {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}>
+      <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}>
         {loading && <ActivityIndicator color={ACCENT_COLOR} />}
         {filteredHotels.map((h) => {
 
@@ -364,9 +372,10 @@ export default function Hotels() {
               <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12) }}>Add Hotel</Text>
             </View>
 
-            <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(16) }}>
+            <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(16) }}>
               <Text style={modalLabel}>HOTEL NAME *</Text>
               <TextInput
+                ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}
                 style={[modalInput, errors.name && modalInputError]}
                 placeholder="Enter hotel name"
                 value={name}
@@ -376,6 +385,7 @@ export default function Hotels() {
 
               <Text style={modalLabel}>ADDRESS *</Text>
               <TextInput
+                ref={el => { if (fieldRefs.current) fieldRefs.current.address = el; }}
                 style={[modalInput, errors.address && modalInputError]}
                 placeholder="Enter address"
                 value={address}
@@ -383,7 +393,7 @@ export default function Hotels() {
               />
               {errors.address && <Text style={modalErrorText}>* {errors.address}</Text>}
 
-              <View style={{ marginBottom: rp(12) }}>
+              <View ref={el => { if (fieldRefs.current) { fieldRefs.current.state = el; fieldRefs.current.city = el; } }} style={{ marginBottom: rp(12) }}>
                 <Text style={modalLabel}>STATE & CITY *</Text>
                 <CityStatePicker
                   state={state}
@@ -396,6 +406,7 @@ export default function Hotels() {
 
               <Text style={modalLabel}>CONTACT NAME *</Text>
               <TextInput
+                ref={el => { if (fieldRefs.current) fieldRefs.current.contactName = el; }}
                 style={[modalInput, errors.contactName && modalInputError]}
                 placeholder="Contact name"
                 value={contactName}
@@ -405,6 +416,7 @@ export default function Hotels() {
 
               <Text style={modalLabel}>CONTACT PHONE *</Text>
               <TextInput
+                ref={el => { if (fieldRefs.current) fieldRefs.current.contactPhone = el; }}
                 style={[modalInput, errors.contactPhone && modalInputError]}
                 placeholder="Contact phone"
                 value={contactPhone}
@@ -415,6 +427,7 @@ export default function Hotels() {
 
               <Text style={modalLabel}>CONTACT EMAIL</Text>
               <TextInput
+                ref={el => { if (fieldRefs.current) fieldRefs.current.contactEmail = el; }}
                 style={[modalInput, errors.contactEmail && modalInputError]}
                 placeholder="Contact email (optional)"
                 value={contactEmail}
@@ -426,6 +439,7 @@ export default function Hotels() {
 
               <Text style={modalLabel}>TOTAL VALET SLOTS *</Text>
               <TextInput
+                ref={el => { if (fieldRefs.current) fieldRefs.current.totalSlots = el; }}
                 style={[modalInput, errors.totalSlots && modalInputError]}
                 placeholder="Total slots"
                 value={totalSlots}

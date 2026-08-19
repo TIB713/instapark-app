@@ -32,7 +32,7 @@ export default function ProfileScreen() {
       try {
         const driverId = driver?.id || driver?.user_id;
         if (driverId) {
-          api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "offline" }).catch(() => {});
+          api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "offline" }).catch(() => { });
         }
         await stopLocationTracking();
         await useAppStore.getState().signOut();
@@ -56,13 +56,13 @@ export default function ProfileScreen() {
     const locationStarted = await startLocationTracking();
     if (!locationStarted) {
       confirmDialog.info(
-        "Location permission needed", 
+        "Location permission needed",
         "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
       );
     }
     const driverId = driver?.id || driver?.user_id;
     if (driverId) {
-      api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "available" }).catch(() => {});
+      api.patch(`/drivers/${driverId}/duty-status`, { duty_status: "available" }).catch(() => { });
     }
     setSheetOpen(false);
   };
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
       <TopBar title="Profile" />
 
       <View style={{ paddingHorizontal: rp(theme.spacing.lg), paddingTop: rp(theme.spacing.xxl), paddingBottom: rp(40) }}>
-        
+
         {/* Driver Info Card */}
         <Card style={{ marginBottom: rp(theme.spacing.xxl), alignItems: 'center' }}>
           <View style={{
@@ -88,22 +88,23 @@ export default function ProfileScreen() {
               {initials}
             </Text>
           </View>
-          
+
           <Text style={{ fontSize: rs(theme.fontSize.title), fontWeight: theme.fontWeight.bold, color: theme.colors.textPrimary, marginBottom: rp(theme.spacing.xs) }}>
             {driver?.name || "Driver"}
           </Text>
           <Text style={{ fontSize: rs(theme.fontSize.body), color: theme.colors.textSecondary, marginBottom: rp(theme.spacing.lg) }}>
             {driver?.phone || "No phone number"}
           </Text>
-          
+
           <View style={{ flexDirection: 'row', gap: rp(theme.spacing.md) }}>
-            <StatusPill 
-              label={driver?.is_verified ? "Verified" : "Unverified"} 
-              tone={driver?.is_verified ? "success" : "neutral"} 
+            <StatusPill
+              label={driver?.is_verified ? "Verified" : "Unverified"}
+              tone={driver?.is_verified ? "success" : "warning"}
+              icon={driver?.is_verified ? "checkmark-circle" : "warning"}
             />
-            <StatusPill 
-              label={isAvailable ? "ON DUTY" : "OFF DUTY"} 
-              tone={isAvailable ? "success" : "neutral"} 
+            <StatusPill
+              label={isAvailable ? "ON DUTY" : "OFF DUTY"}
+              tone={isAvailable ? "success" : "neutral"}
             />
           </View>
         </Card>
@@ -113,7 +114,7 @@ export default function ProfileScreen() {
           <Text style={{ fontSize: rs(theme.fontSize.caption), fontWeight: theme.fontWeight.bold, color: theme.colors.textSecondary, letterSpacing: rs(1.5), marginBottom: rp(theme.spacing.md) }}>
             ACTIVE EVENT
           </Text>
-          
+
           {currentEventId ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: rp(theme.spacing.xl) }}>
               <View style={{ flex: 1, paddingRight: rp(theme.spacing.lg) }}>
@@ -121,9 +122,9 @@ export default function ProfileScreen() {
                   {currentEvent?.name || currentEventId}
                 </Text>
                 {currentEvent?.venue && (
-                   <Text style={{ fontSize: rs(theme.fontSize.body), color: theme.colors.textSecondary, marginTop: rp(theme.spacing.xs) }}>
-                     {currentEvent.venue}
-                   </Text>
+                  <Text style={{ fontSize: rs(theme.fontSize.body), color: theme.colors.textSecondary, marginTop: rp(theme.spacing.xs) }}>
+                    {currentEvent.venue}
+                  </Text>
                 )}
               </View>
               <View style={{ width: rp(48), height: rp(48), borderRadius: rp(24), backgroundColor: theme.colors.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
@@ -137,7 +138,7 @@ export default function ProfileScreen() {
           )}
 
           <Btn variant="outline" onPress={() => setSheetOpen(true)}>
-            Switch Event
+            Select Event
           </Btn>
         </Card>
 
@@ -148,30 +149,30 @@ export default function ProfileScreen() {
 
       </View>
 
-      {/* Switch Event Sheet */}
+      {/* Select Event Sheet */}
       <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
-        <Text style={{ 
-          fontSize: rs(theme.fontSize.subtitle), 
-          fontWeight: theme.fontWeight.bold, 
-          color: theme.colors.textPrimary, 
-          paddingHorizontal: rp(theme.spacing.lg), 
-          marginBottom: rp(theme.spacing.md) 
+        <Text style={{
+          fontSize: rs(theme.fontSize.subtitle),
+          fontWeight: theme.fontWeight.bold,
+          color: theme.colors.textPrimary,
+          paddingHorizontal: rp(theme.spacing.lg),
+          marginBottom: rp(theme.spacing.md)
         }}>
           Select Event
         </Text>
         {events?.length === 0 ? (
-          <EmptyState 
-            title="No active events assigned" 
-            body="Contact your admin to get assigned." 
-            icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />} 
+          <EmptyState
+            title="No active events assigned"
+            body="Contact your admin to get assigned."
+            icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />}
           />
         ) : (
           <ScrollView contentContainerStyle={{ padding: rp(theme.spacing.lg), gap: rp(theme.spacing.md), paddingBottom: rp(100) }}>
             {events?.map((e) => (
               <TouchableOpacity key={e.id} onPress={() => openEvent(e)} activeOpacity={0.7}>
-                <Card style={{ 
-                  flexDirection: "row", 
-                  alignItems: "center", 
+                <Card style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   borderColor: currentEventId === e.id ? theme.colors.primary : theme.colors.border,
                   borderWidth: currentEventId === e.id ? 2 : 1,
                   padding: rp(theme.spacing.md)

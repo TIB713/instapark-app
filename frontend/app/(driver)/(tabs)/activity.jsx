@@ -7,6 +7,7 @@ import { useAppStore } from "../../../lib/store";
 import api from "../../../lib/api";
 import { rp, rs } from "../../../utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
+import { fmtDuration } from "../../../utils/time";
 
 export default function ActivityScreen() {
   const router = useRouter();
@@ -73,6 +74,10 @@ export default function ActivityScreen() {
     let statusTone = "primary";
     
     switch (item.status) {
+      case "REGISTERED":
+        statusLabel = "Registered";
+        statusTone = "neutral";
+        break;
       case "CHECKED_IN": statusLabel = "Checked In"; statusTone = "primary"; break;
       case "PARKED": statusLabel = "Parked"; statusTone = "success"; break;
       case "DELIVERED": statusLabel = "Delivered"; statusTone = "neutral"; break;
@@ -83,18 +88,43 @@ export default function ActivityScreen() {
       default: break;
     }
 
+    let durationCaption = null;
+    if ((item.role_in_event === "check_in" || item.role_in_event === "both") && item.park_minutes != null) {
+      durationCaption = `Parked in ${fmtDuration(item.park_minutes)}`;
+    }
+    if ((item.role_in_event === "retrieval" || item.role_in_event === "both") && item.retrieval_to_gate_minutes != null) {
+      durationCaption = `Retrieved in ${fmtDuration(item.retrieval_to_gate_minutes)}`;
+    }
+
+    let reparkCaption = null;
+    if (item.repark_minutes != null) {
+      reparkCaption = `Re-parked, +${fmtDuration(item.repark_minutes)}`;
+    }
+
     return (
       <Card style={{ marginBottom: rp(12) }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
           <Plate value={item.plate} />
           <StatusPill label={statusLabel} tone={statusTone} />
         </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Ionicons name={roleIcon} size={16} color={roleColor} style={{ marginRight: rp(4) }} />
             <Text style={{ fontSize: rs(12), color: roleColor, fontWeight: "600" }}>{roleText}</Text>
           </View>
-          <Text style={{ fontSize: rs(12), color: "#6B7280" }}>{timeStr}</Text>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontSize: rs(12), color: "#6B7280" }}>{timeStr}</Text>
+            {durationCaption && (
+              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>
+                {durationCaption}
+              </Text>
+            )}
+            {reparkCaption && (
+              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>
+                {reparkCaption}
+              </Text>
+            )}
+          </View>
         </View>
       </Card>
     );

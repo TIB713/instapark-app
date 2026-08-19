@@ -141,7 +141,8 @@ export const processPendingQueue = async () => {
                 has_damage: item.hasDamage,
                 damage_notes: item.damageNotes,
                 damage_types: item.damageTypes,
-                guest_name: item.guestName
+                guest_name: item.guestName,
+                instant_park: item.instantPark
               });
               carId = res.data.id;
             } catch (err) {

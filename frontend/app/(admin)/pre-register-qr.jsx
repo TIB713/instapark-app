@@ -59,7 +59,7 @@ export default function PreRegisterQR() {
     setLoading(true);
     api.get("/qr-cards/me", { params: { search: debouncedSearch || undefined } })
       .then(({ data }) => setCards(data.cards || []))
-      .catch(() => confirmDialog.info("Error", "Failed to load QR cards"))
+      .catch(() => confirmDialog.info("Couldn't load QR cards", "Something went wrong loading the cards. Check your connection and try again."))
       .finally(() => setLoading(false));
   };
 
@@ -209,7 +209,7 @@ export default function PreRegisterQR() {
     try {
       await Share.share({ message: `QR Codes added on ${group.label} (${group.cards.length} tag(s)):\n\n${links}` });
     } catch {
-      confirmDialog.info("Error", "Failed to share QR codes for this date.");
+      confirmDialog.info("Couldn't share QR codes", "Something went wrong sharing the codes. Please try again.");
     }
   };
 
@@ -225,7 +225,7 @@ export default function PreRegisterQR() {
         fetchCards();
       })
       .catch((err) => {
-        confirmDialog.info("Error", err.response?.data?.detail || "Failed to report incident");
+        confirmDialog.info("Couldn't report incident", err.response?.data?.detail || "Something went wrong submitting the report. Check your connection and try again.");
       })
       .finally(() => setSubmittingReport(false));
   };
@@ -257,8 +257,16 @@ export default function PreRegisterQR() {
           <Ionicons name="warning" size={16} color="#D97706" />
         </View>
       )}
-      <View style={{ backgroundColor: "#F9FAFB", padding: rp(10), borderRadius: rp(12), marginBottom: rp(12) }}>
+      <View style={{ backgroundColor: "#F9FAFB", padding: rp(10), borderRadius: rp(12), marginBottom: rp(12), position: 'relative', overflow: 'hidden' }}>
         <QRCode value={`${process.env.EXPO_PUBLIC_API_URL || "https://instapark.docusafe.ai/api/v1"}/qr-redirect/${item.qr_token}`} size={80} color={qrColor} />
+        {item.is_assigned && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(17, 24, 39, 0.75)', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4) }}>
+              <Text style={{ fontSize: rs(8), fontWeight: "bold", color: "#047857", textTransform: "uppercase", letterSpacing: 0.5 }}>Assigned</Text>
+            </View>
+            <Text style={{ fontSize: rs(10), fontWeight: "bold", color: "#FFFFFF", marginTop: rp(4) }}>{item.assigned_car_plate}</Text>
+          </View>
+        )}
       </View>
       <Text style={{ fontSize: rs(14), fontWeight: "bold", color: "#111827" }}>Tag #{item.key_tag_number}</Text>
     </TouchableOpacity>
@@ -397,8 +405,16 @@ export default function PreRegisterQR() {
                 </TouchableOpacity>
               </View>
               <View style={{ padding: rp(40), alignItems: "center", backgroundColor: "#F9FAFB" }}>
-                <View style={{ backgroundColor: "#fff", padding: rp(20), borderRadius: rp(16), shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
+                <View style={{ backgroundColor: "#fff", padding: rp(20), borderRadius: rp(16), shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5, position: 'relative', overflow: 'hidden' }}>
                   {modalCard && <QRCode value={`${process.env.EXPO_PUBLIC_API_URL || "https://instapark.docusafe.ai/api/v1"}/qr-redirect/${modalCard.qr_token}`} size={200} color={qrColor} />}
+                  {modalCard?.is_assigned && (
+                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(17, 24, 39, 0.75)', justifyContent: 'center', alignItems: 'center' }}>
+                      <View style={{ backgroundColor: "#D1FAE5", paddingHorizontal: rp(12), paddingVertical: rp(4), borderRadius: rp(99) }}>
+                        <Text style={{ fontSize: rs(12), fontWeight: "bold", color: "#047857", textTransform: "uppercase", letterSpacing: 0.5 }}>Assigned</Text>
+                      </View>
+                      <Text style={{ fontSize: rs(18), fontWeight: "bold", color: "#FFFFFF", marginTop: rp(8), letterSpacing: rs(1) }}>{modalCard?.assigned_car_plate}</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={{ fontSize: rs(24), fontWeight: "bold", color: "#4B5563", marginTop: rp(24), letterSpacing: rs(2) }}>#{modalCard?.key_tag_number}</Text>
               </View>

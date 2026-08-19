@@ -1,7 +1,7 @@
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback , useRef} from "react";
 import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -26,6 +26,8 @@ import api from "../../lib/api";
 import { getItem } from "../../lib/secure";
 import { pickImageHelper } from "../../utils/imagePicker";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
 
 const cardShadow = {
@@ -41,6 +43,9 @@ export default function ManageEmployees() {
 
   const router = useRouter();
   const { tab: initialTab } = useLocalSearchParams();
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [tab, setTab] = useState(initialTab === "drivers" ? "drivers" : "supervisors");
   const [supervisors, setSupervisors] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -73,7 +78,6 @@ export default function ManageEmployees() {
   const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
   const [drvGender, setDrvGender] = useState("");
-  const [drvPassword, setDrvPassword] = useState("");
   const [drvPhoto, setDrvPhoto] = useState(null);
   const [drvPhotoUri, setDrvPhotoUri] = useState(null);
   const [drvLicenseNumber, setDrvLicenseNumber] = useState("");
@@ -144,7 +148,7 @@ export default function ManageEmployees() {
       }
       await Sharing.shareAsync(uri, { mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     } catch (e) {
-      confirmDialog.info("Error", "Failed to download sample template");
+      confirmDialog.info("Couldn't download template", "Something went wrong saving the file. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -188,7 +192,7 @@ export default function ManageEmployees() {
       await Sharing.shareAsync(fn, { mimeType: "text/csv" });
       fetchAll();
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to upload file");
+      confirmDialog.info("Couldn't upload file", e.response?.data?.detail || "Something went wrong uploading the file. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -200,7 +204,7 @@ export default function ManageEmployees() {
       await api.patch(`/drivers/${did}/activate`);
       fetchAll();
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to activate driver");
+      confirmDialog.info("Couldn't activate driver", e.response?.data?.detail || "Something went wrong activating this account. Check your connection and try again.");
     } finally {
       setProcessingId(null);
     }
@@ -295,7 +299,10 @@ export default function ManageEmployees() {
   const saveSupervisor = async () => {
     const errs = validateSupervisor();
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "email", "phone", "password", "pan", "bankAccount", "aadharNumber", "aadharPhoto", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
     setSavingSup(true);
     let photoUrl;
     if (supPhotoUri) {
@@ -342,7 +349,7 @@ export default function ManageEmployees() {
       resetSupForm(); setErrors({});
       fetchAll();
     } catch (e) {
-      confirmDialog.info("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
+      confirmDialog.info("Couldn't save supervisor", e.response?.data?.detail || "Failed to add supervisor" || "Something went wrong. Please check your connection and try again.");
     } finally {
       setSavingSup(false);
     }
@@ -353,8 +360,6 @@ export default function ManageEmployees() {
     if (!drvName.trim()) errs.name = "Name is required";
     if (!drvEmail.trim()) errs.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) errs.email = "Please enter a valid email address";
-    if (!drvPassword.trim()) errs.pin = "PIN is required";
-    else if (drvPassword.length !== 4 || !/^\d{4}$/.test(drvPassword)) errs.pin = "PIN must be exactly 4 digits";
     if (!drvGender) errs.gender = "Please select gender";
     if (!drvPhone.trim()) errs.phone = "Phone is required";
     else if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
@@ -374,7 +379,10 @@ export default function ManageEmployees() {
   const saveDriver = async () => {
     const errs = validateDriver();
     setDriverErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "email", "phone", "password", "pan", "bankAccount", "aadharNumber", "aadharPhoto", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
     setSavingDrv(true);
     let photoUrl;
     if (drvPhotoUri) {
@@ -413,7 +421,6 @@ export default function ManageEmployees() {
         email: drvEmail.trim().toLowerCase(),
         phone: drvPhone.trim(),
         gender: drvGender,
-        pin: drvPassword,
         driver_photo: photoUrl || undefined,
         pan_number: drvPan.trim() || undefined,
         bank_account_number: drvBankAccount.trim() || undefined,
@@ -427,7 +434,7 @@ export default function ManageEmployees() {
       resetDrvForm();
       fetchAll();
     } catch (e) {
-      confirmDialog.info("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
+      confirmDialog.info("Couldn't save driver", e.response?.data?.detail || "Failed to add driver" || "Something went wrong. Please check your connection and try again.");
     } finally {
       setSavingDrv(false);
     }
@@ -444,7 +451,7 @@ export default function ManageEmployees() {
         confirmDialog.info("Success", `${action}d successfully`);
         fetchAll();
       } catch (e) {
-        confirmDialog.info("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
+        confirmDialog.info("Operation failed", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
       } finally {
         setProcessingId(null);
       }
@@ -465,7 +472,7 @@ export default function ManageEmployees() {
         confirmDialog.info("Success", `${action}d successfully`);
         fetchAll();
       } catch (e) {
-        confirmDialog.info("Error", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
+        confirmDialog.info("Operation failed", e.response?.data?.detail || `Failed to ${action.toLowerCase()}`);
       } finally {
         setProcessingId(null);
       }
@@ -572,7 +579,7 @@ export default function ManageEmployees() {
           )}
         </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: rp(16) }}>
+      <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(16) }}>
         {loading ? (
           <ActivityIndicator color="#7C3AED" style={{ marginTop: rp(20) }} />
         ) : (
@@ -611,7 +618,15 @@ export default function ManageEmployees() {
                         paddingHorizontal: rp(6),
                         paddingVertical: rp(2),
                         marginLeft: rp(2),
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: rp(2)
                       }}>
+                        {s.is_verified ? (
+                          <Ionicons name="checkmark-circle" size={10} color="#059669" />
+                        ) : (
+                          <Ionicons name="warning" size={10} color="#D97706" />
+                        )}
                         <Text style={{ color: s.is_verified ? "#059669" : "#D97706", fontSize: rs(9), fontWeight: "800" }}>
                           {s.is_verified ? "VERIFIED" : "UNVERIFIED"}
                         </Text>
@@ -661,7 +676,15 @@ export default function ManageEmployees() {
                         paddingHorizontal: rp(6),
                         paddingVertical: rp(2),
                         marginLeft: rp(2),
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: rp(2)
                       }}>
+                        {d.is_verified ? (
+                          <Ionicons name="checkmark-circle" size={10} color="#059669" />
+                        ) : (
+                          <Ionicons name="warning" size={10} color="#D97706" />
+                        )}
                         <Text style={{ color: d.is_verified ? "#059669" : "#D97706", fontSize: rs(9), fontWeight: "800" }}>
                           {d.is_verified ? "VERIFIED" : "UNVERIFIED"}
                         </Text>
@@ -716,7 +739,7 @@ export default function ManageEmployees() {
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
-              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+              <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
                 <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#7C3AED", marginBottom: rp(16) }}>Add Supervisor</Text>
 
@@ -748,13 +771,13 @@ export default function ManageEmployees() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supName} onChangeText={(t) => { setSupName(t); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  value={supName} onChangeText={(t) => { setSupName(t); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
                 {errors.name && <Text style={modalErrorText}>* {errors.name}</Text>}
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supEmail} onChangeText={(t) => { setSupEmail(t); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }} placeholder="email@example.com" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  value={supEmail} onChangeText={(t) => { setSupEmail(t); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }} placeholder="email@example.com" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
                 {errors.email && <Text style={modalErrorText}>* {errors.email}</Text>}
                 <Text style={modalLabel}>PHONE <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supPhone} onChangeText={(t) => { setSupPhone(t); if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  value={supPhone} onChangeText={(t) => { setSupPhone(t); if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
                 {errors.phone && <Text style={modalErrorText}>* {errors.phone}</Text>}
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
@@ -773,13 +796,13 @@ export default function ManageEmployees() {
                 </View>
                 {errors.gender && <Text style={modalErrorText}>* {errors.gender}</Text>}
                 {/* <Text style={modalLabel}>PASSWORD <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supPassword} onChangeText={(t) => { setSupPassword(t); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })); }} placeholder="Min 6 characters" secureTextEntry style={[modalInput, errors.password && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.password = el; }}  value={supPassword} onChangeText={(t) => { setSupPassword(t); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })); }} placeholder="Min 6 characters" secureTextEntry style={[modalInput, errors.password && modalInputError]} />
                 {errors.password && <Text style={modalErrorText}>* {errors.password}</Text>} */}
                 <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
-                <TextInput value={supPan} onChangeText={(v) => { setSupPan(v.toUpperCase()); if (errors.pan) setErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, errors.pan && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.pan = el; }}  value={supPan} onChangeText={(v) => { setSupPan(v.toUpperCase()); if (errors.pan) setErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, errors.pan && modalInputError]} />
                 {errors.pan && <Text style={modalErrorText}>* {errors.pan}</Text>}
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={supBankAccount} onChangeText={(t) => { setSupBankAccount(t); if (errors.bankAccount) setErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account number" keyboardType="numeric" maxLength={18} style={[modalInput, errors.bankAccount && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }}  value={supBankAccount} onChangeText={(t) => { setSupBankAccount(t); if (errors.bankAccount) setErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account number" keyboardType="numeric" maxLength={18} style={[modalInput, errors.bankAccount && modalInputError]} />
                 {errors.bankAccount && <Text style={modalErrorText}>* {errors.bankAccount}</Text>}
                 <Text style={modalLabel}>BANK IFSC CODE</Text>
                 <TextInput value={supBankIfsc} onChangeText={(v) => {
@@ -819,10 +842,10 @@ export default function ManageEmployees() {
                   </Text>
                 )}
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supAadharNumber} onChangeText={(t) => { setSupAadharNumber(t); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, errors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={supAadharNumber} onChangeText={(t) => { setSupAadharNumber(t); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, errors.aadharNumber && modalInputError]} />
                 {errors.aadharNumber && <Text style={modalErrorText}>* {errors.aadharNumber}</Text>}
 
-                <TouchableOpacity onPress={() => { pickSupAadharPhoto(); if (errors.aadharPhoto) setErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  onPress={() => { pickSupAadharPhoto(); if (errors.aadharPhoto) setErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   {supAadharPhotoUri ? (
                     <View style={{ position: "relative" }}>
@@ -835,7 +858,7 @@ export default function ManageEmployees() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#CBD5E1", borderStyle: "dashed", backgroundColor: "#F8FAFC", justifyContent: "center", alignItems: "center" }}>
+                    <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(1), borderColor: errors.aadharPhoto ? "#EF4444" : "#CBD5E1", borderStyle: "dashed", backgroundColor: "#F8FAFC", justifyContent: "center", alignItems: "center" }}>
                       <Ionicons name="camera" size={32} color={errors.aadharPhoto ? "#EF4444" : "#94A3B8"} />
                       <Text style={{ fontSize: rs(10), color: errors.aadharPhoto ? "#EF4444" : "#64748B", marginTop: rp(4) }}>Upload</Text>
                     </View>
@@ -860,7 +883,7 @@ export default function ManageEmployees() {
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
-              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+              <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}><View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} /></View>
                 <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#059669", marginBottom: rp(16) }}>Add Driver</Text>
 
@@ -884,10 +907,10 @@ export default function ManageEmployees() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvName} onChangeText={(t) => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  value={drvName} onChangeText={(t) => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
                 {driverErrors.name && <Text style={modalErrorText}>* {driverErrors.name}</Text>}
                 <Text style={modalLabel}>PHONE <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvPhone} onChangeText={(t) => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  value={drvPhone} onChangeText={(t) => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} maxLength={10} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
                 {driverErrors.phone && <Text style={modalErrorText}>* {driverErrors.phone}</Text>}
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <View style={{ flexDirection: 'row', gap: rp(10), marginBottom: rp(16) }}>
@@ -905,19 +928,16 @@ export default function ManageEmployees() {
                   </TouchableOpacity>
                 </View>
                 {driverErrors.gender && <Text style={modalErrorText}>* {driverErrors.gender}</Text>}
-                <Text style={modalLabel}>4-DIGIT PIN <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvPassword} onChangeText={(t) => { setDrvPassword(t); if (driverErrors.pin) setDriverErrors(prev => ({ ...prev, pin: undefined })); }} placeholder="e.g. 1234" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
-                {driverErrors.pin && <Text style={modalErrorText}>* {driverErrors.pin}</Text>}
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvEmail} onChangeText={(t) => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  value={drvEmail} onChangeText={(t) => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
                 {driverErrors.email && <Text style={modalErrorText}>* {driverErrors.email}</Text>}
                 <Text style={modalLabel}>PAN CARD NUMBER (OPTIONAL)</Text>
-                <TextInput value={drvPan} onChangeText={(v) => { setDrvPan(v.toUpperCase()); if (driverErrors.pan) setDriverErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, driverErrors.pan && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.pan = el; }}  value={drvPan} onChangeText={(v) => { setDrvPan(v.toUpperCase()); if (driverErrors.pan) setDriverErrors(prev => ({ ...prev, pan: undefined })); }} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={[modalInput, driverErrors.pan && modalInputError]} />
                 {driverErrors.pan && <Text style={modalErrorText}>* {driverErrors.pan}</Text>}
-                <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={drvBankAccount} onChangeText={(t) => { setDrvBankAccount(t); if (driverErrors.bankAccount) setDriverErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account number" keyboardType="numeric" maxLength={18} style={[modalInput, driverErrors.bankAccount && modalInputError]} />
+                <Text style={modalLabel}>BANK ACCOUNT NUMBER (OPTIONAL)</Text>
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }}  value={drvBankAccount} onChangeText={(t) => { setDrvBankAccount(t); if (driverErrors.bankAccount) setDriverErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account number" keyboardType="numeric" maxLength={18} style={[modalInput, driverErrors.bankAccount && modalInputError]} />
                 {driverErrors.bankAccount && <Text style={modalErrorText}>* {driverErrors.bankAccount}</Text>}
-                <Text style={modalLabel}>BANK IFSC CODE</Text>
+                <Text style={modalLabel}>BANK IFSC CODE (OPTIONAL)</Text>
                 <TextInput value={drvBankIfsc} onChangeText={(v) => {
                   const upper = v.toUpperCase();
                   setDrvBankIfsc(upper);
@@ -955,10 +975,10 @@ export default function ManageEmployees() {
                   </Text>
                 )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvLicenseNumber} onChangeText={(v) => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.licenseNumber = el; }}  value={drvLicenseNumber} onChangeText={(v) => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
                 {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
-                <TouchableOpacity onPress={() => { pickLicensePhoto(); if (driverErrors.licensePhoto) setDriverErrors(prev => ({ ...prev, licensePhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.licensePhoto = el; }}  onPress={() => { pickLicensePhoto(); if (driverErrors.licensePhoto) setDriverErrors(prev => ({ ...prev, licensePhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Licence Photo <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   {drvLicensePhotoUri ? (
                     <View style={{ position: "relative" }}>
@@ -971,7 +991,7 @@ export default function ManageEmployees() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
+                    <View ref={el => { if (fieldRefs.current) fieldRefs.current.licensePhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color={driverErrors.licensePhoto ? "#EF4444" : "#9CA3AF"} />
                     </View>
                   )}
@@ -979,10 +999,10 @@ export default function ManageEmployees() {
                 {driverErrors.licensePhoto && <Text style={[modalErrorText, { textAlign: 'center' }]}>* {driverErrors.licensePhoto}</Text>}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvAadharNumber} onChangeText={(t) => { setDrvAadharNumber(t); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={drvAadharNumber} onChangeText={(t) => { setDrvAadharNumber(t); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
-                <TouchableOpacity onPress={() => { pickAadharPhoto(); if (driverErrors.aadharPhoto) setDriverErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
+                <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  onPress={() => { pickAadharPhoto(); if (driverErrors.aadharPhoto) setDriverErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
                   <Text style={[modalLabel, { textAlign: "center" }]}>Aadhar Photo <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   {drvAadharPhotoUri ? (
                     <View style={{ position: "relative" }}>
@@ -995,7 +1015,7 @@ export default function ManageEmployees() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
+                    <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color={driverErrors.aadharPhoto ? "#EF4444" : "#9CA3AF"} />
                     </View>
                   )}

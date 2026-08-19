@@ -1,7 +1,8 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { confirmDialog } from "../../lib/confirmDialog";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback , useRef} from "react";
 import { rs, rp } from '../../utils/responsive';
+import { fmtDuration } from '../../utils/time';
 import {
   View,
   Text,
@@ -52,8 +53,11 @@ import { useAppStore } from "../../lib/store";
 import { connectWS, disconnectWS } from "../../lib/websocket";
 import { pickImageHelper } from "../../utils/imagePicker";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 const STATUS_CONFIG = {
   PRE_REGISTERED: { color: "#8B5CF6", label: "Pre-Registered" },
+  REGISTERED: { color: "#F59E0B", label: "Registered" },
   CHECKED_IN: { color: "#0EA5E9", label: "Checked In" },
   PARKED: { color: "#059669", label: "Parked" },
   RETRIEVAL_REQUESTED: { color: "#F59E0B", label: "Requested" },
@@ -61,7 +65,7 @@ const STATUS_CONFIG = {
   DELIVERED: { color: "#9CA3AF", label: "Delivered" },
 };
 
-const FILTERS = ["ALL", "PRE_REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
+const FILTERS = ["ALL", "PRE_REGISTERED", "REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
 
 const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
 
@@ -92,6 +96,9 @@ export default function EventDetail() {
   }, [showCarModal, showAddDriverModal, showAddSupervisorModal, showIncidentModal, showSpecialEventQRModal]);
 
   const { currentEventId } = useAppStore();
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [event, setEvent] = useState(null);
   const isClosed = event?.status === "closed";
   const [tab, setTab] = useState("cars");
@@ -277,7 +284,7 @@ export default function EventDetail() {
       confirmDialog.info("Success", "Incident status updated successfully");
     } catch (err) {
       console.log(err);
-      confirmDialog.info("Error", "Failed to update incident status");
+      confirmDialog.info("Couldn't update incident", "Something went wrong updating the status. Check your connection and try again.");
     } finally {
       setSubmittingResolve(false);
     }
@@ -331,7 +338,7 @@ export default function EventDetail() {
       fetchIncidents();
       confirmDialog.info("Saved", "Incident report saved successfully");
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to save");
+      confirmDialog.info("Couldn't save", e.response?.data?.detail || "Something went wrong saving. Check your connection and try again.");
     } finally {
       setSubmittingIncident(false);
     }
@@ -422,7 +429,7 @@ export default function EventDetail() {
         fetchCars();
         fetchDrivers();
       } catch (err) {
-        confirmDialog.info("Error", err.response?.data?.detail || "Failed to assign driver");
+        confirmDialog.info("Couldn't assign driver", err.response?.data?.detail || "Something went wrong assigning the driver. Check your connection and try again.");
       } finally {
         setAssigningDriver(false);
       }
@@ -479,7 +486,7 @@ export default function EventDetail() {
         dialogTitle: `${data.event.name} — Event Report`,
       });
     } catch {
-      confirmDialog.info("Error", "Failed to generate CSV");
+      confirmDialog.info("Couldn't generate CSV", "Something went wrong creating the file. Please try again.");
     } finally {
       setExportingCSV(false);
     }
@@ -501,8 +508,8 @@ export default function EventDetail() {
         <td>${c.status}</td>
         <td>${c.check_in_driver || "—"}</td>
         <td>${c.retrieval_driver || "—"}</td>
-        <td>${c.duration_minutes
-          ? c.duration_minutes + " min" : "—"}</td>
+        <td>${c.duration_minutes != null
+          ? fmtDuration(c.duration_minutes) : "—"}</td>
         <td>${c.rating
           ? "★".repeat(c.rating) : "—"}</td>
         <td>${c.notes || "—"}</td>
@@ -671,7 +678,7 @@ export default function EventDetail() {
         dialogTitle: `${e.name} — Event Report`,
       });
     } catch {
-      confirmDialog.info("Error", "Failed to generate PDF");
+      confirmDialog.info("Couldn't generate PDF", "Something went wrong creating the file. Please try again.");
     } finally {
       setExportingPDF(false);
     }
@@ -683,7 +690,7 @@ export default function EventDetail() {
         await api.post(`/events/${currentEventId}/close`);
         router.back();
       } catch (e) {
-        confirmDialog.info("Error", "Failed to close event");
+        confirmDialog.info("Couldn't close event", "Something went wrong closing the event. Check your connection and try again.");
       }
     }, "Close");
   };
@@ -695,7 +702,7 @@ export default function EventDetail() {
         setShowCarModal(false);
         fetchCars();
       } catch (e) {
-        confirmDialog.info("Error", "Failed to remove");
+        confirmDialog.info("Couldn't remove", "Something went wrong removing the item. Check your connection and try again.");
       }
     }, "Remove");
   };
@@ -724,7 +731,7 @@ export default function EventDetail() {
     } catch (e) {
       // Revert optimistic update on failure
       setDrivers(prev => prev.map(drv => drv.id === d.id ? { ...drv, assigned: d.assigned } : drv));
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to update assignment");
+      confirmDialog.info("Couldn't update assignment", e.response?.data?.detail || "Something went wrong assigning the driver. Check your connection and try again.");
     } finally {
       setAssigningId(null);
     }
@@ -749,7 +756,7 @@ export default function EventDetail() {
       await fetchSupervisors();
     } catch (e) {
       const msg = e.response?.data?.detail || "Failed to update assignment";
-      confirmDialog.info("Error", msg);
+      confirmDialog.info("Operation failed", msg || "Something went wrong. Please try again.");
     } finally {
       setAssigningSupervisorId(null);
     }
@@ -804,7 +811,10 @@ export default function EventDetail() {
   const saveSupervisor = async () => {
     const errs = validateSupervisor();
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "email", "phone", "bankAccount", "aadharNumber", "aadharPhoto", "pin", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
 
     let phoneToSave;
     if (supPhone.trim()) {
@@ -870,7 +880,7 @@ export default function EventDetail() {
       confirmDialog.info("Supervisor added!", `${supName} has been added and will receive login credentials by email.`);
       fetchSupervisors();
     } catch (e) {
-      confirmDialog.info("Error", `Failed to save supervisor: ${e.response?.data?.detail || "Failed to add supervisor"}`);
+      confirmDialog.info("Couldn't save supervisor", e.response?.data?.detail || "Failed to add supervisor" || "Something went wrong. Please check your connection and try again.");
     } finally {
       setSavingSupervisor(false);
     }
@@ -947,7 +957,10 @@ export default function EventDetail() {
   const saveDriver = async () => {
     const errs = validateDriver();
     setDriverErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "email", "phone", "bankAccount", "aadharNumber", "aadharPhoto", "pin", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
 
     let phoneToSave;
     if (drvPhone.trim()) {
@@ -1018,7 +1031,7 @@ export default function EventDetail() {
       confirmDialog.info("Driver added!", `${drvName} has been added successfully.`);
       fetchDrivers();
     } catch (e) {
-      confirmDialog.info("Error", `Failed to save driver: ${e.response?.data?.detail || "Failed to add driver"}`);
+      confirmDialog.info("Couldn't save driver", e.response?.data?.detail || "Failed to add driver" || "Something went wrong. Please check your connection and try again.");
     } finally {
       setSavingDriver(false);
     }
@@ -1044,7 +1057,7 @@ export default function EventDetail() {
     } catch (e) {
       // Refetch on error to get correct state
       fetchDrivers();
-      confirmDialog.info("Error", "Failed to assign some drivers");
+      confirmDialog.info("Couldn't assign all drivers", "Some drivers failed to assign. Check your connection and try again.");
     } finally {
       setAssigningAll(false);
     }
@@ -1290,7 +1303,7 @@ export default function EventDetail() {
       </View>
 
       {tab === "cars" && (
-        <ScrollView
+        <ScrollView ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}
           refreshControl={
@@ -1324,7 +1337,7 @@ export default function EventDetail() {
               testID="car-search"
             />
           </View>
-          <ScrollView
+          <ScrollView ref={scrollViewRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: rp(8), paddingBottom: rp(8) }}
@@ -1424,7 +1437,7 @@ export default function EventDetail() {
       )}
 
       {tab === "incidents" && (
-        <ScrollView
+        <ScrollView ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}
           refreshControl={
@@ -1506,7 +1519,7 @@ export default function EventDetail() {
       )}
 
       {tab === "employees" && !isClosed && (
-        <ScrollView
+        <ScrollView ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}
         >
@@ -1859,7 +1872,7 @@ export default function EventDetail() {
       )}
 
       {tab === "stats" && (
-        <ScrollView
+        <ScrollView ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: rp(16), paddingTop: rp(16) }}
           contentContainerStyle={{ paddingBottom: rp(100) }}
         >
@@ -1944,7 +1957,7 @@ export default function EventDetail() {
                         confirmDialog.info("Success", "Host updated and portal email sent");
                         fetchEvent();
                       } catch (err) {
-                        confirmDialog.info("Error", err?.response?.data?.detail || "Failed to update host");
+                        confirmDialog.info("Couldn't update host", "Something went wrong updating the host. Check your connection and try again.");
                       }
                     }}
                     style={{ backgroundColor: "#1A3C6E", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
@@ -2127,7 +2140,7 @@ export default function EventDetail() {
       )}
 
       {tab === "slots" && !isClosed && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
+        <ScrollView ref={scrollViewRef} style={{ flex: 1 }} contentContainerStyle={{ padding: rp(16), paddingBottom: rp(100) }}>
 
           {/* Capacity Summary */}
           {(() => {
@@ -2181,7 +2194,7 @@ export default function EventDetail() {
             const zones = [...new Set(slots.map(s => s.zone_name))];
             if (!selectedZone && zones.length > 0) setSelectedZone(zones[0]);
             return (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
+              <ScrollView ref={scrollViewRef} horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
                 {zones.map(z => {
                   const zSlots = slots.filter(s => s.zone_name === z);
                   const zOcc = zSlots.filter(s => s.is_occupied).length;
@@ -2417,7 +2430,7 @@ export default function EventDetail() {
               <View style={{ alignItems: "center", marginBottom: rp(12) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
               </View>
-              <ScrollView>
+              <ScrollView ref={scrollViewRef}>
                 {selectedCar && (
                   <>
                     <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
@@ -2442,7 +2455,7 @@ export default function EventDetail() {
                     {carPhotos.filter((p) => p.type === "checkin").length === 0 ? (
                       <Text style={{ color: "#9CA3AF", fontSize: rs(13) }}>No photos available</Text>
                     ) : (
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
+                      <ScrollView ref={scrollViewRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
                         {carPhotos.filter((p) => p.type === "checkin").map((p, i) => (
                           <Image key={i} source={{ uri: p.url }} style={{ width: rp(120), height: rp(120), borderRadius: rp(14) }} />
                         ))}
@@ -2559,7 +2572,7 @@ export default function EventDetail() {
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
-              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+              <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                   <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
                 </View>
@@ -2582,15 +2595,15 @@ export default function EventDetail() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supName} onChangeText={t => { setSupName(t); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  value={supName} onChangeText={t => { setSupName(t); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, errors.name && modalInputError]} />
                 {errors.name && <Text style={modalErrorText}>* {errors.name}</Text>}
 
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supEmail} onChangeText={t => { setSupEmail(t); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  value={supEmail} onChangeText={t => { setSupEmail(t); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" style={[modalInput, errors.email && modalInputError]} />
                 {errors.email && <Text style={modalErrorText}>* {errors.email}</Text>}
 
                 <Text style={modalLabel}>PHONE</Text>
-                <TextInput value={supPhone} onChangeText={t => { setSupPhone(t); if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined })); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  value={supPhone} onChangeText={t => { setSupPhone(t); if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined })); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, errors.phone && modalInputError]} />
                 {errors.phone && <Text style={modalErrorText}>* {errors.phone}</Text>}
 
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
@@ -2616,7 +2629,7 @@ export default function EventDetail() {
                 <TextInput value={supPanNumber} onChangeText={setSupPanNumber} placeholder="ABCDE1234F" autoCapitalize="characters" style={modalInput} />
 
                 <Text style={modalLabel}>BANK ACCOUNT NUMBER</Text>
-                <TextInput value={supBankAccountNumber} onChangeText={t => { setSupBankAccountNumber(t); if (errors.bankAccount) setErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account Number" keyboardType="numeric" style={[modalInput, errors.bankAccount && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }}  value={supBankAccountNumber} onChangeText={t => { setSupBankAccountNumber(t); if (errors.bankAccount) setErrors(prev => ({ ...prev, bankAccount: undefined })); }} placeholder="Account Number" keyboardType="numeric" style={[modalInput, errors.bankAccount && modalInputError]} />
                 {errors.bankAccount && <Text style={modalErrorText}>* {errors.bankAccount}</Text>}
 
                 <Text style={modalLabel}>BANK IFSC</Text>
@@ -2655,7 +2668,7 @@ export default function EventDetail() {
                 )}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={supAadharNumber} onChangeText={v => { setSupAadharNumber(v.toUpperCase()); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, errors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={supAadharNumber} onChangeText={v => { setSupAadharNumber(v.toUpperCase()); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, errors.aadharNumber && modalInputError]} />
                 {errors.aadharNumber && <Text style={modalErrorText}>* {errors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
@@ -2664,7 +2677,7 @@ export default function EventDetail() {
                   {supAadharPhotoUri ? (
                     <Image source={{ uri: supAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
+                    <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: errors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
@@ -2699,7 +2712,7 @@ export default function EventDetail() {
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 36, borderTopRightRadius: 36, maxHeight: "90%", paddingBottom: (insets?.bottom || 0) }}>
-              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+              <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                   <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />
                 </View>
@@ -2717,10 +2730,10 @@ export default function EventDetail() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>NAME <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvName} onChangeText={t => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  value={drvName} onChangeText={t => { setDrvName(t); if (driverErrors.name) setDriverErrors(prev => ({ ...prev, name: undefined })); }} placeholder="Full Name" style={[modalInput, driverErrors.name && modalInputError]} />
                 {driverErrors.name && <Text style={modalErrorText}>* {driverErrors.name}</Text>}
                 <Text style={modalLabel}>PHONE <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvPhone} onChangeText={t => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  value={drvPhone} onChangeText={t => { setDrvPhone(t); if (driverErrors.phone) setDriverErrors(prev => ({ ...prev, phone: undefined })); }} placeholder="10-digit mobile" keyboardType="phone-pad" style={[modalInput, driverErrors.phone && modalInputError]} />
                 {driverErrors.phone && <Text style={modalErrorText}>* {driverErrors.phone}</Text>}
 
                 <Text style={modalLabel}>GENDER <Text style={{ color: '#EF4444' }}>*</Text></Text>
@@ -2739,10 +2752,10 @@ export default function EventDetail() {
                   </TouchableOpacity>
                 </View>
                 <Text style={modalLabel}>4-DIGIT PIN <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvPin} onChangeText={t => { setDrvPin(t); if (driverErrors.pin) setDriverErrors(prev => ({ ...prev, pin: undefined })); }} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.pin = el; }}  value={drvPin} onChangeText={t => { setDrvPin(t); if (driverErrors.pin) setDriverErrors(prev => ({ ...prev, pin: undefined })); }} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
                 {driverErrors.pin && <Text style={modalErrorText}>* {driverErrors.pin}</Text>}
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvEmail} onChangeText={t => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  value={drvEmail} onChangeText={t => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
                 {driverErrors.email && <Text style={modalErrorText}>* {driverErrors.email}</Text>}
                 <Text style={modalLabel}>PAN CARD NUMBER</Text>
                 <TextInput value={drvPan} onChangeText={(v) => setDrvPan(v.toUpperCase())} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} style={modalInput} />
@@ -2783,7 +2796,7 @@ export default function EventDetail() {
                   </Text>
                 )}
                 <Text style={modalLabel}>DRIVING LICENCE NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.licenseNumber = el; }}  value={drvLicenseNumber} onChangeText={v => { setDrvLicenseNumber(v.toUpperCase()); if (driverErrors.licenseNumber) setDriverErrors(prev => ({ ...prev, licenseNumber: undefined })); }} placeholder="DL number" maxLength={16} autoCapitalize="characters" style={[modalInput, driverErrors.licenseNumber && modalInputError]} />
                 {driverErrors.licenseNumber && <Text style={modalErrorText}>* {driverErrors.licenseNumber}</Text>}
 
                 <TouchableOpacity onPress={pickLicensePhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
@@ -2792,14 +2805,14 @@ export default function EventDetail() {
                   {drvLicensePhotoUri ? (
                     <Image source={{ uri: drvLicensePhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
+                    <View ref={el => { if (fieldRefs.current) fieldRefs.current.licensePhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.licensePhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput value={drvAadharNumber} onChangeText={v => { setDrvAadharNumber(v.toUpperCase()); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={drvAadharNumber} onChangeText={v => { setDrvAadharNumber(v.toUpperCase()); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
@@ -2808,7 +2821,7 @@ export default function EventDetail() {
                   {drvAadharPhotoUri ? (
                     <Image source={{ uri: drvAadharPhotoUri }} style={{ width: rp(120), height: rp(80), borderRadius: rp(12), borderWidth: rp(2), borderColor: "#059669" }} />
                   ) : (
-                    <View style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
+                    <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  style={{ width: rp(120), height: rp(80), borderRadius: rp(12), backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: rp(2), borderColor: driverErrors.aadharPhoto ? "#EF4444" : "#E5E7EB", borderStyle: "dashed" }}>
                       <Ionicons name="document-outline" size={28} color="#9CA3AF" />
                     </View>
                   )}
@@ -2888,7 +2901,7 @@ export default function EventDetail() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false}>
+              <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
 
                 {/* Car search */}
                 <Text style={{
@@ -3020,7 +3033,7 @@ export default function EventDetail() {
                 }}>
                   DRIVER INVOLVED (OPTIONAL)
                 </Text>
-                <ScrollView
+                <ScrollView ref={scrollViewRef}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ gap: rp(8), marginBottom: rp(16) }}
@@ -3063,7 +3076,7 @@ export default function EventDetail() {
                 <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(2), marginBottom: rp(8) }}>
                   INCIDENT TYPE *
                 </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
+                <ScrollView ref={scrollViewRef} horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: rp(16) }}>
                   <View style={{ flexDirection: "row", gap: rp(8), paddingRight: rp(16) }}>
                     {INCIDENT_TYPES.map(t => (
                       <TouchableOpacity
@@ -3202,7 +3215,7 @@ export default function EventDetail() {
                   <Ionicons name="close-circle" size={26} color="#D1D5DB" />
                 </TouchableOpacity>
               </View>
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
+              <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: rp(20), paddingBottom: rp(32) }}>
                 <Text style={modalLabel}>STATUS</Text>
                 <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16), flexWrap: "wrap" }}>
                   {["IN_REVIEW", "RESOLVED", "DISMISSED"].map(statusVal => (

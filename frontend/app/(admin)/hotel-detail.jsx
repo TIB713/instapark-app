@@ -238,7 +238,7 @@ export default function HotelDetail() {
       setHotel(data);
       setEditHotel(data);
     } catch (e) {
-      confirmDialog.info("Error", "Failed to update hotel");
+      confirmDialog.info("Couldn't update hotel", "Something went wrong updating the hotel. Check your connection and try again.");
     }
   };
 
@@ -249,7 +249,7 @@ export default function HotelDetail() {
       await api.post(`/hotels/${hid}/${type}/${memberId}`);
       fetchHotel();
     } catch (e) {
-      confirmDialog.info("Error", "Failed to add member");
+      confirmDialog.info("Couldn't add member", "Something went wrong adding the member. Check your connection and try again.");
     }
   };
 
@@ -260,7 +260,7 @@ export default function HotelDetail() {
             await api.delete(`/hotels/${hid}/${type}/${memberId}`);
             fetchHotel();
           } catch (e) {
-            confirmDialog.info("Error", "Failed to remove member");
+            confirmDialog.info("Couldn't remove", "Something went wrong removing the item. Check your connection and try again.");
           }
         }, "Remove");
   };
@@ -293,7 +293,7 @@ export default function HotelDetail() {
       confirmDialog.info("Success", `Uploaded! SMS sent to ${data.sms_sent_count} guests.`);
       fetchGuests();
     } catch (e) {
-      confirmDialog.info("Error", e.response?.data?.detail || "Failed to upload guests");
+      confirmDialog.info("Couldn't upload guests", e.response?.data?.detail || "Something went wrong processing the guests. Check your connection and try again.");
     } finally {
       setUploadingGuests(false);
     }
@@ -395,7 +395,7 @@ export default function HotelDetail() {
       setEventQRToken(data.event_qr_token);
     } catch (e) {
       console.error("Error fetching event QR:", e);
-      confirmDialog.info("Error", "Failed to load event QR");
+      confirmDialog.info("Couldn't load event QR", "Something went wrong loading the QR code. Check your connection and try again.");
     } finally {
       setLoadingEventQR(false);
     }

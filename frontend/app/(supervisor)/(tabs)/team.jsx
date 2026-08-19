@@ -143,7 +143,7 @@ export default function SupervisorManageEmployees() {
               <Card key={d.id} style={{ marginBottom: rp(theme.spacing.md), padding: 0, borderRadius: rp(theme.radius.xl), overflow: 'hidden' }}>
                 {/* Top Section */}
                 <TouchableOpacity 
-                  onPress={() => router.push({ pathname: "/(admin)/driver-stats", params: { driverId: d.id, driverName: d.name } })}
+                  onPress={() => router.push({ pathname: "/(supervisor)/(tabs)/driver-stats", params: { driverId: d.id } })}
                   onLongPress={() => handleDriverLongPress(d)}
                   activeOpacity={0.7}
                   style={{ padding: rp(theme.spacing.lg), flexDirection: "row", alignItems: "center" }}

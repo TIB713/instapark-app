@@ -281,10 +281,10 @@ export default function SupervisorDashboard() {
               style={{ flex: 1, borderRadius: theme.radius.xl, padding: rp(16), minHeight: rp(96) }}
             >
               <View style={{ width: rp(32), height: rp(32), borderRadius: rp(16), backgroundColor: theme.colors.accentLight, alignItems: 'center', justifyContent: 'center', marginBottom: rp(theme.spacing.sm) }}>
-                <Ionicons name="qr-code-outline" size={18} color={theme.colors.accentForeground} />
+                <Ionicons name="checkmark-circle-outline" size={18} color={theme.colors.accentForeground} />
               </View>
-              <Text style={{ fontWeight: 'bold', fontSize: rs(14), color: theme.colors.textPrimary }}>Scan Card</Text>
-              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>Add or retrieve</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: rs(14), color: theme.colors.textPrimary }}>Check In</Text>
+              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>Add a car</Text>
             </Card>
 
             <Card

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect , useRef} from "react";
 import { confirmDialog } from "../../lib/confirmDialog";
 import { rs, rp } from '../../utils/responsive';
 import {
@@ -22,11 +22,16 @@ import api from "../../lib/api";
 import { useAppStore } from "../../lib/store";
 import VenuePicker from "../../components/VenuePicker";
 
+import { scrollToFirstError } from "../../lib/scrollToFirstError";
+
 export default function CreateEvent() {
   const router = useRouter();
   const { user, setCurrentEventId } = useAppStore();
 
   const isHotelOwner = user?.provider_type === "hotel_owner";
+  const scrollViewRef = useRef(null);
+  const fieldRefs = useRef({});
+
   const [eventType, setEventType] = useState(isHotelOwner ? "hotel_special" : "");
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date());
@@ -83,15 +88,18 @@ export default function CreateEvent() {
     if (!venue.trim()) errs.venue = "Venue is required";
     if (!maxCars || parseInt(maxCars) < 1) errs.maxCars = "Max cars must be at least 1";
     setFormErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      scrollToFirstError(["name", "venue", "maxCars"], errs, fieldRefs, scrollViewRef);
+      return;
+    }
     const startDT = new Date(`${format(date, "yyyy-MM-dd")}T${startTime}:00`);
     if (startDT < new Date()) {
-      confirmDialog.info("Invalid", "Start date and time has already passed");
+      confirmDialog.info("Start time is in the past", "The event start date and time cannot be in the past.");
       return;
     }
     const endDT = new Date(`${format(endDate, "yyyy-MM-dd")}T${endTime}:00`);
     if (endDT <= startDT) {
-      confirmDialog.info("Invalid", "End must be after start");
+      confirmDialog.info("End time before start time", "The event's end time must be after the start time.");
       return;
     }
     if (totalSlots > maxCarsInt) {
@@ -182,10 +190,11 @@ export default function CreateEvent() {
       </SafeAreaView>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
           <Label>EVENT NAME</Label>
           <InputRow icon="calendar-outline" error={formErrors.name}>
             <TextInput
+              ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}
               testID="event-name-input"
               value={name}
               onChangeText={(txt) => {
@@ -225,7 +234,7 @@ export default function CreateEvent() {
 
           <Label>VENUE</Label>
           {isHotelOwner ? (
-            <View style={[inputRowStyle, { backgroundColor: "#F3F4F6", marginBottom: rp(4) }]}>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }} style={[inputRowStyle, { backgroundColor: "#F3F4F6", marginBottom: rp(4) }]}>
               <Ionicons name="location-outline" size={18} color="#9CA3AF" />
               <View style={{ flex: 1, marginLeft: rp(10) }}>
                 <TextInput
@@ -239,7 +248,7 @@ export default function CreateEvent() {
               </View>
             </View>
           ) : (
-            <View>
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }}>
               <InputRow icon="location-outline" error={formErrors.venue}>
                 <VenuePicker
                   value={venue}
@@ -304,6 +313,7 @@ export default function CreateEvent() {
           <Label>MAX CARS</Label>
           <InputRow icon="car-outline" error={formErrors.maxCars}>
             <TextInput
+              ref={el => { if (fieldRefs.current) fieldRefs.current.maxCars = el; }}
               value={maxCars}
               onChangeText={(txt) => {
                 setMaxCars(txt);

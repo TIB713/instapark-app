@@ -9,6 +9,7 @@ import * as Location from "expo-location";
 import { Linking } from "react-native";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { rs, rp } from '../../../utils/responsive';
+import { fmtDuration } from '../../../utils/time';
 import {
   View,
   Text,
@@ -229,6 +230,20 @@ export default function Tasks() {
           </View>
         )}
 
+        {(() => {
+          let durText = null;
+          if (car.park_minutes != null) durText = `Parked in ${fmtDuration(car.park_minutes)}`;
+          else if (car.retrieval_to_gate_minutes != null) durText = `Retrieved in ${fmtDuration(car.retrieval_to_gate_minutes)}`;
+          else if (car.dispatch_wait_minutes != null) durText = `Picked up after ${fmtDuration(car.dispatch_wait_minutes)}`;
+          
+          if (!durText) return null;
+          return (
+            <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginBottom: rp(12), marginTop: rp(-4) }}>
+              {durText}
+            </Text>
+          );
+        })()}
+
         {car.notes && (
           <View style={{ backgroundColor: theme.colors.warningLight, padding: rp(8), borderRadius: rp(8), marginBottom: rp(12) }}>
             <Text style={{ color: theme.colors.warning, fontSize: rs(12) }}>{car.notes}</Text>
@@ -240,7 +255,7 @@ export default function Tasks() {
             <Btn style={{ flex: 1 }} variant="outline" onPress={() => navigateToCar(car.id)}>
               Navigate
             </Btn>
-            <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}>
+            <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.retrieval_token, plate: car.plate } })}>
               Show QR Code
             </Btn>
           </View>
@@ -264,7 +279,7 @@ export default function Tasks() {
             </Btn>
           ) : (
             <View style={{ flexDirection: "row", gap: rp(8) }}>
-              <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.qr_token, plate: car.plate } })}>
+              <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.retrieval_token, plate: car.plate } })}>
                 QR Code
               </Btn>
               <Btn style={{ flex: 1 }} variant="primary" disabled={openingParkModal === car.id} onPress={() => { openParkModal(car); router.push('/(driver)/(tabs)/park'); }}>
@@ -528,7 +543,7 @@ export default function Tasks() {
         <Btn variant="outline" style={{ marginBottom: rp(12) }} onPress={() => {
           setShowParkSuccessModal(false);
           setDismissingParkSuccess(false);
-          router.push({ pathname: "/(driver)/qr-display", params: { token: parkedCarInfo?.qr_token, plate: parkedCarInfo?.plate } });
+          router.push({ pathname: "/(driver)/qr-display", params: { token: parkedCarInfo?.retrieval_token, plate: parkedCarInfo?.plate } });
         }}>Show QR Code</Btn>
         <Btn variant="primary" disabled={dismissingParkSuccess} onPress={async () => {
           setDismissingParkSuccess(true);
