@@ -55,15 +55,13 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     } catch { }
   };
 
-  const openParkModal = async (car) => {
+  const openParkModal = (car) => {
     setOpeningParkModal(car.id);
     setSelectedCar(car);
     setSelectedSlot(null);
     setSlots([]);
     setShowParkModal(true);
-    await fetchEvent();
-    await fetchSlots();
-    setOpeningParkModal(null);
+    Promise.all([fetchEvent(), fetchSlots()]).then(() => setOpeningParkModal(null));
   };
 
   const captureGPSPin = async () => {
@@ -143,7 +141,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
           photoLocalPaths.push(localPath);
         }
         await enqueueParkAction(selectedCar.id, { zone: selectedZone, slot: selectedSlot, parkedDriverId: resolvedDriverId, photoLocalPaths });
-        setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, key_tag_number: selectedCar.key_tag_number, qr_token: selectedCar.qr_token });
+        setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, checkin_code: selectedCar.checkin_code, qr_token: selectedCar.qr_token });
         setShowParkSuccessModal(true);
         setShowParkModal(false);
         setParkPhotos([]);
@@ -165,7 +163,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
       await updateJourney(selectedCar.id, "parked");
 
       const carId = selectedCar.id;
-      setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, key_tag_number: selectedCar.key_tag_number, qr_token: selectedCar.qr_token });
+      setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, checkin_code: selectedCar.checkin_code, qr_token: selectedCar.qr_token });
       setShowParkSuccessModal(true);
       setShowParkModal(false);
       setParkPhotos([]);

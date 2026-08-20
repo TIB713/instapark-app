@@ -80,7 +80,8 @@ export default function Tasks() {
     queueSummary,
     pickingUp,
     onRefresh,
-    pickup,
+    acceptRetrieval,
+    confirmPickup,
     arriveAtGate,
     verifyDeliveryOtp,
     handleHandover,
@@ -191,7 +192,7 @@ export default function Tasks() {
 
     if (tab === "all") return true;
     if (tab === "requested") return car.status === "RETRIEVAL_REQUESTED";
-    if (tab === "at_gate") return car.status === "BEING_FETCHED" || car.status === "ARRIVED_AT_GATE";
+    if (tab === "at_gate") return car.status === "ACCEPTED" || car.status === "BEING_FETCHED" || car.status === "ARRIVED_AT_GATE";
     if (tab === "parked") return car.status === "PARKED" || car.status === "CHECKED_IN";
     if (tab === "repark") return car.status === "AWAITING_REPARK";
     return true;
@@ -203,6 +204,7 @@ export default function Tasks() {
     let tone = "default";
 
     if (car.status === "RETRIEVAL_REQUESTED") { tone = "accent"; label = "REQUESTED"; }
+    else if (car.status === "ACCEPTED") { tone = "warning"; label = "ACCEPTED"; }
     else if (car.status === "BEING_FETCHED" && isRetrievalMine) { tone = "primary"; label = "YOURS"; }
     else if (car.status === "ARRIVED_AT_GATE" && isRetrievalMine) { tone = "success"; label = "AT GATE"; }
     else if (car.status === "AWAITING_REPARK" && isRetrievalMine) { tone = "danger"; label = "RE-PARK NEEDED"; }
@@ -211,8 +213,15 @@ export default function Tasks() {
     else if (car.status === "CHECKED_IN") { tone = "primary"; label = "CHECKED IN"; }
     else { tone = "default"; label = car.status; }
 
+    const supervisorRequested = car.retrieval_requested_via === "supervisor_scan";
+
     return (
       <Card key={car.id} style={{ marginBottom: rp(12) }}>
+        {supervisorRequested && ["RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED", "ARRIVED_AT_GATE"].includes(car.status) && (
+          <View style={{ backgroundColor: theme.colors.infoLight, paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8), marginBottom: rp(10), alignSelf: "flex-start" }}>
+            <Text style={{ color: theme.colors.info, fontSize: rs(11), fontWeight: "700" }}>Requested by supervisor · No OTP needed</Text>
+          </View>
+        )}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: rp(12) }}>
           <View>
             <Plate value={car.plate} />
@@ -221,11 +230,11 @@ export default function Tasks() {
           <StatusPill label={label} tone={tone} />
         </View>
 
-        {(car.zone || car.slot || car.key_tag_number) && (
+        {(car.zone || car.slot) && (
           <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceAlt, padding: rp(8), borderRadius: rp(8), marginBottom: rp(12) }}>
             <Ionicons name="location" size={14} color={theme.colors.textPrimary} />
             <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: rs(12), marginLeft: rp(6) }}>
-              Zone {car.zone} • Slot {car.slot} • Key Tag #{car.key_tag_number}
+              Zone {car.zone} • Slot {car.slot}
             </Text>
           </View>
         )}
@@ -255,7 +264,7 @@ export default function Tasks() {
             <Btn style={{ flex: 1 }} variant="outline" onPress={() => navigateToCar(car.id)}>
               Navigate
             </Btn>
-            <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.retrieval_token, plate: car.plate } })}>
+            <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: car.qr_token || car.retrieval_token, plate: car.plate, code: car.checkin_code, mode: "park" } })}>
               Show QR Code
             </Btn>
           </View>
@@ -279,7 +288,7 @@ export default function Tasks() {
             </Btn>
           ) : (
             <View style={{ flexDirection: "row", gap: rp(8) }}>
-              <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/qr-display", params: { token: car.retrieval_token, plate: car.plate } })}>
+              <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: car.qr_token || car.retrieval_token, plate: car.plate, code: car.checkin_code, mode: "park" } })}>
                 QR Code
               </Btn>
               <Btn style={{ flex: 1 }} variant="primary" disabled={openingParkModal === car.id} onPress={() => { openParkModal(car); router.push('/(driver)/(tabs)/park'); }}>
@@ -289,8 +298,14 @@ export default function Tasks() {
           )
         ) : car.status === "RETRIEVAL_REQUESTED" ? (
           <View style={{ gap: rp(8) }}>
-            <Btn variant="primary" disabled={pickingUp[car.id]} onPress={() => pickup(car)}>
+            <Btn variant="primary" disabled={pickingUp[car.id]} onPress={() => acceptRetrieval(car)}>
               {pickingUp[car.id] ? "Accepting..." : "Accept Retrieval"}
+            </Btn>
+          </View>
+        ) : car.status === "ACCEPTED" && isRetrievalMine ? (
+          <View style={{ gap: rp(8) }}>
+            <Btn variant="primary" disabled={pickingUp[car.id]} onPress={() => confirmPickup(car)}>
+              {pickingUp[car.id] ? "Confirming..." : "Picked Up"}
             </Btn>
           </View>
         ) : car.status === "BEING_FETCHED" && isRetrievalMine ? (
@@ -303,7 +318,7 @@ export default function Tasks() {
             </Btn>
           </View>
         ) : car.status === "ARRIVED_AT_GATE" && isRetrievalMine ? (
-          car.otp_verified ? (
+          car.otp_verified || car.retrieval_requested_via === "supervisor_scan" ? (
             <View style={{ gap: rp(8) }}>
               <Btn
                 variant="primary"
@@ -534,16 +549,10 @@ export default function Tasks() {
             <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Slot {parkedCarInfo?.slot}</Text>
           </View>
         </View>
-        <View style={{ backgroundColor: "#ECFDF5", borderRadius: rp(20), padding: rp(20), alignItems: "center", width: "100%", marginBottom: rp(16) }}>
-          <Text style={{ color: "#9CA3AF", fontWeight: "800", fontSize: rs(11), letterSpacing: rs(1) }}>KEY TAG</Text>
-          <Text style={{ fontSize: rs(36), fontWeight: "900", color: "#059669", textAlign: "center", marginTop: rp(4) }}>
-            {parkedCarInfo?.key_tag_number}
-          </Text>
-        </View>
         <Btn variant="outline" style={{ marginBottom: rp(12) }} onPress={() => {
           setShowParkSuccessModal(false);
           setDismissingParkSuccess(false);
-          router.push({ pathname: "/(driver)/qr-display", params: { token: parkedCarInfo?.retrieval_token, plate: parkedCarInfo?.plate } });
+          router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: parkedCarInfo?.qr_token, plate: parkedCarInfo?.plate, code: parkedCarInfo?.checkin_code, mode: "park" } });
         }}>Show QR Code</Btn>
         <Btn variant="primary" disabled={dismissingParkSuccess} onPress={async () => {
           setDismissingParkSuccess(true);
@@ -574,7 +583,7 @@ export default function Tasks() {
         )}
 
         <View style={{ gap: rp(12) }}>
-          <Btn variant="accent" disabled={!!pickingUp[incomingRequest?.id]} onPress={() => { if (incomingRequest) pickup(incomingRequest, { fromIncomingRequest: true }); }}>
+          <Btn variant="accent" disabled={!!pickingUp[incomingRequest?.id]} onPress={() => { if (incomingRequest) acceptRetrieval(incomingRequest, { fromIncomingRequest: true }); }}>
             {pickingUp[incomingRequest?.id] ? "Accepting..." : "ACCEPT"}
           </Btn>
           <Btn variant="outline" disabled={!!pickingUp[incomingRequest?.id]} onPress={() => {

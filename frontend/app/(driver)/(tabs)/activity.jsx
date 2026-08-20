@@ -82,6 +82,7 @@ export default function ActivityScreen() {
       case "PARKED": statusLabel = "Parked"; statusTone = "success"; break;
       case "DELIVERED": statusLabel = "Delivered"; statusTone = "neutral"; break;
       case "RETRIEVAL_REQUESTED": statusLabel = "Requested"; statusTone = "danger"; break;
+      case "ACCEPTED": statusLabel = "Accepted"; statusTone = "warning"; break;
       case "BEING_FETCHED": statusLabel = "Fetching"; statusTone = "accent"; break;
       case "AWAITING_REPARK": statusLabel = "Awaiting Re-park"; statusTone = "danger"; break;
       case "PRE_REGISTERED": statusLabel = "Pre-registered"; statusTone = "neutral"; break;

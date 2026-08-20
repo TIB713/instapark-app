@@ -78,6 +78,7 @@ export default function Login() {
       await AsyncStorage.setItem("driver_session", JSON.stringify(data.user));
       setDriver(data.user);
     } else {
+      await AsyncStorage.setItem("admin_session", JSON.stringify(data.user));
       setUser(data.user);
     }
     await setItem("last_known_role", data.user.role);

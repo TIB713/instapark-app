@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useRef, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
@@ -11,6 +11,7 @@ export default function QRDisplayScreen() {
   const router = useRouter();
   const { carId, plate, checkinCode, token, returnTo } = useLocalSearchParams();
   const qrRef = useRef(null);
+  const [printing, setPrinting] = useState(false);
 
   const handleDone = () => {
     if (returnTo) {
@@ -21,10 +22,11 @@ export default function QRDisplayScreen() {
   };
 
   const handlePrint = async () => {
-    if (!token || token === "sync_pending") {
-      alert("Cannot print while offline sync is pending.");
+    if (!token || token === "sync_pending" || printing) {
+      if (token === "sync_pending") alert("Cannot print while offline sync is pending.");
       return;
     }
+    setPrinting(true);
 
     const guestUrl = `${process.env.EXPO_PUBLIC_GUEST_URL || "https://app.instapark.co"}/v/${token}`;
     
@@ -40,10 +42,10 @@ export default function QRDisplayScreen() {
             .plate { font-size: 48px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #E2E8F0; padding-bottom: 10px; }
             .code-title { font-size: 16px; color: #64748B; text-transform: uppercase; margin-top: 20px; }
             .code { font-size: 64px; font-weight: bold; letter-spacing: 10px; margin: 10px 0 30px; }
-            .qr-container { display: flex; justify-content: center; gap: 40px; margin-top: 20px; }
+            .qr-container { display: flex; justify-content: center; margin-top: 20px; }
             .qr-box { text-align: center; }
             .qr-label { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-            img { width: 200px; height: 200px; }
+            img { width: 260px; height: 260px; }
             .footer { margin-top: 40px; font-size: 14px; color: #94A3B8; }
           </style>
         </head>
@@ -53,14 +55,7 @@ export default function QRDisplayScreen() {
           <div class="code">${checkinCode}</div>
           
           <div class="qr-container">
-            <div class="qr-box">
-              <div class="qr-label">GUEST COPY</div>
-              <img src="${qrImageUrl}" />
-            </div>
-            <div class="qr-box">
-              <div class="qr-label">KEY COPY</div>
-              <img src="${qrImageUrl}" />
-            </div>
+            <img src="${qrImageUrl}" />
           </div>
           
           <div class="footer">Scan to retrieve your vehicle</div>
@@ -72,6 +67,8 @@ export default function QRDisplayScreen() {
       await Print.printAsync({ html });
     } catch (err) {
       console.error("Print failed", err);
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -105,9 +102,15 @@ export default function QRDisplayScreen() {
         )}
 
         <View style={{ width: '100%', marginTop: 30, gap: 12 }}>
-          <Btn onPress={handlePrint} disabled={token === "sync_pending"}>
-            <Ionicons name="print-outline" size={20} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontWeight: "800", marginLeft: 8 }}>PRINT SLIP</Text>
+          <Btn onPress={handlePrint} disabled={token === "sync_pending" || printing}>
+            {printing ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Ionicons name="print-outline" size={20} color="#FFFFFF" />
+            )}
+            <Text style={{ color: "#FFFFFF", fontWeight: "800", marginLeft: 8 }}>
+              {printing ? "PRINTING..." : "PRINT SLIP"}
+            </Text>
           </Btn>
           <Btn variant="secondary" onPress={handleDone}>
             <Text style={{ color: theme.colors.primary, fontWeight: "800" }}>DONE</Text>

@@ -5,6 +5,7 @@ import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { confirmDialog } from "../lib/confirmDialog";
+import { useAppStore } from "../lib/store";
 
 export function useEmployeeManagement() {
   const [drivers, setDrivers] = useState([]);
@@ -12,18 +13,24 @@ export function useEmployeeManagement() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkResult, setBulkResult] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const user = useAppStore((s) => s.user);
 
   const fetchAll = useCallback(async () => {
+    // Signed out (or mid sign-out) — don't fire an authenticated request that's
+    // guaranteed to 401 and log a scary error. Mirrors useSupervisorEvents' guard.
+    if (!user) return;
     setLoading(true);
     try {
       const { data } = await api.get("/drivers");
       setDrivers(data || []);
     } catch (e) {
-      console.error("Failed to fetch drivers", e);
+      if (e?.response?.status !== 401 && e?.response?.status !== 403) {
+        console.warn("Failed to fetch drivers", e?.message || e);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const handleDownloadSample = async () => {
     try {
@@ -57,17 +64,17 @@ export function useEmployeeManagement() {
         name: file.name || "bulk_drivers.xlsx",
         type: file.mimeType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
-      
+
       const { data } = await api.post("/drivers/bulk-upload", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      
+
       setBulkResult({
         inserted: data.inserted,
         skipped: data.skipped,
         results: data.results || []
       });
-      
+
       let csv = "Row,Name,Phone,Status,Reason\n";
       (data.results || []).forEach(r => {
         csv += `${r.row},"${r.name || ""}","${r.phone || ""}",${r.status},"${r.reason || ""}"\n`;

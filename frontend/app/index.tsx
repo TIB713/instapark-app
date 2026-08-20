@@ -1,6 +1,7 @@
 // code before full redesign
 import { useEffect, useState, useRef } from "react";
 import { View, Text, Animated, Easing, Image } from "react-native";
+import AppLoader from "../components/AppLoader";
 import { getItem, setItem, deleteItem as secureDelete } from "../lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -11,24 +12,38 @@ import { getRouteForRole } from "../lib/routeForRole";
 export default function Index() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-
-  const spinAnim = useRef(new Animated.Value(0)).current;
-
+  const [readyRoute, setReadyRoute] = useState(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const loadStartTime = useRef(Date.now()).current;
+  
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 1200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
+    if (readyRoute) {
+      const elapsed = Date.now() - loadStartTime;
+      const delay = Math.max(0, 5000 - elapsed);
 
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 350,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.95,
+            duration: 350,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          router.replace(readyRoute);
+        });
+      }, delay);
+    }
+  }, [readyRoute]);
+
+
 
   useEffect(() => {
     const restore = async () => {
@@ -57,8 +72,7 @@ export default function Index() {
           if (eid) useAppStore.getState().setCurrentEventId(eid);
         }
 
-        setChecking(false);
-        router.replace(getRouteForRole(role) as any);
+        setReadyRoute(getRouteForRole(role) as any);
       };
 
       try {
@@ -72,8 +86,7 @@ export default function Index() {
             if (err.response && (err.response.status === 401 || err.response.status === 403)) {
               await secureDelete("auth_token");
               await setItem("last_known_role", "");
-              setChecking(false);
-              router.replace("/(auth)/login");
+              setReadyRoute("/(auth)/login");
               return;
             } else {
               // Retry once after 800ms
@@ -92,19 +105,28 @@ export default function Index() {
                   if (d?.id && d?.role === "driver") {
                     useAppStore.getState().setDriver(d);
                     if (eid) useAppStore.getState().setCurrentEventId(eid);
-                    setChecking(false);
-                    router.replace("/(driver)/(tabs)" as any);
+                    setReadyRoute("/(driver)/(tabs)" as any);
                     return;
                   } else {
                     await AsyncStorage.removeItem("driver_session");
                   }
                 } else if (lastRole && ["supervisor", "admin", "superadmin", "owner"].includes(lastRole)) {
-                  setChecking(false);
-                  router.replace(getRouteForRole(lastRole) as any);
+                  const adminStr = await AsyncStorage.getItem("admin_session");
+                  if (adminStr) {
+                    const cachedUser = JSON.parse(adminStr);
+                    if (cachedUser?.role === lastRole) {
+                      useAppStore.getState().setUser(cachedUser);
+                      setReadyRoute(getRouteForRole(lastRole) as any);
+                      return;
+                    }
+                  }
+                  // No usable cached user — don't strand the screen with user still null
+                  await secureDelete("auth_token");
+                  await setItem("last_known_role", "");
+                  setReadyRoute("/(auth)/login");
                   return;
                 } else {
-                  setChecking(false);
-                  router.replace("/(auth)/login");
+                  setReadyRoute("/(auth)/login");
                   return;
                 }
               }
@@ -130,58 +152,14 @@ export default function Index() {
           return;
         }
       } catch { }
-      setChecking(false);
-      router.replace("/(auth)/login");
+      setReadyRoute("/(auth)/login");
     };
     restore();
   }, []);
 
   return (
-    <View
-      testID="splash-screen"
-      style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0F1B3D" }}
-    >
-      <View
-        style={{
-          width: 134,
-          height: 134,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Animated.View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: 134,
-            height: 134,
-            borderRadius: 67,
-            borderWidth: 3,
-            borderColor: "rgba(255,255,255,0.15)",
-            borderTopColor: "rgba(255,255,255,0.9)",
-            transform: [{ rotate: spin }],
-          }}
-        />
-        <View
-          style={{
-            width: 110,
-            height: 110,
-            borderRadius: 55,
-            overflow: "hidden",
-            backgroundColor: "#fff",
-          }}
-        >
-          <Image
-            source={require("../assets/images/icon_1.png")}
-            style={{ width: 110, height: 110 }}
-            resizeMode="cover"
-          />
-        </View>
-      </View>
-      <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: "600", marginTop: 24, letterSpacing: 2 }}>
-        INSTAPARK
-      </Text>
-    </View>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+      <AppLoader />
+    </Animated.View>
   );
 }

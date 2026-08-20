@@ -257,7 +257,7 @@ export function useDriverTasks(
   };
 }, [currentEventId]);
 
-const pickup = async (car, options = {}) => {
+const acceptRetrieval = async (car, options = {}) => {
   const { fromIncomingRequest = false } = options;
   const doIt = async () => {
     if (fromIncomingRequest) seenRequestIdsRef.current.add(String(car.id));
@@ -286,8 +286,23 @@ const pickup = async (car, options = {}) => {
   if (fromIncomingRequest) {
     await doIt();
   } else {
-    confirmDialog.confirm("Pick up this car?", `Confirm you're picking up ${car.plate}.`, doIt);
+    confirmDialog.confirm("Accept Retrieval?", `Confirm you're accepting the retrieval for ${car.plate}.`, doIt);
   }
+};
+
+const confirmPickup = async (car) => {
+  const doIt = async () => {
+    setPickingUp((prev) => ({ ...prev, [car.id]: true }));
+    try {
+      await api.patch(`/cars/${car.id}/confirm-pickup`);
+      fetchRetrievals();
+    } catch (e) {
+      confirmDialog.info("Error", e.response?.data?.detail || "Failed");
+    } finally {
+      setPickingUp((prev) => ({ ...prev, [car.id]: false }));
+    }
+  };
+  confirmDialog.confirm("Confirm Pickup?", `Confirm you've picked up the keys for ${car.plate}.`, doIt);
 };
 
 const arriveAtGate = async (car) => {
@@ -458,7 +473,8 @@ return {
   queueSummary,
   pickingUp,
   onRefresh,
-  pickup,
+  acceptRetrieval,
+  confirmPickup,
   arriveAtGate,
   verifyDeliveryOtp,
   handleHandover,

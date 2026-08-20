@@ -59,6 +59,13 @@ export default function DriverTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="qr"
+        options={{
+          title: "QR Code",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="activity"
         options={{
           title: "Activity",

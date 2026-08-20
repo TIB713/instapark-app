@@ -4,6 +4,8 @@ import { confirmDialog } from "../lib/confirmDialog";
 
 export function useEventCars(currentEventId, fetchEvent) {
 const [cars, setCars] = useState([]);
+const [sendingRetrieval, setSendingRetrieval] = useState(null); // car id in flight
+const [markingSelfPickup, setMarkingSelfPickup] = useState(null); // car id in flight
 
 const [carStats, setCarStats] = useState(null);
 
@@ -49,7 +51,7 @@ const fetchCars = useCallback(async () => {
         const total = data.length;
         const delivered = data.filter(c => c.status === "DELIVERED").length;
         const parked = data.filter(c => c.status === "PARKED").length;
-        const retrieving = data.filter(c => c.status === "RETRIEVAL_REQUESTED" || c.status === "BEING_FETCHED").length;
+        const retrieving = data.filter(c => c.status === "RETRIEVAL_REQUESTED" || c.status === "ACCEPTED" || c.status === "BEING_FETCHED").length;
         const checkedIn = data.filter(c => c.status === "CHECKED_IN").length;
         setCarStats({ total, delivered, parked, retrieving, checkedIn });
       }
@@ -91,7 +93,7 @@ const assignAll = async () => {
 
 
 const doAssign = async (driverId) => {
-    const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
+    const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "ACCEPTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
     setAssigningDriver(true);
     try {
       await api.patch(`/cars/${selectedCar.id}/reassign-driver`, { driver_id: driverId, stage });
@@ -150,7 +152,7 @@ const openCar = async (car) => {
 const openAssignPicker = async () => {
     setShowAssignPicker(true);
     setAssignSuggestion(null);
-    if (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") {
+    if (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "ACCEPTED" || selectedCar.status === "BEING_FETCHED") {
       try {
         const { data } = await api.get(`/cars/${selectedCar.id}/suggest-retrieval-driver`);
         setAssignSuggestion(data.suggestion || null);
@@ -185,6 +187,49 @@ const removeCar = (car) => {
     );
   };
 
+const sendRetrievalRequest = (car) => {
+  confirmDialog.confirm(
+    "Send retrieval request",
+    `Send this to available drivers for ${car.plate}?`,
+    () => doSendRetrievalRequest(car)
+  );
+};
+
+const doSendRetrievalRequest = async (car) => {
+  setSendingRetrieval(car.id);
+  try {
+    await api.patch(`/cars/${car.id}/request-retrieval`);
+    setShowCarModal(false);
+    fetchCars();
+  } catch (e) {
+    confirmDialog.info("Error", e.response?.data?.detail || "Could not send retrieval request");
+  } finally {
+    setSendingRetrieval(null);
+  }
+};
+
+const markSelfPickup = (car) => {
+  confirmDialog.destructiveConfirm(
+    "Guest picking up themselves",
+    `Mark ${car.plate} as picked up directly by the guest? This will close out the car as delivered.`,
+    () => doMarkSelfPickup(car),
+    "Mark Picked Up"
+  );
+};
+
+const doMarkSelfPickup = async (car) => {
+  setMarkingSelfPickup(car.id);
+  try {
+    await api.patch(`/cars/${car.id}/self-pickup`);
+    setShowCarModal(false);
+    fetchCars();
+  } catch (e) {
+    confirmDialog.info("Error", e.response?.data?.detail || "Could not mark self-pickup");
+  } finally {
+    setMarkingSelfPickup(null);
+  }
+};
+
   return {
     cars, setCars,
     carStats, setCarStats,
@@ -201,7 +246,9 @@ const removeCar = (car) => {
     slots, setSlots,
     assigningId, setAssigningId,
     assigningAll, setAssigningAll,
+    sendingRetrieval, markingSelfPickup,
     fetchCars, fetchDrivers, fetchStats, fetchSlots, handleAssignDriver, assignAll,
-    doAssign, doToggleAssign, doAssignAll, openCar, openAssignPicker, toggleAssign, removeCar
+    doAssign, doToggleAssign, doAssignAll, openCar, openAssignPicker, toggleAssign, removeCar,
+    sendRetrievalRequest, doSendRetrievalRequest, markSelfPickup, doMarkSelfPickup
   };
 }

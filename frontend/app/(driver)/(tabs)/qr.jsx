@@ -1,22 +1,38 @@
-import { View, Text, Share } from "react-native";
-import { rs, rp } from '../../utils/responsive';
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { View, Text, Share, BackHandler } from "react-native";
+import { rs, rp } from '../../../utils/responsive';
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
-import { Screen, TopBar, Btn } from '../../components/valet/ui';
-import { theme } from '../../utils/theme';
+import { Screen, TopBar, Btn } from '../../../components/valet/ui';
+import { theme } from '../../../utils/theme';
+
+import { useDriverTasksContext } from "../../../context/DriverTasksContext";
+import { Plate, Chip } from '../../../components/valet/ui';
 
 export default function DriverQRDisplay() {
   const router = useRouter();
-  const { token, plate, mode = "checkin", keyTag } = useLocalSearchParams();
+  const { token, plate, mode = "checkin", code } = useLocalSearchParams();
   const guestUrl = `${process.env.EXPO_PUBLIC_API_URL || "https://instapark.docusafe.ai/api/v1"}/qr-redirect/${token}`;
   
   const isParkMode = mode === "park";
 
+  // Override the hardware back button so it doesn't trigger the exit app logic from _layout
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.back();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [router])
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.primary }} testID="driver-qr-screen">
       <TopBar 
-        title={isParkMode ? "Key Tag Card" : "Guest QR Code"} 
+        title={isParkMode ? "Guest QR & Code" : "Guest QR Code"} 
         onBack={() => router.back()} 
       />
 
@@ -36,29 +52,32 @@ export default function DriverQRDisplay() {
           }}
         >
           <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(3) }}>
-            {isParkMode ? "KEY TAG CARD" : "GUEST QR CODE"}
+            {isParkMode ? "VEHICLE CODE & QR" : "GUEST QR CODE"}
           </Text>
           <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(6) }}>{plate}</Text>
           <Text style={{ color: theme.colors.textSecondary, marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>
-            {isParkMode ? "Attach this to the parked car" : "Show this to the guest"}
+            {isParkMode ? "Reference for guest retrieval" : "Show this to the guest"}
           </Text>
           <View style={{ padding: rp(14), backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(20) }}>
             <QRCode value={guestUrl} size={220} color={theme.colors.primary} />
           </View>
           {isParkMode && (
-            <Text style={{ fontSize: rs(24), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(16) }}>
-              Tag #{keyTag}
-            </Text>
+            <View style={{ marginTop: rp(16), alignItems: "center" }}>
+              <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(1) }}>4-DIGIT CODE</Text>
+              <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(4) }}>
+                {code || "—"}
+              </Text>
+            </View>
           )}
           <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), marginTop: isParkMode ? rp(8) : rp(18), textAlign: "center" }}>
-            {isParkMode ? "Leave this card with the car" : "Guest scans this to request their car"}
+            {isParkMode ? "Guest scans QR or uses code to request car" : "Guest scans this to request their car"}
           </Text>
         </View>
 
         <View style={{ width: "100%", marginTop: rp(20), gap: rp(10) }}>
           <Btn 
             variant="dark" 
-            onPress={() => Share.share({ message: isParkMode ? `Key Tag ${keyTag} for ${plate}. Scan to request: ${guestUrl}` : `Valet QR for ${plate}. Scan to request: ${guestUrl}` })}
+            onPress={() => Share.share({ message: isParkMode ? `4-Digit Code ${code} for ${plate}. Scan to request: ${guestUrl}` : `Valet QR for ${plate}. Scan to request: ${guestUrl}` })}
           >
             <Ionicons name="share-outline" size={20} color="#fff" /> SHARE
           </Btn>

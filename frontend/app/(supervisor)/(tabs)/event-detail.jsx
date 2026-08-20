@@ -2,7 +2,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Audio } from "expo-av";
 import { confirmDialog } from "../../../lib/confirmDialog";
-import { Vibration } from "react-native";
+import { Vibration, Share } from "react-native";
+import { buildQueueRows } from "../../../lib/liveQueue";
 import QRCode from "react-native-qrcode-svg";
 import { rs, rp } from '../../../utils/responsive';
 import { configureBackgroundAudio } from "../../../lib/audio";
@@ -66,11 +67,12 @@ const STATUS_CONFIG = {
   CHECKED_IN: { color: "#0EA5E9", label: "Checked In" },
   PARKED: { color: theme.colors.success, label: "Parked" },
   RETRIEVAL_REQUESTED: { color: "#F59E0B", label: "Requested" },
+  ACCEPTED: { color: "#EAB308", label: "Accepted" },
   BEING_FETCHED: { color: "#F97316", label: "Fetching" },
   DELIVERED: { color: theme.colors.textMuted, label: "Delivered" },
 };
 
-const FILTERS = ["ALL", "PRE_REGISTERED", "REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
+const FILTERS = ["ALL", "PRE_REGISTERED", "REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED", "DELIVERED"];
 
 const cardShadow = {
   shadowColor: ACCENT_COLOR,
@@ -114,9 +116,9 @@ export default function SupervisorEventDetail() {
     cars, carStats, drivers, stats, search, setSearch, statusFilter, setStatusFilter,
     selectedCar, setSelectedCar, showCarModal, setShowCarModal, carPhotos, setCarPhotos,
     showAssignPicker, setShowAssignPicker, assignSuggestion, assigningDriver, slots,
-    assigningId, assigningAll,
+    assigningId, assigningAll, sendingRetrieval, markingSelfPickup,
     fetchCars, fetchDrivers, fetchStats, fetchSlots, handleAssignDriver, assignAll,
-    doAssign, openAssignPicker, toggleAssign, removeCar
+    doAssign, openAssignPicker, toggleAssign, removeCar, sendRetrievalRequest, markSelfPickup
   } = useEventCars(currentEventId, fetchEvent);
 
   const {
@@ -145,6 +147,30 @@ export default function SupervisorEventDetail() {
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
+  const [liveQueueToken, setLiveQueueToken] = useState(null);
+  const [sharingQueue, setSharingQueue] = useState(false);
+
+  const handleShareLiveQueue = async () => {
+    if (sharingQueue) return;
+    setSharingQueue(true);
+    try {
+      let token = liveQueueToken;
+      if (!token) {
+        const { data } = await api.get(`/events/${currentEventId}/live-queue-token`);
+        token = data.live_queue_token;
+        setLiveQueueToken(token);
+      }
+      const url = `${process.env.EXPO_PUBLIC_GUEST_URL || "https://app.instapark.co"}/queue/${token}`;
+      await Share.share({ message: `Live car queue for ${event?.name || "this event"}: ${url}` });
+    } catch (e) {
+      confirmDialog.info("Error", "Could not generate the live queue link.");
+    } finally {
+      setSharingQueue(false);
+    }
+  };
+
+  const queueRows = useMemo(() => buildQueueRows(cars, drivers), [cars, drivers]);
 
   useEffect(() => {
     const backAction = () => {
@@ -442,9 +468,10 @@ export default function SupervisorEventDetail() {
         {(() => {
           const tabLabel = (t) => {
             if (t === "employees") return "Team";
+            if (t === "livequeue") return "Queue";
             return t.charAt(0).toUpperCase() + t.slice(1);
           };
-          const tabs = isClosed ? ["cars", "incidents", "feedback", "insights"] : ["cars", "employees", "insights", "incidents", "feedback"];
+          const tabs = isClosed ? ["cars", "incidents", "feedback", "insights"] : ["cars", "employees", "livequeue", "insights", "incidents", "feedback"];
 
           return tabs.map((t) => (
             <TouchableOpacity
@@ -587,6 +614,50 @@ export default function SupervisorEventDetail() {
               </View>
             )}
           </>
+        ) : tab === "livequeue" ? (
+          <View style={{ paddingHorizontal: rp(16), paddingTop: rp(16) }}>
+            <TouchableOpacity
+              onPress={handleShareLiveQueue}
+              disabled={sharingQueue}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(14), marginBottom: rp(16) }}
+            >
+              <Ionicons name="share-social-outline" size={18} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(1), marginLeft: rp(8) }}>
+                {sharingQueue ? "PREPARING LINK..." : "SHARE LIVE QUEUE LINK"}
+              </Text>
+            </TouchableOpacity>
+
+            {queueRows.length === 0 ? (
+              <Text style={{ textAlign: "center", color: theme.colors.textMuted, paddingVertical: rp(32) }}>
+                No cars in the queue right now.
+              </Text>
+            ) : (
+              queueRows.map((car) => {
+                const cfg = STATUS_CONFIG[car.status] || STATUS_CONFIG.CHECKED_IN;
+                return (
+                  <View
+                    key={car.id}
+                    style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(10), borderLeftWidth: rp(4), borderLeftColor: cfg.color, ...cardShadow }}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{car.plate}</Text>
+                      <View style={{ backgroundColor: cfg.color + "20", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                        <Text style={{ color: cfg.color, fontSize: rs(10), fontWeight: "800" }}>{cfg.label}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginTop: rp(4) }}>
+                      {car.guest_name || "—"} · Driver: {car.driverName}
+                    </Text>
+                    {car.minutesInStatus != null && (
+                      <Text style={{ color: theme.colors.textMuted, fontSize: rs(11), marginTop: rp(4) }}>
+                        {car.minutesInStatus} min in current status
+                      </Text>
+                    )}
+                  </View>
+                );
+              })
+            )}
+          </View>
         ) : tab === "employees" ? (
           <View style={{ flex: 1, paddingBottom: rp(100)  + tabBarHeight}}>
             <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: rp(16), gap: rp(8) }}>
@@ -1011,6 +1082,33 @@ export default function SupervisorEventDetail() {
                       </View>
                     </View>
 
+                    {["PARKED", "RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED", "AWAITING_REPARK"].includes(selectedCar.status) && (
+                      <View style={{ marginTop: rp(16), gap: rp(10) }}>
+                        {selectedCar.status === "PARKED" && (
+                          <TouchableOpacity
+                            onPress={() => sendRetrievalRequest(selectedCar)}
+                            disabled={sendingRetrieval === selectedCar.id}
+                            style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", justifyContent: "center" }}
+                          >
+                            <Ionicons name="car-sport-outline" size={18} color="#fff" />
+                            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>
+                              {sendingRetrieval === selectedCar.id ? "SENDING..." : "SEND RETRIEVAL REQUEST"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => markSelfPickup(selectedCar)}
+                          disabled={markingSelfPickup === selectedCar.id}
+                          style={{ backgroundColor: theme.colors.warningLight, borderWidth: 1.5, borderColor: theme.colors.warning, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", justifyContent: "center" }}
+                        >
+                          <Ionicons name="walk-outline" size={18} color={theme.colors.warning} />
+                          <Text style={{ color: theme.colors.warning, fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>
+                            {markingSelfPickup === selectedCar.id ? "MARKING..." : "SELF PICKUP"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
                     {selectedCar.status === "ARRIVED_AT_GATE" && (
                       <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(20), padding: rp(16), marginTop: rp(16) }}>
                         <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(2), marginBottom: rp(8) }}>DELIVERY CODE</Text>
@@ -1035,14 +1133,14 @@ export default function SupervisorEventDetail() {
                       </View>
                     )}
 
-                    {["CHECKED_IN", "RETRIEVAL_REQUESTED", "BEING_FETCHED"].includes(selectedCar.status) && !showAssignPicker && (
+                    {["CHECKED_IN", "RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED"].includes(selectedCar.status) && !showAssignPicker && (
                       <TouchableOpacity
                         onPress={openAssignPicker}
                         style={{ backgroundColor: ACCENT_COLOR, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20), flexDirection: "row", justifyContent: "center" }}
                       >
                         <Ionicons name="person-add-outline" size={18} color="#fff" />
                         <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>
-                          {(selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED")
+                          {(selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "ACCEPTED" || selectedCar.status === "BEING_FETCHED")
                             ? (selectedCar.retrieval_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")
                             : (selectedCar.check_in_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")}
                         </Text>
@@ -1080,22 +1178,32 @@ export default function SupervisorEventDetail() {
 
                     <TouchableOpacity
                       onPress={() => { setShowCarModal(false); router.push({ pathname: "/(supervisor)/(tabs)/car-log", params: { car_id: selectedCar.id } }); }}
-                      style={{ backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
+                      style={{ backgroundColor: "#fff", borderWidth: 1.5, borderColor: theme.colors.border, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(12), flexDirection: "row", justifyContent: "center" }}
                     >
-                      <Ionicons name="time-outline" size={18} color="#fff" />
-                      <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text>
+                      <Ionicons name="time-outline" size={18} color={theme.colors.textPrimary} />
+                      <Text style={{ color: theme.colors.textPrimary, fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW FULL LOG</Text>
                     </TouchableOpacity>
-                    {selectedCar.qr_token && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setShowCarModal(false);
-                          router.push({ pathname: "/(supervisor)/(tabs)/qr-display", params: { token: selectedCar.qr_token, plate: selectedCar.plate, carId: selectedCar.id, guestPhone: selectedCar.guest_phone || "" } });
-                        }}
-                        style={{ backgroundColor: "#7C3AED", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(12) }}
-                      >
-                        <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>VIEW QR</Text>
-                      </TouchableOpacity>
-                    )}
+                    {selectedCar.retrieval_token && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowCarModal(false);
+                            router.push({
+                              pathname: "/(supervisor)/(tabs)/qr-display",
+                              params: {
+                                token: selectedCar.retrieval_token,
+                                checkinCode: selectedCar.checkin_code,
+                                plate: selectedCar.plate,
+                                carId: selectedCar.id,
+                                returnTo: "/(supervisor)/(tabs)/event-detail"
+                              }
+                            });
+                          }}
+                          style={{ backgroundColor: "#fff", borderWidth: 1.5, borderColor: theme.colors.border, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", justifyContent: "center", marginTop: rp(12) }}
+                        >
+                          <Ionicons name="qr-code-outline" size={18} color={theme.colors.textPrimary} />
+                          <Text style={{ color: theme.colors.textPrimary, fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>VIEW QR</Text>
+                        </TouchableOpacity>
+                      )}
                     <TouchableOpacity onPress={() => { setShowCarModal(false); setShowAssignPicker(false); }} style={{ paddingVertical: rp(10), alignItems: "center", marginBottom: rp(12) }}>
                       <Text style={{ color: theme.colors.textSecondary, fontWeight: "700" }}>Close</Text>
                     </TouchableOpacity>

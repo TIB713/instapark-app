@@ -3,6 +3,7 @@ import { confirmDialog } from "../../lib/confirmDialog";
 import { useEffect, useState, useMemo, useCallback , useRef} from "react";
 import { rs, rp } from '../../utils/responsive';
 import { fmtDuration } from '../../utils/time';
+import { buildQueueRows } from "../../lib/liveQueue";
 import {
   View,
   Text,
@@ -61,11 +62,12 @@ const STATUS_CONFIG = {
   CHECKED_IN: { color: "#0EA5E9", label: "Checked In" },
   PARKED: { color: "#059669", label: "Parked" },
   RETRIEVAL_REQUESTED: { color: "#F59E0B", label: "Requested" },
+  ACCEPTED: { color: "#EAB308", label: "Accepted" },
   BEING_FETCHED: { color: "#F97316", label: "Fetching" },
   DELIVERED: { color: "#9CA3AF", label: "Delivered" },
 };
 
-const FILTERS = ["ALL", "PRE_REGISTERED", "REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED"];
+const FILTERS = ["ALL", "PRE_REGISTERED", "REGISTERED", "CHECKED_IN", "PARKED", "RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED", "DELIVERED"];
 
 const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
 
@@ -138,6 +140,30 @@ export default function EventDetail() {
   const [specialEventHotel, setSpecialEventHotel] = useState(null);
   const [specialEventQRToken, setSpecialEventQRToken] = useState(null);
   const [showSpecialEventQRModal, setShowSpecialEventQRModal] = useState(false);
+
+  const [liveQueueToken, setLiveQueueToken] = useState(null);
+  const [sharingQueue, setSharingQueue] = useState(false);
+
+  const handleShareLiveQueue = async () => {
+    if (sharingQueue) return;
+    setSharingQueue(true);
+    try {
+      let token = liveQueueToken;
+      if (!token) {
+        const { data } = await api.get(`/events/${currentEventId}/live-queue-token`);
+        token = data.live_queue_token;
+        setLiveQueueToken(token);
+      }
+      const url = `${process.env.EXPO_PUBLIC_GUEST_URL || "https://app.instapark.co"}/queue/${token}`;
+      await Share.share({ message: `Live car queue for ${event?.name || "this event"}: ${url}` });
+    } catch (e) {
+      confirmDialog.info("Error", "Could not generate the live queue link.");
+    } finally {
+      setSharingQueue(false);
+    }
+  };
+
+  const queueRows = useMemo(() => buildQueueRows(cars, drivers), [cars, drivers]);
   const [showMenu, setShowMenu] = useState(false);
 
   const [supervisors, setSupervisors] = useState([]);
@@ -408,7 +434,7 @@ export default function EventDetail() {
   const openAssignPicker = async () => {
     setShowAssignPicker(true);
     setAssignSuggestion(null);
-    if (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") {
+    if (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "ACCEPTED" || selectedCar.status === "BEING_FETCHED") {
       try {
         const { data } = await api.get(`/cars/${selectedCar.id}/suggest-retrieval-driver`);
         setAssignSuggestion(data.suggestion || null);
@@ -420,7 +446,7 @@ export default function EventDetail() {
 
   const handleAssignDriver = async (driverId, isBusy, busyPlate, driverName) => {
     const doAssign = async () => {
-      const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
+      const stage = (selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "ACCEPTED" || selectedCar.status === "BEING_FETCHED") ? "retrieval" : "checkin";
       setAssigningDriver(true);
       try {
         await api.patch(`/cars/${selectedCar.id}/reassign-driver`, { driver_id: driverId, stage });
@@ -1270,6 +1296,7 @@ export default function EventDetail() {
           : [
             ["cars", "Cars"],
             ["employees", "Team"],
+            ["livequeue", "Queue"],
             ["stats", "Stats"],
             ["slots", "Slots"],
             ["incidents", "Incidents"],
@@ -1434,6 +1461,52 @@ export default function EventDetail() {
           )}
           <View style={{ height: rp(40) }} />
         </ScrollView>
+      )}
+
+      {tab === "livequeue" && (
+        <View style={{ paddingHorizontal: rp(16), paddingTop: rp(16) }}>
+          <TouchableOpacity
+            onPress={handleShareLiveQueue}
+            disabled={sharingQueue}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0F2044", borderRadius: rp(16), paddingVertical: rp(14), marginBottom: rp(16) }}
+          >
+            <Ionicons name="share-social-outline" size={18} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(1), marginLeft: rp(8) }}>
+              {sharingQueue ? "PREPARING LINK..." : "SHARE LIVE QUEUE LINK"}
+            </Text>
+          </TouchableOpacity>
+
+          {queueRows.length === 0 ? (
+            <Text style={{ textAlign: "center", color: "#6B7280", paddingVertical: rp(32) }}>
+              No cars in the queue right now.
+            </Text>
+          ) : (
+            queueRows.map((car) => {
+              const cfg = STATUS_CONFIG[car.status] || STATUS_CONFIG.CHECKED_IN;
+              return (
+                <View
+                  key={car.id}
+                  style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(10), borderLeftWidth: rp(4), borderLeftColor: cfg.color, ...cardShadow }}
+                >
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{car.plate}</Text>
+                    <View style={{ backgroundColor: cfg.color + "20", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                      <Text style={{ color: cfg.color, fontSize: rs(10), fontWeight: "800" }}>{cfg.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>
+                    {car.guest_name || "—"} · Driver: {car.driverName}
+                  </Text>
+                  {car.minutesInStatus != null && (
+                    <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginTop: rp(4) }}>
+                      {car.minutesInStatus} min in current status
+                    </Text>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </View>
       )}
 
       {tab === "incidents" && (
@@ -2472,14 +2545,14 @@ export default function EventDetail() {
                       </>
                     )}
 
-                    {["CHECKED_IN", "RETRIEVAL_REQUESTED", "BEING_FETCHED"].includes(selectedCar.status) && !showAssignPicker && (
+                    {["CHECKED_IN", "RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED"].includes(selectedCar.status) && !showAssignPicker && (
                       <TouchableOpacity
                         onPress={openAssignPicker}
                         style={{ backgroundColor: "#0F2044", borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", marginTop: rp(20), flexDirection: "row", justifyContent: "center" }}
                       >
                         <Ionicons name="person-add-outline" size={18} color="#fff" />
                         <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2), marginLeft: rp(8) }}>
-                          {(selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "BEING_FETCHED")
+                          {(selectedCar.status === "RETRIEVAL_REQUESTED" || selectedCar.status === "ACCEPTED" || selectedCar.status === "BEING_FETCHED")
                             ? (selectedCar.retrieval_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")
                             : (selectedCar.check_in_driver_id ? "REASSIGN DRIVER" : "ASSIGN DRIVER")}
                         </Text>

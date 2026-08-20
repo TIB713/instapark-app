@@ -103,9 +103,8 @@ export default function RootLayout() {
         <Stack.Screen name="(admin)/hotel-detail" />
         <Stack.Screen name="(admin)/manage-employees" />
         <Stack.Screen name="(admin)/pre-register-qr" />
-                <Stack.Screen name="(supervisor)" />
+        <Stack.Screen name="(supervisor)" />
         <Stack.Screen name="(driver)/(tabs)" />
-        <Stack.Screen name="(driver)/qr-display" />
         <Stack.Screen name="(driver)/failed-syncs" />
               </Stack>
     </SafeAreaProvider>

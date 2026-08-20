@@ -34,6 +34,7 @@ const STATUS_LABELS = {
   CHECKED_IN: "checked in",
   PARKED: "parked",
   RETRIEVAL_REQUESTED: "requested for retrieval",
+  ACCEPTED: "accepted for retrieval",
   BEING_FETCHED: "being fetched",
   ARRIVED_AT_GATE: "at the gate",
   AWAITING_REPARK: "awaiting repark",

@@ -12,13 +12,16 @@ import { theme } from "../../utils/theme";
 import { fmtDuration } from "../../utils/time";
  
 const STATUS_CONFIG = { 
+  REGISTERED: { color: "#6366F1", icon: "document-text-outline", label: "Registered" },
   PRE_REGISTERED: { color: "#8B5CF6", icon: "time-outline", label: "Pre-Registered" }, 
   CHECKED_IN:     { color: "#0EA5E9", icon: "log-in-outline", label: "Checked In" }, 
   PARKED:         { color: theme.colors.success, icon: "car-outline", label: "Parked" }, 
   RETRIEVAL_REQUESTED: { color: "#F59E0B", icon: "notifications-outline", label: "Retrieval Requested" }, 
+  ACCEPTED: { color: "#EAB308", icon: "checkmark-circle-outline", label: "Retrieval Accepted" },
   BEING_FETCHED:  { color: "#F97316", icon: "walk-outline", label: "Being Fetched" }, 
   ARRIVED_AT_GATE: { color: "#10B981", icon: "location-outline", label: "Arrived At Gate" },
   AWAITING_REPARK: { color: theme.colors.danger, icon: "alert-circle-outline", label: "Needs Re-Park" },
+  SELF_PICKUP: { color: theme.colors.warning, icon: "walk-outline", label: "Self Pickup" },
   DELIVERED:      { color: theme.colors.textMuted, icon: "checkmark-circle", label: "Delivered" }, 
 }; 
  
@@ -198,16 +201,25 @@ export default function CarLog() {
   // Build timeline steps 
   const steps = []; 
  
-  if (car.created_at && car.guest_name) { 
-    steps.push({ type: "status", status: "PRE_REGISTERED", 
-      time: car.created_at, 
-      note: `${car.guest_name} · ${car.guest_phone || ""}`, 
-      photos: [] }); 
+  if (car.created_at) { 
+    const registeredNote = !car.registered_by && car.guest_name
+      ? `${car.guest_name}${car.guest_phone ? " · " + car.guest_phone : ""}`
+      : null;
+    steps.push({
+      type: "status",
+      status: "REGISTERED",
+      time: car.created_at,
+      driver: car.registered_by?.name
+        ? `${car.registered_by.name}${car.registered_by.role ? ` (${car.registered_by.role})` : ""}`
+        : null,
+      note: registeredNote,
+      photos: [],
+    });
   } 
  
   if (car.check_in_time) { 
     steps.push({ type: "status", status: "CHECKED_IN", 
-      time: car.check_in_time, 
+      time: car.driver_pickup_confirmed_at || car.check_in_time, 
       driver: drivers_map[car.check_in_driver_id], 
       note: car.notes || null, 
       photos: photos_by_type["checkin"] || [] }); 
@@ -234,25 +246,30 @@ export default function CarLog() {
       photos: photos_by_type["parked"] || [] }); 
   } 
  
-  if (car.status === "RETRIEVAL_REQUESTED" ||
-      car.status === "BEING_FETCHED" ||
-      car.status === "DELIVERED") {
-    
-    let retrievalNote = "Guest scanned QR code";
-    if (car.retrieval_requested_via === "supervisor_scan") {
-      retrievalNote = `Requested by Supervisor ${car.retrieval_requested_by?.name || "Unknown"} (in-app scanner)`;
+  if (car.retrieval_requested_at) {
+    let retrievalNote = "Guest scanned QR code to request retrieval";
+    if (car.retrieval_requested_via === "supervisor_scan" && car.retrieval_requested_by) {
+      const roleLabel = car.retrieval_requested_by.role
+        ? car.retrieval_requested_by.role.charAt(0).toUpperCase() + car.retrieval_requested_by.role.slice(1)
+        : "Staff";
+      retrievalNote = `Requested by ${roleLabel} ${car.retrieval_requested_by.name || "Unknown"}`;
     }
-
-    steps.push({ type: "status",
-      status: "RETRIEVAL_REQUESTED",
-      time: car.retrieval_requested_at || null,
+    steps.push({ type: "status", status: "RETRIEVAL_REQUESTED",
+      time: car.retrieval_requested_at,
       note: retrievalNote, photos: [] });
   }
 
   if (car.retrieval_driver_id) {
+    if (car.accepted_at) {
+      steps.push({ type: "status", status: "ACCEPTED",
+        time: car.accepted_at,
+        driver: drivers_map[car.retrieval_driver_id],
+        photos: [] });
+    }
     steps.push({ type: "status", status: "BEING_FETCHED",
       time: car.being_fetched_at || null,
       driver: drivers_map[car.retrieval_driver_id],
+      durationCaption: car.accept_to_pickup_minutes != null ? `${fmtDuration(car.accept_to_pickup_minutes)} to pickup` : null,
       photos: [] });
   }
 
@@ -260,7 +277,7 @@ export default function CarLog() {
     steps.push({ type: "status", status: "ARRIVED_AT_GATE",
       time: car.gate_arrival_time,
       driver: drivers_map[car.retrieval_driver_id],
-      durationCaption: retrieval_to_gate_minutes != null ? `${fmtDuration(retrieval_to_gate_minutes)} after retrieval requested` : null,
+      durationCaption: fetch_minutes != null ? `${fmtDuration(fetch_minutes)} after driver picked up` : null,
       photos: [] });
   }
 
@@ -272,12 +289,23 @@ export default function CarLog() {
   }
 
   if (car.status === "DELIVERED") {
-    steps.push({ type: "status", status: "DELIVERED",
-      time: car.delivered_at,
-      driver: drivers_map[car.retrieval_driver_id],
-      durationCaption: gate_wait_minutes != null ? `${fmtDuration(gate_wait_minutes)} at the gate` : null,
-      photos: photos_by_type["handover"] || [],
-      rating_comment: log.rating_comment || null });
+    if (car.delivery_type === "self_pickup") {
+      steps.push({ type: "status", status: "SELF_PICKUP",
+        time: car.delivered_at,
+        driver: car.self_pickup_marked_by?.name
+          ? `${car.self_pickup_marked_by.name}${car.self_pickup_marked_by.role ? ` (${car.self_pickup_marked_by.role})` : ""}`
+          : null,
+        note: "Guest picked up the car themselves — no driver retrieval needed",
+        photos: photos_by_type["handover"] || [],
+        rating_comment: log.rating_comment || null });
+    } else {
+      steps.push({ type: "status", status: "DELIVERED",
+        time: car.delivered_at,
+        driver: drivers_map[car.retrieval_driver_id],
+        durationCaption: gate_wait_minutes != null ? `${fmtDuration(gate_wait_minutes)} at the gate` : null,
+        photos: photos_by_type["handover"] || [],
+        rating_comment: log.rating_comment || null });
+    }
   }
 
   // Interleave incidents by timestamp alongside other steps
@@ -299,8 +327,8 @@ export default function CarLog() {
   // (legacy data) fall back to a canonical status order so they
   // always appear in the correct position.
   const STATUS_ORDER = [
-    "PRE_REGISTERED", "CHECKED_IN", "PARKED",
-    "RETRIEVAL_REQUESTED", "BEING_FETCHED", "DELIVERED",
+    "REGISTERED", "PRE_REGISTERED", "CHECKED_IN", "PARKED",
+    "RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED", "SELF_PICKUP", "DELIVERED",
   ];
   steps.sort((a, b) => {
     const ta = a.time ? new Date(a.time).getTime() : null;
@@ -432,7 +460,7 @@ export default function CarLog() {
               );
             }
             const scfg = STATUS_CONFIG[step.status]; 
-            if (step.status === "DELIVERED") {
+            if (step.status === "DELIVERED" || step.status === "SELF_PICKUP") {
               return (
                 <View key={`step-wrap-${i}`}>
                   <TimelineStep 

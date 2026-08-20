@@ -60,6 +60,8 @@ export default function DriverEventCars() {
         return { bg: "#FEF3C7", text: "#D97706" };
       case "RETRIEVAL_REQUESTED":
         return { bg: "#FFEDD5", text: "#EA580C" };
+      case "ACCEPTED":
+        return { bg: "#FEF3C7", text: "#D97706" };
       case "BEING_FETCHED":
         return { bg: "#F3E8FF", text: "#7C3AED" };
       case "DELIVERED":
@@ -187,7 +189,8 @@ function CarCard({ car, time, forceDelivered = false }) {
        case "CHECKED_IN":          return { bg: "#DBEAFE", text: "#1D4ED8" }; 
        case "PARKED":              return { bg: "#FEF3C7", text: "#D97706" }; 
        case "RETRIEVAL_REQUESTED": return { bg: "#FFEDD5", text: "#EA580C" }; 
-       case "BEING_FETCHED":       return { bg: "#F3E8FF", text: "#7C3AED" }; 
+       case "ACCEPTED":            return { bg: "#FEF3C7", text: "#D97706" };
+    case "BEING_FETCHED":       return { bg: "#F3E8FF", text: "#7C3AED" }; 
        case "DELIVERED":           return { bg: "#D1FAE5", text: "#059669" }; 
        default:                    return { bg: "#F3F4F6", text: "#6B7280" }; 
      } 
