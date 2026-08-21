@@ -1,5 +1,5 @@
 import { confirmDialog } from "../../lib/confirmDialog";
-import React, { useEffect, useState , useRef} from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import {
   View,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
@@ -60,37 +60,41 @@ export default function DriverStats() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get(`/drivers/${driverId}/stats`);
-        setStats(data);
-      } catch {}
-      try {
-        const { data } = await api.get(`/drivers/${driverId}`);
-        setDriver(data);
-        setName(data.name || "");
-        setPhone(data.phone || "");
-        setEmail(data.email || "");
-        setPanNumber(data.pan_number || "");
-        setBankAccount(data.bank_account_number || "");
-        setBankIfsc(data.bank_ifsc || "");
-        setLicenseNumber(data.driving_license_number || "");
-        setLicensePhoto(data.driving_license_photo || null);
-        setAadharNumber(data.aadhar_number || "");
-        setAadharPhoto(data.aadhar_photo || null);
-      } catch {}
-    })();
-  }, [driverId]);
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const { data } = await api.get(`/drivers/${driverId}/stats`);
+          setStats(data);
+        } catch {}
+        try {
+          const { data } = await api.get(`/drivers/${driverId}`);
+          setDriver(data);
+          setName(data.name || "");
+          setPhone(data.phone || "");
+          setEmail(data.email || "");
+          setPanNumber(data.pan_number || "");
+          setBankAccount(data.bank_account_number || "");
+          setBankIfsc(data.bank_ifsc || "");
+          setLicenseNumber(data.driving_license_number || "");
+          setLicensePhoto(data.driving_license_photo || null);
+          setAadharNumber(data.aadhar_number || "");
+          setAadharPhoto(data.aadhar_photo || null);
+        } catch {}
+      })();
+    }, [driverId])
+  );
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get(`/drivers/${driverId}/stats/filtered?filter=${filter}`);
-        setFilteredStats(data);
-      } catch {}
-    })();
-  }, [filter, driverId]);
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const { data } = await api.get(`/drivers/${driverId}/stats/filtered?filter=${filter}`);
+          setFilteredStats(data);
+        } catch {}
+      })();
+    }, [filter, driverId])
+  );
 
   const loadEvents = async () => {
     setLoadingEvents(true);
@@ -110,7 +114,11 @@ export default function DriverStats() {
     setLoadingEvents(false);
   };
 
-  useEffect(() => { if (tab === "history") loadEvents(); }, [tab]);
+  useFocusEffect(
+    useCallback(() => {
+      if (tab === "history") loadEvents();
+    }, [tab])
+  );
 
   const validateDriver = () => {
     const errs = {};

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { View, FlatList, Text, ActivityIndicator, RefreshControl } from "react-native";
 import { Screen, TopBar, EmptyState, SectionTitle, Chip, Card, StatusPill, Plate, Btn } from "../../../components/valet/ui";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "../../../utils/theme";
 import { useAppStore } from "../../../lib/store";
 import api from "../../../lib/api";
@@ -32,9 +32,11 @@ export default function ActivityScreen() {
     }
   }, [driver?.id, currentEventId]);
 
-  useEffect(() => {
-    fetchActivity();
-  }, [fetchActivity]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchActivity();
+    }, [fetchActivity])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -4,6 +4,7 @@ import { rs, rp } from '../../../utils/responsive';
 import { useEmployeeManagement } from '../../../hooks/useEmployeeManagement';
 import { theme } from '../../../utils/theme';
 import { Card, StatusPill, Screen, EmptyState } from '../../../components/valet/ui';
+import Heading from '../../../components/Heading';
 import {
   View,
   Text,
@@ -62,7 +63,7 @@ export default function SupervisorManageEmployees() {
         <View style={{ position: 'absolute', bottom: rp(-50), left: rp(-30), width: rp(200), height: rp(200), borderRadius: rp(100), backgroundColor: theme.colors.primaryDark, opacity: 0.3 }} />
         
         <Text style={{ color: theme.colors.accent, fontSize: rs(12), fontWeight: '800', letterSpacing: 1, marginBottom: rp(4) }}>YOUR TEAM</Text>
-        <Text style={{ color: theme.colors.surface, fontSize: rs(32), fontWeight: '900', marginBottom: rp(theme.spacing.sm) }}>Drivers</Text>
+        <Heading level="display" style={{ color: theme.colors.surface, marginBottom: rp(theme.spacing.sm) }}>Drivers</Heading>
         
         <View style={{ alignSelf: 'flex-start', marginBottom: rp(theme.spacing.xl) }}>
           <StatusPill label={`${activeCount} available`} tone="success" />
@@ -71,15 +72,15 @@ export default function SupervisorManageEmployees() {
         {/* 3 Metrics Boxes */}
         <View style={{ flexDirection: 'row', gap: rp(8) }}>
           <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: rp(theme.radius.lg), padding: rp(theme.spacing.md), alignItems: 'center' }}>
-            <Text style={{ color: theme.colors.surface, fontSize: rs(24), fontWeight: '900' }}>{totalCount}</Text>
+            <Heading level="display" style={{ color: theme.colors.surface }}>{totalCount}</Heading>
             <Text style={{ color: theme.colors.textMuted, fontSize: rs(10), fontWeight: '700', marginTop: rp(4) }}>DRIVERS</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: rp(theme.radius.lg), padding: rp(theme.spacing.md), alignItems: 'center' }}>
-            <Text style={{ color: theme.colors.surface, fontSize: rs(24), fontWeight: '900' }}>{activeCount}</Text>
+            <Heading level="display" style={{ color: theme.colors.surface }}>{activeCount}</Heading>
             <Text style={{ color: theme.colors.textMuted, fontSize: rs(10), fontWeight: '700', marginTop: rp(4) }}>ACTIVE</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: rp(theme.radius.lg), padding: rp(theme.spacing.md), alignItems: 'center' }}>
-            <Text style={{ color: theme.colors.surface, fontSize: rs(24), fontWeight: '900' }}>{verifiedCount}</Text>
+            <Heading level="display" style={{ color: theme.colors.surface }}>{verifiedCount}</Heading>
             <Text style={{ color: theme.colors.textMuted, fontSize: rs(10), fontWeight: '700', marginTop: rp(4) }}>VERIFIED</Text>
           </View>
         </View>
@@ -150,7 +151,7 @@ export default function SupervisorManageEmployees() {
                 >
                   <View style={{ position: 'relative' }}>
                     <View style={{ backgroundColor: theme.colors.primaryLight, borderRadius: rp(14), width: rp(52), height: rp(52), alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: rs(20) }}>{d.name?.[0]?.toUpperCase()}</Text>
+                      <Heading level="title" style={{ color: theme.colors.primary }}>{d.name?.[0]?.toUpperCase()}</Heading>
                     </View>
                     <View style={{ position: 'absolute', bottom: -2, right: -2, width: rp(14), height: rp(14), borderRadius: rp(7), backgroundColor: d.is_active ? theme.colors.success : theme.colors.textMuted, borderWidth: 2, borderColor: theme.colors.surface }} />
                   </View>

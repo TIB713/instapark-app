@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import api from "../../lib/api";
@@ -24,24 +24,26 @@ export default function DriverEventCars() {
   const [cars, setCars] = useState([]);
   const [incidents, setIncidents] = useState([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [carsRes, incidentsRes] = await Promise.all([
-          api.get(`/superadmin/events/${eventId}/cars`),
-          api.get(`/incidents/driver/${driverId}`),
-        ]);
-        setCars(carsRes.data || []);
-        setIncidents((incidentsRes.data || []).filter(i => i.event_id === eventId));
-      } catch (e) {
-        console.error("Failed to fetch driver event details", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [driverId, eventId]);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const [carsRes, incidentsRes] = await Promise.all([
+            api.get(`/superadmin/events/${eventId}/cars`),
+            api.get(`/incidents/driver/${driverId}`),
+          ]);
+          setCars(carsRes.data || []);
+          setIncidents((incidentsRes.data || []).filter(i => i.event_id === eventId));
+        } catch (e) {
+          console.error("Failed to fetch driver event details", e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }, [eventId, driverId])
+  );
 
   const parkedCars = cars.filter(c => c.check_in_driver_id === driverId);
   const retrievedCars = cars.filter(c => c.retrieval_driver_id === driverId);

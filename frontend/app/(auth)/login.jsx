@@ -22,6 +22,8 @@ import { registerForPushNotifications } from "../../lib/notifications";
 import { useAppStore } from "../../lib/store";
 import { rs, rp } from "../../utils/responsive";
 import { getRouteForRole } from "../../lib/routeForRole";
+import { theme } from "../../utils/theme";
+import Heading from "../../components/Heading";
 
 const requestPushPermissions = async (role) => {
   if (role !== "driver" && role !== "supervisor") return;
@@ -33,6 +35,85 @@ const requestPushPermissions = async (role) => {
 };
 
 const { height: SCREEN_H } = Dimensions.get("window");
+
+const {
+  primary, primaryDark, accent, accentForeground, surface, border,
+  textPrimary, textSecondary, textMuted, danger, dangerLight, success, successLight,
+} = theme.colors;
+
+// Reusable Field component — hoisted to module scope so it isn't recreated
+// on every keystroke. Defining these inside Login() gave React a new
+// component identity on every re-render, which remounted the TextInput
+// and closed the keyboard after a single character.
+const Field = ({ label, icon, value, onChangeText, placeholder, keyboardType, maxLength, editable, secureTextEntry, rightAccessory }) => (
+  <View style={{ marginBottom: rp(theme.spacing.lg) }}>
+    <View style={{
+      borderColor: border,
+      borderWidth: 1,
+      borderRadius: rp(theme.radius.md),
+      backgroundColor: editable === false ? theme.colors.surfaceAlt : surface,
+      overflow: 'hidden'
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: rp(theme.spacing.md), paddingTop: rp(theme.spacing.md), paddingBottom: rp(theme.spacing.xs) }}>
+        <Ionicons name={icon} size={16} color={primary} style={{ marginRight: rp(theme.spacing.sm) }} />
+        <Text style={{ fontSize: rs(theme.fontSize.caption), fontWeight: '700', color: textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: rp(theme.spacing.md), paddingBottom: rp(theme.spacing.md) }}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={textMuted}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          editable={editable}
+          secureTextEntry={secureTextEntry}
+          style={{ flex: 1, fontSize: rs(theme.fontSize.body), color: editable === false ? textSecondary : textPrimary, fontWeight: '500' }}
+        />
+        {rightAccessory}
+      </View>
+    </View>
+  </View>
+);
+
+const PrimaryButton = ({ onPress, loading, text, style }) => (
+  <TouchableOpacity
+    style={[{
+      backgroundColor: accent,
+      borderRadius: rp(theme.radius.lg),
+      height: rp(56),
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: accent,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 6,
+    }, style]}
+    onPress={onPress}
+    disabled={loading}
+  >
+    {loading ? <ActivityIndicator color={accentForeground} /> : <Text style={{ color: accentForeground, fontSize: rs(theme.fontSize.bodyLarge), fontWeight: "800", letterSpacing: rs(1) }}>{text}</Text>}
+  </TouchableOpacity>
+);
+
+const ErrorBanner = ({ error }) => {
+  if (!error) return null;
+  return (
+    <View style={{ backgroundColor: dangerLight, borderColor: danger, borderWidth: 1, borderRadius: rp(theme.radius.sm), padding: rp(theme.spacing.md), marginBottom: rp(theme.spacing.lg) }}>
+      <Text style={{ color: danger, fontSize: rs(theme.fontSize.body), textAlign: "center", fontWeight: "600" }}>{error}</Text>
+    </View>
+  );
+};
+
+const SuccessBanner = ({ success }) => {
+  if (!success) return null;
+  return (
+    <View style={{ backgroundColor: successLight, borderColor: success, borderWidth: 1, borderRadius: rp(theme.radius.sm), padding: rp(theme.spacing.md), marginBottom: rp(theme.spacing.lg) }}>
+      <Text style={{ color: success, fontSize: rs(theme.fontSize.body), textAlign: "center", fontWeight: "600" }}>{success}</Text>
+    </View>
+  );
+};
 
 export default function Login() {
   const router = useRouter();
@@ -245,280 +326,249 @@ export default function Login() {
     setFirstLoginSuccess("");
   };
 
-  const accent = "#0F2044";
-
   return (
-    <View testID="login-screen" style={{ flex: 1, backgroundColor: accent }}>
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.15)" }} />
+    <View testID="login-screen" style={{ flex: 1, backgroundColor: primary }}>
+      {/* Off-canvas blurs */}
+      <View style={{ position: "absolute", top: -SCREEN_H * 0.1, left: -SCREEN_H * 0.1, width: SCREEN_H * 0.4, height: SCREEN_H * 0.4, borderRadius: SCREEN_H * 0.2, backgroundColor: primaryDark, opacity: 0.8, transform: [{ scale: 1.5 }] }} />
+      <View style={{ position: "absolute", bottom: -SCREEN_H * 0.1, right: -SCREEN_H * 0.1, width: SCREEN_H * 0.4, height: SCREEN_H * 0.4, borderRadius: SCREEN_H * 0.2, backgroundColor: accent, opacity: 0.15, transform: [{ scale: 1.5 }] }} />
+      
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <View style={{ minHeight: SCREEN_H * 0.36, paddingHorizontal: rp(32), paddingTop: rp(24), paddingBottom: rp(24), alignItems: "center", justifyContent: "center" }}>
-              <View style={{ backgroundColor: "rgba(255,255,255,0.18)", borderRadius: rp(100), padding: rp(22), marginBottom: rp(18) }}>
-                <Ionicons name="car-sport" size={rs(52)} color="#fff" />
+            <View style={{ flex: 1, justifyContent: "center" }}>
+
+            {/* Header / Brand Lockup */}
+            <View style={{ minHeight: SCREEN_H * 0.35, paddingHorizontal: rp(theme.spacing.xxxl), paddingTop: rp(theme.spacing.xxl), paddingBottom: rp(theme.spacing.xxxl), alignItems: "center", justifyContent: "center" }}>
+              <View style={{ backgroundColor: accent, borderRadius: rp(theme.radius.pill), padding: rp(theme.spacing.lg), marginBottom: rp(theme.spacing.sm), shadowColor: accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 }}>
+                <Ionicons name="car-sport" size={rs(32)} color={accentForeground} />
               </View>
-              <Text style={{ color: "#fff", fontSize: rs(36), fontWeight: "900", letterSpacing: rs(4) }}>INSTAPARK</Text>
-              <Text style={{ color: "rgba(255,255,255,0.75)", marginTop: rp(8), fontSize: rs(14), letterSpacing: rs(1) }}>Valet Management System</Text>
+              <Text style={{ color: accent, fontSize: rs(theme.fontSize.caption), fontWeight: "800", letterSpacing: rs(2), marginBottom: rp(theme.spacing.sm) }}>INSTAPARK</Text>
+
+              <Heading level="display" style={{ color: "#fff", fontSize: rs(theme.fontSize.display + 8), fontWeight: "900", textAlign: "center", marginBottom: rp(theme.spacing.xs) }}>
+                {firstLoginMode
+                  ? "Activate Account"
+                  : forgotMode
+                    ? (forgotStep === 1 ? "Reset password" : forgotStep === 2 ? "Verify & reset" : "Welcome back")
+                    : "Welcome back"}
+              </Heading>
+
+              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(theme.fontSize.body), textAlign: "center" }}>
+                {firstLoginMode
+                  ? "Set up your credentials to continue"
+                  : forgotMode
+                    ? (forgotStep === 1 ? "Enter your registered mobile number and we'll send you a code." : forgotStep === 2 ? "Enter the OTP sent to your number and create a new password." : "Valet Management System")
+                    : "Valet Management System"}
+              </Text>
             </View>
 
-            <View style={{ flex: 1, backgroundColor: "#fff", borderTopLeftRadius: rp(44), borderTopRightRadius: rp(44), paddingHorizontal: rp(24), paddingTop: rp(32), paddingBottom: rp(40) }}>
+            {/* Form Card */}
+            <View style={{ backgroundColor: surface, borderRadius: rp(theme.radius.xl), marginHorizontal: rp(theme.spacing.xl), paddingHorizontal: rp(theme.spacing.xxxl), paddingTop: rp(theme.spacing.xxxl), paddingBottom: rp(40), shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 }}>
 
+              {/* Login Flow */}
               {!firstLoginMode && !forgotMode && loginStep === 1 && (
                 <View>
-                  <Text style={{ fontSize: rs(22), fontWeight: "800", color: accent, marginBottom: rp(24), textAlign: "center" }}>LOGIN</Text>
-
-                  <Text style={styles.label}>MOBILE NUMBER</Text>
-                  <View style={styles.input}>
-                    <Ionicons name="call-outline" size={20} color={accent} />
-                    <TextInput
-                      value={phone}
-                      onChangeText={(t) => { setPhone(t); setError(""); }}
-                      placeholder="10-digit mobile number"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      maxLength={10}
-                      style={styles.textInput}
-                    />
-                  </View>
-
-                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                  <TouchableOpacity style={[styles.button, { backgroundColor: accent, marginTop: rp(8) }]} onPress={checkPhone} disabled={loading}>
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>CONTINUE</Text>}
-                  </TouchableOpacity>
+                  <Text style={{ color: textSecondary, fontSize: rs(theme.fontSize.body), textAlign: "center", marginBottom: rp(theme.spacing.xl) }}>
+                    Enter your mobile number to continue
+                  </Text>
+                  <Field
+                    label="Mobile Number"
+                    icon="call"
+                    value={phone}
+                    onChangeText={(t) => { setPhone(t); setError(""); }}
+                    placeholder="10-digit mobile number"
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                  <ErrorBanner error={error} />
+                  <PrimaryButton onPress={checkPhone} loading={loading} text="CONTINUE" />
                 </View>
               )}
 
               {!firstLoginMode && !forgotMode && loginStep === 2 && (
                 <View>
-                  <Text style={{ fontSize: rs(22), fontWeight: "800", color: accent, marginBottom: rp(24), textAlign: "center" }}>LOGIN</Text>
+                  <Field
+                    label="Mobile Number"
+                    icon="call"
+                    value={phone}
+                    editable={false}
+                    rightAccessory={
+                      <TouchableOpacity onPress={() => { setLoginStep(1); setError(); setCredential(""); }}>
+                        <Text style={{ color: primary, fontSize: rs(theme.fontSize.caption), fontWeight: "700", textTransform: 'uppercase' }}>Change</Text>
+                      </TouchableOpacity>
+                    }
+                  />
 
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(8) }}>
-                    <Text style={[styles.label, { marginBottom: 0 }]}>MOBILE NUMBER</Text>
-                    <TouchableOpacity onPress={() => { setLoginStep(1); setError(); setCredential(""); }}>
-                      <Text style={{ color: accent, fontSize: rs(12), fontWeight: "700" }}>CHANGE</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Field
+                    label={accountRole === "driver" ? "PIN" : "Password"}
+                    icon="lock-closed"
+                    value={credential}
+                    onChangeText={(t) => { setCredential(t); setError(""); }}
+                    placeholder="••••••••"
+                    secureTextEntry={!showPwd}
+                    keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                    maxLength={accountRole === "driver" ? 4 : undefined}
+                    rightAccessory={
+                      <TouchableOpacity onPress={() => setShowPwd(!showPwd)}>
+                        <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={textMuted} />
+                      </TouchableOpacity>
+                    }
+                  />
 
-                  <View style={[styles.input, { backgroundColor: "#F9FAFB", opacity: 0.7 }]}>
-                    <Ionicons name="call-outline" size={20} color={accent} />
-                    <TextInput
-                      value={phone}
-                      editable={false}
-                      style={[styles.textInput, { color: "#6B7280" }]}
-                    />
-                  </View>
-
-                  <Text style={styles.label}>{accountRole === "driver" ? "PIN" : "PASSWORD"}</Text>
-                  <View style={styles.input}>
-                    <Ionicons name="lock-closed-outline" size={20} color={accent} />
-                    <TextInput
-                      value={credential}
-                      onChangeText={(t) => { setCredential(t); setError(""); }}
-                      placeholder="••••••••"
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showPwd}
-                      keyboardType={accountRole === "driver" ? "numeric" : "default"}
-                      maxLength={accountRole === "driver" ? 4 : undefined}
-                      style={styles.textInput}
-                    />
-                    <TouchableOpacity onPress={() => setShowPwd((s) => !s)}>
-                      <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity onPress={() => { setForgotPhone(phone); setForgotMode(true); }} style={{ alignSelf: "flex-end", marginBottom: rp(24) }}>
-                    <Text style={{ color: accent, fontSize: rs(14), fontWeight: "600" }}>Forgot Password?</Text>
+                  <TouchableOpacity onPress={() => { setForgotPhone(phone); setForgotMode(true); }} style={{ alignSelf: "flex-end", marginBottom: rp(theme.spacing.xl) }}>
+                    <Text style={{ color: primary, fontSize: rs(theme.fontSize.body), fontWeight: "700" }}>Forgot Password?</Text>
                   </TouchableOpacity>
 
-                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                  <TouchableOpacity style={[styles.button, { backgroundColor: accent }]} onPress={submit} disabled={loading}>
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>SIGN IN</Text>}
-                  </TouchableOpacity>
+                  <ErrorBanner error={error} />
+                  <PrimaryButton onPress={submit} loading={loading} text="SIGN IN" />
                 </View>
               )}
 
+              {/* First Login (Activation) Flow */}
               {firstLoginMode && (
                 <View>
-                  <Text style={{ fontSize: rs(22), fontWeight: "800", color: accent, marginBottom: rp(8), textAlign: "center" }}>ACTIVATE ACCOUNT</Text>
-                  <Text style={{ color: "#6B7280", fontSize: rs(14), textAlign: "center", marginBottom: rp(24) }}>Please set your {accountRole === "driver" ? "PIN" : "Password"} to activate your account.</Text>
+                  <SuccessBanner success={firstLoginSuccess} />
+                  
+                  <Field
+                    label="OTP (from email)"
+                    icon="keypad"
+                    value={firstLoginOtp}
+                    onChangeText={setFirstLoginOtp}
+                    placeholder="6-digit OTP"
+                    keyboardType="numeric"
+                  />
+                  
+                  <Field
+                    label={accountRole === "driver" ? "New PIN" : "New Password"}
+                    icon="lock-closed"
+                    value={newCredential}
+                    onChangeText={setNewCredential}
+                    placeholder="••••••••"
+                    secureTextEntry={!showPwd}
+                    keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                    maxLength={accountRole === "driver" ? 4 : undefined}
+                    rightAccessory={
+                      <TouchableOpacity onPress={() => setShowPwd(!showPwd)}>
+                        <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={textMuted} />
+                      </TouchableOpacity>
+                    }
+                  />
 
-                  {firstLoginSuccess ? <Text style={styles.successText}>{firstLoginSuccess}</Text> : null}
+                  <Field
+                    label={accountRole === "driver" ? "Confirm PIN" : "Confirm Password"}
+                    icon="lock-closed"
+                    value={confirmCredential}
+                    onChangeText={setConfirmCredential}
+                    placeholder="••••••••"
+                    secureTextEntry={!showPwd}
+                    keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                    maxLength={accountRole === "driver" ? 4 : undefined}
+                  />
 
-                  <Text style={styles.label}>OTP (from email)</Text>
-                  <View style={styles.input}>
-                    <Ionicons name="keypad-outline" size={20} color={accent} />
-                    <TextInput
-                      value={firstLoginOtp}
-                      onChangeText={setFirstLoginOtp}
-                      placeholder="6-digit OTP"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      style={styles.textInput}
-                    />
-                  </View>
+                  <ErrorBanner error={firstLoginError} />
 
-                  <Text style={styles.label}>NEW {accountRole === "driver" ? "PIN" : "PASSWORD"}</Text>
-                  <View style={styles.input}>
-                    <Ionicons name="lock-closed-outline" size={20} color={accent} />
-                    <TextInput
-                      value={newCredential}
-                      onChangeText={setNewCredential}
-                      placeholder="••••••••"
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showPwd}
-                      keyboardType={accountRole === "driver" ? "numeric" : "default"}
-                      maxLength={accountRole === "driver" ? 4 : undefined}
-                      style={styles.textInput}
-                    />
-                    <TouchableOpacity onPress={() => setShowPwd((s) => !s)}>
-                      <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
+                  <PrimaryButton onPress={submitFirstLogin} loading={firstLoginLoading} text="ACTIVATE & LOGIN" style={{ marginBottom: rp(theme.spacing.lg) }} />
 
-                  <Text style={styles.label}>CONFIRM {accountRole === "driver" ? "PIN" : "PASSWORD"}</Text>
-                  <View style={styles.input}>
-                    <Ionicons name="lock-closed-outline" size={20} color={accent} />
-                    <TextInput
-                      value={confirmCredential}
-                      onChangeText={setConfirmCredential}
-                      placeholder="••••••••"
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showPwd}
-                      keyboardType={accountRole === "driver" ? "numeric" : "default"}
-                      maxLength={accountRole === "driver" ? 4 : undefined}
-                      style={styles.textInput}
-                    />
-                  </View>
-
-                  {firstLoginError ? <Text style={styles.errorText}>{firstLoginError}</Text> : null}
-
-                  <TouchableOpacity style={[styles.button, { backgroundColor: accent, marginBottom: rp(16) }]} onPress={submitFirstLogin} disabled={firstLoginLoading}>
-                    {firstLoginLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ACTIVATE & LOGIN</Text>}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={cancelFirstLogin} style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#6B7280", fontSize: rs(14), fontWeight: "600" }}>Cancel / Change Number</Text>
+                  <TouchableOpacity onPress={cancelFirstLogin} style={{ alignItems: "center", paddingVertical: rp(theme.spacing.sm) }}>
+                    <Text style={{ color: textSecondary, fontSize: rs(theme.fontSize.body), fontWeight: "600" }}>Cancel / Change Number</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
+              {/* Forgot Password Flow */}
               {forgotMode && (
                 <View>
                   {forgotStep === 1 && (
                     <View>
-                      <Text style={{ fontSize: rs(22), fontWeight: "800", color: accent, marginBottom: rp(8), textAlign: "center" }}>RESET PASSWORD</Text>
-                      <Text style={{ color: "#6B7280", fontSize: rs(14), textAlign: "center", marginBottom: rp(24) }}>Enter your registered mobile number.</Text>
+                      <Field
+                        label="Mobile Number"
+                        icon="call"
+                        value={forgotPhone}
+                        onChangeText={setForgotPhone}
+                        placeholder="10-digit mobile number"
+                        keyboardType="numeric"
+                        maxLength={10}
+                        editable={loginStep === 1}
+                      />
+                      <ErrorBanner error={forgotError} />
+                      <PrimaryButton onPress={sendForgotOtp} loading={forgotLoading} text="SEND OTP" style={{ marginBottom: rp(theme.spacing.lg) }} />
 
-                      <Text style={styles.label}>MOBILE NUMBER</Text>
-                      <View style={styles.input}>
-                        <Ionicons name="call-outline" size={20} color={accent} />
-                        <TextInput
-                          value={forgotPhone}
-                          onChangeText={setForgotPhone}
-                          placeholder="10-digit mobile number"
-                          placeholderTextColor="#9CA3AF"
-                          keyboardType="numeric"
-                          maxLength={10}
-                          style={styles.textInput}
-                          editable={loginStep === 1}
-                        />
-                      </View>
-
-                      {forgotError ? <Text style={styles.errorText}>{forgotError}</Text> : null}
-
-                      <TouchableOpacity style={[styles.button, { backgroundColor: accent, marginBottom: rp(16) }]} onPress={sendForgotOtp} disabled={forgotLoading}>
-                        {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>SEND OTP</Text>}
+                      <TouchableOpacity onPress={resetForgotFlow} style={{ alignItems: "center", paddingVertical: rp(theme.spacing.sm) }}>
+                        <Text style={{ color: textSecondary, fontSize: rs(theme.fontSize.body), fontWeight: "600" }}>Cancel</Text>
                       </TouchableOpacity>
                     </View>
                   )}
 
                   {forgotStep === 2 && (
                     <View>
-                      <Text style={{ fontSize: rs(22), fontWeight: "800", color: accent, marginBottom: rp(8), textAlign: "center" }}>ENTER OTP & NEW PIN/PASSWORD</Text>
+                      <SuccessBanner success={forgotSuccess} />
+                      
+                      <Field
+                        label="OTP"
+                        icon="keypad"
+                        value={forgotOtp}
+                        onChangeText={setForgotOtp}
+                        placeholder="6-digit OTP"
+                        keyboardType="numeric"
+                      />
 
-                      {forgotSuccess ? <Text style={styles.successText}>{forgotSuccess}</Text> : null}
+                      <Field
+                        label="New Password / PIN"
+                        icon="lock-closed"
+                        value={forgotNewSecret}
+                        onChangeText={setForgotNewSecret}
+                        placeholder="••••••••"
+                        secureTextEntry={!showPwd}
+                        keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                        maxLength={accountRole === "driver" ? 4 : undefined}
+                        rightAccessory={
+                          <TouchableOpacity onPress={() => setShowPwd(!showPwd)}>
+                            <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={textMuted} />
+                          </TouchableOpacity>
+                        }
+                      />
 
-                      <Text style={styles.label}>OTP</Text>
-                      <View style={styles.input}>
-                        <Ionicons name="keypad-outline" size={20} color={accent} />
-                        <TextInput
-                          value={forgotOtp}
-                          onChangeText={setForgotOtp}
-                          placeholder="6-digit OTP"
-                          placeholderTextColor="#9CA3AF"
-                          keyboardType="numeric"
-                          style={styles.textInput}
-                        />
-                      </View>
+                      <Field
+                        label="Confirm Password / PIN"
+                        icon="lock-closed"
+                        value={forgotConfirmSecret}
+                        onChangeText={setForgotConfirmSecret}
+                        placeholder="••••••••"
+                        secureTextEntry={!showPwd}
+                        keyboardType={accountRole === "driver" ? "numeric" : "default"}
+                        maxLength={accountRole === "driver" ? 4 : undefined}
+                      />
 
-                      <Text style={styles.label}>NEW PASSWORD / PIN</Text>
-                      <View style={styles.input}>
-                        <Ionicons name="lock-closed-outline" size={20} color={accent} />
-                        <TextInput
-                          value={forgotNewSecret}
-                          onChangeText={setForgotNewSecret}
-                          placeholder="••••••••"
-                          placeholderTextColor="#9CA3AF"
-                          secureTextEntry={!showPwd}
-                          keyboardType={accountRole === "driver" ? "numeric" : "default"}
-                          maxLength={accountRole === "driver" ? 4 : undefined}
-                          style={styles.textInput}
-                        />
-                        <TouchableOpacity onPress={() => setShowPwd((s) => !s)}>
-                          <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
-                        </TouchableOpacity>
-                      </View>
+                      <ErrorBanner error={forgotError} />
+                      
+                      <PrimaryButton onPress={verifyForgotOtp} loading={forgotLoading} text="RESET CREDENTIALS" style={{ marginBottom: rp(theme.spacing.lg) }} />
 
-                      <Text style={styles.label}>CONFIRM PASSWORD / PIN</Text>
-                      <View style={styles.input}>
-                        <Ionicons name="lock-closed-outline" size={20} color={accent} />
-                        <TextInput
-                          value={forgotConfirmSecret}
-                          onChangeText={setForgotConfirmSecret}
-                          placeholder="••••••••"
-                          placeholderTextColor="#9CA3AF"
-                          secureTextEntry={!showPwd}
-                          keyboardType={accountRole === "driver" ? "numeric" : "default"}
-                          maxLength={accountRole === "driver" ? 4 : undefined}
-                          style={styles.textInput}
-                        />
-                      </View>
-
-                      {forgotError ? <Text style={styles.errorText}>{forgotError}</Text> : null}
-
-                      <TouchableOpacity style={[styles.button, { backgroundColor: accent, marginBottom: rp(16) }]} onPress={verifyForgotOtp} disabled={forgotLoading}>
-                        {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>RESET CREDENTIALS</Text>}
+                      <TouchableOpacity onPress={resetForgotFlow} style={{ alignItems: "center", paddingVertical: rp(theme.spacing.sm) }}>
+                        <Text style={{ color: textSecondary, fontSize: rs(theme.fontSize.body), fontWeight: "600" }}>Cancel</Text>
                       </TouchableOpacity>
                     </View>
                   )}
 
                   {forgotStep === 3 && (
-                    <View style={{ alignItems: "center", paddingVertical: rp(24) }}>
-                      <View style={{ width: rp(64), height: rp(64), borderRadius: rp(32), backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center", marginBottom: rp(16) }}>
-                        <Ionicons name="checkmark-circle" size={rs(40)} color="#059669" />
+                    <View style={{ alignItems: "center", paddingVertical: rp(theme.spacing.xxxl) }}>
+                      <View style={{ width: rp(64), height: rp(64), borderRadius: rp(32), backgroundColor: successLight, alignItems: "center", justifyContent: "center", marginBottom: rp(theme.spacing.lg) }}>
+                        <Ionicons name="checkmark" size={rs(32)} color={success} />
                       </View>
-                      <Text style={{ fontSize: rs(18), fontWeight: "700", color: "#111827", marginBottom: rp(8) }}>Success</Text>
-                      <Text style={{ color: "#6B7280", fontSize: rs(14), textAlign: "center", marginBottom: rp(24) }}>{forgotSuccess}</Text>
+                      <Heading level="title" style={{ color: textPrimary, marginBottom: rp(theme.spacing.sm) }}>Success</Heading>
+                      <Text style={{ color: textSecondary, fontSize: rs(theme.fontSize.body), textAlign: "center", marginBottom: rp(theme.spacing.xxl) }}>{forgotSuccess}</Text>
+                      <PrimaryButton onPress={resetForgotFlow} text="BACK TO LOGIN" style={{ width: '100%' }} />
                     </View>
                   )}
-
-                  <TouchableOpacity onPress={resetForgotFlow} style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#6B7280", fontSize: rs(14), fontWeight: "600" }}>
-                      {forgotStep === 3 ? "Back to Login" : "Cancel"}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               )}
 
+            </View>
             </View>
             <Text style={{ 
               textAlign: "center", 
               color: "rgba(255,255,255,0.4)", 
               fontSize: rs(11), 
-              marginTop: rp(8),
-              marginBottom: rp(4)
+              marginTop: rp(theme.spacing.sm),
+              marginBottom: rp(theme.spacing.xs)
             }}>
               v{Constants.expoConfig?.version || "1.0.0"}
             </Text>
@@ -528,61 +578,3 @@ export default function Login() {
     </View>
   );
 }
-
-const styles = {
-  label: {
-    fontSize: rs(12),
-    fontWeight: "700",
-    color: "#9CA3AF",
-    marginBottom: rp(8),
-    letterSpacing: rs(0.5),
-  },
-  input: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: rp(12),
-    paddingHorizontal: rp(16),
-    height: rp(52),
-    marginBottom: rp(20),
-  },
-  textInput: {
-    flex: 1,
-    marginLeft: rp(12),
-    fontSize: rs(15),
-    color: "#111827",
-    fontWeight: "500",
-  },
-  button: {
-    height: rp(52),
-    borderRadius: rp(12),
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: rs(15),
-    fontWeight: "800",
-    letterSpacing: rs(1),
-  },
-  errorText: {
-    color: "#DC2626",
-    fontSize: rs(13),
-    marginBottom: rp(16),
-    textAlign: "center",
-  },
-  successText: {
-    color: "#059669",
-    fontSize: rs(13),
-    marginBottom: rp(16),
-    textAlign: "center",
-    backgroundColor: "#ECFDF5",
-    padding: rp(12),
-    borderRadius: rp(8),
-  }
-};

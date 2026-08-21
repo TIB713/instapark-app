@@ -7,6 +7,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { theme } from "../../../utils/theme";
 import { rs, rp } from "../../../utils/responsive";
 import { Screen, TopBar, Card, Btn, Chip, Modal } from "../../../components/valet/ui";
+import Heading from "../../../components/Heading";
 import { useEmployeeManagement } from "../../../hooks/useEmployeeManagement";
 
 export default function DriverBulkUpload() {
@@ -140,9 +141,9 @@ export default function DriverBulkUpload() {
           <View style={{ backgroundColor: theme.colors.successLight, padding: rp(16), borderRadius: rp(99), marginBottom: rp(theme.spacing.md) }}>
             <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
           </View>
-          <Text style={{ fontSize: rs(18), fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: rp(theme.spacing.sm) }}>
+          <Heading level="subtitle" style={{ marginBottom: rp(theme.spacing.sm) }}>
             {bulkResult?.inserted || 0} drivers imported
-          </Text>
+          </Heading>
           <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, textAlign: "center", marginBottom: rp(theme.spacing.xl) }}>
             {bulkResult?.skipped || 0} rows skipped — fix and re-upload anytime.
           </Text>

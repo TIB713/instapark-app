@@ -11,6 +11,10 @@ import { cleanupOldOfflinePhotos } from "../lib/offline";
 import { ConfirmDialogHost } from "../lib/confirmDialog";
 import "../global.css";
 import { Text, TextInput } from "react-native";
+import { useFonts } from "expo-font";
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
+import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import { theme } from "../utils/theme";
 
 // @ts-ignore
 if (Text.defaultProps == null) Text.defaultProps = {};
@@ -18,6 +22,8 @@ if (Text.defaultProps == null) Text.defaultProps = {};
 Text.defaultProps.allowFontScaling = false;
 // @ts-ignore
 Text.defaultProps.maxFontSizeMultiplier = 1;
+// @ts-ignore
+Text.defaultProps.style = { ...Text.defaultProps?.style, fontFamily: theme.fontFamily.regular };
 
 // @ts-ignore
 if (TextInput.defaultProps == null) TextInput.defaultProps = {};
@@ -25,9 +31,19 @@ if (TextInput.defaultProps == null) TextInput.defaultProps = {};
 TextInput.defaultProps.allowFontScaling = false;
 // @ts-ignore
 TextInput.defaultProps.maxFontSizeMultiplier = 1;
+// @ts-ignore
+TextInput.defaultProps.style = { ...TextInput.defaultProps?.style, fontFamily: theme.fontFamily.regular };
 
 export default function RootLayout() {
   const router = useRouter();
+
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    SpaceGrotesk_700Bold,
+  });
 
   useEffect(() => {
     // Handle notification tap when app is in background or closed
@@ -83,6 +99,10 @@ export default function RootLayout() {
     });
     return () => sub.remove();
   }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

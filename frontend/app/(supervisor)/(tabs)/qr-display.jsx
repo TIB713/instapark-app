@@ -38,7 +38,7 @@ export default function QRDisplayScreen() {
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
           <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; margin: 0; padding: 20px; color: #0F2044; }
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; margin: 0; padding: 20px; color: #3F0163; }
             .plate { font-size: 48px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #E2E8F0; padding-bottom: 10px; }
             .code-title { font-size: 16px; color: #64748B; text-transform: uppercase; margin-top: 20px; }
             .code { font-size: 64px; font-weight: bold; letter-spacing: 10px; margin: 10px 0 30px; }

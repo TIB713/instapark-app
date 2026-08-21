@@ -13,7 +13,7 @@ import {
   Modal,
   Switch,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -96,9 +96,11 @@ export default function Hotels() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchHotels();
-  }, [fetchHotels]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchHotels();
+    }, [fetchHotels])
+  );
 
   // Auto-update single zone's slots when totalSlots changes
   useEffect(() => {

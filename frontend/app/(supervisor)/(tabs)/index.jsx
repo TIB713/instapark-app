@@ -17,6 +17,7 @@ import { useAppStore } from "../../../lib/store";
 import { theme } from "../../../utils/theme";
 import api from "../../../lib/api";
 import { Card, Screen, StatusPill } from "../../../components/valet/ui";
+import Heading from "../../../components/Heading";
 import { useSupervisorEvents } from "../../../hooks/useSupervisorEvents";
 
 const greeting = () => {
@@ -135,9 +136,9 @@ export default function SupervisorDashboard() {
               <Text style={{ fontSize: rs(10), fontWeight: "800", letterSpacing: rs(2), color: theme.colors.accent, textTransform: 'uppercase', marginBottom: rp(4) }}>
                 SUPERVISOR CONSOLE
               </Text>
-              <Text style={{ fontSize: rs(26), fontWeight: "900", color: "#FFFFFF", marginBottom: rp(8) }} numberOfLines={1}>
+              <Heading level="display" style={{ color: '#FFFFFF', marginBottom: rp(8) }} numberOfLines={1}>
                 Hi, {user?.name || 'Supervisor'}
-              </Text>
+              </Heading>
               
               <View style={{
                 flexDirection: 'row',
@@ -164,26 +165,26 @@ export default function SupervisorDashboard() {
               style={{ width: rp(44), height: rp(44), borderRadius: rp(22), backgroundColor: "rgba(255,255,255,0.15)", alignItems: 'center', justifyContent: 'center' }}
               activeOpacity={0.7}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: rs(18), fontWeight: '900' }}>{(user?.name || 'S').charAt(0).toUpperCase()}</Text>
+              <Heading level="subtitle" style={{ color: '#FFFFFF' }}>{(user?.name || 'S').charAt(0).toUpperCase()}</Heading>
             </TouchableOpacity>
           </View>
 
           {/* 4 Compact Metric Tiles */}
           <View style={{ flexDirection: 'row', gap: rp(theme.spacing.sm), marginTop: rp(theme.spacing.xl) }}>
             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: theme.radius.lg, paddingVertical: rp(10), alignItems: 'center' }}>
-              <Text style={{ fontSize: rs(18), fontWeight: 'bold', color: '#FFFFFF' }}>{events.length}</Text>
+              <Heading level="subtitle" style={{ color: '#FFFFFF' }}>{events.length}</Heading>
               <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontWeight: 'bold', marginTop: rp(2) }}>Events</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: theme.radius.lg, paddingVertical: rp(10), alignItems: 'center' }}>
-              <Text style={{ fontSize: rs(18), fontWeight: 'bold', color: theme.colors.success }}>{active.length}</Text>
+              <Heading level="subtitle" style={{ color: theme.colors.success }}>{active.length}</Heading>
               <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontWeight: 'bold', marginTop: rp(2) }}>Active</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: theme.radius.lg, paddingVertical: rp(10), alignItems: 'center' }}>
-              <Text style={{ fontSize: rs(18), fontWeight: 'bold', color: '#FFFFFF' }}>{freeDrivers}</Text>
+              <Heading level="subtitle" style={{ color: '#FFFFFF' }}>{freeDrivers}</Heading>
               <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontWeight: 'bold', marginTop: rp(2) }}>Drivers</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: theme.radius.lg, paddingVertical: rp(10), alignItems: 'center' }}>
-              <Text style={{ fontSize: rs(18), fontWeight: 'bold', color: openIncidents.length > 0 ? theme.colors.danger : '#FFFFFF' }}>{openIncidents.length}</Text>
+              <Heading level="subtitle" style={{ color: openIncidents.length > 0 ? theme.colors.danger : '#FFFFFF' }}>{openIncidents.length}</Heading>
               <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontWeight: 'bold', marginTop: rp(2) }}>Alerts</Text>
             </View>
           </View>
@@ -207,7 +208,7 @@ export default function SupervisorDashboard() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: rp(theme.spacing.sm), flexWrap: 'wrap' }}>
-                        <Text style={{ fontSize: rs(18), fontWeight: '900', color: theme.colors.textPrimary }}>{event.name}</Text>
+                        <Heading level="subtitle">{event.name}</Heading>
                         {event.status === 'active' && (
                           <View style={{ backgroundColor: theme.colors.success, borderRadius: rp(4), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
                             <Text style={{ color: "#FFFFFF", fontSize: rs(9), fontWeight: "900" }}>LIVE</Text>
@@ -357,7 +358,7 @@ export default function SupervisorDashboard() {
                 <Ionicons name="business" size={24} color={theme.colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: rs(18), fontWeight: "900", color: theme.colors.textPrimary }}>{hotel.name}</Text>
+                <Heading level="subtitle">{hotel.name}</Heading>
                 <Text style={{ fontSize: rs(12), color: theme.colors.textSecondary, marginTop: rp(2) }}>Primary Assigned Location</Text>
               </View>
             </Card>

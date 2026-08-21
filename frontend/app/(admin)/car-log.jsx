@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive'; 
 import { 
   View, Text, ScrollView, ActivityIndicator, 
   TouchableOpacity, Image, Modal 
 } from "react-native"; 
-import { useLocalSearchParams, useRouter } from "expo-router"; 
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"; 
 import api from "../../lib/api";
@@ -172,12 +172,14 @@ export default function CarLog() {
   const [loading, setLoading] = useState(true); 
   const [lightboxUrl, setLightboxUrl] = useState(null); 
  
-  useEffect(() => { 
-    api.get(`/cars/${car_id}/log`) 
-      .then(({ data }) => setLog(data)) 
-      .catch(() => {}) 
-      .finally(() => setLoading(false)); 
-  }, [car_id]); 
+  useFocusEffect(
+    useCallback(() => {
+      api.get(`/cars/${car_id}/log`) 
+        .then(({ data }) => setLog(data)) 
+        .catch(() => {}) 
+        .finally(() => setLoading(false)); 
+    }, [car_id])
+  ); 
  
   if (loading) return ( 
     <View style={{ flex: 1, backgroundColor: "#F8F7FF", 

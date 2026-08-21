@@ -1,8 +1,8 @@
 import { confirmDialog } from "../../lib/confirmDialog";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -31,15 +31,17 @@ export default function AllEvents() {
   const ACCENT_LIGHT = isHotelOwner ? "rgba(29,78,216,0.5)" : "rgba(79,70,229,0.5)";
   const BG_LIGHT = isHotelOwner ? "#EFF6FF" : "#F5F3FF";
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get("/events");
-        setEvents(data || []);
-      } catch {}
-      setLoading(false);
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const { data } = await api.get("/events");
+          setEvents(data || []);
+        } catch {}
+        setLoading(false);
+      })();
+    }, [])
+  );
 
   const filtered = events
     .filter((e) => {

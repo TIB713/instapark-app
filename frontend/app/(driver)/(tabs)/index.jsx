@@ -26,7 +26,7 @@ import {
   AppState,
   Animated,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -44,6 +44,7 @@ import { stopLocationTracking, updateJourney, checkEventStatusAndStop, isJourney
 import { useDriverTasksContext } from "../../../context/DriverTasksContext";
 
 import { Screen, TopBar, Card, Btn, StatusPill, Plate, EmptyState, SectionTitle, Chip, Modal, Sheet } from '../../../components/valet/ui';
+import Heading from '../../../components/Heading';
 
 export default function Tasks() {
   const router = useRouter();
@@ -155,9 +156,11 @@ export default function Tasks() {
     }
   };
 
-  useEffect(() => {
-    fetchStats();
-  }, [currentEventId, resolvedDriverId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+    }, [currentEventId, resolvedDriverId])
+  );
 
   const handleRefresh = async () => {
     onRefresh();
@@ -428,17 +431,17 @@ export default function Tasks() {
             zIndex: 10
           }}>
             <View style={{ alignItems: "center", flex: 1 }}>
-              <Text style={{ fontSize: rs(20), fontWeight: "800", color: "#111827" }}>{stats.parked_count}</Text>
+              <Heading level="display" style={{ fontSize: rs(20), color: "#111827" }}>{stats.parked_count}</Heading>
               <Text style={{ fontSize: rs(11), color: "#6B7280", marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Parked</Text>
             </View>
             <View style={{ width: 1, backgroundColor: "#E5E7EB", height: "100%" }} />
             <View style={{ alignItems: "center", flex: 1 }}>
-              <Text style={{ fontSize: rs(20), fontWeight: "800", color: "#111827" }}>{stats.delivered_count}</Text>
+              <Heading level="display" style={{ fontSize: rs(20), color: "#111827" }}>{stats.delivered_count}</Heading>
               <Text style={{ fontSize: rs(11), color: "#6B7280", marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Delivered</Text>
             </View>
             <View style={{ width: 1, backgroundColor: "#E5E7EB", height: "100%" }} />
             <View style={{ alignItems: "center", flex: 1 }}>
-              <Text style={{ fontSize: rs(20), fontWeight: "800", color: "#111827" }}>{stats.avg_retrieval_minutes}</Text>
+              <Heading level="display" style={{ fontSize: rs(20), color: "#111827" }}>{stats.avg_retrieval_minutes}</Heading>
               <Text style={{ fontSize: rs(11), color: "#6B7280", marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Avg Min</Text>
             </View>
           </View>

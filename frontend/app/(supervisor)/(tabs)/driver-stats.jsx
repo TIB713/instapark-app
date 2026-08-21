@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Linking, TextInput } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -11,6 +11,7 @@ import { getItem } from '../../../lib/secure';
 import { rs, rp } from '../../../utils/responsive';
 import { theme } from '../../../utils/theme';
 import { Screen, TopBar, Card, Btn, StatusPill, Chip, EmptyState } from '../../../components/valet/ui';
+import Heading from '../../../components/Heading';
 import api from '../../../lib/api';
 import { confirmDialog } from '../../../lib/confirmDialog';
 
@@ -33,45 +34,49 @@ export default function DriverStats() {
   const [eventsSearch, setEventsSearch] = useState("");
   const [eventsLoading, setEventsLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [drvRes, statsRes, incRes] = await Promise.all([
-          api.get(`/drivers/${driverId}`),
-          api.get(`/drivers/${driverId}/profile-stats`),
-          api.get(`/drivers/${driverId}/incidents`)
-        ]);
-        setDriver(drvRes.data);
-        setStats(statsRes.data);
-        setIncidents(incRes.data);
-      } catch (err) {
-        console.warn("Failed to fetch driver stats", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (driverId) fetchData();
-  }, [driverId]);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const [drvRes, statsRes, incRes] = await Promise.all([
+            api.get(`/drivers/${driverId}`),
+            api.get(`/drivers/${driverId}/profile-stats`),
+            api.get(`/drivers/${driverId}/incidents`)
+          ]);
+          setDriver(drvRes.data);
+          setStats(statsRes.data);
+          setIncidents(incRes.data);
+        } catch (err) {
+          console.warn("Failed to fetch driver stats", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      if (driverId) fetchData();
+    }, [driverId])
+  );
 
-  useEffect(() => {
-    if (!driverId) return;
-    const fetchEvents = async () => {
-      setEventsLoading(true);
-      try {
-        const res = await api.get(`/drivers/${driverId}/events-paginated?page=${eventsPage}&limit=5&search=${encodeURIComponent(eventsSearch)}`);
-        setEventsList(res.data.events || []);
-        setEventsTotal(res.data.total || 0);
-        setEventsPages(res.data.pages || 1);
-      } catch (e) {
-        console.warn("Failed to fetch events page", e);
-      } finally {
-        setEventsLoading(false);
-      }
-    };
-    
-    const timeout = setTimeout(fetchEvents, 400);
-    return () => clearTimeout(timeout);
-  }, [driverId, eventsPage, eventsSearch]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!driverId) return;
+      const fetchEvents = async () => {
+        setEventsLoading(true);
+        try {
+          const res = await api.get(`/drivers/${driverId}/events-paginated?page=${eventsPage}&limit=5&search=${encodeURIComponent(eventsSearch)}`);
+          setEventsList(res.data.events || []);
+          setEventsTotal(res.data.total || 0);
+          setEventsPages(res.data.pages || 1);
+        } catch (e) {
+          console.warn("Failed to fetch events page", e);
+        } finally {
+          setEventsLoading(false);
+        }
+      };
+      
+      const timeout = setTimeout(fetchEvents, 400);
+      return () => clearTimeout(timeout);
+    }, [driverId, eventsPage, eventsSearch])
+  );
 
   const handleDownloadReport = async () => {
     try {
@@ -133,18 +138,18 @@ export default function DriverStats() {
           padding: rp(theme.spacing.md),
         }}>
           <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={{ fontSize: rs(18), fontWeight: '900', color: '#FFFFFF' }}>{stats.total_events}</Text>
+            <Heading level="subtitle" style={{ color: '#FFFFFF' }}>{stats.total_events}</Heading>
             <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', marginTop: rp(4), fontWeight: '700', textTransform: 'uppercase' }}>Events</Text>
           </View>
           <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.2)', height: '100%' }} />
           <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={{ fontSize: rs(18), fontWeight: '900', color: incidents_count > 0 ? theme.colors.danger : '#FFFFFF' }}>{incidents_count}</Text>
+            <Heading level="subtitle" style={{ color: incidents_count > 0 ? theme.colors.danger : '#FFFFFF' }}>{incidents_count}</Heading>
             <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', marginTop: rp(4), fontWeight: '700', textTransform: 'uppercase' }}>Incidents</Text>
           </View>
           <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.2)', height: '100%' }} />
           <View style={{ alignItems: 'center', flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: rp(2) }}>
-              <Text style={{ fontSize: rs(18), fontWeight: '900', color: theme.colors.warning }}>{rating ?? "—"}</Text>
+              <Heading level="subtitle" style={{ color: theme.colors.warning }}>{rating ?? "—"}</Heading>
               <Ionicons name="star" size={12} color={theme.colors.warning} />
             </View>
             <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', marginTop: rp(4), fontWeight: '700', textTransform: 'uppercase' }}>Rating</Text>
@@ -375,7 +380,7 @@ const eventStatLbl = { fontSize: rs(9), fontWeight: '700', color: theme.colors.t
 const MetricCard = ({ icon, label, value, iconColor = theme.colors.primary, mutedValue }) => (
   <Card style={{ width: '48%', padding: rp(theme.spacing.md) }}>
     <Ionicons name={icon} size={20} color={iconColor} style={{ marginBottom: rp(theme.spacing.sm) }} />
-    <Text style={{ fontSize: rs(18), fontWeight: '800', color: mutedValue ? theme.colors.textMuted : theme.colors.textPrimary, marginBottom: rp(4) }}>{value}</Text>
+    <Heading level="subtitle" style={{ color: mutedValue ? theme.colors.textMuted : theme.colors.textPrimary, marginBottom: rp(4) }}>{value}</Heading>
     <Text style={{ fontSize: rs(11), fontWeight: '600', color: theme.colors.textSecondary }}>{label}</Text>
   </Card>
 );

@@ -47,6 +47,7 @@ export default function CreateEvent() {
   const [hostEmail, setHostEmail] = useState("");
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
+  const [autoCloseGraceMinutes, setAutoCloseGraceMinutes] = useState("30");
   const [allowInstantPark, setAllowInstantPark] = useState(false);
   const [zones, setZones] = useState([{ name: "A", slots: 20 }]);
   const [gates, setGates] = useState(["Main Gate"]);
@@ -120,6 +121,7 @@ export default function CreateEvent() {
         venue: venue.trim(),
         max_cars: parseInt(maxCars) || 200,
         gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
+        auto_close_grace_minutes: parseInt(autoCloseGraceMinutes) || 30,
         allow_instant_park: allowInstantPark,
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
@@ -414,6 +416,19 @@ export default function CreateEvent() {
               placeholderTextColor="#9CA3AF"
               keyboardType="number-pad"
               maxLength={2}
+              style={textInputStyle}
+            />
+          </InputRow>
+
+          <Label>AUTO-CLOSE GRACE PERIOD (MINUTES)</Label>
+          <InputRow icon="time-outline">
+            <TextInput
+              value={autoCloseGraceMinutes}
+              onChangeText={setAutoCloseGraceMinutes}
+              placeholder="30"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              maxLength={3}
               style={textInputStyle}
             />
           </InputRow>

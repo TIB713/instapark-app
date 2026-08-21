@@ -22,7 +22,7 @@ import {
 import QRCode from "react-native-qrcode-svg";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import CityStatePicker from "../../components/CityStatePicker";
 import { State } from "country-state-city";
 import { Ionicons } from "@expo/vector-icons";
@@ -218,9 +218,11 @@ export default function HotelDetail() {
     setLoading(false);
   }, [fetchHotel, fetchEvents, fetchAllMembers, fetchGuests]);
 
-  useEffect(() => {
-    init();
-  }, [init]);
+  useFocusEffect(
+    useCallback(() => {
+      init();
+    }, [init])
+  );
 
   useEffect(() => {
     setTeamSearch("");

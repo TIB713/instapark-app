@@ -22,7 +22,7 @@ import {
   BackHandler,
 } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -46,6 +46,7 @@ import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
 import { connectWS, disconnectWS } from "../../../lib/websocket";
 import { theme } from "../../../utils/theme";
+import Heading from "../../../components/Heading";
 
 const INCIDENT_TYPES = [
   { key: "DAMAGE", label: "Damage", icon: "🚗" },
@@ -214,9 +215,16 @@ export default function SupervisorEventDetail() {
     }
   }, [tab, currentEventId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (currentEventId) {
+        Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents(), fetchSOSAlerts()]).catch(() => {});
+      }
+    }, [currentEventId, fetchEvent, fetchCars, fetchDrivers, fetchStats, fetchSlots, fetchIncidents, fetchSOSAlerts])
+  );
+
   useEffect(() => {
     if (!currentEventId) return;
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchStats(), fetchSlots(), fetchIncidents(), fetchSOSAlerts()]);
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
@@ -332,9 +340,9 @@ export default function SupervisorEventDetail() {
                   {event?.venue || "InstaPark"} · {event?.date || "Today"}
                 </Text>
                 {/* Title */}
-                <Text style={{ color: "#fff", fontSize: rs(24), fontWeight: "900", marginBottom: rp(8) }} numberOfLines={1}>
+                <Heading level="display" style={{ color: "#fff", fontSize: rs(24), marginBottom: rp(8) }} numberOfLines={1}>
                   {event?.name || "Loading..."}
-                </Text>
+                </Heading>
                 {/* Pills Row */}
                 <View style={{ flexDirection: "row", gap: rp(8), flexWrap: "wrap" }}>
                   {event?.status && (
@@ -352,6 +360,11 @@ export default function SupervisorEventDetail() {
                     </View>
                   )}
                 </View>
+                {event?.end_time && (
+                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(10), fontWeight: "600", marginTop: rp(4) }}>
+                    Auto-closes {event.auto_close_grace_minutes ?? 30} min after {event.end_time}
+                  </Text>
+                )}
               </View>
 
               <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
@@ -384,21 +397,21 @@ export default function SupervisorEventDetail() {
             {/* 4 Metric Pills inside Hero */}
             <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(16) }}>
               <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>{stats?.total_cars || 0}</Text>
+                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>{stats?.total_cars || 0}</Heading>
                 <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>CARS</Text>
               </View>
               <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>{stats?.still_parked || 0}</Text>
+                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>{stats?.still_parked || 0}</Heading>
                 <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>PARKED</Text>
               </View>
               <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>{stats?.total_delivered || 0}</Text>
+                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>{stats?.total_delivered || 0}</Heading>
                 <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>DELIVERED</Text>
               </View>
               <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#FFFFFF" }}>
+                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>
                   {slots ? slots.filter(s => s.is_occupied).length : 0}/{slots ? slots.length : 0}
-                </Text>
+                </Heading>
                 <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>SLOTS</Text>
               </View>
             </View>
@@ -417,7 +430,7 @@ export default function SupervisorEventDetail() {
                 <>
                   <TouchableOpacity
                     style={{ paddingVertical: rp(14), paddingHorizontal: rp(20), flexDirection: 'row', alignItems: 'center' }}
-                    onPress={() => { setShowMenu(false); router.push({ pathname: "/(admin)/edit-event", params: { eventId: currentEventId } }); }}
+                    onPress={() => { setShowMenu(false); router.push({ pathname: "/(supervisor)/(tabs)/edit-event", params: { eventId: currentEventId } }); }}
                   >
                     <Ionicons name="create-outline" size={20} color={ACCENT_COLOR} />
                     <Text style={{ marginLeft: rp(12), fontSize: rs(16), fontWeight: '600', color: theme.colors.textPrimary }}>Edit Event</Text>

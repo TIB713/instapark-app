@@ -9,6 +9,7 @@ import { theme } from '../../../utils/theme';
 
 import { useDriverTasksContext } from "../../../context/DriverTasksContext";
 import { Plate, Chip } from '../../../components/valet/ui';
+import Heading from "../../../components/Heading";
 
 export default function DriverQRDisplay() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function DriverQRDisplay() {
           <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(3) }}>
             {isParkMode ? "VEHICLE CODE & QR" : "GUEST QR CODE"}
           </Text>
-          <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(6) }}>{plate}</Text>
+          <Heading level="display" style={{ marginTop: rp(6) }}>{plate}</Heading>
           <Text style={{ color: theme.colors.textSecondary, marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>
             {isParkMode ? "Reference for guest retrieval" : "Show this to the guest"}
           </Text>
@@ -64,9 +65,9 @@ export default function DriverQRDisplay() {
           {isParkMode && (
             <View style={{ marginTop: rp(16), alignItems: "center" }}>
               <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(1) }}>4-DIGIT CODE</Text>
-              <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.textPrimary, marginTop: rp(4) }}>
+              <Heading level="display" style={{ marginTop: rp(4) }}>
                 {code || "—"}
-              </Text>
+              </Heading>
             </View>
           )}
           <Text style={{ color: theme.colors.textSecondary, fontSize: rs(11), marginTop: isParkMode ? rp(8) : rp(18), textAlign: "center" }}>

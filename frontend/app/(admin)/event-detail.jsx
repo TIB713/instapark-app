@@ -19,7 +19,7 @@ import {
   BackHandler,
   Share,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 const FEEDBACK_QUESTIONS = [
@@ -401,10 +401,17 @@ export default function EventDetail() {
     }
   }, [tab, currentEventId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (currentEventId) {
+        Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchGuestCount(), fetchSlots(), fetchIncidents()]).catch(() => {});
+      }
+    }, [currentEventId, fetchEvent, fetchCars, fetchDrivers, fetchSupervisors, fetchStats, fetchGuestCount, fetchSlots, fetchIncidents])
+  );
+
   useEffect(() => {
     if (!currentEventId) return;
-    // Run all fetches in parallel instead of sequentially
-    Promise.all([fetchEvent(), fetchCars(), fetchDrivers(), fetchSupervisors(), fetchStats(), fetchGuestCount(), fetchSlots(), fetchIncidents()]);
+    // WebSocket connections
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchCars();
       if (msg.type === "slot_update") fetchSlots();
@@ -1164,6 +1171,11 @@ export default function EventDetail() {
                   )}
                 </View>
               )}
+              {event?.end_time && (
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(10), fontWeight: "600", marginTop: rp(4) }}>
+                  Auto-closes {event.auto_close_grace_minutes ?? 30} min after {event.end_time}
+                </Text>
+              )}
             </View>
             <TouchableOpacity
               onPress={() => setShowMenu(!showMenu)}
@@ -1173,7 +1185,7 @@ export default function EventDetail() {
             </TouchableOpacity>
             {event?.status === "active" && (
               <TouchableOpacity onPress={closeEvent} style={[iconBtn, { backgroundColor: "rgba(244,63,94,0.7)" }]}>
-                <Ionicons name="close" size={20} color="#fff" />
+                <Ionicons name="trash-outline" size={20} color="#fff" />
               </TouchableOpacity>
             )}
           </View>

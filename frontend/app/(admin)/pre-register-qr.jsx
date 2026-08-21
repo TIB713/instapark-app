@@ -1,6 +1,6 @@
 import { confirmDialog } from "../../lib/confirmDialog";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { rs, rp } from '../../utils/responsive'; 
 import { 
   View, 
@@ -12,7 +12,7 @@ import {
   Modal,
   Share,
 } from "react-native"; 
-import { useRouter } from "expo-router"; 
+import { useRouter, useFocusEffect } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import QRCode from "react-native-qrcode-svg"; 
@@ -54,14 +54,14 @@ export default function PreRegisterQR() {
   const [exportBusy, setExportBusy] = useState(false);
   const qrRefs = useRef({});
 
-  const fetchCards = () => {
+  const fetchCards = useCallback(() => {
     if (!resolvedProviderType) return;
     setLoading(true);
     api.get("/qr-cards/me", { params: { search: debouncedSearch || undefined } })
       .then(({ data }) => setCards(data.cards || []))
       .catch(() => confirmDialog.info("Couldn't load QR cards", "Something went wrong loading the cards. Check your connection and try again."))
       .finally(() => setLoading(false));
-  };
+  }, [resolvedProviderType, debouncedSearch]);
 
   useEffect(() => {
     api.get("/auth/me")
@@ -80,9 +80,11 @@ export default function PreRegisterQR() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => { 
-    fetchCards();
-  }, [resolvedProviderType, debouncedSearch]); 
+  useFocusEffect(
+    useCallback(() => { 
+      fetchCards();
+    }, [fetchCards])
+  ); 
 
   const getDateKey = (iso) => {
     if (!iso) return "unknown";

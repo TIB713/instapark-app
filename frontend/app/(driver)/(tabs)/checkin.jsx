@@ -23,6 +23,7 @@ import { useAppStore } from "../../../lib/store";
 import { useDriverTasksContext } from "../../../context/DriverTasksContext";
 import { confirmDialog } from "../../../lib/confirmDialog";
 import { Screen, TopBar, Btn, Modal } from "../../../components/valet/ui";
+import Heading from "../../../components/Heading";
 import { theme } from "../../../utils/theme";
 import { rs, rp } from "../../../utils/responsive";
 
@@ -337,10 +338,10 @@ export default function Checkin() {
             <View style={{ padding: rp(20) }}>
               <View style={{ backgroundColor: theme.colors.surface, padding: rp(20), borderRadius: rp(16), marginBottom: rp(20), borderWidth: rp(1), borderColor: theme.colors.border }}>
                 <Text style={{ fontSize: rs(12), color: theme.colors.textLight, textTransform: "uppercase", letterSpacing: rs(1), marginBottom: rp(4) }}>Check-In Code</Text>
-                <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.textDark, marginBottom: rp(12) }}>{claimCar.checkin_code}</Text>
+                <Heading level="display" style={{ color: theme.colors.textDark, marginBottom: rp(12) }}>{claimCar.checkin_code}</Heading>
                 
                 <Text style={{ fontSize: rs(12), color: theme.colors.textLight, textTransform: "uppercase", letterSpacing: rs(1), marginBottom: rp(4) }}>Vehicle</Text>
-                <Text style={{ fontSize: rs(22), fontWeight: "900", color: theme.colors.textDark }}>{claimCar.plate}</Text>
+                <Heading level="display" style={{ color: theme.colors.textDark }}>{claimCar.plate}</Heading>
               </View>
               
               {claimCar.status === "REGISTERED" ? (

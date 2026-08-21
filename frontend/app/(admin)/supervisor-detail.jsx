@@ -11,7 +11,7 @@ import {
   RefreshControl,
   TextInput,
   } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
@@ -89,9 +89,11 @@ export default function SupervisorDetail() {
     }
   }, [supervisorId]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   const validateSupervisor = () => {
     const errs = {};

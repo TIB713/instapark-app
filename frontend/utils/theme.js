@@ -17,13 +17,13 @@ export const theme = {
     // ---- Brand (ONE primary color, used everywhere: headers, primary
     // buttons, active tab, active nav state, links). Do not introduce
     // blue/navy/green as a second "brand" color anywhere in the app.
-    primary: '#24113F',
-    primaryDark: '#3B1E63',       // was primaryDark, now serves as "pressed/soft" state
-    primaryLight: '#EFECF5',      // tinted background behind purple content
+    primary: '#3F0163',
+    primaryDark: '#2A0042',       // was primaryDark, now serves as "pressed/soft" state
+    primaryLight: '#F4E6FA',      // tinted background behind purple content
 
-    accent: '#FFC928',            // NEW — brand accent (yellow), used for primary CTA buttons
-    accentLight: '#FFF4C7',       // NEW — tinted background behind accent content
-    accentForeground: '#24113F',  // NEW — text/icon color to use on top of accent backgrounds
+    accent: '#FCBF00',            // NEW — brand accent (yellow), used for primary CTA buttons
+    accentLight: '#FFF7D9',       // NEW — tinted background behind accent content
+    accentForeground: '#3F0163',  // NEW — text/icon color to use on top of accent backgrounds
 
     // ---- Status colors (meaning, not decoration — never use these as
     // branding, only to indicate a state)
@@ -37,12 +37,12 @@ export const theme = {
     infoLight: '#E0F2FE',
 
     // ---- Neutrals (text, borders, surfaces)
-    textPrimary: '#18151D',
+    textPrimary: '#1A1025',
     textSecondary: '#6F6A78',
     textMuted: '#9CA3AF',
     border: '#E7E3EC',
     surface: '#FFFFFF',        // cards
-    surfaceAlt: '#F7F6FA',     // page background
+    surfaceAlt: '#FAF7F2',     // page background
     overlay: 'rgba(24,21,29,0.5)', // modal/bottom-sheet backdrop
   },
 
@@ -63,6 +63,14 @@ export const theme = {
     medium: '500',
     semibold: '600',
     bold: '700',
+  },
+
+  fontFamily: {
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+    headline: 'SpaceGrotesk_700Bold',
   },
 
   // Spacing scale — use for margin/padding/gap. Multiples of 4.

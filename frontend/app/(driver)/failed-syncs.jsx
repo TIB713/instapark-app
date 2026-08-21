@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getFailedQueue, clearFailedItem } from "../../lib/offline";
+import Heading from "../../components/Heading";
 
 export default function FailedSyncs() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function FailedSyncs() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "800" }}>Failed Syncs ({items.length})</Text>
+        <Heading level="subtitle" style={{ color: "#fff" }}>Failed Syncs ({items.length})</Heading>
       </View>
       <ScrollView style={{ padding: rp(16) }}>
         {items.length === 0 ? (

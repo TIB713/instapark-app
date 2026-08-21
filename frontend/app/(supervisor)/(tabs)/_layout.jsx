@@ -54,6 +54,13 @@ export default function SupervisorTabsLayout() {
           title: "QR Display"
         }}
       />
+      <Tabs.Screen
+        name="edit-event"
+        options={{
+          href: null,
+          title: "Edit Event"
+        }}
+      />
 
       <Tabs.Screen name="retrieval-sent" options={{ href: null }} />
       <Tabs.Screen name="driver-new" options={{ href: null }} />

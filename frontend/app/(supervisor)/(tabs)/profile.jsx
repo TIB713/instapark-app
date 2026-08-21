@@ -7,6 +7,7 @@ import { deleteItem as secureDelete } from '../../../lib/secure';
 import { useAppStore } from '../../../lib/store';
 import { theme } from '../../../utils/theme';
 import { Card, Btn, Screen, TopBar, StatusPill } from '../../../components/valet/ui';
+import Heading from '../../../components/Heading';
 import { rs, rp } from '../../../utils/responsive';
 import { useSupervisorEvents } from '../../../hooks/useSupervisorEvents';
 import { useEmployeeManagement } from '../../../hooks/useEmployeeManagement';
@@ -57,7 +58,7 @@ export default function Profile() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={{ fontSize: rs(18), fontWeight: '900', color: '#FFFFFF' }}>{events.length}</Text>
+              <Heading level="subtitle" style={{ color: '#FFFFFF' }}>{events.length}</Heading>
             )}
             <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', marginTop: rp(4), fontWeight: '700', textTransform: 'uppercase' }}>Events</Text>
           </View>
@@ -66,7 +67,7 @@ export default function Profile() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={{ fontSize: rs(18), fontWeight: '900', color: theme.colors.success }}>{activeEventsCount}</Text>
+              <Heading level="subtitle" style={{ color: theme.colors.success }}>{activeEventsCount}</Heading>
             )}
             <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', marginTop: rp(4), fontWeight: '700', textTransform: 'uppercase' }}>Live now</Text>
           </View>
@@ -75,7 +76,7 @@ export default function Profile() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={{ fontSize: rs(18), fontWeight: '900', color: '#FFFFFF' }}>{drivers.length}</Text>
+              <Heading level="subtitle" style={{ color: '#FFFFFF' }}>{drivers.length}</Heading>
             )}
             <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', marginTop: rp(4), fontWeight: '700', textTransform: 'uppercase' }}>Drivers</Text>
           </View>

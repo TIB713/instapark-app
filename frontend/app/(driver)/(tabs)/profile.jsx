@@ -8,6 +8,7 @@ import { Screen, TopBar, Card, Btn, StatusPill, Sheet, EmptyState } from '../../
 import { rp, rs } from '../../../utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../utils/theme';
+import Heading from '../../../components/Heading';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../lib/api";
 import { startLocationTracking, stopLocationTracking, updateJourney } from "../../../lib/locationTracking";
@@ -84,9 +85,9 @@ export default function ProfileScreen() {
             justifyContent: 'center',
             marginBottom: rp(theme.spacing.lg)
           }}>
-            <Text style={{ color: theme.colors.primary, fontSize: rs(32), fontWeight: theme.fontWeight.bold }}>
+            <Heading level="display" style={{ color: theme.colors.primary }}>
               {initials}
-            </Text>
+            </Heading>
           </View>
 
           <Text style={{ fontSize: rs(theme.fontSize.title), fontWeight: theme.fontWeight.bold, color: theme.colors.textPrimary, marginBottom: rp(theme.spacing.xs) }}>
