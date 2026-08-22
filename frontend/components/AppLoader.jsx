@@ -29,7 +29,7 @@ export default function AppLoader() {
         {/* The cream circle with thin gold ring */}
         <View style={styles.circle}>
           <Image 
-            source={require("../assets/images/instapark-logo.png")} 
+            source={require("../assets/images/instapark-logo-with-credit.png")} 
             style={styles.fullLogo} 
             resizeMode="contain"
           />
