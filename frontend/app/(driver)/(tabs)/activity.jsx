@@ -107,7 +107,10 @@ export default function ActivityScreen() {
     return (
       <Card style={{ marginBottom: rp(12) }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rp(12) }}>
-          <Plate value={item.plate} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+            <Plate value={item.plate} />
+            {item.key_tag_number && <Text style={{ color: theme.colors.primary, fontSize: rs(14), fontWeight: "900" }}>#{item.key_tag_number}</Text>}
+          </View>
           <StatusPill label={statusLabel} tone={statusTone} />
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>

@@ -172,7 +172,8 @@ export default function ManageEmployees() {
       });
       
       const { data } = await api.post("/drivers/bulk-upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000,
       });
       
       const warnedCount = (data.results || []).filter(r => r.status === "Added (with warnings)").length;
@@ -271,7 +272,7 @@ export default function ManageEmployees() {
     const formData = new FormData();
     formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
     formData.append("folder", folder);
-    const up = await api.post("/upload", formData, {
+    const up = await api.post("/upload", formData, { timeout: 30000,
       headers: { "Content-Type": "multipart/form-data" },
     });
     return up.data.url;
@@ -310,7 +311,7 @@ export default function ManageEmployees() {
         const formData = new FormData();
         formData.append("file", { uri: supPhotoUri, type: "image/jpeg", name: "photo.jpg" });
         formData.append("folder", "supervisors");
-        const up = await api.post("/upload", formData, {
+        const up = await api.post("/upload", formData, { timeout: 30000,
           headers: { "Content-Type": "multipart/form-data" },
         });
         photoUrl = up.data.url;
@@ -842,7 +843,7 @@ export default function ManageEmployees() {
                   </Text>
                 )}
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={supAadharNumber} onChangeText={(t) => { setSupAadharNumber(t); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, errors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={supAadharNumber} onChangeText={(v) => { const digits = v.replace(/\D/g, "").slice(0, 12); setSupAadharNumber(digits); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, errors.aadharNumber && modalInputError]} />
                 {errors.aadharNumber && <Text style={modalErrorText}>* {errors.aadharNumber}</Text>}
 
                 <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  onPress={() => { pickSupAadharPhoto(); if (errors.aadharPhoto) setErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>
@@ -999,7 +1000,7 @@ export default function ManageEmployees() {
                 {driverErrors.licensePhoto && <Text style={[modalErrorText, { textAlign: 'center' }]}>* {driverErrors.licensePhoto}</Text>}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={drvAadharNumber} onChangeText={(t) => { setDrvAadharNumber(t); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={drvAadharNumber} onChangeText={(v) => { const digits = v.replace(/\D/g, "").slice(0, 12); setDrvAadharNumber(digits); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
                 <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }}  onPress={() => { pickAadharPhoto(); if (driverErrors.aadharPhoto) setDriverErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(16) }}>

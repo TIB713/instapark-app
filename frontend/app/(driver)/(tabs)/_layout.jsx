@@ -65,6 +65,15 @@ export default function DriverTabsLayout() {
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="scanner"
+        options={{
+          title: "Scan Pass",
+          href: null,
+        }}
+      />
+
       <Tabs.Screen
         name="activity"
         options={{

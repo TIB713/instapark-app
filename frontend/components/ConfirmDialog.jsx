@@ -1,5 +1,5 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { theme } from '../utils/theme';
 
@@ -21,10 +21,29 @@ export default function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Cancel',
 }) {
+  const [isProcessing, setIsProcessing] = useState(false);
   const insets = useSafeAreaInsets();
   const bottomReserve = Platform.OS === 'android'
     ? Math.max(insets?.bottom || 0, ANDROID_MIN_BOTTOM_RESERVE)
     : (insets?.bottom || 0);
+
+  useEffect(() => {
+    if (visible) {
+      setIsProcessing(false);
+    }
+  }, [visible]);
+
+  const handleConfirm = () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    if (onConfirm) onConfirm();
+  };
+
+  const handleCancel = () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    if (onCancel) onCancel();
+  };
 
   const getConfirmLabel = () => {
     if (confirmLabel) return confirmLabel;
@@ -35,7 +54,7 @@ export default function ConfirmDialog({
     if (variant === 'info') {
       return (
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.primaryButton} onPress={onConfirm} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleConfirm} disabled={isProcessing} activeOpacity={0.8}>
             <Text style={styles.primaryButtonText}>{getConfirmLabel()}</Text>
           </TouchableOpacity>
         </View>
@@ -45,10 +64,10 @@ export default function ConfirmDialog({
     if (variant === 'destructive') {
       return (
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.ghostButton} onPress={onCancel} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.ghostButton} onPress={handleCancel} disabled={isProcessing} activeOpacity={0.8}>
             <Text style={styles.ghostButtonText}>{cancelLabel}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.destructiveButton} onPress={onConfirm} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.destructiveButton} onPress={handleConfirm} disabled={isProcessing} activeOpacity={0.8}>
             <Text style={styles.destructiveButtonText}>{getConfirmLabel()}</Text>
           </TouchableOpacity>
         </View>
@@ -58,10 +77,10 @@ export default function ConfirmDialog({
     // confirm
     return (
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.ghostButton} onPress={onCancel} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.ghostButton} onPress={handleCancel} disabled={isProcessing} activeOpacity={0.8}>
           <Text style={styles.ghostButtonText}>{cancelLabel}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryButton} onPress={onConfirm} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleConfirm} disabled={isProcessing} activeOpacity={0.8}>
           <Text style={styles.primaryButtonText}>{getConfirmLabel()}</Text>
         </TouchableOpacity>
       </View>

@@ -1,5 +1,27 @@
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+
+const processImage = async (result, quality, onSelect) => {
+  if (result.canceled || !result.assets || result.assets.length === 0) return;
+  
+  const asset = result.assets[0];
+  let uri = asset.uri;
+  
+  try {
+    const isPortrait = asset.height > asset.width;
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: isPortrait ? { height: 1600 } : { width: 1600 } }],
+      { compress: quality, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    uri = manipResult.uri;
+  } catch (e) {
+    console.log("Image manipulation failed", e);
+  }
+  
+  onSelect(uri);
+};
 
 export const pickImageHelper = ({ quality = 0.8, onSelect }) => {
   Alert.alert(
@@ -17,9 +39,7 @@ export const pickImageHelper = ({ quality = 0.8, onSelect }) => {
           const result = await ImagePicker.launchCameraAsync({
             quality,
           });
-          if (!result.canceled) {
-            onSelect(result.assets[0].uri);
-          }
+          await processImage(result, quality, onSelect);
         }
       },
       {
@@ -34,9 +54,7 @@ export const pickImageHelper = ({ quality = 0.8, onSelect }) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality,
           });
-          if (!result.canceled) {
-            onSelect(result.assets[0].uri);
-          }
+          await processImage(result, quality, onSelect);
         }
       },
       {

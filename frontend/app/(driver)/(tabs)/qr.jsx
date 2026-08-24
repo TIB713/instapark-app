@@ -13,8 +13,8 @@ import Heading from "../../../components/Heading";
 
 export default function DriverQRDisplay() {
   const router = useRouter();
-  const { token, plate, mode = "checkin", code } = useLocalSearchParams();
-  const guestUrl = `${process.env.EXPO_PUBLIC_API_URL || "https://instapark.docusafe.ai/api/v1"}/qr-redirect/${token}`;
+  const { token, plate, mode = "checkin", code, keyTagNumber } = useLocalSearchParams();
+  const guestUrl = `${process.env.EXPO_PUBLIC_GUEST_URL || "https://app.instapark.co"}/v/${token}`;
   
   const isParkMode = mode === "park";
 
@@ -56,7 +56,14 @@ export default function DriverQRDisplay() {
             {isParkMode ? "VEHICLE CODE & QR" : "GUEST QR CODE"}
           </Text>
           <Heading level="display" style={{ marginTop: rp(6) }}>{plate}</Heading>
-          <Text style={{ color: theme.colors.textSecondary, marginTop: rp(4), marginBottom: rp(24), fontSize: rs(13) }}>
+          {keyTagNumber && (
+            <View style={{ backgroundColor: theme.colors.surfaceAlt, paddingHorizontal: rp(12), paddingVertical: rp(6), borderRadius: rp(12), marginTop: rp(8) }}>
+              <Text style={{ fontSize: rs(14), fontWeight: "900", color: theme.colors.primary }}>
+                Key Tag #{keyTagNumber}
+              </Text>
+            </View>
+          )}
+          <Text style={{ color: theme.colors.textSecondary, marginTop: keyTagNumber ? rp(12) : rp(4), marginBottom: rp(24), fontSize: rs(13) }}>
             {isParkMode ? "Reference for guest retrieval" : "Show this to the guest"}
           </Text>
           <View style={{ padding: rp(14), backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(20) }}>

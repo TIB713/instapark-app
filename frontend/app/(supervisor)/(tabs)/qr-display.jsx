@@ -1,74 +1,21 @@
-import { useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { useRef } from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
-import * as Print from "expo-print";
 import { Screen, TopBar, Btn } from "../../../components/valet/ui";
 import { theme } from "../../../utils/theme";
 
 export default function QRDisplayScreen() {
   const router = useRouter();
-  const { carId, plate, checkinCode, token, returnTo } = useLocalSearchParams();
+  const { carId, plate, checkinCode, token, returnTo, keyTagNumber } = useLocalSearchParams();
   const qrRef = useRef(null);
-  const [printing, setPrinting] = useState(false);
 
   const handleDone = () => {
     if (returnTo) {
       router.replace(returnTo);
     } else {
       router.replace("/(supervisor)/(tabs)/add-car");
-    }
-  };
-
-  const handlePrint = async () => {
-    if (!token || token === "sync_pending" || printing) {
-      if (token === "sync_pending") alert("Cannot print while offline sync is pending.");
-      return;
-    }
-    setPrinting(true);
-
-    const guestUrl = `${process.env.EXPO_PUBLIC_GUEST_URL || "https://app.instapark.co"}/v/${token}`;
-    
-    // We render the QR code URL dynamically using an external API for the HTML print out.
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(guestUrl)}&margin=1`;
-
-    const html = `
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-          <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; margin: 0; padding: 20px; color: #3F0163; }
-            .plate { font-size: 48px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #E2E8F0; padding-bottom: 10px; }
-            .code-title { font-size: 16px; color: #64748B; text-transform: uppercase; margin-top: 20px; }
-            .code { font-size: 64px; font-weight: bold; letter-spacing: 10px; margin: 10px 0 30px; }
-            .qr-container { display: flex; justify-content: center; margin-top: 20px; }
-            .qr-box { text-align: center; }
-            .qr-label { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-            img { width: 260px; height: 260px; }
-            .footer { margin-top: 40px; font-size: 14px; color: #94A3B8; }
-          </style>
-        </head>
-        <body>
-          <div class="plate">${plate}</div>
-          <div class="code-title">Check-In Code</div>
-          <div class="code">${checkinCode}</div>
-          
-          <div class="qr-container">
-            <img src="${qrImageUrl}" />
-          </div>
-          
-          <div class="footer">Scan to retrieve your vehicle</div>
-        </body>
-      </html>
-    `;
-
-    try {
-      await Print.printAsync({ html });
-    } catch (err) {
-      console.error("Print failed", err);
-    } finally {
-      setPrinting(false);
     }
   };
 
@@ -80,6 +27,10 @@ export default function QRDisplayScreen() {
       
       <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
         <Text style={styles.plate}>{plate}</Text>
+        
+        {keyTagNumber ? (
+          <Text style={styles.keyTag}>Key Tag #{keyTagNumber}</Text>
+        ) : null}
         
         <View style={styles.codeContainer}>
           <Text style={styles.codeLabel}>Check-In Code</Text>
@@ -102,18 +53,8 @@ export default function QRDisplayScreen() {
         )}
 
         <View style={{ width: '100%', marginTop: 30, gap: 12 }}>
-          <Btn onPress={handlePrint} disabled={token === "sync_pending" || printing}>
-            {printing ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Ionicons name="print-outline" size={20} color="#FFFFFF" />
-            )}
-            <Text style={{ color: "#FFFFFF", fontWeight: "800", marginLeft: 8 }}>
-              {printing ? "PRINTING..." : "PRINT SLIP"}
-            </Text>
-          </Btn>
-          <Btn variant="secondary" onPress={handleDone}>
-            <Text style={{ color: theme.colors.primary, fontWeight: "800" }}>DONE</Text>
+          <Btn onPress={handleDone}>
+            <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>DONE</Text>
           </Btn>
         </View>
       </ScrollView>
@@ -125,6 +66,13 @@ const styles = StyleSheet.create({
   plate: {
     fontSize: 40,
     color: theme.colors.textDark,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  keyTag: {
+    fontSize: 24,
+    color: theme.colors.primary,
+    fontWeight: "bold",
     marginBottom: 24,
     textAlign: "center",
   },

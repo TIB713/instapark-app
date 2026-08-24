@@ -596,12 +596,21 @@ export default function SupervisorEventDetail() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18), letterSpacing: 0.5 }}>{car.plate}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "baseline", gap: rp(8) }}>
+                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(18), letterSpacing: 0.5 }}>{car.plate}</Text>
+                    </View>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6), gap: rp(8), flexWrap: "wrap" }}>
                       {car.zone && car.slot && (
                         <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
                           <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
-                            {car.zone}-{car.slot}
+                            {car.zone}-{car.slot}{(car.key_tag_number || car.key_tag) ? ` · #${car.key_tag_number || car.key_tag}` : ""}
+                          </Text>
+                        </View>
+                      )}
+                      {!car.zone && !car.slot && (car.key_tag_number || car.key_tag) && (
+                        <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                          <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
+                            Key Tag #{car.key_tag_number || car.key_tag}
                           </Text>
                         </View>
                       )}
@@ -653,13 +662,15 @@ export default function SupervisorEventDetail() {
                     style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(14), marginBottom: rp(10), borderLeftWidth: rp(4), borderLeftColor: cfg.color, ...cardShadow }}
                   >
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                      <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{car.plate}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "baseline", gap: rp(6) }}>
+                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{car.plate}</Text>
+                      </View>
                       <View style={{ backgroundColor: cfg.color + "20", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
                         <Text style={{ color: cfg.color, fontSize: rs(10), fontWeight: "800" }}>{cfg.label}</Text>
                       </View>
                     </View>
                     <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginTop: rp(4) }}>
-                      {car.guest_name || "—"} · Driver: {car.driverName}
+                      {car.guest_name || "—"} · Driver: {car.driverName}{(car.key_tag_number || car.key_tag) ? ` · #${car.key_tag_number || car.key_tag}` : ""}
                     </Text>
                     {car.minutesInStatus != null && (
                       <Text style={{ color: theme.colors.textMuted, fontSize: rs(11), marginTop: rp(4) }}>
@@ -1087,8 +1098,26 @@ export default function SupervisorEventDetail() {
                   <>
                     <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: rs(28), fontWeight: "900", color: ACCENT_COLOR }}>{selectedCar.plate}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "baseline", gap: rp(8) }}>
+                          <Text style={{ fontSize: rs(28), fontWeight: "900", color: ACCENT_COLOR }}>{selectedCar.plate}</Text>
+                        </View>
                         <Text style={{ color: theme.colors.textSecondary, marginTop: rp(4) }}>{selectedCar.color} {selectedCar.make}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6), gap: rp(8), flexWrap: "wrap" }}>
+                          {selectedCar.zone && selectedCar.slot && (
+                            <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                              <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
+                                {selectedCar.zone}-{selectedCar.slot}{(selectedCar.key_tag_number || selectedCar.key_tag) ? ` · #${selectedCar.key_tag_number || selectedCar.key_tag}` : ""}
+                              </Text>
+                            </View>
+                          )}
+                          {!selectedCar.zone && !selectedCar.slot && (selectedCar.key_tag_number || selectedCar.key_tag) && (
+                            <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
+                              <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
+                                Key Tag #{selectedCar.key_tag_number || selectedCar.key_tag}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
                       <View style={{ paddingHorizontal: rp(12), paddingVertical: rp(4), borderRadius: rp(99), backgroundColor: STATUS_CONFIG[selectedCar.status]?.color }}>
                         <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(11) }}>{STATUS_CONFIG[selectedCar.status]?.label}</Text>
@@ -1207,6 +1236,7 @@ export default function SupervisorEventDetail() {
                                 checkinCode: selectedCar.checkin_code,
                                 plate: selectedCar.plate,
                                 carId: selectedCar.id,
+                                keyTagNumber: selectedCar.key_tag_number,
                                 returnTo: "/(supervisor)/(tabs)/event-detail"
                               }
                             });

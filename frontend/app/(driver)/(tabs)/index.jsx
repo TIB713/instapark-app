@@ -227,7 +227,9 @@ export default function Tasks() {
         )}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: rp(12) }}>
           <View>
-            <Plate value={car.plate} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+              <Plate value={car.plate} />
+            </View>
             <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginTop: rp(4) }}>{car.color} {car.make}</Text>
           </View>
           <StatusPill label={label} tone={tone} />
@@ -237,7 +239,15 @@ export default function Tasks() {
           <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceAlt, padding: rp(8), borderRadius: rp(8), marginBottom: rp(12) }}>
             <Ionicons name="location" size={14} color={theme.colors.textPrimary} />
             <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: rs(12), marginLeft: rp(6) }}>
-              Zone {car.zone} • Slot {car.slot}
+              Zone {car.zone} • Slot {car.slot}{(car.key_tag_number || car.key_tag) ? ` • Key Tag #${car.key_tag_number || car.key_tag}` : ""}
+            </Text>
+          </View>
+        )}
+        {!car.zone && !car.slot && (car.key_tag_number || car.key_tag) && (
+          <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceAlt, padding: rp(8), borderRadius: rp(8), marginBottom: rp(12) }}>
+            <Ionicons name="pricetag-outline" size={14} color={theme.colors.textPrimary} />
+            <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: rs(12), marginLeft: rp(6) }}>
+              Key Tag #{car.key_tag_number || car.key_tag}
             </Text>
           </View>
         )}
@@ -267,7 +277,7 @@ export default function Tasks() {
             <Btn style={{ flex: 1 }} variant="outline" onPress={() => navigateToCar(car.id)}>
               Navigate
             </Btn>
-            <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: car.qr_token || car.retrieval_token, plate: car.plate, code: car.checkin_code, mode: "park" } })}>
+            <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: car.qr_token || car.retrieval_token, plate: car.plate, code: car.checkin_code, mode: "park", keyTagNumber: car.key_tag_number || car.key_tag } })}>
               Show QR Code
             </Btn>
           </View>
@@ -291,7 +301,7 @@ export default function Tasks() {
             </Btn>
           ) : (
             <View style={{ flexDirection: "row", gap: rp(8) }}>
-              <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: car.qr_token || car.retrieval_token, plate: car.plate, code: car.checkin_code, mode: "park" } })}>
+              <Btn style={{ flex: 1 }} variant="outline" onPress={() => router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: car.qr_token || car.retrieval_token, plate: car.plate, code: car.checkin_code, mode: "park", keyTagNumber: car.key_tag_number || car.key_tag } })}>
                 QR Code
               </Btn>
               <Btn style={{ flex: 1 }} variant="primary" disabled={openingParkModal === car.id} onPress={() => { openParkModal(car); router.push('/(driver)/(tabs)/park'); }}>
@@ -541,21 +551,29 @@ export default function Tasks() {
 
       {/* Park Success Modal - keeping React Native Modal because it requires completely custom UI for QR Code display */}
       <Modal open={showParkSuccessModal} onClose={() => { }} title="Vehicle Parked!">
-        <Text style={{ fontSize: rs(16), fontWeight: "700", color: "#6B7280", textAlign: "center", marginBottom: rp(12) }}>
-          {parkedCarInfo?.plate}
-        </Text>
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: rp(8), marginBottom: rp(16) }}>
+        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "baseline", gap: rp(8), marginBottom: rp(12) }}>
+          <Text style={{ fontSize: rs(16), fontWeight: "700", color: "#6B7280", textAlign: "center" }}>
+            {parkedCarInfo?.plate}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: rp(8), marginBottom: rp(16), flexWrap: "wrap" }}>
           <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
             <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Zone {parkedCarInfo?.zone}</Text>
           </View>
           <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
             <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Slot {parkedCarInfo?.slot}</Text>
           </View>
+          {(parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag) && (
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: rp(12), paddingVertical: rp(8), borderRadius: rp(8) }}>
+              <Ionicons name="pricetag" size={16} color="#4B5563" style={{ marginRight: rp(8) }} />
+              <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Key Tag #{parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag}</Text>
+            </View>
+          )}
         </View>
         <Btn variant="outline" style={{ marginBottom: rp(12) }} onPress={() => {
           setShowParkSuccessModal(false);
           setDismissingParkSuccess(false);
-          router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: parkedCarInfo?.qr_token, plate: parkedCarInfo?.plate, code: parkedCarInfo?.checkin_code, mode: "park" } });
+          router.push({ pathname: "/(driver)/(tabs)/qr", params: { token: parkedCarInfo?.qr_token, plate: parkedCarInfo?.plate, code: parkedCarInfo?.checkin_code, mode: "park", keyTagNumber: parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag } });
         }}>Show QR Code</Btn>
         <Btn variant="primary" disabled={dismissingParkSuccess} onPress={async () => {
           setDismissingParkSuccess(true);
@@ -570,14 +588,24 @@ export default function Tasks() {
       <Modal open={!!incomingRequest} onClose={dismissIncomingRequest} title="">
         <View style={{ alignItems: "center", marginBottom: rp(24) }}>
           <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#111827", textAlign: "center", marginBottom: rp(24) }}>New Retrieval Request</Text>
-          <Plate value={incomingRequest?.plate} style={{ transform: [{ scale: 1.5 }], marginBottom: rp(24) }} />
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rp(24), marginBottom: rp(16), marginTop: rp(12) }}>
+            <Plate value={incomingRequest?.plate} style={{ transform: [{ scale: 1.5 }] }} />
+          </View>
+          {(incomingRequest?.key_tag_number || incomingRequest?.key_tag) && (
+            <View style={{ backgroundColor: theme.colors.surfaceAlt, paddingHorizontal: rp(16), paddingVertical: rp(8), borderRadius: rp(12), marginBottom: rp(16) }}>
+              <Text style={{ fontSize: rs(18), fontWeight: "900", color: theme.colors.primary }}>
+                Key Tag #{incomingRequest?.key_tag_number || incomingRequest?.key_tag}
+              </Text>
+            </View>
+          )}
           <Text style={{ fontSize: rs(16), color: "#6B7280", textAlign: "center", marginBottom: rp(16) }}>{incomingRequest?.color} {incomingRequest?.make}</Text>
         </View>
 
-        <Card style={{ marginBottom: rp(24), backgroundColor: "#F3F4F6", alignItems: "center" }}>
-          <Text style={{ fontSize: rs(14), fontWeight: "700", color: "#374151" }}>Zone {incomingRequest?.zone} · Slot {incomingRequest?.slot}</Text>
-          <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#059669", marginTop: rp(4) }}>Key Tag #{incomingRequest?.key_tag_number}</Text>
-        </Card>
+        {(incomingRequest?.zone || incomingRequest?.slot) && (
+          <Card style={{ marginBottom: rp(24), backgroundColor: "#F3F4F6", alignItems: "center" }}>
+            <Text style={{ fontSize: rs(14), fontWeight: "700", color: "#374151" }}>Zone {incomingRequest?.zone} · Slot {incomingRequest?.slot}</Text>
+          </Card>
+        )}
 
         {incomingRequest?.notes && (
           <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(12), padding: rp(12), marginBottom: rp(24) }}>

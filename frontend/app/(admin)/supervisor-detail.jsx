@@ -461,13 +461,13 @@ export default function SupervisorDetail() {
               <Text style={miniLabel}>NAME <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <View ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}  style={[miniInput, errors.name && { borderColor: "#EF4444" }]}>
                 <Ionicons name="person-outline" size={16} color="#7C3AED" />
-                <TextInput value={name} onChangeText={setName} style={miniInputText} />
+                <TextInput value={name} onChangeText={setName} maxLength={100} style={miniInputText} />
               </View>
               {errors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.name}</Text>}
               <Text style={miniLabel}>PHONE <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <View ref={el => { if (fieldRefs.current) fieldRefs.current.phone = el; }}  style={[miniInput, errors.phone && { borderColor: "#EF4444" }]}>
                 <Ionicons name="call-outline" size={16} color="#7C3AED" />
-                <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={miniInputText} />
+                <TextInput value={phone} onChangeText={v => setPhone(v.replace(/\D/g, "").slice(0, 10))} keyboardType="phone-pad" maxLength={10} style={miniInputText} />
               </View>
               {errors.phone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.phone}</Text>}
               <Text style={miniLabel}>NEW PASSWORD (LEAVE BLANK TO KEEP)</Text>
@@ -479,7 +479,7 @@ export default function SupervisorDetail() {
               <Text style={miniLabel}>EMAIL</Text>
               <View ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
                 <Ionicons name="mail-outline" size={16} color="#7C3AED" />
-                <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={miniInputText} />
+                <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={100} style={miniInputText} />
               </View>
               {errors.email && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.email}</Text>}
               <Text style={miniLabel}>PAN CARD NUMBER</Text>
@@ -491,7 +491,7 @@ export default function SupervisorDetail() {
               <Text style={miniLabel}>BANK ACCOUNT NUMBER</Text>
               <View ref={el => { if (fieldRefs.current) fieldRefs.current.bankAccount = el; }}  style={[miniInput, errors.bankAccount && { borderColor: "#EF4444" }]}>
                 <Ionicons name="business-outline" size={16} color="#7C3AED" />
-                <TextInput value={bankAccount} onChangeText={setBankAccount} keyboardType="numeric" placeholder="Account number" placeholderTextColor="#9CA3AF" style={miniInputText} />
+                <TextInput value={bankAccount} onChangeText={setBankAccount} keyboardType="numeric" maxLength={18} placeholder="Account number" placeholderTextColor="#9CA3AF" style={miniInputText} />
               </View>
               {errors.bankAccount && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.bankAccount}</Text>}
               <Text style={miniLabel}>BANK IFSC CODE</Text>
@@ -503,7 +503,7 @@ export default function SupervisorDetail() {
               <Text style={miniLabel}>AADHAR NUMBER <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <View ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  style={[miniInput, errors.aadharNumber && { borderColor: "#EF4444" }]}>
                 <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
-                <TextInput value={aadharNumber} onChangeText={setAadharNumber} autoCapitalize="none" placeholder="Aadhar number" placeholderTextColor="#9CA3AF" style={miniInputText} />
+                <TextInput value={aadharNumber} onChangeText={v => setAadharNumber(v.replace(/\D/g, "").slice(0, 12))} keyboardType="number-pad" maxLength={12} placeholder="Aadhar number" placeholderTextColor="#9CA3AF" style={miniInputText} />
               </View>
               {errors.aadharNumber && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.aadharNumber}</Text>}
               <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16), marginTop: rp(8) }}>

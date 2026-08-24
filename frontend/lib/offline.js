@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const HANDOVER_QUEUE_KEY = "offline_handover_queue";
 const PARK_QUEUE_KEY = "offline_park_queue";
 const CHECKIN_QUEUE_KEY = "offline_checkin_queue";
+const PHOTO_ATTACH_QUEUE_KEY = "offline_photo_attach_queue";
 const FAILED_QUEUE_KEY = "failed_queue";
 
 export const enqueueHandover = async (carId, localPath) => {
@@ -60,16 +61,36 @@ export const enqueueCheckinAction = async (payload) => {
   } catch {}
 };
 
+export const enqueuePhotoAttach = async (carId, { photoLocalPaths, labels }) => {
+  try {
+    const existing = await AsyncStorage.getItem(PHOTO_ATTACH_QUEUE_KEY);
+    const queue = existing ? JSON.parse(existing) : [];
+    queue.push({
+      carId,
+      photoLocalPaths,
+      labels,
+      type: "photo_attach",
+      retryCount: 0,
+      maxRetries: 3,
+      lastError: null,
+      enqueuedAt: Date.now(),
+    });
+    await AsyncStorage.setItem(PHOTO_ATTACH_QUEUE_KEY, JSON.stringify(queue));
+  } catch {}
+};
+
 export const getQueueCount = async () => {
   try {
-    const [h, p, c] = await Promise.all([
+    const [h, p, c, pa] = await Promise.all([
       AsyncStorage.getItem(HANDOVER_QUEUE_KEY),
       AsyncStorage.getItem(PARK_QUEUE_KEY),
-      AsyncStorage.getItem(CHECKIN_QUEUE_KEY)
+      AsyncStorage.getItem(CHECKIN_QUEUE_KEY),
+      AsyncStorage.getItem(PHOTO_ATTACH_QUEUE_KEY)
     ]);
     const count = (h ? JSON.parse(h).length : 0) +
                   (p ? JSON.parse(p).length : 0) +
-                  (c ? JSON.parse(c).length : 0);
+                  (c ? JSON.parse(c).length : 0) +
+                  (pa ? JSON.parse(pa).length : 0);
     return count;
   } catch {
     return 0;
@@ -78,22 +99,25 @@ export const getQueueCount = async () => {
 
 export const getQueueSummary = async () => {
   try {
-    const [h, p, c] = await Promise.all([
+    const [h, p, c, pa] = await Promise.all([
       AsyncStorage.getItem(HANDOVER_QUEUE_KEY),
       AsyncStorage.getItem(PARK_QUEUE_KEY),
-      AsyncStorage.getItem(CHECKIN_QUEUE_KEY)
+      AsyncStorage.getItem(CHECKIN_QUEUE_KEY),
+      AsyncStorage.getItem(PHOTO_ATTACH_QUEUE_KEY)
     ]);
     const handover = h ? JSON.parse(h).length : 0;
     const park = p ? JSON.parse(p).length : 0;
     const checkin = c ? JSON.parse(c).length : 0;
+    const photo_attach = pa ? JSON.parse(pa).length : 0;
     return {
       handover,
       park,
       checkin,
-      total: handover + park + checkin
+      photo_attach,
+      total: handover + park + checkin + photo_attach
     };
   } catch {
-    return { handover: 0, park: 0, checkin: 0, total: 0 };
+    return { handover: 0, park: 0, checkin: 0, photo_attach: 0, total: 0 };
   }
 };
 
@@ -298,6 +322,58 @@ export const processPendingQueue = async () => {
         }
       }
       await AsyncStorage.setItem(HANDOVER_QUEUE_KEY, JSON.stringify(remaining));
+    }
+  } catch {}
+
+  // 4. Process Photo Attach Queue
+  try {
+    const existing = await AsyncStorage.getItem(PHOTO_ATTACH_QUEUE_KEY);
+    if (existing) {
+      const queue = JSON.parse(existing);
+      const remaining = [];
+      for (const item of queue) {
+        try {
+          const urls = [];
+          const successLabels = [];
+          for (let i = 0; i < item.labels.length; i++) {
+            const label = item.labels[i];
+            const path = item.photoLocalPaths[label];
+            if (!path) continue;
+            const fileInfo = await FileSystem.getInfoAsync(path);
+            if (!fileInfo.exists) continue;
+            const formData = new FormData();
+            formData.append("file", { uri: path, type: "image/jpeg", name: "checkin.jpg" });
+            formData.append("folder", `checkin/${item.carId}`);
+            const up = await api.post("/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
+            urls.push(up.data.url);
+            successLabels.push(label);
+          }
+          if (urls.length > 0) {
+            await api.post(`/cars/${item.carId}/photos`, { urls, type: "checkin", labels: successLabels });
+          }
+          // Delete local files
+          for (const path of Object.values(item.photoLocalPaths)) {
+            if (!path) continue;
+            try { await FileSystem.deleteAsync(path); } catch {}
+          }
+        } catch (error) {
+          const updatedItem = {
+            ...item,
+            retryCount: (item.retryCount || 0) + 1,
+            lastError: error.message || "Unknown error",
+            lastAttempt: Date.now(),
+          };
+          if (updatedItem.retryCount >= (item.maxRetries || 3)) {
+            const existing = await AsyncStorage.getItem(FAILED_QUEUE_KEY);
+            const failed = existing ? JSON.parse(existing) : [];
+            failed.push(updatedItem);
+            await AsyncStorage.setItem(FAILED_QUEUE_KEY, JSON.stringify(failed));
+          } else {
+            remaining.push(updatedItem);
+          }
+        }
+      }
+      await AsyncStorage.setItem(PHOTO_ATTACH_QUEUE_KEY, JSON.stringify(remaining));
     }
   } catch {}
 

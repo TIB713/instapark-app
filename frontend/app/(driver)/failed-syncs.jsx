@@ -49,7 +49,7 @@ export default function FailedSyncs() {
               }}
             >
               <Text style={{ fontWeight: "800", color: "#111827" }}>
-                {item.type?.toUpperCase()} — {item.plate || item.carId}
+                {item.type === "photo_attach" ? "PHOTOS PENDING UPLOAD" : item.type?.toUpperCase()} — {item.plate || item.carId}
               </Text>
               <Text style={{ color: "#6B7280", fontSize: rs(12), marginTop: rp(4) }}>
                 Failed {item.retryCount} times · Last error: {item.lastError}

@@ -67,6 +67,7 @@ export default function SupervisorTabsLayout() {
       <Tabs.Screen name="driver-edit" options={{ href: null }} />
       <Tabs.Screen name="driver-stats" options={{ href: null, title: "Driver Profile" }} />
       <Tabs.Screen name="driver-bulk" options={{ href: null }} />
+
       <Tabs.Screen
         name="index"
         options={{

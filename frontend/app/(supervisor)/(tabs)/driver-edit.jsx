@@ -195,7 +195,7 @@ export default function DriverEdit() {
     const formData = new FormData();
     formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
     formData.append("folder", folder);
-    const up = await api.post("/upload", formData, {
+    const up = await api.post("/upload", formData, { timeout: 30000,
       headers: { "Content-Type": "multipart/form-data" },
     });
     return up.data.url;
@@ -323,7 +323,7 @@ export default function DriverEdit() {
                 {driverErrors.licensePhoto && <Text style={[modalErrorText, { textAlign: 'center' }]}>* {driverErrors.licensePhoto}</Text>}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: theme.colors.danger }}>*</Text></Text>
-                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }} value={drvAadharNumber} onChangeText={(v) => { setDrvAadharNumber(v); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="12-digit Aadhar" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }} value={drvAadharNumber} onChangeText={(v) => { const digits = v.replace(/\D/g, "").slice(0, 12); setDrvAadharNumber(digits); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="12-digit Aadhar" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
                 <TouchableOpacity ref={el => { if (fieldRefs.current) fieldRefs.current.aadharPhoto = el; }} onPress={() => { pickAadharPhoto(); if (driverErrors.aadharPhoto) setDriverErrors(prev => ({ ...prev, aadharPhoto: undefined })); }} style={{ alignItems: "center", marginBottom: rp(theme.spacing.lg) }}>

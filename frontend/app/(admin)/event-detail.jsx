@@ -340,7 +340,7 @@ export default function EventDetail() {
           name: "incident.jpg",
         });
         formData.append("folder", `incidents/${currentEventId}`);
-        const up = await api.post("/upload", formData, {
+        const up = await api.post("/upload", formData, { timeout: 30000,
           headers: { "Content-Type": "multipart/form-data" },
         });
         photoUrl = up.data.url;
@@ -872,7 +872,7 @@ export default function EventDetail() {
         const formData = new FormData();
         formData.append("file", { uri: supPhoto, type: "image/jpeg", name: "photo.jpg" });
         formData.append("folder", "supervisors");
-        const up = await api.post("/upload", formData, {
+        const up = await api.post("/upload", formData, { timeout: 30000,
           headers: { "Content-Type": "multipart/form-data" },
         });
         uploadedPhotoUrl = up.data.url;
@@ -981,7 +981,7 @@ export default function EventDetail() {
     const formData = new FormData();
     formData.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
     formData.append("folder", folder);
-    const up = await api.post("/upload", formData, {
+    const up = await api.post("/upload", formData, { timeout: 30000,
       headers: { "Content-Type": "multipart/form-data" },
     });
     return up.data.url;
@@ -2753,7 +2753,7 @@ export default function EventDetail() {
                 )}
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={supAadharNumber} onChangeText={v => { setSupAadharNumber(v.toUpperCase()); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, errors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={supAadharNumber} onChangeText={v => { const digits = v.replace(/\D/g, "").slice(0, 12); setSupAadharNumber(digits); if (errors.aadharNumber) setErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, errors.aadharNumber && modalInputError]} />
                 {errors.aadharNumber && <Text style={modalErrorText}>* {errors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickSupAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>
@@ -2897,7 +2897,7 @@ export default function EventDetail() {
                 </TouchableOpacity>
 
                 <Text style={modalLabel}>AADHAR NUMBER <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={drvAadharNumber} onChangeText={v => { setDrvAadharNumber(v.toUpperCase()); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" autoCapitalize="characters" style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
+                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.aadharNumber = el; }}  value={drvAadharNumber} onChangeText={v => { const digits = v.replace(/\D/g, "").slice(0, 12); setDrvAadharNumber(digits); if (driverErrors.aadharNumber) setDriverErrors(prev => ({ ...prev, aadharNumber: undefined })); }} placeholder="Aadhar number" keyboardType="numeric" maxLength={12} style={[modalInput, driverErrors.aadharNumber && modalInputError]} />
                 {driverErrors.aadharNumber && <Text style={modalErrorText}>* {driverErrors.aadharNumber}</Text>}
 
                 <TouchableOpacity onPress={pickAadharPhoto} style={{ alignItems: "center", marginBottom: rp(16) }}>

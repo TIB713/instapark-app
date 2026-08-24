@@ -23,10 +23,12 @@ import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
-import { enqueueCheckinAction } from "../../../lib/offline";
+import { enqueueCheckinAction, enqueuePhotoAttach } from "../../../lib/offline";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system";
 
 import { scrollToFirstError } from "../../../lib/scrollToFirstError";
-
 
 const validatePlate = (plate) => {
   const cleaned = plate.replace(/[-\s]/g, "").toUpperCase();
@@ -80,6 +82,54 @@ const textInput = {
   fontSize: rs(15),
   color: theme.colors.textPrimary,
 };
+
+const REQUIRED_PHOTO_COUNT = 2;
+const PHOTO_LABELS = ["front", "right", "back", "left", "extra"];
+
+const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => {
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <Lbl>VEHICLE PHOTOS * (AT LEAST 2 REQUIRED)</Lbl>
+      <View style={{ 
+        flexDirection: "row", flexWrap: "wrap", gap: rp(10), 
+        borderWidth: errors.photos ? rp(1) : 0, 
+        borderColor: theme.colors.danger, 
+        borderRadius: rp(16), 
+        padding: errors.photos ? rp(8) : 0,
+        marginBottom: errors.photos ? 0 : rp(16)
+      }}>
+        {PHOTO_LABELS.map((label) => (
+          <View key={label} style={{ width: rp(80), height: rp(80) }}>
+            {photos[label] ? (
+              <>
+                <Image source={{ uri: photos[label] }} style={{ width: rp(80), height: rp(80), borderRadius: rp(16), borderWidth: rp(1.5), borderColor: theme.colors.success, borderStyle: "dashed" }} />
+                <TouchableOpacity
+                  onPress={() => onRemovePhoto(label)}
+                  style={{ position: "absolute", top: rp(-6), right: rp(-6), backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: rp(99), padding: rp(2) }}
+                >
+                  <Ionicons name="close-circle" size={24} color={theme.colors.danger} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                onPress={() => takePhoto(label)}
+                style={{
+                  width: rp(80), height: rp(80), borderRadius: rp(16),
+                  backgroundColor: theme.colors.surface, borderWidth: rp(1.5), borderColor: theme.colors.border,
+                  borderStyle: "dashed", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                <Ionicons name="camera-outline" size={28} color={theme.colors.textSecondary} />
+                <Text style={{ color: theme.colors.textSecondary, fontSize: rs(10), fontWeight: "800", marginTop: rp(4), textTransform: "uppercase" }}>{label}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+      </View>
+      {errors.photos && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4) }}>* {errors.photos}</Text>}
+    </View>
+  );
+});
 
 const VehicleDetailsSection = memo(({
   plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, instantPark, eventAllowsInstantPark,
@@ -367,6 +417,7 @@ export default function AddCar() {
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [errors, setErrors] = useState({});
   const [prefilledCarId, setPrefilledCarId] = useState(null);
   const [passToken, setPassToken] = useState(null);
@@ -375,12 +426,39 @@ export default function AddCar() {
   const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
   const [instantPark, setInstantPark] = useState(false);
   
+  const [qrToken, setQrToken] = useState("");
+  const [keyTagNumber, setKeyTagNumber] = useState("");
+  const [qrCardId, setQrCardId] = useState("");
+
+  const [drivers, setDrivers] = useState([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
+  const [selectedDriverId, setSelectedDriverId] = useState(null);
+
+  const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
+  const permissionGrantedRef = useRef(false);
+  const resizedPhotosRef = useRef({});
+  const resizeQueueRef = useRef(Promise.resolve());
+  const uploadPromisesRef = useRef({});
+  const [nextPhotoLabel, setNextPhotoLabel] = useState(null);
+
   const params = useLocalSearchParams();
   const returnTo = params.returnTo || "/(supervisor)/(tabs)/scan";
 
+  useEffect(() => {
+    if (params.prefill_qr_token) setQrToken(params.prefill_qr_token);
+  }, [params.prefill_qr_token]);
+
+  useEffect(() => {
+    if (params.prefill_key_tag_number) setKeyTagNumber(String(params.prefill_key_tag_number));
+  }, [params.prefill_key_tag_number]);
+
+  useEffect(() => {
+    if (params.prefill_qr_card_id) setQrCardId(params.prefill_qr_card_id);
+  }, [params.prefill_qr_card_id]);
+
   useFocusEffect(
     useCallback(() => {
-      if (!params.prefill_plate) {
+      if (!params.prefill_plate && !params.prefill_qr_token) {
         setPlate("");
         setColor("");
         setMake("");
@@ -450,6 +528,36 @@ export default function AddCar() {
     })();
   }, [currentEventId]);
 
+  useEffect(() => {
+    (async () => {
+      if (!currentEventId) return;
+      try {
+        const { data } = await api.get(`/events/${currentEventId}/drivers`);
+        const roster = (data || []).filter((d) => d.assigned);
+        const rank = { available: 0, busy: 1, offline: 2 };
+        roster.sort((a, b) => {
+          const r = (rank[a.duty_status] ?? 2) - (rank[b.duty_status] ?? 2);
+          if (r !== 0) return r;
+          return new Date(a.duty_status_updated_at || 0) - new Date(b.duty_status_updated_at || 0);
+        });
+        setDrivers(roster);
+      } catch { }
+      setLoadingDrivers(false);
+    })();
+  }, [currentEventId]);
+
+  const handlePickDriver = (driver) => {
+    if (driver.duty_status === "busy") {
+      confirmDialog.confirm(
+        "Driver is busy",
+        `${driver.name} is currently busy${driver.current_car_plate ? ` with car ${driver.current_car_plate}` : ""}. Assign this car to them anyway?`,
+        () => setSelectedDriverId(driver.id)
+      );
+      return;
+    }
+    setSelectedDriverId(driver.id);
+  };
+
   const lookupPlate = async (p) => {
     if (!p || p.length < 4 || isPreRegistered || lookupApplied) return;
     try {
@@ -497,6 +605,65 @@ export default function AddCar() {
     }
   }, [plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName, submitting]);
 
+  const takePhoto = useCallback(async (label) => {
+    if (!permissionGrantedRef.current) {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) { 
+        confirmDialog.info("Camera permission needed", ""); 
+        return; 
+      }
+      permissionGrantedRef.current = true;
+    }
+    
+    const result = await ImagePicker.launchCameraAsync({ 
+      quality: 0.7, 
+      allowsEditing: false, 
+      mediaTypes: ImagePicker.MediaTypeOptions.Images 
+    });
+    
+    if (!result.canceled) {
+      const rawUri = result.assets[0].uri;
+      setPhotos(prev => {
+        const next = { ...prev, [label]: rawUri };
+        if (errors.photos && Object.values(next).filter(Boolean).length >= REQUIRED_PHOTO_COUNT) {
+          setErrors(e => ({ ...e, photos: undefined }));
+        }
+
+        const currentIndex = PHOTO_LABELS.indexOf(label);
+        const remaining = PHOTO_LABELS.slice(currentIndex + 1);
+        const nextLabel = remaining.find(l => !next[l] && l !== label);
+        if (nextLabel) {
+          setNextPhotoLabel(nextLabel);
+        }
+
+        return next;
+      });
+
+      resizeQueueRef.current = resizeQueueRef.current.then(() =>
+        ImageManipulator.manipulateAsync(rawUri, [{ resize: { width: 1280 } }],
+          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG })
+          .then((resized) => { resizedPhotosRef.current[label] = resized.uri; })
+          .catch(() => { resizedPhotosRef.current[label] = rawUri; })
+      );
+
+      uploadPromisesRef.current[label] = (async () => {
+        await resizeQueueRef.current.catch(() => {});
+        const uri = resizedPhotosRef.current[label] || rawUri;
+        const fd = new FormData();
+        fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
+        fd.append("folder", `checkin/temp_${Date.now()}`);
+        const up = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" }, timeout: 30000 });
+        return up.data.url;
+      })();
+    }
+  }, [errors.photos]);
+
+  const onRemovePhoto = useCallback((label) => {
+    setPhotos(prev => ({ ...prev, [label]: null }));
+    delete uploadPromisesRef.current[label];
+    delete resizedPhotosRef.current[label];
+  }, []);
+
   const submit = async () => {
     setSubmitting(true);
     const errs = {};
@@ -506,6 +673,7 @@ export default function AddCar() {
     if (!make.trim() && !(eventAllowsInstantPark && instantPark)) errs.make = "Vehicle make/model is required";
     const skipGuestDetails = eventAllowsInstantPark && instantPark;
     if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
+    if (!selectedDriverId) errs.driver = "Please select a driver to hand this car to";
     let phoneToSave = "";
     if (!skipGuestDetails && !guestPhone.trim()) errs.guestPhone = "Guest mobile number is required";
     else if (guestPhone.trim()) {
@@ -531,36 +699,58 @@ export default function AddCar() {
         altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
       }
     }
+
+    const validPhotosCount = Object.values(photos).filter(Boolean).length;
+    if (validPhotosCount < REQUIRED_PHOTO_COUNT) {
+      errs.photos = `Please upload at least ${REQUIRED_PHOTO_COUNT} photos.`;
+    }
+
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setSubmitting(false);
-      scrollToFirstError(['plate', 'color', 'make', 'guestName', 'guestPhone', 'altGuestPhone'], errs, fieldRefs, scrollViewRef);
+      scrollToFirstError(['plate', 'color', 'make', 'guestName', 'photos', 'driver', 'guestPhone', 'altGuestPhone'], errs, fieldRefs, scrollViewRef);
       return;
     }
 
-    setSubmitting(false);
     confirmDialog.confirm(
       "Confirm check-in",
       `Confirm check-in for ${plate}?`,
       () => {
-        setSubmitting(true);
         doSubmit(phoneToSave, altPhoneToSave);
+      },
+      () => {
+        setSubmitting(false);
       }
     );
   };
 
   const doSubmit = async (phoneToSave, altPhoneToSave) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     try {
+      const entries = Object.entries(photos).filter(([, uri]) => !!uri);
+      
+      const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
       const net = await NetInfo.fetch();
       if (!net.isConnected) {
+        await Promise.all(Object.entries(photos).map(async ([label, uri]) => {
+          if (!uri) return;
+          const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim().toUpperCase()}_${label}_${Date.now()}.jpg`;
+          await FileSystem.copyAsync({ from: uri, to: localPath });
+          photoLocalPaths[label] = localPath;
+        }));
+        
         if (isPreRegistered && prefilledCarId) {
           await enqueueCheckinAction({
             action: "complete_prereg",
             carId: prefilledCarId,
+            checkInDriverId: selectedDriverId,
             color: color.trim(),
             make: make.trim(),
             notes: notes.trim(),
             gate: selectedGate,
+            photoLocalPaths,
+            photos: []
           });
           await AsyncStorage.removeItem("add_car_draft");
           confirmDialog.info("Saved offline", "Pre-registered check-in queued. Will sync when connected.");
@@ -570,6 +760,9 @@ export default function AddCar() {
           const tempId = `offline_${Date.now()}`;
           await enqueueCheckinAction({
             eventId: currentEventId,
+            qr_token: qrToken,
+            qr_card_id: qrCardId,
+            checkInDriverId: selectedDriverId,
             plate: plate.trim().toUpperCase(),
             color: color.trim(),
             make: make.trim(),
@@ -584,12 +777,14 @@ export default function AddCar() {
             damageTypes,
             guestName: guestName.trim(),
             instantPark: eventAllowsInstantPark && instantPark,
+            photoLocalPaths,
+            photos: []
           });
           await AsyncStorage.removeItem("add_car_draft");
           confirmDialog.info("Saved offline", "Vehicle check-in queued. Will sync when connected.");
           router.replace({
             pathname: "/(supervisor)/(tabs)/qr-display",
-            params: { carId: tempId, plate: plate.trim().toUpperCase(), checkinCode: "SYNC", token: "sync_pending" },
+            params: { carId: tempId, plate: plate.trim().toUpperCase(), checkinCode: "SYNC", token: "sync_pending", keyTagNumber, returnTo: "/(supervisor)/(tabs)/scan" },
           });
           return;
         }
@@ -597,45 +792,105 @@ export default function AddCar() {
 
       try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch { }
       
+      let finalCarId;
+      
       if (isPreRegistered && prefilledCarId) {
         const { data: updatedCar } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, {
+          check_in_driver_id: selectedDriverId,
           color: color.trim(),
           make: make.trim(),
           notes: notes.trim(),
           gate: selectedGate,
-        });
+        }, { timeout: 30000 });
+        
+        finalCarId = updatedCar.id;
+        
         await AsyncStorage.removeItem("add_car_draft");
         router.replace({
           pathname: "/(supervisor)/(tabs)/qr-display",
-          params: { carId: updatedCar.id, plate: updatedCar.plate, checkinCode: updatedCar.checkin_code, token: updatedCar.retrieval_token },
+          params: { carId: updatedCar.id, plate: updatedCar.plate, checkinCode: updatedCar.checkin_code, token: updatedCar.retrieval_token, returnTo: "/(supervisor)/(tabs)/scan" },
         });
-        return;
+      } else {
+        const payload = {
+          qr_token: qrToken || undefined,
+          qr_card_id: qrCardId || undefined,
+          check_in_driver_id: selectedDriverId,
+          plate: plate.trim().toUpperCase(),
+          color: color.trim(),
+          make: make.trim(),
+          notes: notes.trim(),
+          gate: selectedGate,
+          event_id: currentEventId,
+          guest_phone: phoneToSave || null,
+          guest_name: guestName.trim() || null,
+          is_pre_registered: false,
+          car_type: carType,
+          alt_guest_phone: altPhoneToSave || null,
+          has_damage: hasDamage,
+          damage_notes: damageNotes.trim() || null,
+          damage_types: damageTypes,
+          instant_park: eventAllowsInstantPark && instantPark,
+        };
+
+        const { data: car } = await api.post("/cars", payload, { timeout: 30000 });
+        
+        finalCarId = car.id;
+        
+        await AsyncStorage.removeItem("add_car_draft");
+        router.replace({
+          pathname: "/(supervisor)/(tabs)/qr-display",
+          params: { carId: car.id, plate: car.plate, checkinCode: car.checkin_code, token: qrToken, keyTagNumber: car.key_tag_number || keyTagNumber, returnTo: "/(supervisor)/(tabs)/scan" },
+        });
       }
-
-      const payload = {
-        plate: plate.trim().toUpperCase(),
-        color: color.trim(),
-        make: make.trim(),
-        notes: notes.trim(),
-        gate: selectedGate,
-        event_id: currentEventId,
-        guest_phone: phoneToSave || null,
-        guest_name: guestName.trim() || null,
-        is_pre_registered: false,
-        car_type: carType,
-        alt_guest_phone: altPhoneToSave || null,
-        has_damage: hasDamage,
-        damage_notes: damageNotes.trim() || null,
-        damage_types: damageTypes,
-        instant_park: eventAllowsInstantPark && instantPark,
-      };
-
-      const { data: car } = await api.post("/cars", payload);
-      await AsyncStorage.removeItem("add_car_draft");
-      router.replace({
-        pathname: "/(supervisor)/(tabs)/qr-display",
-        params: { carId: car.id, plate: car.plate, checkinCode: car.checkin_code, token: car.retrieval_token },
-      });
+      
+      // Decoupled Background Photo Upload
+      (async () => {
+        try {
+          const results = await Promise.allSettled(entries.map(async ([label]) => {
+            const url = await uploadPromisesRef.current[label];
+            return { label, url };
+          }));
+          
+          const urls = [];
+          const successLabels = [];
+          const failedLabels = [];
+          
+          results.forEach((r, idx) => {
+            if (r.status === "fulfilled") {
+              urls.push(r.value.url);
+              successLabels.push(entries[idx][0]);
+            } else {
+              failedLabels.push(entries[idx][0]);
+            }
+          });
+          
+          if (urls.length > 0) {
+            await api.post(`/cars/${finalCarId}/photos`, { urls, type: "checkin", labels: successLabels }, { timeout: 30000 });
+          }
+          
+          if (failedLabels.length > 0) {
+            throw new Error("Some photos failed to upload initially");
+          }
+        } catch (bgErr) {
+          // Fallback to queueing for retry
+          try {
+            const localPaths = {};
+            const labelsToQueue = [];
+            await Promise.all(entries.map(async ([label, uri]) => {
+              if (!uri) return;
+              const localPath = `${FileSystem.documentDirectory}checkin_retry_${finalCarId}_${label}_${Date.now()}.jpg`;
+              await FileSystem.copyAsync({ from: uri, to: localPath });
+              localPaths[label] = localPath;
+              labelsToQueue.push(label);
+            }));
+            
+            await enqueuePhotoAttach(finalCarId, { photoLocalPaths: localPaths, labels: labelsToQueue });
+          } catch (qErr) {
+            console.warn("Failed to enqueue photo attach fallback", qErr);
+          }
+        }
+      })();
+      
     } catch (err) {
       const gotServerResponse = !!err.response;
       if (!gotServerResponse) {
@@ -657,12 +912,14 @@ export default function AddCar() {
             damageTypes,
             guestName: guestName.trim(),
             instantPark: eventAllowsInstantPark && instantPark,
+            photoLocalPaths,
+            photos: urls
           });
           await AsyncStorage.removeItem("add_car_draft");
           confirmDialog.info("Saved for retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically.");
           router.replace({
             pathname: "/(supervisor)/(tabs)/qr-display",
-            params: { carId: `offline_${Date.now()}`, plate: plate.trim().toUpperCase(), checkinCode: "SYNC", token: "sync_pending" },
+            params: { carId: `offline_${Date.now()}`, plate: plate.trim().toUpperCase(), checkinCode: "SYNC", token: "sync_pending", keyTagNumber, returnTo: "/(supervisor)/(tabs)/scan" },
           });
           return;
         } catch {
@@ -674,7 +931,10 @@ export default function AddCar() {
         else if (typeof msg === "string" && msg.includes("Duplicate")) confirmDialog.info("Duplicate", "Plate already checked in.");
         else confirmDialog.info("Something went wrong", typeof msg === "string" ? msg : "Please check your connection and try again.");
       }
-    } finally { setSubmitting(false); }
+    } finally {
+      isSubmittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -691,6 +951,23 @@ export default function AddCar() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(100)  + tabBarHeight}}>
           
+          {keyTagNumber ? (
+            <View style={{
+              backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: theme.colors.border,
+              borderRadius: rp(16), padding: rp(12), marginBottom: rp(16),
+              flexDirection: "row", alignItems: "center", gap: rp(10)
+            }}>
+              <Ionicons name="pricetag" size={20} color="#3B82F6" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>
+                  KEY TAG SCANNED
+                </Text>
+                <Text style={{ fontSize: rs(18), color: theme.colors.primary, marginTop: rp(2), fontWeight: "bold", letterSpacing: rs(1) }}>
+                  #{keyTagNumber}
+                </Text>
+              </View>
+            </View>
+          ) : null}
           {isPreRegistered && (
             <View style={{
               backgroundColor: theme.colors.successLight, borderWidth: rp(1), borderColor: theme.colors.success,
@@ -787,12 +1064,72 @@ export default function AddCar() {
             />
           </Card>
 
+          <Card style={{ marginBottom: rp(16) }}>
+            <PhotoGridSection
+              photos={photos}
+              errors={errors}
+              takePhoto={takePhoto}
+              onRemovePhoto={onRemovePhoto}
+            />
+          </Card>
+
+          <Card style={{ marginBottom: rp(24) }}>
+            <Lbl>ASSIGN TO DRIVER *</Lbl>
+            {loadingDrivers ? (
+              <ActivityIndicator style={{ marginTop: rp(10), marginBottom: rp(16) }} color={theme.colors.primary} />
+            ) : drivers.length === 0 ? (
+              <Text style={{ color: theme.colors.textMuted, fontSize: rs(13), marginBottom: rp(16) }}>No drivers rostered on this event yet.</Text>
+            ) : (
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.driver = el; }}  style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), borderWidth: rp(1), borderColor: errors.driver ? theme.colors.danger : theme.colors.border, overflow: "hidden" }}>
+                {drivers.map((d, idx) => {
+                  const meta = statusMeta(d.duty_status);
+                  const selected = selectedDriverId === d.id;
+                  return (
+                    <TouchableOpacity key={d.id} onPress={() => { handlePickDriver(d); if (errors.driver) setErrors(prev => ({ ...prev, driver: undefined })); }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: rp(14), paddingHorizontal: rp(16), borderTopWidth: idx === 0 ? 0 : rp(1), borderTopColor: theme.colors.border, backgroundColor: selected ? theme.colors.successLight : theme.colors.surface }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: "800", color: theme.colors.textPrimary, fontSize: rs(14) }}>{d.name}</Text>
+                        {d.duty_status === "busy" && d.current_car_plate && (
+                          <Text style={{ color: theme.colors.textMuted, fontSize: rs(11), marginTop: rp(2) }}>Busy with {d.current_car_plate}</Text>
+                        )}
+                      </View>
+                      <View style={{ backgroundColor: meta.bg, paddingHorizontal: rp(10), paddingVertical: rp(8), borderRadius: rp(99), marginRight: rp(10) }}>
+                        <Text style={{ color: meta.color, fontWeight: "800", fontSize: rs(10) }}>{meta.label}</Text>
+                      </View>
+                      {selected && <Ionicons name="checkmark-circle" size={22} color={theme.colors.success} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+            {errors.driver && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4) }}>* {errors.driver}</Text>}
+          </Card>
+
           <Btn variant="accent" onPress={submit} disabled={submitting} style={{ marginBottom: rp(16) }}>
             {submitting ? "CHECKING IN..." : "CHECK IN VEHICLE"}
           </Btn>
           <View style={{ height: rp(40) }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <RNModal visible={!!nextPhotoLabel} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center", padding: rp(20) }}>
+          <View style={{ backgroundColor: theme.colors.surface, padding: rp(24), borderRadius: rp(16), alignItems: "center", width: "100%", maxWidth: 360 }}>
+            <Ionicons name="camera" size={48} color={theme.colors.primary} style={{ marginBottom: rp(16) }} />
+            <Text style={{ fontSize: rs(18), fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: rp(8), textAlign: "center" }}>
+              Take {nextPhotoLabel?.toUpperCase()} Photo?
+            </Text>
+            <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, marginBottom: rp(24), textAlign: "center", lineHeight: rs(20) }}>
+              Would you like to take the {nextPhotoLabel} photo now?
+            </Text>
+            <Btn style={{ width: "100%", marginBottom: rp(12) }} onPress={() => { const lbl = nextPhotoLabel; setNextPhotoLabel(null); setTimeout(() => takePhoto(lbl), 300); }}>
+              Yes, Take Photo
+            </Btn>
+            <TouchableOpacity onPress={() => setNextPhotoLabel(null)} style={{ paddingVertical: rp(12), width: "100%", alignItems: "center" }}>
+              <Text style={{ fontSize: rs(14), fontWeight: "800", color: theme.colors.textSecondary }}>No, Skip for Now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </RNModal>
     </Screen>
   );
 }

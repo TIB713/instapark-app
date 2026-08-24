@@ -159,7 +159,7 @@ export function useDriverTasks(
           const carId = String((msg.data.car || msg.data).id);
           const status = (msg.data.car || msg.data).status;
           if (status !== "RETRIEVAL_REQUESTED") {
-            // seenRequestIdsRef.current.delete(carId);
+            seenRequestIdsRef.current.delete(carId);
             setRequestQueue((prev) => prev.filter((item) => String(item.id) !== carId));
           }
           if (!["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(status)) {
@@ -197,7 +197,7 @@ export function useDriverTasks(
             const carId = String((msg.data.car || msg.data).id);
             const status = (msg.data.car || msg.data).status;
             if (status !== "RETRIEVAL_REQUESTED") {
-              // seenRequestIdsRef.current.delete(carId);
+              seenRequestIdsRef.current.delete(carId);
               setRequestQueue((prev) => prev.filter((item) => String(item.id) !== carId));
             }
             if (!["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(status)) {

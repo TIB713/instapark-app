@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "646184007665",
+    "project_id": "instapark-f5ad3",
+    "storage_bucket": "instapark-f5ad3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:646184007665:android:6f6b36f160d606ba553650",
+        "android_client_info": {
+          "package_name": "com.instapark.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXK80zpXInpDeyjGIltDPOSgXVCwjfX9o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -435,6 +435,7 @@ export default function Login() {
                     onChangeText={setFirstLoginOtp}
                     placeholder="6-digit OTP"
                     keyboardType="numeric"
+                    maxLength={6}
                   />
                   
                   <Field
@@ -509,6 +510,7 @@ export default function Login() {
                         onChangeText={setForgotOtp}
                         placeholder="6-digit OTP"
                         keyboardType="numeric"
+                        maxLength={6}
                       />
 
                       <Field
