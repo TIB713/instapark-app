@@ -15,7 +15,7 @@ export default function ParkScreen() {
   const {
     parkState,
     setSelectedZone,
-    setSelectedSlot,
+    selectSlot,
     setParkPhotos,
     takeParkPhoto,
     captureGPSPin,
@@ -33,7 +33,8 @@ export default function ParkScreen() {
     takingParkPhoto,
     capturedGPS,
     capturingGPS,
-    confirmingPark
+    confirmingPark,
+    driver
   } = parkState;
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export default function ParkScreen() {
                 return (
                   <TouchableOpacity
                     key={z.name}
-                    onPress={() => { setSelectedZone(z.name); setSelectedSlot(null); }}
+                    onPress={() => { setSelectedZone(z.name); selectSlot(null); }}
                     style={{
                       paddingHorizontal: rp(14),
                       paddingVertical: rp(10),
@@ -127,16 +128,20 @@ export default function ParkScreen() {
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(6) }}>
                 {slots.filter((s) => s.zone_name === selectedZone).map((item, idx) => {
                   const isSel = selectedSlot === item.slot_number;
-                  const bg = item.is_occupied ? theme.colors.dangerLight : isSel ? theme.colors.primary : theme.colors.successLight;
+                  const heldByOther = item.held_by && item.held_by !== driver?.id && item.held_until && new Date(item.held_until) > new Date();
+                  const bg = item.is_occupied ? theme.colors.dangerLight 
+                    : heldByOther ? theme.colors.warningLight 
+                    : isSel ? theme.colors.primary 
+                    : theme.colors.successLight;
                   const borderStyle = isSel ? { borderWidth: 2, borderColor: theme.colors.accent } : {};
                   return (
                     <TouchableOpacity
                       key={`${item.zone_name}-${item.slot_number}-${idx}`}
-                      disabled={item.is_occupied}
-                      onPress={() => setSelectedSlot(item.slot_number)}
+                      disabled={item.is_occupied || heldByOther}
+                      onPress={() => selectSlot(item.slot_number)}
                       style={[{ width: rp(56), height: rp(56), borderRadius: rp(14), backgroundColor: bg, alignItems: "center", justifyContent: "center" }, borderStyle]}
                     >
-                      {item.is_occupied ? <Ionicons name="close" size={18} color={theme.colors.danger} /> : <Text style={{ fontWeight: "900", color: isSel ? "#FFFFFF" : theme.colors.success }}>{item.slot_number}</Text>}
+                      {item.is_occupied ? <Ionicons name="close" size={18} color={theme.colors.danger} /> : heldByOther ? <Ionicons name="time" size={18} color={theme.colors.warning} /> : <Text style={{ fontWeight: "900", color: isSel ? "#FFFFFF" : theme.colors.success }}>{item.slot_number}</Text>}
                     </TouchableOpacity>
                   );
                 })}

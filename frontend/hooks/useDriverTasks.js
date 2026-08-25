@@ -171,7 +171,7 @@ export function useDriverTasks(
 
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchMyCarsRef.current();
-      if (msg.type === "slot_update" && fetchSlots) fetchSlots();
+      if (msg.type === "slot_update" && fetchSlots) fetchSlots(msg.data);
     });
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
       if (msg.type === "retrieval_update") {
@@ -212,7 +212,7 @@ export function useDriverTasks(
       disconnectWS(`/retrievals/${currentEventId}`);
       connectWS(`/event/${currentEventId}`, (msg) => {
         if (msg.type === "car_update") fetchMyCarsRef.current();
-        if (msg.type === "slot_update" && fetchSlots) fetchSlots();
+        if (msg.type === "slot_update" && fetchSlots) fetchSlots(msg.data);
       });
       connectWS(`/retrievals/${currentEventId}`, (msg) => {
         if (msg.type === "retrieval_update") {

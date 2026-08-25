@@ -12,9 +12,9 @@ export function DriverTasksProvider({ children }) {
   
   const fetchSlotsRef = useRef(null);
   
-  const fetchSlotsWrapper = useCallback(() => {
+  const fetchSlotsWrapper = useCallback((slotData) => {
     if (fetchSlotsRef.current) {
-      fetchSlotsRef.current();
+      fetchSlotsRef.current(slotData);
     }
   }, []);
 

@@ -273,7 +273,13 @@ export function Modal({ open, onClose, title, children }) {
       <View style={styles.modalContentContainer} pointerEvents="box-none">
         <View style={styles.modalContent}>
           {title && <Text style={styles.modalTitle}>{title}</Text>}
-          {children}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
         </View>
       </View>
     </RNModal>
@@ -513,6 +519,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxWidth: 400,
+    maxHeight: '85%',
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
     padding: rp(theme.spacing.xl),

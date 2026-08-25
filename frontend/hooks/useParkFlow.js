@@ -34,6 +34,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
   const [dismissingParkSuccess, setDismissingParkSuccess] = useState(false);
 
   const resizedParkPhotosRef = useRef({});
+  const holdTimerRef = useRef(null);
 
   const fetchEvent = useCallback(async () => {
     if (!currentEventId) return;
@@ -48,11 +49,44 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     fetchEvent();
   }, [fetchEvent]);
 
-  const fetchSlots = async () => {
+  const fetchSlots = async (updatedSlot) => {
+    if (updatedSlot && updatedSlot.zone_name) {
+      setSlots(prev => prev.map(s => s.zone_name === updatedSlot.zone_name && s.slot_number === updatedSlot.slot_number ? { ...s, ...updatedSlot } : s));
+      return;
+    }
     try {
       const { data } = await api.get(`/slots/event/${currentEventId}`);
       setSlots(data || []);
     } catch { }
+  };
+
+  const holdSlot = async (zone, slotNumber) => {
+    try {
+      await api.post(`/slots/event/${currentEventId}/hold`, { zone, slot: slotNumber });
+      return true;
+    } catch (e) {
+      confirmDialog.info("Slot unavailable", e.response?.data?.detail || "Please choose another slot");
+      return false;
+    }
+  };
+
+  const releaseSlot = async (zone, slotNumber) => {
+    if (!zone || slotNumber == null) return;
+    try { await api.post(`/slots/event/${currentEventId}/release-hold`, { zone, slot: slotNumber }); } catch {}
+  };
+
+  const selectSlot = async (slotNumber) => {
+    if (selectedSlot != null && (selectedSlot !== slotNumber)) {
+      releaseSlot(selectedZone, selectedSlot); // fire-and-forget release of the old pick
+    }
+    const ok = await holdSlot(selectedZone, slotNumber);
+    if (ok) {
+      setSelectedSlot(slotNumber);
+      clearInterval(holdTimerRef.current);
+      holdTimerRef.current = setInterval(() => holdSlot(selectedZone, slotNumber), 45000); // refresh before 90s TTL
+    } else {
+      fetchSlots(); // refresh grid so the just-taken/held slot shows correctly
+    }
   };
 
   const openParkModal = (car) => {
@@ -153,6 +187,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
 
       // ONLINE: go straight to API — no photo copying needed before this
       const snapshotUris = [...parkPhotos]; // snapshot current URIs before state is cleared
+      clearInterval(holdTimerRef.current);
       await api.patch(`/cars/${selectedCar.id}/park`, {
         zone: selectedZone,
         slot: selectedSlot,
@@ -183,8 +218,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
             await FileSystem.copyAsync({ from: sourceUri, to: localPath });
             photoLocalPaths.push(localPath);
           }
-          await uploadParkPhotosInBackground,
-    fetchSlots(carId, photoLocalPaths);
+          await uploadParkPhotosInBackground(carId, photoLocalPaths);
         } catch { }
       })();
     } catch (e) {
@@ -234,7 +268,15 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     }
   }, [retrievals, showParkModal, selectedCar]);
 
+  useEffect(() => {
+    if (!showParkModal) {
+      clearInterval(holdTimerRef.current);
+      if (selectedZone && selectedSlot != null) releaseSlot(selectedZone, selectedSlot);
+    }
+  }, [showParkModal, selectedZone, selectedSlot]);
+
   return {
+    fetchSlots,
     state: {
       showParkModal,
       selectedCar,
@@ -254,32 +296,17 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
       openingParkModal,
       confirmingPark,
       dismissingParkSuccess,
+      driver,
     },
-    setShowParkModal,
-    fetchSlots,
-    setSelectedCar,
-    setEventZones,
-    setSlots,
-    setSelectedZone,
-    setSelectedSlot,
-    setKeyTag,
-    setParkPhotos,
-    setLoadingPhotoIdx,
-    setParkingPhotoStep,
-    setTakingParkPhoto,
-    setShowParkSuccessModal,
-    setParkedCarInfo,
-    setCapturedGPS,
-    setCapturingGPS,
-    setOpeningParkModal,
-    setConfirmingPark,
-    setDismissingParkSuccess,
-
     openParkModal,
-    captureGPSPin,
+    closeParkModal: () => setShowParkModal(false),
+    setSelectedZone,
+    selectSlot,
+    setKeyTag,
     takeParkPhoto,
+    setParkingPhotoStep,
     confirmPark,
-    doConfirmPark,
-    uploadParkPhotosInBackground
+    captureGPSPin,
+    setDismissingParkSuccess,
   };
 }

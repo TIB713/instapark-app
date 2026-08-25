@@ -240,7 +240,12 @@ export default function SupervisorEventDetail() {
 
   const filteredCars = useMemo(() => {
     return cars.filter((c) => {
-      if (search && !c.plate?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const matchesPlate = c.plate?.toLowerCase().includes(q);
+        const matchesCode = c.card_code?.toString().includes(search.trim());
+        if (!matchesPlate && !matchesCode) return false;
+      }
       if (statusFilter !== "ALL" && c.status !== statusFilter) return false;
       return true;
     });
@@ -542,7 +547,7 @@ export default function SupervisorEventDetail() {
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search plate..."
+                placeholder="Search plate or card code..."
                 placeholderTextColor={theme.colors.textMuted}
                 style={{ flex: 1, paddingVertical: rp(14), marginLeft: rp(12), color: "#111827", fontSize: rs(14), fontWeight: "600" }}
               />
@@ -1274,14 +1279,18 @@ export default function SupervisorEventDetail() {
                   <>
                     <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(14), borderWidth: rp(1), borderColor: incidentErrors.car ? theme.colors.danger : "#E5E7EB", flexDirection: "row", alignItems: "center", paddingHorizontal: rp(12), marginBottom: incidentErrors.car ? rp(6) : rp(6) }}>
                       <Ionicons name="search" size={16} color={ACCENT_COLOR} />
-                      <TextInput value={incidentCarSearch} onChangeText={(text) => { setIncidentCarSearch(text); if (incidentErrors.car) setIncidentErrors(prev => ({ ...prev, car: undefined })); }} placeholder="Search plate..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
+                      <TextInput value={incidentCarSearch} onChangeText={(text) => { setIncidentCarSearch(text); if (incidentErrors.car) setIncidentErrors(prev => ({ ...prev, car: undefined })); }} placeholder="Search plate or card code..." style={{ flex: 1, paddingVertical: rp(13), paddingLeft: rp(8), color: "#111827", fontWeight: "700" }} />
                     </View>
                     {incidentErrors.car && <Text style={[modalErrorText, { marginTop: rp(4), marginBottom: rp(12) }]}>* {incidentErrors.car}</Text>}
                     {incidentCarSearch.length > 1 && (
                       <View style={{ backgroundColor: "#fff", borderRadius: rp(14), borderWidth: rp(1), borderColor: "#E5E7EB", marginBottom: rp(12), overflow: "hidden" }}>
-                        {cars.filter(c => c.plate.toLowerCase().includes(incidentCarSearch.toLowerCase())).slice(0, 5).map(c => (
+                        {cars.filter(c => 
+                          c.plate?.toLowerCase().includes(incidentCarSearch.toLowerCase()) || 
+                          c.card_code?.toString().includes(incidentCarSearch.trim())
+                        ).slice(0, 5).map(c => (
                           <TouchableOpacity key={c.id} onPress={() => { setIncidentCar(c); setIncidentCarSearch(c.plate); if (incidentErrors.car) setIncidentErrors(prev => ({ ...prev, car: undefined })); }} style={{ padding: rp(14), borderBottomWidth: rp(1), borderBottomColor: "#F3F4F6", flexDirection: "row", alignItems: "center" }}>
                             <Text style={{ fontWeight: "900", color: "#111827" }}>{c.plate}</Text>
+                            {c.card_code && <Text style={{ color: "#6B7280", marginLeft: 8 }}>({c.card_code})</Text>}
                           </TouchableOpacity>
                         ))}
                       </View>
