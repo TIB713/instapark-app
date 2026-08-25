@@ -39,7 +39,7 @@ import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
 import { connectWS, disconnectWS } from "../../../lib/websocket";
 import { enqueueHandover, getQueueCount, processPendingQueue, enqueueParkAction, getQueueSummary, getFailedQueue } from "../../../lib/offline";
-import { stopLocationTracking, updateJourney, checkEventStatusAndStop, isJourneyAccepted, markJourneyAccepted } from "../../../lib/locationTracking";
+import { stopLocationTracking, updateJourney, checkEventStatusAndStop, isJourneyAccepted, markJourneyAccepted, startLocationTracking, LOCATION_TASK_NAME } from "../../../lib/locationTracking";
 
 import { useDriverTasksContext } from "../../../context/DriverTasksContext";
 
@@ -187,7 +187,7 @@ export default function Tasks() {
     return acc;
   }, {})).filter((car) => {
     // Only show retrievals that are requested OR belong to this driver
-    if (["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(car.status) &&
+    if (["RETRIEVAL_REQUESTED", "ACCEPTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(car.status) &&
       car.status !== "RETRIEVAL_REQUESTED" &&
       car.retrieval_driver_id !== resolvedDriverId) {
       return false;
@@ -289,6 +289,16 @@ export default function Tasks() {
               onPress={async () => {
                 setAcceptingCarId(car.id);
                 try {
+                  const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+                  if (!running) {
+                    const started = await startLocationTracking();
+                    if (!started) {
+                      confirmDialog.info(
+                        "Location permission needed",
+                        "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
+                      );
+                    }
+                  }
                   await updateJourney(car.id, "checkin");
                   await markJourneyAccepted(car.id);
                   setAcceptedCarIds(prev => new Set(prev).add(car.id));

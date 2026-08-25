@@ -23,7 +23,8 @@ export function DriverTasksProvider({ children }) {
     incomingRequests.dismissIncomingRequest,
     incomingRequests.maybeQueueNewRequest,
     incomingRequests.hasSeededSeenRef,
-    incomingRequests.setRequestQueue,
+    incomingRequests.clearStaleRequest,
+    incomingRequests.reconcileWithServer,
     fetchSlotsWrapper,
     incomingRequests.requestSoundRef
   );

@@ -74,6 +74,30 @@ export function useIncomingRequests() {
     });
   }, [incomingRequest]);
 
+  const clearStaleRequest = useCallback((carId) => {
+    const idStr = String(carId);
+    seenRequestIdsRef.current.delete(idStr);
+    setRequestQueue((prev) => prev.filter((item) => String(item.id) !== idStr));
+    setIncomingRequest((prev) => (prev && String(prev.id) === idStr ? null : prev));
+  }, []);
+
+  const reconcileWithServer = useCallback((freshCars) => {
+    const stillRequested = new Set(
+      (freshCars || [])
+        .filter((c) => c.status === "RETRIEVAL_REQUESTED" && !c.retrieval_driver_id)
+        .map((c) => String(c.id))
+    );
+
+    setRequestQueue((prev) => prev.filter((item) => stillRequested.has(String(item.id))));
+
+    setIncomingRequest((prev) => {
+      if (prev && !stillRequested.has(String(prev.id))) {
+        return null;
+      }
+      return prev;
+    });
+  }, []);
+
   const dismissIncomingRequest = useCallback(() => {
     setIncomingRequest(null);
   }, []);
@@ -83,6 +107,8 @@ export function useIncomingRequests() {
     requestQueue,
     maybeQueueNewRequest,
     dismissIncomingRequest,
+    clearStaleRequest,
+    reconcileWithServer,
     seenRequestIdsRef,
     hasSeededSeenRef,
     setRequestQueue,

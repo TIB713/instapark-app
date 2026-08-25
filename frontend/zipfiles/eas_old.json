@@ -1,0 +1,31 @@
+{
+    "cli": {
+        "version": ">= 18.12.3",
+        "appVersionSource": "remote"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal"
+        },
+        "preview": {
+            "distribution": "internal",
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://instapark.docusafe.ai/api/v1",
+                "EXPO_PUBLIC_WS_URL": "wss://instapark.docusafe.ai/api/v1",
+                "EXPO_PUBLIC_GUEST_URL": "https://instapark.docusafe.ai"
+            }
+        },
+        "production": {
+            "autoIncrement": true,
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://instapark.docusafe.ai/api/v1",
+                "EXPO_PUBLIC_WS_URL": "wss://instapark.docusafe.ai/api/v1",
+                "EXPO_PUBLIC_GUEST_URL": "https://instapark.docusafe.ai"
+            }
+        }
+    },
+    "submit": {
+        "production": {}
+    }
+}

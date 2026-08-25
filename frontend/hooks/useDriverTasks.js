@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 
 import api from '../lib/api';
 import { useAppStore } from '../lib/store';
@@ -21,6 +22,8 @@ import {
   updateJourney,
   checkEventStatusAndStop,
   isJourneyAccepted,
+  startLocationTracking,
+  LOCATION_TASK_NAME
 } from '../lib/locationTracking';
 
 export function useDriverTasks(
@@ -28,7 +31,8 @@ export function useDriverTasks(
   dismissIncomingRequest,
   maybeQueueNewRequest,
   hasSeededSeenRef,
-  setRequestQueue,
+  clearStaleRequest,
+  reconcileWithServer,
   fetchSlots,
   requestSoundRef
 ) {
@@ -61,6 +65,20 @@ export function useDriverTasks(
     retrievalsRef.current = retrievals;
   }, [retrievals]);
 
+  useEffect(() => {
+    const syncEvents = async () => {
+      await useAppStore.getState().fetchEvents();
+      const latestEvents = useAppStore.getState().events;
+      const activeId = useAppStore.getState().currentEventId;
+      if (activeId && !latestEvents.some((e) => e.id === activeId)) {
+        useAppStore.getState().setCurrentEventId(null);
+      }
+    };
+    syncEvents();
+    const eventsSyncInterval = setInterval(syncEvents, 20000);
+    return () => clearInterval(eventsSyncInterval);
+  }, [resolvedDriverId]);
+
   const fetchMyCars = useCallback(async () => {
     try {
       const { data } = await api.get(`/cars/event/${currentEventId}`, {
@@ -88,6 +106,7 @@ export function useDriverTasks(
       const { data } = await api.get(`/retrievals/event/${currentEventId}`);
       const fetchedCars = data || [];
       setRetrievals(fetchedCars);
+      reconcileWithServerRef.current(fetchedCars);
       if (!hasSeededSeenRef.current) {
         fetchedCars.forEach((car) => {
           if (car.status === "RETRIEVAL_REQUESTED" && car.id) {
@@ -137,10 +156,12 @@ export function useDriverTasks(
   const fetchMyCarsRef = useRef(fetchMyCars);
   const fetchRetrievalsRef = useRef(fetchRetrievals);
   const maybeQueueNewRequestRef = useRef(maybeQueueNewRequest);
+  const reconcileWithServerRef = useRef(reconcileWithServer);
 
   useEffect(() => { fetchMyCarsRef.current = fetchMyCars; }, [fetchMyCars]);
   useEffect(() => { fetchRetrievalsRef.current = fetchRetrievals; }, [fetchRetrievals]);
   useEffect(() => { maybeQueueNewRequestRef.current = maybeQueueNewRequest; }, [maybeQueueNewRequest]);
+  useEffect(() => { reconcileWithServerRef.current = reconcileWithServer; }, [reconcileWithServer]);
 
   useEffect(() => {
     if (!currentEventId) return;
@@ -159,8 +180,7 @@ export function useDriverTasks(
           const carId = String((msg.data.car || msg.data).id);
           const status = (msg.data.car || msg.data).status;
           if (status !== "RETRIEVAL_REQUESTED") {
-            seenRequestIdsRef.current.delete(carId);
-            setRequestQueue((prev) => prev.filter((item) => String(item.id) !== carId));
+            clearStaleRequest(carId);
           }
           if (!["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(status)) {
             setRetrievals(prev => prev.filter(c => String(c.id) !== carId));
@@ -171,6 +191,8 @@ export function useDriverTasks(
         }
         fetchRetrievalsRef.current();
       }
+    }, () => {
+      fetchRetrievalsRef.current();
     });
 
     const appStateSub = AppState.addEventListener("change", (nextAppState) => {
@@ -182,6 +204,8 @@ export function useDriverTasks(
       const awayMs = lastBackgroundedAtRef.current ? Date.now() - lastBackgroundedAtRef.current : Infinity;
       console.log(`[DUP_DEBUG] AppState active after ${awayMs}ms away, reconnect ${awayMs < 3000 ? "SKIPPED" : "proceeding"}`);
       if (awayMs < 3000) {
+        useAppStore.getState().fetchEvents();
+        fetchRetrievalsRef.current();
         return;
       }
       disconnectWS(`/event/${currentEventId}`);
@@ -197,8 +221,7 @@ export function useDriverTasks(
             const carId = String((msg.data.car || msg.data).id);
             const status = (msg.data.car || msg.data).status;
             if (status !== "RETRIEVAL_REQUESTED") {
-              seenRequestIdsRef.current.delete(carId);
-              setRequestQueue((prev) => prev.filter((item) => String(item.id) !== carId));
+              clearStaleRequest(carId);
             }
             if (!["RETRIEVAL_REQUESTED", "BEING_FETCHED", "ARRIVED_AT_GATE", "AWAITING_REPARK"].includes(status)) {
               setRetrievals(prev => prev.filter(c => String(c.id) !== carId));
@@ -209,7 +232,10 @@ export function useDriverTasks(
           }
           fetchRetrievalsRef.current();
         }
+      }, () => {
+        fetchRetrievalsRef.current();
       });
+      useAppStore.getState().fetchEvents();
       Promise.all([fetchMyCarsRef.current(), fetchRetrievalsRef.current()]);
     });
 
@@ -263,6 +289,16 @@ const acceptRetrieval = async (car, options = {}) => {
     if (fromIncomingRequest) seenRequestIdsRef.current.add(String(car.id));
     setPickingUp((prev) => ({ ...prev, [car.id]: true }));
     try {
+      const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+      if (!running) {
+        const started = await startLocationTracking();
+        if (!started) {
+          confirmDialog.info(
+            "Location permission needed",
+            "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
+          );
+        }
+      }
       await api.patch(`/cars/${car.id}/pickup`, { retrieval_driver_id: resolvedDriverId });
       if (fromIncomingRequest) {
         setTab("at_gate");

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, Platform, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAppStore } from '../../../lib/store';
 import { deleteItem } from '../../../lib/secure';
 import { confirmDialog } from '../../../lib/confirmDialog';
@@ -15,15 +15,16 @@ import { startLocationTracking, stopLocationTracking, updateJourney } from "../.
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { driver, currentEventId, events, signOut, fetchDriverProfile } = useAppStore();
+  const { driver, currentEventId, events, signOut, fetchDriverProfile, fetchEvents } = useAppStore();
   const currentEvent = events?.find(e => e.id === currentEventId);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  React.useEffect(() => {
-    if (fetchDriverProfile) {
-      fetchDriverProfile();
-    }
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDriverProfile?.();
+      fetchEvents?.();
+    }, [fetchDriverProfile, fetchEvents])
+  );
 
   const initials = driver?.name?.substring(0, 2)?.toUpperCase() || "DR";
   const isAvailable = driver?.duty_status === "available" || driver?.duty_status === "busy";

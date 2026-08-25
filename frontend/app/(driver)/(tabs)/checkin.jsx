@@ -22,13 +22,15 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
+import { startLocationTracking, updateJourney, LOCATION_TASK_NAME } from "../../../lib/locationTracking";
 
 import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
 import { useDriverTasksContext } from "../../../context/DriverTasksContext";
 import { confirmDialog } from "../../../lib/confirmDialog";
 import { enqueueCheckinAction, enqueuePhotoAttach } from "../../../lib/offline";
-import { Screen, TopBar, Btn, Modal } from "../../../components/valet/ui";
+import { Screen, TopBar, Btn, Modal, EmptyState } from "../../../components/valet/ui";
 import AlreadyCheckedInModal from "../../../components/valet/AlreadyCheckedInModal";
 import Heading from "../../../components/Heading";
 import { theme } from "../../../utils/theme";
@@ -639,6 +641,19 @@ export default function Checkin() {
         
         setSuccessCar({ plate: plate.trim().toUpperCase(), checkin_code: "SYNC", id: "offline" });
         setShowSuccessModal(true);
+        
+        const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+        if (!running) {
+          const started = await startLocationTracking();
+          if (!started) {
+            confirmDialog.info(
+              "Location permission needed",
+              "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
+            );
+          }
+        }
+        await updateJourney("offline", "checkin");
+        
         return;
       }
 
@@ -666,6 +681,18 @@ export default function Checkin() {
       
       setSuccessCar(car);
       setShowSuccessModal(true);
+      
+      const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+      if (!running) {
+        const started = await startLocationTracking();
+        if (!started) {
+          confirmDialog.info(
+            "Location permission needed",
+            "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
+          );
+        }
+      }
+      await updateJourney(car.id, "checkin");
       
       // Decoupled Background Photo Upload
       (async () => {
@@ -739,6 +766,20 @@ export default function Checkin() {
       router.push("/(driver)/(tabs)/park");
     }
   };
+
+  if (!currentEventId) {
+    return (
+      <Screen scroll={false}>
+        <TopBar title="Check In Vehicle" />
+        <EmptyState
+          icon={<Ionicons name="calendar-outline" size={64} color={theme.colors.textMuted} />}
+          title="No event selected"
+          body="Select an event from your Profile before checking in cars."
+          cta={<Btn onPress={() => router.push('/(driver)/(tabs)/profile')}>Go to Profile</Btn>}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll={false} style={{ flex: 1, backgroundColor: theme.colors.background }}>

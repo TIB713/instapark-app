@@ -10,6 +10,7 @@ import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { theme } from "../../../utils/theme";
+import { Screen, TopBar, EmptyState, Btn } from '../../../components/valet/ui';
  
 export default function Scanner() { 
   const router = useRouter(); 
@@ -99,6 +100,20 @@ export default function Scanner() {
     }, 2000);
   }, [router]);
  
+  if (!currentEventId) {
+    return (
+      <Screen scroll={false}>
+        <TopBar title="Scan Guest Pass" />
+        <EmptyState
+          icon={<Ionicons name="calendar-outline" size={64} color={theme.colors.textMuted} />}
+          title="No event selected"
+          body="Select an event from your Profile before scanning."
+          cta={<Btn onPress={() => router.push('/(driver)/(tabs)/profile')}>Go to Profile</Btn>}
+        />
+      </Screen>
+    );
+  }
+
   if (!permission) return ( 
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}> 
       <ActivityIndicator color="#fff" size="large" /> 

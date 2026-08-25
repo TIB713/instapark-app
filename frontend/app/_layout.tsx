@@ -6,7 +6,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getItem } from "../lib/secure";
 import { useAppStore } from "../lib/store";
 import { AppState } from "react-native";
-import { checkEventStatusAndStop } from "../lib/locationTracking";
+import * as Location from "expo-location";
+import { checkEventStatusAndStop, startLocationTracking, LOCATION_TASK_NAME } from "../lib/locationTracking";
 import { cleanupOldOfflinePhotos } from "../lib/offline";
 import { ConfirmDialogHost } from "../lib/confirmDialog";
 import "../global.css";
@@ -95,6 +96,12 @@ export default function RootLayout() {
       if (nextState === "active") {
         // App came to foreground — check if event is still open
         await checkEventStatusAndStop();
+        
+        const eventId = await AsyncStorage.getItem("current_event_id");
+        if (eventId) {
+          const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+          if (!running) await startLocationTracking();
+        }
       }
     });
     return () => sub.remove();

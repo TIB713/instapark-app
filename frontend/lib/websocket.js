@@ -5,7 +5,7 @@ const retryTimers = {};
 const retryCounts = {};
 const generations = {};
 
-export const connectWS = async (channel, onMessage) => {
+export const connectWS = async (channel, onMessage, onOpen) => {
   const token = await getItem("auth_token");
   const wsUrl = token
     ? `${process.env.EXPO_PUBLIC_WS_URL}/ws${channel}?token=${token}`
@@ -22,6 +22,7 @@ export const connectWS = async (channel, onMessage) => {
 
     ws.onopen = () => {
       retryCounts[channel] = 0;
+      if (onOpen) onOpen();
     };
     ws.onmessage = (e) => {
       if (generations[channel] !== myGeneration) return;

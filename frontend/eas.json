@@ -10,6 +10,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://instapark.docusafe.ai/api/v1",
         "EXPO_PUBLIC_WS_URL": "wss://instapark.docusafe.ai/api/v1",
