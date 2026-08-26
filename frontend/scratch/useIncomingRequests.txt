@@ -43,17 +43,11 @@ export function useIncomingRequests() {
   useEffect(() => {
     if (incomingRequest === null && requestQueue.length > 0) {
       const [next, ...rest] = requestQueue;
+      console.log(`[DUP_DEBUG] pulling from queue: showing car ${next.id}, queue had ${requestQueue.length} items`);
       setIncomingRequest(next);
       setRequestQueue(rest);
     }
   }, [requestQueue, incomingRequest]);
-
-
-  const isAlreadyTracked = useCallback((carId) => {
-    if (seenRequestIdsRef.current.has(carId)) return true;
-    if (incomingRequest && String(incomingRequest.id) === carId) return true;
-    return false;
-  }, [incomingRequest]);
 
   const maybeQueueNewRequest = useCallback((car) => {
     if (!car) return;
@@ -62,18 +56,23 @@ export function useIncomingRequests() {
     const carId = carData.id ? String(carData.id) : null;
 
     if (!carId) return;
+    console.log(`[DUP_DEBUG] maybeQueueNewRequest called for car ${carId}, status=${carData.status}, alreadySeen=${seenRequestIdsRef.current.has(carId)}, currentIncoming=${incomingRequest?.id}`);
     if (carData.status !== "RETRIEVAL_REQUESTED" || carData.retrieval_driver_id) return;
 
-    if (isAlreadyTracked(carId)) return;
+    // Block if already in seen set
+    if (seenRequestIdsRef.current.has(carId)) return;
+
+    // Block if currently active on screen
+    if (incomingRequest && String(incomingRequest.id) === carId) return;
 
     seenRequestIdsRef.current.add(carId);
 
+    // Deduplicate state queue
     setRequestQueue((prev) => {
       if (prev.some((item) => String(item.id) === carId)) return prev;
       return [...prev, carData];
     });
-  }, [isAlreadyTracked]);
-
+  }, [incomingRequest]);
 
   const clearStaleRequest = useCallback((carId) => {
     const idStr = String(carId);

@@ -1,7 +1,7 @@
 import { confirmDialog } from "../../../lib/confirmDialog";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { rs, rp } from '../../../utils/responsive'; 
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView } from "react-native"; 
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, Keyboard } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera"; 
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router"; 
 import { Ionicons } from "@expo/vector-icons"; 
@@ -12,14 +12,19 @@ import { theme } from "../../../utils/theme";
 import { Screen, TopBar, Btn, Card } from "../../../components/valet/ui";
 import { useSupervisorEvents } from "../../../hooks/useSupervisorEvents";
 import AlreadyCheckedInModal from "../../../components/valet/AlreadyCheckedInModal";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+
 export default function ScanQrCard() { 
   const router = useRouter(); 
+  const tabBarHeight = useBottomTabBarHeight();
   const { setCurrentEventId } = useAppStore();
   const { returnTo, cameFromDetail } = useLocalSearchParams();
   const targetScreen = returnTo || "/(supervisor)/(tabs)/add-car"; 
   const [permission, requestPermission] = useCameraPermissions(); 
   const [scanComplete, setScanComplete] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkinMode, setCheckinMode] = useState(null); // null | "scan" | "code"
+  const [codeInput, setCodeInput] = useState("");
   const scanned = useRef(false);
   const lastScannedValue = useRef(null);
 
@@ -48,6 +53,39 @@ export default function ScanQrCard() {
       requestPermission(); 
     } 
   }, [permission]); 
+
+  
+  const handleCodeSubmit = async () => {
+    if (!selectedScanEventId) return;
+    if (!codeInput || codeInput.length !== 4) {
+      confirmDialog.info("Invalid Code", "Please enter a 4-digit code.");
+      return;
+    }
+    Keyboard.dismiss();
+    setLoading(true);
+    try {
+      const { data: card } = await api.get(`/qr-cards/lookup-by-code/${codeInput}?event_id=${selectedScanEventId}&include_bound=true`);
+      if (card.status && card.status !== "empty") {
+        setAlreadyCheckedIn(card);
+        setLoading(false);
+        return;
+      }
+      router.replace({
+        pathname: targetScreen,
+        params: {
+          prefill_qr_token: card.qr_token,
+          prefill_key_tag_number: card.key_tag_number,
+          prefill_qr_card_id: card.id,
+        },
+      });
+      setCodeInput("");
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Could not verify code";
+      confirmDialog.confirm("Invalid Code", msg, () => { setCodeInput(""); });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleScan = useCallback(async (result) => {
     if (!selectedScanEventId) return;
@@ -90,6 +128,7 @@ export default function ScanQrCard() {
           prefill_qr_card_id: card.id,
         },
       });
+      setCodeInput("");
     } catch (err) {
       const msg = err.response?.data?.detail || "Could not verify QR card";
       confirmDialog.confirm("Invalid QR", msg, () => { setScanComplete(false); setLoading(false); scanned.current = false; lastScannedValue.current = null; });
@@ -179,11 +218,89 @@ export default function ScanQrCard() {
     );
   }
 
+  if (checkinMode === null) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.primary }}>
+        <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.primary }}> 
+          <View style={{ flexDirection: "row", alignItems: "center", padding: rp(theme.spacing.lg) }}> 
+            <TouchableOpacity onPress={() => cameFromDetail ? router.back() : router.replace("/(supervisor)/(tabs)")} 
+              style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(theme.spacing.sm) }}> 
+              <Ionicons name="chevron-back" size={22} color={theme.colors.surface} /> 
+            </TouchableOpacity> 
+            <Text style={{ color: theme.colors.surface, fontSize: rs(18), fontWeight: "900", marginLeft: rp(theme.spacing.md) }}> 
+              Check-In Vehicle
+            </Text> 
+          </View> 
+        </SafeAreaView> 
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: rp(24), paddingBottom: rp(24) + tabBarHeight }}>
+          <TouchableOpacity onPress={() => setCheckinMode("scan")} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), padding: rp(24), marginBottom: rp(16), width: "100%", alignItems: "center", flexDirection: "row", justifyContent: "center" }}>
+            <Ionicons name="qr-code-outline" size={32} color={theme.colors.textPrimary} style={{ marginRight: rp(12) }} />
+            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(18), fontWeight: "900" }}>Scan QR Card</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setCheckinMode("code")} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), padding: rp(24), width: "100%", alignItems: "center", flexDirection: "row", justifyContent: "center" }}>
+            <Ionicons name="keypad-outline" size={32} color={theme.colors.textPrimary} style={{ marginRight: rp(12) }} />
+            <Text style={{ color: theme.colors.textPrimary, fontSize: rs(18), fontWeight: "900" }}>Enter Code</Text>
+          </TouchableOpacity>
+        </View>
+        <AlreadyCheckedInModal
+          visible={!!alreadyCheckedIn}
+          plate={alreadyCheckedIn?.plate}
+          carType={alreadyCheckedIn?.car_type}
+          onDismiss={() => {
+            setAlreadyCheckedIn(null);
+            setScanComplete(false);
+            scanned.current = false;
+            lastScannedValue.current = null;
+          }}
+        />
+      </View>
+    );
+  }
+
+  if (checkinMode === "code") {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.primary }}>
+        <SafeAreaView edges={["top"]} />
+        <View style={{ flexDirection: "row", alignItems: "center", padding: rp(16) }}>
+          <TouchableOpacity onPress={() => setCheckinMode(null)} style={{ padding: rp(8), backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99 }}>
+            <Ionicons name="chevron-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginLeft: rp(12) }}>Enter 4-Digit Code</Text>
+        </View>
+        <View style={{ padding: rp(24), alignItems: "center", flex: 1, justifyContent: "center", paddingBottom: rp(24) + tabBarHeight }}>
+          <TextInput
+            value={codeInput}
+            onChangeText={setCodeInput}
+            placeholder="0000"
+            placeholderTextColor="rgba(255,255,255,0.5)"
+            keyboardType="number-pad"
+            maxLength={4}
+            style={{ fontSize: rs(48), fontWeight: "900", color: "#fff", letterSpacing: rs(8), textAlign: "center", borderBottomWidth: 2, borderBottomColor: theme.colors.accent, paddingBottom: rp(8), marginBottom: rp(24), minWidth: rp(200) }}
+          />
+          <TouchableOpacity onPress={handleCodeSubmit} style={{ backgroundColor: theme.colors.accent, borderRadius: rp(16), paddingVertical: rp(14), paddingHorizontal: rp(32), width: "100%", alignItems: "center" }}>
+            {loading ? <ActivityIndicator color={theme.colors.primary} /> : <Text style={{ color: theme.colors.primary, fontWeight: "900", letterSpacing: rs(2) }}>VERIFY</Text>}
+          </TouchableOpacity>
+        </View>
+        <AlreadyCheckedInModal
+          visible={!!alreadyCheckedIn}
+          plate={alreadyCheckedIn?.plate}
+          carType={alreadyCheckedIn?.car_type}
+          onDismiss={() => {
+            setAlreadyCheckedIn(null);
+            setScanComplete(false);
+            scanned.current = false;
+            lastScannedValue.current = null;
+          }}
+        />
+      </View>
+    );
+  }
+
   return ( 
     <View style={{ flex: 1, backgroundColor: theme.colors.primary }}> 
       <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.primary }}> 
         <View style={{ flexDirection: "row", alignItems: "center", padding: rp(theme.spacing.lg) }}> 
-          <TouchableOpacity onPress={() => cameFromDetail ? router.back() : router.replace("/(supervisor)/(tabs)")} 
+          <TouchableOpacity onPress={() => setCheckinMode(null)} 
             style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: rp(99), padding: rp(theme.spacing.sm) }}> 
             <Ionicons name="chevron-back" size={22} color={theme.colors.surface} /> 
           </TouchableOpacity> 
@@ -213,7 +330,7 @@ export default function ScanQrCard() {
             </View> 
             <View style={styles.sideOverlay} /> 
           </View> 
-          <View style={styles.bottomOverlay}> 
+          <View style={[styles.bottomOverlay, { paddingBottom: tabBarHeight }]}> 
             {loading ? ( 
               <ActivityIndicator color={theme.colors.surface} size="large" /> 
             ) : ( 
@@ -241,6 +358,7 @@ export default function ScanQrCard() {
           setScanComplete(false);
           scanned.current = false;
           lastScannedValue.current = null;
+          setCodeInput("");
         }}
       />
     </View> 

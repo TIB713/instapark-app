@@ -116,7 +116,7 @@ export function useDriverTasks(
         });
         hasSeededSeenRef.current = true;
       } else {
-        fetchedCars.forEach((car) => maybeQueueNewRequestRef.current(car));
+        fetchedCars.forEach((car) => maybeQueueNewRequest(car));
       }
     } catch { }
   }, [currentEventId, maybeQueueNewRequest, seenRequestIdsRef, hasSeededSeenRef]);
@@ -175,6 +175,7 @@ export function useDriverTasks(
     });
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
       if (msg.type === "retrieval_update") {
+        console.log(`[DUP_DEBUG] retrieval_update received on channel /retrievals/${currentEventId}, carId=${(msg.data.car || msg.data).id}, status=${(msg.data.car || msg.data).status}`);
         if (msg.data) {
           const carId = String((msg.data.car || msg.data).id);
           const status = (msg.data.car || msg.data).status;
@@ -195,11 +196,13 @@ export function useDriverTasks(
     });
 
     const appStateSub = AppState.addEventListener("change", (nextAppState) => {
+      console.log(`[DUP_DEBUG] AppState changed to: ${nextAppState}`);
       if (nextAppState !== "active") {
         lastBackgroundedAtRef.current = Date.now();
         return;
       }
       const awayMs = lastBackgroundedAtRef.current ? Date.now() - lastBackgroundedAtRef.current : Infinity;
+      console.log(`[DUP_DEBUG] AppState active after ${awayMs}ms away, reconnect ${awayMs < 3000 ? "SKIPPED" : "proceeding"}`);
       if (awayMs < 3000) {
         useAppStore.getState().fetchEvents();
         fetchRetrievalsRef.current();
@@ -213,6 +216,7 @@ export function useDriverTasks(
       });
       connectWS(`/retrievals/${currentEventId}`, (msg) => {
         if (msg.type === "retrieval_update") {
+          console.log(`[DUP_DEBUG] retrieval_update received on channel /retrievals/${currentEventId}, carId=${(msg.data.car || msg.data).id}, status=${(msg.data.car || msg.data).status}`);
           if (msg.data) {
             const carId = String((msg.data.car || msg.data).id);
             const status = (msg.data.car || msg.data).status;

@@ -20,6 +20,8 @@ const [statusFilter, setStatusFilter] = useState("ALL");
 const [selectedCar, setSelectedCar] = useState(null);
 
 const [showCarModal, setShowCarModal] = useState(false);
+const [selfPickupOtpInput, setSelfPickupOtpInput] = useState("");
+const [showSelfPickupOtpField, setShowSelfPickupOtpField] = useState(false);
 
 const [carPhotos, setCarPhotos] = useState([]);
 
@@ -217,11 +219,13 @@ const markSelfPickup = (car) => {
   );
 };
 
-const doMarkSelfPickup = async (car) => {
+const doMarkSelfPickup = async (car, otp) => {
   setMarkingSelfPickup(car.id);
   try {
-    await api.patch(`/cars/${car.id}/self-pickup`);
+    await api.patch(`/cars/${car.id}/self-pickup${otp ? `?otp=${encodeURIComponent(otp)}` : ''}`);
     setShowCarModal(false);
+    setSelfPickupOtpInput("");
+    setShowSelfPickupOtpField(false);
     fetchCars();
   } catch (e) {
     confirmDialog.info("Error", e.response?.data?.detail || "Could not mark self-pickup");
@@ -239,6 +243,8 @@ const doMarkSelfPickup = async (car) => {
     statusFilter, setStatusFilter,
     selectedCar, setSelectedCar,
     showCarModal, setShowCarModal,
+    selfPickupOtpInput, setSelfPickupOtpInput,
+    showSelfPickupOtpField, setShowSelfPickupOtpField,
     carPhotos, setCarPhotos,
     showAssignPicker, setShowAssignPicker,
     assignSuggestion, setAssignSuggestion,

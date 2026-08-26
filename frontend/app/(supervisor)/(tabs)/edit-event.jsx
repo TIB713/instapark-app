@@ -50,7 +50,6 @@ export default function EditEvent() {
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [autoCloseGraceMinutes, setAutoCloseGraceMinutes] = useState("30");
-  const [allowInstantPark, setAllowInstantPark] = useState(false);
   const [zones, setZones] = useState([]);
   const [gates, setGates] = useState([]);
   const [showDP, setShowDP] = useState(false);
@@ -81,7 +80,6 @@ export default function EditEvent() {
         setMaxCars(String(data.max_cars || 200));
         setGateTimerMinutes(String(data.gate_timer_minutes || 5));
         setAutoCloseGraceMinutes(String(data.auto_close_grace_minutes ?? 30));
-        setAllowInstantPark(!!data.allow_instant_park);
         setStartTime(data.start_time || "18:00");
         setEndTime(data.end_time || "23:00");
         if (data.date) setDate(parse(data.date, "yyyy-MM-dd", new Date()));
@@ -124,7 +122,6 @@ export default function EditEvent() {
         await api.patch(`/events/${eventId}`, {
           gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
           auto_close_grace_minutes: parseInt(autoCloseGraceMinutes) || 30,
-          allow_instant_park: allowInstantPark,
           start_time: startTime,
           end_time: endTime,
           venue: venue.trim(),
@@ -151,7 +148,6 @@ export default function EditEvent() {
           gates: gates.filter((g) => g?.trim()),
           gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
           auto_close_grace_minutes: parseInt(autoCloseGraceMinutes) || 30,
-          allow_instant_park: allowInstantPark,
         });
       }
       router.back();
@@ -265,21 +261,6 @@ export default function EditEvent() {
           <View style={inputRowStyle}>
             <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
             <TextInput value={autoCloseGraceMinutes} onChangeText={setAutoCloseGraceMinutes} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }} />
-          </View>
-
-          <View style={{ backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: theme.colors.primary, borderRadius: rp(16), padding: rp(12), marginTop: rp(4), marginBottom: rp(theme.spacing.xl), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <View style={{ flex: 1, marginRight: rp(10) }}>
-              <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary, fontFamily: theme.fontFamily.bold }}>⚡ INSTANT PARK</Text>
-              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2), fontFamily: theme.fontFamily.regular }}>
-                Let drivers skip guest name & phone at check-in for this event
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setAllowInstantPark(v => !v)}
-              style={{ width: rp(52), height: rp(30), borderRadius: rp(15), padding: rp(3), backgroundColor: allowInstantPark ? theme.colors.primary : theme.colors.border }}
-            >
-              <View style={{ width: rp(24), height: rp(24), borderRadius: rp(12), backgroundColor: "#fff", marginLeft: allowInstantPark ? rp(22) : 0 }} />
-            </TouchableOpacity>
           </View>
 
           {!isHotelDailyEdit && (

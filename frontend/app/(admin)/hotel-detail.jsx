@@ -115,7 +115,6 @@ export default function HotelDetail() {
   const [newEventStartTime, setNewEventStartTime] = useState("18:00");
   const [newEventEndTime, setNewEventEndTime] = useState("23:00");
   const [newEventMaxCars, setNewEventMaxCars] = useState("100");
-  const [newEventAllowInstantPark, setNewEventAllowInstantPark] = useState(false);
 
   const [newEventGates, setNewEventGates] = useState(["Main Gate"]);
   const [newEventZones, setNewEventZones] = useState([{ name: "Zone A", slots: "50" }]);
@@ -339,7 +338,6 @@ export default function HotelDetail() {
         start_time: newEventStartTime,
         end_time: newEventEndTime,
         max_cars: maxCarsNum,
-        allow_instant_park: newEventAllowInstantPark,
         zones: newEventZones.map((z) => ({
           name: z.name,
           slots: parseInt(z.slots) || 50,
@@ -821,7 +819,6 @@ export default function HotelDetail() {
                         contact_person_email: editHotel.contact_person_email,
                         total_valet_slots: parseInt(editHotel.total_valet_slots) || 0,
                         gate_timer_minutes: parseInt(editHotel.gate_timer_minutes) || 5,
-                        allow_instant_park: editHotel.allow_instant_park,
                         is_active: editHotel.is_active,
                         gates: editGates.filter(g => g.trim()),
                         zones: editZones.map(z => ({ name: z.name.trim(), slots: parseInt(z.slots) || 0 })).filter(z => z.name),
@@ -867,22 +864,7 @@ export default function HotelDetail() {
               <InfoRow label="TOTAL SLOTS" value={editHotel?.total_valet_slots?.toString()} editing={editingInfo} keyboardType="numeric" onChange={(v) => setEditHotel(prev => ({ ...prev, total_valet_slots: v }))} />
               <InfoRow label="GATE WAIT TIMER (MIN)" value={editHotel?.gate_timer_minutes?.toString()} editing={editingInfo} keyboardType="numeric" onChange={(v) => setEditHotel(prev => ({ ...prev, gate_timer_minutes: v }))} />
               
-              {editingInfo ? (
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: rp(16), marginBottom: rp(16) }}>
-                  <Text style={{ fontSize: rs(13), fontWeight: "700", color: "#374151", flex: 1 }}>Allow Instant Park for this hotel's events</Text>
-                  <Switch
-                    value={editHotel?.allow_instant_park}
-                    onValueChange={(v) => setEditHotel(prev => ({ ...prev, allow_instant_park: v }))}
-                    trackColor={{ false: "#D1D5DB", true: "#059669" }}
-                    thumbColor="#ffffff"
-                  />
-                </View>
-              ) : (
-                <View style={{ marginBottom: rp(16) }}>
-                  <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", letterSpacing: rs(1.5) }}>ALLOW INSTANT PARK</Text>
-                  <Text style={{ fontSize: rs(15), fontWeight: "900", color: "#111827", marginTop: rp(4) }}>{editHotel?.allow_instant_park ? "Yes" : "No"}</Text>
-                </View>
-              )}
+              
 
               {/* Gates */}
               <View style={{ marginTop: rp(12) }}>
@@ -1244,15 +1226,7 @@ export default function HotelDetail() {
                 <Text style={modalLabel}>MAX CARS</Text>
                 <TextInput value={newEventMaxCars} onChangeText={setNewEventMaxCars} keyboardType="numeric" placeholder="100" style={modalTextInput} />
 
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: rp(8), marginBottom: rp(24) }}>
-                  <Text style={{ fontSize: rs(13), fontWeight: "700", color: "#374151", flex: 1, textTransform: "uppercase" }}>ALLOW INSTANT PARK</Text>
-                  <Switch
-                    value={newEventAllowInstantPark}
-                    onValueChange={setNewEventAllowInstantPark}
-                    trackColor={{ false: "#D1D5DB", true: "#059669" }}
-                    thumbColor="#ffffff"
-                  />
-                </View>
+                
 
                 <Text style={modalLabel}>GATES</Text>
                 {newEventGates.map((gate, index) => (

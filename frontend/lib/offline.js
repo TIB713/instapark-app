@@ -24,7 +24,7 @@ export const enqueueHandover = async (carId, localPath) => {
   } catch {}
 };
 
-export const enqueueParkAction = async (carId, { zone, slot, parkedDriverId, keyTag, photoLocalPaths }) => {
+export const enqueueParkAction = async (carId, { zone, slot, parkedDriverId, keyTag, photoLocalPaths, gpsLat, gpsLng }) => {
   try {
     const existing = await AsyncStorage.getItem(PARK_QUEUE_KEY);
     const queue = existing ? JSON.parse(existing) : [];
@@ -36,6 +36,8 @@ export const enqueueParkAction = async (carId, { zone, slot, parkedDriverId, key
       parkedDriverId,
       keyTag,
       photoLocalPaths,
+      gpsLat: gpsLat ?? null,
+      gpsLng: gpsLng ?? null,
       retryCount: 0,
       maxRetries: 3,
       lastError: null,
@@ -142,7 +144,7 @@ export const processPendingQueue = async () => {
               color: item.color,
               plate: item.plate,
               car_type: item.carType,
-              alt_guest_phone: item.altGuestPhone,
+
               has_damage: item.hasDamage,
               damage_notes: item.damageNotes,
               damage_types: item.damageTypes,
@@ -161,7 +163,7 @@ export const processPendingQueue = async () => {
                 check_in_driver_id: item.checkInDriverId,
                 guest_phone: item.guestPhone,
                 car_type: item.carType,
-                alt_guest_phone: item.altGuestPhone,
+
                 has_damage: item.hasDamage,
                 damage_notes: item.damageNotes,
                 damage_types: item.damageTypes,
@@ -295,6 +297,10 @@ export const processPendingQueue = async () => {
       const remaining = [];
       for (const item of queue) {
         try {
+          if (!item.localPath) {
+            await api.patch(`/cars/${item.carId}/deliver`, { delivery_photo_url: "" });
+            continue;
+          }
           const fileInfo = await FileSystem.getInfoAsync(item.localPath);
           if (!fileInfo.exists) continue;
           const formData = new FormData();

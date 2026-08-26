@@ -82,14 +82,12 @@ const textInput = {
   fontSize: rs(15),
   color: theme.colors.textPrimary,
 };
-
-const REQUIRED_PHOTO_COUNT = 2;
 const PHOTO_LABELS = ["front", "right", "back", "left", "extra"];
 
 const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => {
   return (
     <View style={{ marginBottom: 20 }}>
-      <Lbl>VEHICLE PHOTOS * (AT LEAST 2 REQUIRED)</Lbl>
+      <Lbl>VEHICLE PHOTOS (OPTIONAL)</Lbl>
       <View style={{ 
         flexDirection: "row", flexWrap: "wrap", gap: rp(10), 
         borderWidth: errors.photos ? rp(1) : 0, 
@@ -132,8 +130,8 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
 });
 
 const VehicleDetailsSection = memo(({
-  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, instantPark, eventAllowsInstantPark,
-  pendingLookup, setPendingLookup, lookupApplied, setLookupApplied, plateLookedUp, setPlateLookedUp, setGuestPhone, setAltGuestPhone,
+  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, 
+  pendingLookup, setPendingLookup, lookupApplied, setLookupApplied, plateLookedUp, setPlateLookedUp, setGuestPhone,
   lookupPlate, confirmLookup, rejectLookup, clearGuestOnly, fieldRefs
 }) => {
   return (
@@ -156,7 +154,7 @@ const VehicleDetailsSection = memo(({
                 setColor("");
                 setGuestName("");
                 setGuestPhone("");
-                setAltGuestPhone("");
+
                 setCarType("normal");
                 setLookupApplied(false);
               }
@@ -219,19 +217,19 @@ const VehicleDetailsSection = memo(({
           </TouchableOpacity>
         </View>
       )}
-      <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST NAME (OPTIONAL)" : "GUEST NAME *"}</Lbl>
+      <Lbl>GUEST NAME (OPTIONAL)</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }}  style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
         <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }}  value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.guestName && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
-      <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE COLOR (OPTIONAL)" : "VEHICLE COLOR *"}</Lbl>
+      <Lbl>VEHICLE COLOR (OPTIONAL)</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }}  style={[inputRow, errors.color && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="color-palette-outline" size={20} color={theme.colors.primary} />
         <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }}  value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.color && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
-      <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE MAKE/MODEL (OPTIONAL)" : "VEHICLE MAKE/MODEL *"}</Lbl>
+      <Lbl>VEHICLE MAKE/MODEL (OPTIONAL)</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }}  style={[inputRow, errors.make && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="construct-outline" size={20} color={theme.colors.primary} />
         <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }}  value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor={theme.colors.textMuted} style={textInput} />
@@ -329,10 +327,10 @@ const DamageSection = memo(({ hasDamage, setHasDamage, damageTypes, setDamageTyp
   );
 });
 
-const GuestContactSection = memo(({ guestPhone, setGuestPhone, altGuestPhone, setAltGuestPhone, errors, setErrors, instantPark, eventAllowsInstantPark, fieldRefs }) => {
+const GuestContactSection = memo(({ guestPhone, setGuestPhone, errors, setErrors, fieldRefs }) => {
   return (
     <>
-      <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST MOBILE (OPTIONAL)" : "GUEST MOBILE *"}</Lbl>
+      <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestPhone = el; }}  style={[inputRow, errors.guestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
         <TextInput
@@ -346,20 +344,6 @@ const GuestContactSection = memo(({ guestPhone, setGuestPhone, altGuestPhone, se
         />
       </View>
       {errors.guestPhone && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
-      <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.altGuestPhone = el; }}  style={[inputRow, errors.altGuestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
-        <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
-        <TextInput
-          value={altGuestPhone}
-          onChangeText={(text) => { setAltGuestPhone(text); if (errors.altGuestPhone) setErrors(prev => ({ ...prev, altGuestPhone: undefined })); }}
-          placeholder="10-digit mobile number"
-          placeholderTextColor={theme.colors.textMuted}
-          keyboardType="phone-pad"
-          maxLength={10}
-          style={textInput}
-        />
-      </View>
-      {errors.altGuestPhone && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
     </>
   );
 });
@@ -407,7 +391,6 @@ export default function AddCar() {
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
   const [carType, setCarType] = useState("normal");
-  const [altGuestPhone, setAltGuestPhone] = useState("");
   const [hasDamage, setHasDamage] = useState(false);
   const [damageNotes, setDamageNotes] = useState("");
   const [damageTypes, setDamageTypes] = useState([]);
@@ -423,8 +406,6 @@ export default function AddCar() {
   const [passToken, setPassToken] = useState(null);
   const [guestName, setGuestName] = useState("");
   const [isPreRegistered, setIsPreRegistered] = useState(false);
-  const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
-  const [instantPark, setInstantPark] = useState(false);
   
   const [qrToken, setQrToken] = useState("");
   const [keyTagNumber, setKeyTagNumber] = useState("");
@@ -467,7 +448,7 @@ export default function AddCar() {
         setGuestPhone("");
         setSelectedGate("");
         setCarType("normal");
-        setAltGuestPhone("");
+
         setHasDamage(false);
         setDamageNotes("");
         setDamageTypes([]);
@@ -480,7 +461,6 @@ export default function AddCar() {
         setPassToken(null);
         setGuestName("");
         setIsPreRegistered(false);
-        setInstantPark(false);
       }
     }, [params.prefill_plate])
   );
@@ -505,7 +485,6 @@ export default function AddCar() {
         const { data } = await api.get(`/events/${currentEventId}`);
         setEventGates(data.gates || []);
         if (data.gates?.[0]) setSelectedGate(data.gates[0]);
-        setEventAllowsInstantPark(!!data.allow_instant_park);
       } catch { }
       try {
         const draft = await AsyncStorage.getItem("add_car_draft");
@@ -518,7 +497,7 @@ export default function AddCar() {
           setGuestPhone(d.guestPhone || "");
           setSelectedGate(d.selectedGate || "");
           if (d.carType) setCarType(d.carType);
-          if (d.altGuestPhone) setAltGuestPhone(d.altGuestPhone);
+          
           if (d.hasDamage) setHasDamage(d.hasDamage);
           if (d.damageNotes) setDamageNotes(d.damageNotes);
           if (d.damageTypes) setDamageTypes(d.damageTypes);
@@ -594,16 +573,16 @@ export default function AddCar() {
   const clearGuestOnly = () => {
     setGuestName("");
     setGuestPhone("");
-    setAltGuestPhone("");
+
     setLookupApplied(false);
   };
 
   useEffect(() => {
     if (!submitting) {
-      const draft = { plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName };
+      const draft = { plate, color, make, notes, guestPhone, selectedGate, carType, hasDamage, damageNotes, damageTypes, guestName };
       AsyncStorage.setItem("add_car_draft", JSON.stringify(draft)).catch(() => { });
     }
-  }, [plate, color, make, notes, guestPhone, selectedGate, carType, altGuestPhone, hasDamage, damageNotes, damageTypes, guestName, submitting]);
+  }, [plate, color, make, notes, guestPhone, selectedGate, carType, hasDamage, damageNotes, damageTypes, guestName, submitting]);
 
   const takePhoto = useCallback(async (label) => {
     if (!permissionGrantedRef.current) {
@@ -625,10 +604,6 @@ export default function AddCar() {
       const rawUri = result.assets[0].uri;
       setPhotos(prev => {
         const next = { ...prev, [label]: rawUri };
-        if (errors.photos && Object.values(next).filter(Boolean).length >= REQUIRED_PHOTO_COUNT) {
-          setErrors(e => ({ ...e, photos: undefined }));
-        }
-
         const currentIndex = PHOTO_LABELS.indexOf(label);
         const remaining = PHOTO_LABELS.slice(currentIndex + 1);
         const nextLabel = remaining.find(l => !next[l] && l !== label);
@@ -669,14 +644,9 @@ export default function AddCar() {
     const errs = {};
     if (!plate.trim()) errs.plate = "License plate is required";
     else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
-    if (!color.trim() && !(eventAllowsInstantPark && instantPark)) errs.color = "Vehicle color is required";
-    if (!make.trim() && !(eventAllowsInstantPark && instantPark)) errs.make = "Vehicle make/model is required";
-    const skipGuestDetails = eventAllowsInstantPark && instantPark;
-    if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
     if (!selectedDriverId) errs.driver = "Please select a driver to hand this car to";
     let phoneToSave = "";
-    if (!skipGuestDetails && !guestPhone.trim()) errs.guestPhone = "Guest mobile number is required";
-    else if (guestPhone.trim()) {
+    if (guestPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
       const normalized = normalizeIndianPhone(guestPhone.trim());
       const isValidIndian = /^\d{10}$/.test(normalized);
@@ -687,28 +657,11 @@ export default function AddCar() {
         phoneToSave = isValidIndian ? normalized : guestPhone.trim();
       }
     }
-    let altPhoneToSave = "";
-    if (altGuestPhone.trim()) {
-      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
-      const normalized = normalizeIndianPhone(altGuestPhone.trim());
-      const isValidIndian = /^\d{10}$/.test(normalized);
-      const isValidIntl = /^\+\d{10,15}$/.test(altGuestPhone.trim());
-      if (!isValidIndian && !isValidIntl) {
-        errs.altGuestPhone = "Enter a 10-digit Indian number, or an international number starting with +";
-      } else {
-        altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
-      }
-    }
-
-    const validPhotosCount = Object.values(photos).filter(Boolean).length;
-    if (validPhotosCount < REQUIRED_PHOTO_COUNT) {
-      errs.photos = `Please upload at least ${REQUIRED_PHOTO_COUNT} photos.`;
-    }
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setSubmitting(false);
-      scrollToFirstError(['plate', 'color', 'make', 'guestName', 'photos', 'driver', 'guestPhone', 'altGuestPhone'], errs, fieldRefs, scrollViewRef);
+      scrollToFirstError(['plate', 'color', 'make', 'guestName', 'driver', 'guestPhone'], errs, fieldRefs, scrollViewRef);
       return;
     }
 
@@ -716,7 +669,7 @@ export default function AddCar() {
       "Confirm check-in",
       `Confirm check-in for ${plate}?`,
       () => {
-        doSubmit(phoneToSave, altPhoneToSave);
+        doSubmit(phoneToSave);
       },
       () => {
         setSubmitting(false);
@@ -724,7 +677,7 @@ export default function AddCar() {
     );
   };
 
-  const doSubmit = async (phoneToSave, altPhoneToSave) => {
+  const doSubmit = async (phoneToSave) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     try {
@@ -771,12 +724,12 @@ export default function AddCar() {
             guestPhone: phoneToSave,
             isPreRegistered: false,
             carType,
-            altGuestPhone: altPhoneToSave || null,
+
             hasDamage,
             damageNotes: damageNotes.trim() || null,
             damageTypes,
             guestName: guestName.trim(),
-            instantPark: eventAllowsInstantPark && instantPark,
+            instantPark: true,
             photoLocalPaths,
             photos: []
           });
@@ -825,11 +778,11 @@ export default function AddCar() {
           guest_name: guestName.trim() || null,
           is_pre_registered: false,
           car_type: carType,
-          alt_guest_phone: altPhoneToSave || null,
+
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
           damage_types: damageTypes,
-          instant_park: eventAllowsInstantPark && instantPark,
+          instant_park: true,
         };
 
         const { data: car } = await api.post("/cars", payload, { timeout: 30000 });
@@ -906,12 +859,12 @@ export default function AddCar() {
             isPreRegistered,
             prefilledCarId,
             carType,
-            altGuestPhone: altPhoneToSave || null,
+
             hasDamage,
             damageNotes: damageNotes.trim() || null,
             damageTypes,
             guestName: guestName.trim(),
-            instantPark: eventAllowsInstantPark && instantPark,
+            instantPark: true,
             photoLocalPaths,
             photos: urls
           });
@@ -1006,22 +959,7 @@ export default function AddCar() {
               </View>
             </View>
           ) : null}
-          {eventAllowsInstantPark && (
-            <View style={{ backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: "#C7D2FE", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <View style={{ flex: 1, marginRight: rp(10) }}>
-                <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>⚡ INSTANT PARK</Text>
-                <Text style={{ fontSize: rs(11), color: theme.colors.primary, marginTop: rp(2) }}>
-                  Guest doesn't want to share personal details — skip name & phone
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setInstantPark(v => !v)}
-                style={{ width: rp(52), height: rp(30), borderRadius: rp(15), padding: rp(3), backgroundColor: instantPark ? theme.colors.primary : theme.colors.border }}
-              >
-                <View style={{ width: rp(24), height: rp(24), borderRadius: rp(12), backgroundColor: theme.colors.surface, marginLeft: instantPark ? rp(22) : 0 }} />
-              </TouchableOpacity>
-            </View>
-          )}
+          
 
           <Card style={{ marginBottom: rp(16) }}>
             <VehicleDetailsSection
@@ -1032,11 +970,11 @@ export default function AddCar() {
               carType={carType} setCarType={setCarType}
               notes={notes} setNotes={setNotes}
               errors={errors} setErrors={setErrors}
-              instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+              
               pendingLookup={pendingLookup} setPendingLookup={setPendingLookup}
               lookupApplied={lookupApplied} setLookupApplied={setLookupApplied}
               plateLookedUp={plateLookedUp} setPlateLookedUp={setPlateLookedUp}
-              setGuestPhone={setGuestPhone} setAltGuestPhone={setAltGuestPhone}
+              setGuestPhone={setGuestPhone} 
               lookupPlate={lookupPlate} confirmLookup={confirmLookup} rejectLookup={rejectLookup} clearGuestOnly={clearGuestOnly}
               fieldRefs={fieldRefs}
             />
@@ -1052,9 +990,9 @@ export default function AddCar() {
           <Card style={{ marginBottom: rp(16) }}>
             <GuestContactSection
               guestPhone={guestPhone} setGuestPhone={setGuestPhone}
-              altGuestPhone={altGuestPhone} setAltGuestPhone={setAltGuestPhone}
+              
               errors={errors} setErrors={setErrors}
-              instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+              
               fieldRefs={fieldRefs}
             />
           </Card>

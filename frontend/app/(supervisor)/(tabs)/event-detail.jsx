@@ -116,10 +116,11 @@ export default function SupervisorEventDetail() {
   const {
     cars, carStats, drivers, stats, search, setSearch, statusFilter, setStatusFilter,
     selectedCar, setSelectedCar, showCarModal, setShowCarModal, carPhotos, setCarPhotos,
+    selfPickupOtpInput, setSelfPickupOtpInput, showSelfPickupOtpField, setShowSelfPickupOtpField,
     showAssignPicker, setShowAssignPicker, assignSuggestion, assigningDriver, slots,
     assigningId, assigningAll, sendingRetrieval, markingSelfPickup,
     fetchCars, fetchDrivers, fetchStats, fetchSlots, handleAssignDriver, assignAll,
-    doAssign, openAssignPicker, toggleAssign, removeCar, sendRetrievalRequest, markSelfPickup
+    doAssign, openAssignPicker, toggleAssign, removeCar, sendRetrievalRequest, markSelfPickup, doMarkSelfPickup
   } = useEventCars(currentEventId, fetchEvent);
 
   const {
@@ -243,7 +244,7 @@ export default function SupervisorEventDetail() {
       if (search) {
         const q = search.toLowerCase();
         const matchesPlate = c.plate?.toLowerCase().includes(q);
-        const matchesCode = c.card_code?.toString().includes(search.trim());
+        const matchesCode = c.checkin_code?.includes(search.trim());
         if (!matchesPlate && !matchesCode) return false;
       }
       if (statusFilter !== "ALL" && c.status !== statusFilter) return false;
@@ -1144,7 +1145,7 @@ export default function SupervisorEventDetail() {
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity
-                          onPress={() => markSelfPickup(selectedCar)}
+                          onPress={() => setShowSelfPickupOtpField(true)}
                           disabled={markingSelfPickup === selectedCar.id}
                           style={{ backgroundColor: theme.colors.warningLight, borderWidth: 1.5, borderColor: theme.colors.warning, borderRadius: rp(16), paddingVertical: rp(14), alignItems: "center", flexDirection: "row", justifyContent: "center" }}
                         >
@@ -1153,6 +1154,33 @@ export default function SupervisorEventDetail() {
                             {markingSelfPickup === selectedCar.id ? "MARKING..." : "SELF PICKUP"}
                           </Text>
                         </TouchableOpacity>
+
+                        {showSelfPickupOtpField && (
+                          <View style={{ backgroundColor: "#F9FAFB", borderRadius: rp(20), padding: rp(16), marginTop: rp(12) }}>
+                            <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(2), marginBottom: rp(8) }}>
+                              GUEST'S SELF-PICKUP CODE
+                            </Text>
+                            <TextInput
+                              value={selfPickupOtpInput}
+                              onChangeText={setSelfPickupOtpInput}
+                              placeholder="Enter code (leave blank if none given)"
+                              keyboardType="number-pad"
+                              maxLength={6}
+                              style={{ backgroundColor: "#fff", borderRadius: rp(12), borderWidth: 1, borderColor: theme.colors.border, paddingVertical: rp(10), paddingHorizontal: rp(14), fontSize: rs(18), fontWeight: "800", textAlign: "center", letterSpacing: rs(4) }}
+                            />
+                            <TouchableOpacity
+                              onPress={() => doMarkSelfPickup(selectedCar, selfPickupOtpInput)}
+                              disabled={markingSelfPickup === selectedCar.id}
+                              style={{ backgroundColor: theme.colors.accent, borderRadius: rp(12), paddingVertical: rp(12), alignItems: "center", marginTop: rp(10) }}
+                            >
+                              {markingSelfPickup === selectedCar.id ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                              ) : (
+                                <Text style={{ color: "#fff", fontWeight: "700", letterSpacing: rs(1) }}>Verify OTP</Text>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     )}
 

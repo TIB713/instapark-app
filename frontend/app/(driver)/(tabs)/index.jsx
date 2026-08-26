@@ -52,6 +52,11 @@ export default function Tasks() {
   const resolvedDriverId = driver?.id;
 
   const ctx = useDriverTasksContext();
+  const [nowTick, setNowTick] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
   const incomingRequests = ctx;
   const { incomingRequest, requestQueue, maybeQueueNewRequest, dismissIncomingRequest, seenRequestIdsRef, hasSeededSeenRef, setRequestQueue, requestSoundRef } = incomingRequests;
 
@@ -70,12 +75,14 @@ export default function Tasks() {
     setAcceptingCarId,
     setAcceptedCarIds,
     refreshing,
-    nowTick,
+
     otpInput,
     setOtpInput,
     verifyingOtp,
     arrivingAtGate,
     handoverUploading,
+    handoverPhotos,
+    takingHandoverPhoto,
     pendingCount,
     failedCount,
     queueSummary,
@@ -85,7 +92,9 @@ export default function Tasks() {
     confirmPickup,
     arriveAtGate,
     verifyDeliveryOtp,
-    handleHandover,
+    takeHandoverPhoto,
+    removeHandoverPhoto,
+    markHandover,
     navigateToCar,
     refreshPending,
     fetchMyCarsRef,
@@ -343,12 +352,46 @@ export default function Tasks() {
         ) : car.status === "ARRIVED_AT_GATE" && isRetrievalMine ? (
           car.otp_verified || car.retrieval_requested_via === "supervisor_scan" ? (
             <View style={{ gap: rp(8) }}>
+              <Text style={{ fontSize: rs(11), fontWeight: "700", color: theme.colors.textSecondary, textTransform: "uppercase" }}>
+                Delivery Photo (Optional)
+              </Text>
+              <View style={{ flexDirection: "row", gap: rp(10) }}>
+                {handoverPhotos[car.id] ? (
+                  <View style={{ position: "relative", width: rp(80), height: rp(80) }}>
+                    <Image source={{ uri: handoverPhotos[car.id] }} style={{ width: "100%", height: "100%", borderRadius: rp(14), opacity: 0.6 }} />
+                    <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="checkmark-circle" size={32} color={theme.colors.success} />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => removeHandoverPhoto(car)}
+                      style={{ position: "absolute", top: -6, right: -6, backgroundColor: theme.colors.danger, borderRadius: rp(99), width: rp(22), height: rp(22), alignItems: "center", justifyContent: "center" }}
+                    >
+                      <Ionicons name="close" size={13} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => takeHandoverPhoto(car)}
+                    disabled={takingHandoverPhoto === car.id}
+                    style={{ width: rp(80), height: rp(80), borderRadius: rp(14), borderWidth: rp(1.5), borderStyle: "dashed", borderColor: theme.colors.accent, backgroundColor: theme.colors.accentLight, alignItems: "center", justifyContent: "center" }}
+                  >
+                    {takingHandoverPhoto === car.id ? (
+                      <ActivityIndicator size="small" color={theme.colors.accentForeground} />
+                    ) : (
+                      <>
+                        <Ionicons name="camera-outline" size={26} color={theme.colors.accentForeground} />
+                        <Text style={{ color: theme.colors.accentForeground, fontSize: rs(10), fontWeight: "800", marginTop: rp(4) }}>ADD</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
               <Btn
                 variant="primary"
                 disabled={handoverUploading}
-                onPress={() => handleHandover(car)}
+                onPress={() => markHandover(car)}
               >
-                {handoverUploading ? "Processing..." : "Take Delivery Photo & Handover"}
+                {handoverUploading ? "Processing..." : "Mark Handover"}
               </Btn>
             </View>
           ) : (
@@ -624,13 +667,19 @@ export default function Tasks() {
         )}
 
         <View style={{ gap: rp(12) }}>
-          <Btn variant="accent" disabled={!!pickingUp[incomingRequest?.id]} onPress={() => { if (incomingRequest) acceptRetrieval(incomingRequest, { fromIncomingRequest: true }); }}>
+          <Btn variant="accent" disabled={!!pickingUp[incomingRequest?.id]} onPress={async () => { 
+            if (incomingRequest) {
+              await acceptRetrieval(incomingRequest, { fromIncomingRequest: true }); 
+              driverTasks.fetchRetrievalsRef.current();
+            }
+          }}>
             {pickingUp[incomingRequest?.id] ? "Accepting..." : "ACCEPT"}
           </Btn>
           <Btn variant="outline" disabled={!!pickingUp[incomingRequest?.id]} onPress={() => {
             if (!incomingRequest) return;
             incomingRequests.seenRequestIdsRef.current.add(String(incomingRequest.id));
             dismissIncomingRequest();
+            driverTasks.fetchRetrievalsRef.current();
           }}>
             SKIP
           </Btn>

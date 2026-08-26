@@ -98,22 +98,21 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     Promise.all([fetchEvent(), fetchSlots()]).then(() => setOpeningParkModal(null));
   };
 
-  const captureGPSPin = async () => {
-    setCapturingGPS(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        confirmDialog.info("Permission denied", "Location permission is needed to save GPS pin.");
-        return;
-      }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      setCapturedGPS({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-    } catch {
-      confirmDialog.info("Error", "Could not get GPS location. You can still park without it.");
-    } finally {
-      setCapturingGPS(false);
-    }
-  };
+  const captureGPSOnce = async () => {
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") return null;
+    const loc = await Promise.race([
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("gps_timeout")), 5000)),
+    ]);
+    return { lat: loc.coords.latitude, lng: loc.coords.longitude };
+  } catch {
+    // Single try only — if it fails, times out, or permission is denied,
+    // park without a pin. No retry.
+    return null;
+  }
+};
 
   const takeParkPhoto = async () => {
     if (parkPhotos.length >= 5) {
@@ -148,11 +147,6 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
   const confirmPark = async () => {
     if (!selectedSlot) return;
 
-    if (parkPhotos.length === 0) {
-      confirmDialog.info("Photo required", "Please take at least one parking photo before confirming.");
-      return;
-    }
-
     confirmDialog.confirm(
       "Confirm parking",
       `Confirm parking ${selectedCar?.plate} in Zone ${selectedZone}, Slot ${selectedSlot}?`,
@@ -163,6 +157,8 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
   const doConfirmPark = async () => {
     setConfirmingPark(true);
     try {
+      const gpsPin = await captureGPSOnce();
+      setCapturedGPS(gpsPin);
       const net = await NetInfo.fetch();
 
       if (!net.isConnected) {
@@ -174,7 +170,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
           await FileSystem.copyAsync({ from: sourceUri, to: localPath });
           photoLocalPaths.push(localPath);
         }
-        await enqueueParkAction(selectedCar.id, { zone: selectedZone, slot: selectedSlot, parkedDriverId: resolvedDriverId, photoLocalPaths });
+        await enqueueParkAction(selectedCar.id, { zone: selectedZone, slot: selectedSlot, parkedDriverId: resolvedDriverId, photoLocalPaths, gpsLat: gpsPin?.lat ?? null, gpsLng: gpsPin?.lng ?? null });
         setParkedCarInfo({ plate: selectedCar.plate, zone: selectedZone, slot: selectedSlot, checkin_code: selectedCar.checkin_code, qr_token: selectedCar.qr_token });
         setShowParkSuccessModal(true);
         setShowParkModal(false);
@@ -192,8 +188,8 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
         zone: selectedZone,
         slot: selectedSlot,
         parked_driver_id: resolvedDriverId,
-        gps_lat: capturedGPS?.lat || null,
-        gps_lng: capturedGPS?.lng || null,
+        gps_lat: gpsPin?.lat ?? null,
+        gps_lng: gpsPin?.lng ?? null,
       });
       await updateJourney(selectedCar.id, "parked");
 
@@ -300,13 +296,29 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     },
     openParkModal,
     closeParkModal: () => setShowParkModal(false),
+    setShowParkModal,
+    setSelectedCar,
+    setEventZones,
+    setSlots,
     setSelectedZone,
-    selectSlot,
+    setSelectedSlot,
     setKeyTag,
-    takeParkPhoto,
+    setParkPhotos,
+    setLoadingPhotoIdx,
     setParkingPhotoStep,
-    confirmPark,
-    captureGPSPin,
+    setTakingParkPhoto,
+    setShowParkSuccessModal,
+    setParkedCarInfo,
+    setCapturedGPS,
+    setCapturingGPS,
+    setOpeningParkModal,
+    setConfirmingPark,
     setDismissingParkSuccess,
+    selectSlot,
+    takeParkPhoto,
+    confirmPark,
+    doConfirmPark,
+    uploadParkPhotosInBackground,
+    captureGPSOnce
   };
 }

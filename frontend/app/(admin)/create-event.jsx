@@ -48,7 +48,6 @@ export default function CreateEvent() {
   const [maxCars, setMaxCars] = useState("200");
   const [gateTimerMinutes, setGateTimerMinutes] = useState("5");
   const [autoCloseGraceMinutes, setAutoCloseGraceMinutes] = useState("30");
-  const [allowInstantPark, setAllowInstantPark] = useState(false);
   const [zones, setZones] = useState([{ name: "A", slots: 20 }]);
   const [gates, setGates] = useState(["Main Gate"]);
   const [showDP, setShowDP] = useState(false);
@@ -122,7 +121,6 @@ export default function CreateEvent() {
         max_cars: parseInt(maxCars) || 200,
         gate_timer_minutes: parseInt(gateTimerMinutes) || 5,
         auto_close_grace_minutes: parseInt(autoCloseGraceMinutes) || 30,
-        allow_instant_park: allowInstantPark,
         zones: zones.filter((z) => z.name.trim()),
         gates: gates.filter((g) => g.trim()),
         is_template: false,
@@ -432,15 +430,7 @@ export default function CreateEvent() {
               style={textInputStyle}
             />
           </InputRow>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: rp(8), marginBottom: rp(24) }}>
-            <Text style={{ fontSize: rs(13), fontWeight: "700", color: "#374151", flex: 1, textTransform: "uppercase" }}>ALLOW INSTANT PARK</Text>
-            <Switch
-              value={allowInstantPark}
-              onValueChange={setAllowInstantPark}
-              trackColor={{ false: "#D1D5DB", true: "#059669" }}
-              thumbColor="#ffffff"
-            />
-          </View>
+          
           <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
             How long a guest has to reach the gate before the car is sent back to parking.
           </Text>

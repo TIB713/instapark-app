@@ -18,7 +18,6 @@ export default function ParkScreen() {
     selectSlot,
     setParkPhotos,
     takeParkPhoto,
-    captureGPSPin,
     confirmPark
   } = useDriverTasksContext();
 
@@ -56,7 +55,6 @@ export default function ParkScreen() {
 
   let confirmLabel = "Confirm Parking";
   if (!selectedSlot) confirmLabel = "Select a slot";
-  else if (parkPhotos.length === 0) confirmLabel = "Add a parking photo";
   else confirmLabel = `Confirm parking · ${selectedZone}-${selectedSlot}`;
 
   return (
@@ -148,7 +146,7 @@ export default function ParkScreen() {
               </View>
             </Card>
 
-            <SectionTitle>Parking Photos</SectionTitle>
+            <SectionTitle>Parking Photos (Optional)</SectionTitle>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(10), marginBottom: rp(24) }}>
               {parkPhotos.map((uri, i) => (
                 <View key={i} style={{ position: "relative", width: rp(80), height: rp(80) }}>
@@ -174,10 +172,6 @@ export default function ParkScreen() {
                 </TouchableOpacity>
               )}
             </ScrollView>
-
-            <Btn variant="outline" onPress={captureGPSPin} style={{ marginBottom: rp(24) }}>
-              {capturingGPS ? "Saving GPS..." : capturedGPS ? "GPS Saved ✓" : "Save GPS Pin"}
-            </Btn>
 
             <Btn variant="accent" disabled={!selectedSlot || confirmingPark} onPress={confirmPark}>
               {confirmingPark ? "Confirming..." : confirmLabel}

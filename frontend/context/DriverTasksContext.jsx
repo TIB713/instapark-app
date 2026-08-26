@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useIncomingRequests } from '../hooks/useIncomingRequests';
 import { useSOS } from '../hooks/useSOS';
 import { useDriverTasks } from '../hooks/useDriverTasks';
@@ -44,14 +44,14 @@ export function DriverTasksProvider({ children }) {
   const { state: sosState, ...sosActions } = sosHook;
   const { state: parkState, ...parkActions } = parkFlowHook;
 
-  const value = {
+  const value = useMemo(() => ({
     ...incomingRequests,
     sosState,
     ...sosActions,
     ...driverTasks,
     parkState,
     ...parkActions,
-  };
+  }), [incomingRequests, sosState, sosActions, driverTasks, parkState, parkActions]);
 
   return (
     <DriverTasksContext.Provider value={value}>

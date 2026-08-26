@@ -1,15 +1,16 @@
 import React, { useState, useRef, useCallback, memo, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  Image, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Keyboard
 } from "react-native";
 import { Modal as RNModal } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -36,8 +37,6 @@ import Heading from "../../../components/Heading";
 import { theme } from "../../../utils/theme";
 import { rs, rp } from "../../../utils/responsive";
 import { scrollToFirstError } from "../../../lib/scrollToFirstError";
-
-const REQUIRED_PHOTO_COUNT = 2;
 const PHOTO_LABELS = ["front", "right", "back", "left", "extra"];
 
 const validatePlate = (plate) => {
@@ -83,12 +82,12 @@ const textInput = {
 const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => {
   return (
     <View style={{ marginBottom: 20 }}>
-      <Lbl>VEHICLE PHOTOS * (AT LEAST 2 REQUIRED)</Lbl>
-      <View style={{ 
-        flexDirection: "row", flexWrap: "wrap", gap: rp(10), 
-        borderWidth: errors.photos ? rp(1) : 0, 
-        borderColor: theme.colors.danger, 
-        borderRadius: rp(16), 
+      <Lbl>VEHICLE PHOTOS (OPTIONAL)</Lbl>
+      <View style={{
+        flexDirection: "row", flexWrap: "wrap", gap: rp(10),
+        borderWidth: errors.photos ? rp(1) : 0,
+        borderColor: theme.colors.danger,
+        borderRadius: rp(16),
         padding: errors.photos ? rp(8) : 0,
         marginBottom: errors.photos ? 0 : rp(16)
       }}>
@@ -126,12 +125,12 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
 });
 
 const VehicleDetailsSection = memo(({
-  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, instantPark, eventAllowsInstantPark, fieldRefs
+  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, fieldRefs
 }) => {
   return (
     <>
       <Lbl>LICENSE PLATE *</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.plate = el; }}  style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.plate = el; }} style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="car-outline" size={20} color={theme.colors.primary} />
         <TextInput
           testID="plate-input"
@@ -149,28 +148,28 @@ const VehicleDetailsSection = memo(({
         />
       </View>
       {errors.plate && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
-      
-      <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST NAME (OPTIONAL)" : "GUEST NAME *"}</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }}  style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+
+      <Lbl>GUEST NAME (OPTIONAL)</Lbl>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }} style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
         <TextInput value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.guestName && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
-      
-      <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE COLOR (OPTIONAL)" : "VEHICLE COLOR *"}</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }}  style={[inputRow, errors.color && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+
+      <Lbl>VEHICLE COLOR (OPTIONAL)</Lbl>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }} style={[inputRow, errors.color && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="color-palette-outline" size={20} color={theme.colors.primary} />
         <TextInput value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.color && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
-      
-      <Lbl>{eventAllowsInstantPark && instantPark ? "VEHICLE MAKE/MODEL (OPTIONAL)" : "VEHICLE MAKE/MODEL *"}</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }}  style={[inputRow, errors.make && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+
+      <Lbl>VEHICLE MAKE/MODEL (OPTIONAL)</Lbl>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }} style={[inputRow, errors.make && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="construct-outline" size={20} color={theme.colors.primary} />
         <TextInput value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.make && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
-      
+
       <Lbl>CAR TYPE *</Lbl>
       <View style={{ flexDirection: "row", gap: rp(8), marginBottom: rp(16) }}>
         {["normal", "premium"].map((ct) => (
@@ -263,11 +262,11 @@ const DamageSection = memo(({ hasDamage, setHasDamage, damageTypes, setDamageTyp
   );
 });
 
-const GuestContactSection = memo(({ guestPhone, setGuestPhone, altGuestPhone, setAltGuestPhone, errors, setErrors, instantPark, eventAllowsInstantPark, fieldRefs }) => {
+const GuestContactSection = memo(({ guestPhone, setGuestPhone, errors, setErrors, fieldRefs }) => {
   return (
     <>
-      <Lbl>{instantPark && eventAllowsInstantPark ? "GUEST MOBILE (OPTIONAL)" : "GUEST MOBILE *"}</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestPhone = el; }}  style={[inputRow, errors.guestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestPhone = el; }} style={[inputRow, errors.guestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
         <TextInput
           value={guestPhone}
@@ -280,20 +279,6 @@ const GuestContactSection = memo(({ guestPhone, setGuestPhone, altGuestPhone, se
         />
       </View>
       {errors.guestPhone && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestPhone}</Text>}
-      <Lbl>ALTERNATE MOBILE (OPTIONAL)</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.altGuestPhone = el; }}  style={[inputRow, errors.altGuestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
-        <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
-        <TextInput
-          value={altGuestPhone}
-          onChangeText={(text) => { setAltGuestPhone(text); if (errors.altGuestPhone) setErrors(prev => ({ ...prev, altGuestPhone: undefined })); }}
-          placeholder="10-digit mobile number"
-          placeholderTextColor={theme.colors.textMuted}
-          keyboardType="phone-pad"
-          maxLength={10}
-          style={textInput}
-        />
-      </View>
-      {errors.altGuestPhone && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.altGuestPhone}</Text>}
     </>
   );
 });
@@ -332,10 +317,12 @@ export default function Checkin() {
   const { openParkModal } = useDriverTasksContext();
   const scrollViewRef = useRef(null);
   const fieldRefs = useRef({});
-  
+
   const [qrToken, setQrToken] = useState("");
   const [keyTagNumber, setKeyTagNumber] = useState("");
   const [qrCardId, setQrCardId] = useState("");
+  const [checkinMode, setCheckinMode] = useState(null); // null | "scan" | "code"
+  const [codeInput, setCodeInput] = useState("");
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanComplete, setScanComplete] = useState(false);
@@ -343,12 +330,12 @@ export default function Checkin() {
   const scanned = useRef(false);
   const lastScannedValue = useRef(null);
   const [alreadyCheckedIn, setAlreadyCheckedIn] = useState(null);
-  
+
   let tabBarHeight = 0;
   try {
     tabBarHeight = useBottomTabBarHeight();
-  } catch (e) {}
-  
+  } catch (e) { }
+
   const [plate, setPlate] = useState("");
   const [color, setColor] = useState("");
   const [make, setMake] = useState("");
@@ -357,20 +344,17 @@ export default function Checkin() {
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
   const [carType, setCarType] = useState("normal");
-  const [altGuestPhone, setAltGuestPhone] = useState("");
   const [hasDamage, setHasDamage] = useState(false);
   const [damageNotes, setDamageNotes] = useState("");
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
   const [guestName, setGuestName] = useState("");
-  const [eventAllowsInstantPark, setEventAllowsInstantPark] = useState(false);
-  const [instantPark, setInstantPark] = useState(false);
 
   const [photos, setPhotos] = useState({ front: null, back: null, left: null, right: null, extra: null });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
-  
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successCar, setSuccessCar] = useState(null);
 
@@ -401,16 +385,15 @@ export default function Checkin() {
         const { data } = await api.get(`/events/${currentEventId}`);
         setEventGates(data.gates || []);
         if (data.gates?.[0]) setSelectedGate(data.gates[0]);
-        setEventAllowsInstantPark(!!data.allow_instant_park);
-      } catch {}
+      } catch { }
     })();
   }, [currentEventId]);
 
   useEffect(() => {
-    if (permission && !permission.granted) { 
-      requestPermission(); 
-    } 
-  }, [permission]); 
+    if (permission && !permission.granted) {
+      requestPermission();
+    }
+  }, [permission]);
 
   const handleScan = useCallback(async (result) => {
     if (scanned.current) return;
@@ -459,6 +442,33 @@ export default function Checkin() {
     }, 2000);
   }, [currentEventId]);
 
+  
+  const handleCodeSubmit = async () => {
+    if (!codeInput || codeInput.length !== 4) {
+      confirmDialog.info("Invalid Code", "Please enter a 4-digit code.");
+      return;
+    }
+    Keyboard.dismiss();
+    setScanLoading(true);
+    try {
+      const { data: card } = await api.get(`/qr-cards/lookup-by-code/${codeInput}?event_id=${currentEventId}&include_bound=true`);
+      if (card.status && card.status !== "empty") {
+        setAlreadyCheckedIn(card);
+        setScanLoading(false);
+        return;
+      }
+      setQrToken(card.qr_token);
+      setKeyTagNumber(card.key_tag_number);
+      setQrCardId(card.id);
+      setCodeInput("");
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Could not verify code";
+      confirmDialog.confirm("Invalid Code", msg, () => { setCodeInput(""); });
+    } finally {
+      setScanLoading(false);
+    }
+  };
+
   const cancelScan = () => {
     setQrToken("");
     setKeyTagNumber("");
@@ -471,41 +481,38 @@ export default function Checkin() {
     setGuestPhone("");
     setSelectedGate(eventGates[0] || "");
     setCarType("normal");
-    setAltGuestPhone("");
+
     setHasDamage(false);
     setDamageNotes("");
     setDamageTypes([]);
     setShowOtherDamage(false);
     setGuestName("");
-    setInstantPark(false);
     setErrors({});
     setNextPhotoLabel(null);
+    setCheckinMode(null);
+    setCodeInput("");
   };
 
   const takePhoto = useCallback(async (label) => {
     if (!permissionGrantedRef.current) {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) { 
-        confirmDialog.info("Camera permission needed", ""); 
-        return; 
+      if (!perm.granted) {
+        confirmDialog.info("Camera permission needed", "");
+        return;
       }
       permissionGrantedRef.current = true;
     }
-    
-    const result = await ImagePicker.launchCameraAsync({ 
-      quality: 0.7, 
-      allowsEditing: false, 
-      mediaTypes: ImagePicker.MediaTypeOptions.Images 
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+      allowsEditing: false,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images
     });
-    
+
     if (!result.canceled) {
       const rawUri = result.assets[0].uri;
       setPhotos(prev => {
         const next = { ...prev, [label]: rawUri };
-        if (errors.photos && Object.values(next).filter(Boolean).length >= REQUIRED_PHOTO_COUNT) {
-          setErrors(e => ({ ...e, photos: undefined }));
-        }
-
         const currentIndex = PHOTO_LABELS.indexOf(label);
         const remaining = PHOTO_LABELS.slice(currentIndex + 1);
         const nextLabel = remaining.find(l => !next[l] && l !== label);
@@ -524,7 +531,7 @@ export default function Checkin() {
       );
 
       uploadPromisesRef.current[label] = (async () => {
-        await resizeQueueRef.current.catch(() => {});
+        await resizeQueueRef.current.catch(() => { });
         const uri = resizedPhotosRef.current[label] || rawUri;
         const fd = new FormData();
         fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
@@ -546,14 +553,9 @@ export default function Checkin() {
     const errs = {};
     if (!plate.trim()) errs.plate = "License plate is required";
     else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
-    if (!color.trim() && !(eventAllowsInstantPark && instantPark)) errs.color = "Vehicle color is required";
-    if (!make.trim() && !(eventAllowsInstantPark && instantPark)) errs.make = "Vehicle make/model is required";
-    const skipGuestDetails = eventAllowsInstantPark && instantPark;
-    if (!skipGuestDetails && !guestName.trim()) errs.guestName = "Guest name is required";
-    
+
     let phoneToSave = "";
-    if (!skipGuestDetails && !guestPhone.trim()) errs.guestPhone = "Guest mobile number is required";
-    else if (guestPhone.trim()) {
+    if (guestPhone.trim()) {
       const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
       const normalized = normalizeIndianPhone(guestPhone.trim());
       const isValidIndian = /^\d{10}$/.test(normalized);
@@ -564,28 +566,11 @@ export default function Checkin() {
         phoneToSave = isValidIndian ? normalized : guestPhone.trim();
       }
     }
-    let altPhoneToSave = "";
-    if (altGuestPhone.trim()) {
-      const normalizeIndianPhone = (p) => p.replace(/^(\+91|91|0)/, "").replace(/[\s\-()]/g, "");
-      const normalized = normalizeIndianPhone(altGuestPhone.trim());
-      const isValidIndian = /^\d{10}$/.test(normalized);
-      const isValidIntl = /^\+\d{10,15}$/.test(altGuestPhone.trim());
-      if (!isValidIndian && !isValidIntl) {
-        errs.altGuestPhone = "Enter a 10-digit Indian number, or an international number starting with +";
-      } else {
-        altPhoneToSave = isValidIndian ? normalized : altGuestPhone.trim();
-      }
-    }
-
-    const validPhotosCount = Object.values(photos).filter(Boolean).length;
-    if (validPhotosCount < REQUIRED_PHOTO_COUNT) {
-      errs.photos = `Please upload at least ${REQUIRED_PHOTO_COUNT} photos.`;
-    }
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setSubmitting(false);
-      scrollToFirstError(['plate', 'color', 'make', 'guestName', 'guestPhone', 'altGuestPhone', 'photos'], errs, fieldRefs, scrollViewRef);
+      scrollToFirstError(['plate', 'color', 'make', 'guestName', 'guestPhone'], errs, fieldRefs, scrollViewRef);
       return;
     }
 
@@ -593,7 +578,7 @@ export default function Checkin() {
       "Confirm check-in",
       `Confirm check-in for ${plate}?`,
       () => {
-        doSubmit(phoneToSave, altPhoneToSave);
+        doSubmit(phoneToSave);
       },
       () => {
         setSubmitting(false);
@@ -601,12 +586,12 @@ export default function Checkin() {
     );
   };
 
-  const doSubmit = async (phoneToSave, altPhoneToSave) => {
+  const doSubmit = async (phoneToSave) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     try {
       const entries = Object.entries(photos).filter(([, uri]) => !!uri);
-      
+
       const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
       const net = await NetInfo.fetch();
       if (!net.isConnected) {
@@ -616,32 +601,32 @@ export default function Checkin() {
           await FileSystem.copyAsync({ from: uri, to: localPath });
           photoLocalPaths[label] = localPath;
         }));
-        
+
         await enqueueCheckinAction({
-            eventId: currentEventId,
-            qr_token: qrToken,
-            qr_card_id: qrCardId,
-            plate: plate.trim().toUpperCase(),
-            color: color.trim(),
-            make: make.trim(),
-            notes: notes.trim(),
-            gate: selectedGate,
-            guestPhone: phoneToSave,
-            isPreRegistered: false,
-            carType,
-            altGuestPhone: altPhoneToSave || null,
-            hasDamage,
-            damageNotes: damageNotes.trim() || null,
-            damageTypes,
-            guestName: guestName.trim(),
-            instantPark: eventAllowsInstantPark && instantPark,
-            photoLocalPaths,
-            photos: []
+          eventId: currentEventId,
+          qr_token: qrToken,
+          qr_card_id: qrCardId,
+          plate: plate.trim().toUpperCase(),
+          color: color.trim(),
+          make: make.trim(),
+          notes: notes.trim(),
+          gate: selectedGate,
+          guestPhone: phoneToSave,
+          isPreRegistered: false,
+          carType,
+
+          hasDamage,
+          damageNotes: damageNotes.trim() || null,
+          damageTypes,
+          guestName: guestName.trim(),
+          instantPark: true,
+          photoLocalPaths,
+          photos: []
         });
-        
+
         setSuccessCar({ plate: plate.trim().toUpperCase(), checkin_code: "SYNC", id: "offline" });
         setShowSuccessModal(true);
-        
+
         const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
         if (!running) {
           const started = await startLocationTracking();
@@ -653,7 +638,7 @@ export default function Checkin() {
           }
         }
         await updateJourney("offline", "checkin");
-        
+
         return;
       }
 
@@ -670,18 +655,18 @@ export default function Checkin() {
         guest_name: guestName.trim() || null,
         is_pre_registered: false,
         car_type: carType,
-        alt_guest_phone: altPhoneToSave || null,
+
         has_damage: hasDamage,
         damage_notes: damageNotes.trim() || null,
         damage_types: damageTypes,
-        instant_park: eventAllowsInstantPark && instantPark,
+        instant_park: true,
       };
 
       const { data: car } = await api.post("/cars", payload, { timeout: 30000 });
-      
+
       setSuccessCar(car);
       setShowSuccessModal(true);
-      
+
       const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
       if (!running) {
         const started = await startLocationTracking();
@@ -693,7 +678,7 @@ export default function Checkin() {
         }
       }
       await updateJourney(car.id, "checkin");
-      
+
       // Decoupled Background Photo Upload
       (async () => {
         try {
@@ -701,11 +686,11 @@ export default function Checkin() {
             const url = await uploadPromisesRef.current[label];
             return { label, url };
           }));
-          
+
           const urls = [];
           const successLabels = [];
           const failedLabels = [];
-          
+
           results.forEach((r, idx) => {
             if (r.status === "fulfilled") {
               urls.push(r.value.url);
@@ -714,11 +699,11 @@ export default function Checkin() {
               failedLabels.push(entries[idx][0]);
             }
           });
-          
+
           if (urls.length > 0) {
             await api.post(`/cars/${car.id}/photos`, { urls, type: "checkin", labels: successLabels }, { timeout: 30000 });
           }
-          
+
           if (failedLabels.length > 0) {
             throw new Error("Some photos failed to upload initially");
           }
@@ -734,7 +719,7 @@ export default function Checkin() {
               localPaths[label] = localPath;
               labelsToQueue.push(label);
             }));
-            
+
             await enqueuePhotoAttach(car.id, { photoLocalPaths: localPaths, labels: labelsToQueue });
           } catch (qErr) {
             console.warn("Failed to enqueue photo attach fallback", qErr);
@@ -785,61 +770,108 @@ export default function Checkin() {
     <Screen scroll={false} style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.surface }} />
       <TopBar title="Check In" hideBack />
-      
+
       {!qrToken ? (
         <View style={{ flex: 1, backgroundColor: "#000" }}>
-          {(!permission || !permission.granted) ? (
-            <View style={{ flex: 1, backgroundColor: theme.colors.primary, justifyContent: "center", alignItems: "center", padding: rp(24) }}> 
-              <Ionicons name="camera-outline" size={64} color="#fff" /> 
-              <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginTop: rp(16), textAlign: "center" }}> 
-                Camera Permission Required 
-              </Text> 
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginTop: rp(8), marginBottom: rp(24) }}> 
-                Camera access is needed to scan key-tag QR cards. 
-              </Text> 
-              <TouchableOpacity onPress={requestPermission} 
-                style={{ backgroundColor: theme.colors.success, borderRadius: rp(16), paddingVertical: rp(14), paddingHorizontal: rp(32) }}> 
-                <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>GRANT PERMISSION</Text> 
-              </TouchableOpacity> 
-            </View> 
+          {checkinMode === null ? (
+            <View style={{ flex: 1, backgroundColor: theme.colors.primary, justifyContent: "center", alignItems: "center", padding: rp(24) }}>
+              <TouchableOpacity onPress={() => setCheckinMode("scan")} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), padding: rp(24), marginBottom: rp(16), width: "100%", alignItems: "center", flexDirection: "row", justifyContent: "center" }}>
+                <Ionicons name="qr-code-outline" size={32} color={theme.colors.textPrimary} style={{ marginRight: rp(12) }} />
+                <Text style={{ color: theme.colors.textPrimary, fontSize: rs(18), fontWeight: "900" }}>Scan QR Card</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCheckinMode("code")} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), padding: rp(24), width: "100%", alignItems: "center", flexDirection: "row", justifyContent: "center" }}>
+                <Ionicons name="keypad-outline" size={32} color={theme.colors.textPrimary} style={{ marginRight: rp(12) }} />
+                <Text style={{ color: theme.colors.textPrimary, fontSize: rs(18), fontWeight: "900" }}>Enter Code</Text>
+              </TouchableOpacity>
+            </View>
+          ) : checkinMode === "scan" ? (
+            (!permission || !permission.granted) ? (
+              <View style={{ flex: 1, backgroundColor: theme.colors.primary, justifyContent: "center", alignItems: "center", padding: rp(24) }}>
+                <SafeAreaView edges={["top"]} style={{ position: "absolute", top: 0, left: 0, zIndex: 10 }}>
+                  <TouchableOpacity onPress={() => setCheckinMode(null)} style={{ padding: rp(16) }}>
+                    <Ionicons name="chevron-back" size={28} color="#fff" />
+                  </TouchableOpacity>
+                </SafeAreaView>
+                <Ionicons name="camera-outline" size={64} color="#fff" />
+                <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginTop: rp(16), textAlign: "center" }}>
+                  Camera Permission Required
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginTop: rp(8), marginBottom: rp(24) }}>
+                  Camera access is needed to scan key-tag QR cards.
+                </Text>
+                <TouchableOpacity onPress={requestPermission}
+                  style={{ backgroundColor: theme.colors.success, borderRadius: rp(16), paddingVertical: rp(14), paddingHorizontal: rp(32) }}>
+                  <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>GRANT PERMISSION</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <CameraView
+                style={{ flex: 1 }}
+                facing="back"
+                onBarcodeScanned={scanComplete ? undefined : handleScan}
+                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              >
+                <View style={styles.overlay}>
+                  <SafeAreaView edges={["top"]} style={{ position: "absolute", top: 0, left: 0, zIndex: 10 }}>
+                    <TouchableOpacity onPress={() => setCheckinMode(null)} style={{ padding: rp(16) }}>
+                      <Ionicons name="chevron-back" size={28} color="#fff" />
+                    </TouchableOpacity>
+                  </SafeAreaView>
+                  <View style={styles.topOverlay} />
+                  <View style={{ flexDirection: "row" }}>
+                    <View style={styles.sideOverlay} />
+                    <View style={styles.scanBox}>
+                      <View style={[styles.corner, styles.topLeft]} />
+                      <View style={[styles.corner, styles.topRight]} />
+                      <View style={[styles.corner, styles.bottomLeft]} />
+                      <View style={[styles.corner, styles.bottomRight]} />
+                      <View style={styles.laserLine} />
+                    </View>
+                    <View style={styles.sideOverlay} />
+                  </View>
+                  <View style={[styles.bottomOverlay, { paddingBottom: tabBarHeight }]}>
+                    {scanLoading ? (
+                      <ActivityIndicator color="#fff" size="large" />
+                    ) : (
+                      <Text style={{ color: "#fff", fontWeight: "700", fontSize: rs(14), textAlign: "center", paddingHorizontal: rp(24) }}>
+                        Point camera at the key-tag QR card
+                      </Text>
+                    )}
+                    {scanComplete && !scanLoading && (
+                      <TouchableOpacity
+                        onPress={() => { setScanComplete(false); scanned.current = false; lastScannedValue.current = null; }}
+                        style={{ marginTop: rp(16), backgroundColor: theme.colors.success, borderRadius: rp(14), paddingVertical: rp(12), paddingHorizontal: rp(32) }}>
+                        <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SCAN AGAIN</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </CameraView>
+            )
           ) : (
-            <CameraView 
-              style={{ flex: 1 }} 
-              facing="back" 
-              onBarcodeScanned={scanComplete ? undefined : handleScan} 
-              barcodeScannerSettings={{ barcodeTypes: ["qr"] }} 
-            > 
-              <View style={styles.overlay}> 
-                <View style={styles.topOverlay} /> 
-                <View style={{ flexDirection: "row" }}> 
-                  <View style={styles.sideOverlay} /> 
-                  <View style={styles.scanBox}> 
-                    <View style={[styles.corner, styles.topLeft]} /> 
-                    <View style={[styles.corner, styles.topRight]} /> 
-                    <View style={[styles.corner, styles.bottomLeft]} /> 
-                    <View style={[styles.corner, styles.bottomRight]} /> 
-                    <View style={styles.laserLine} />
-                  </View> 
-                  <View style={styles.sideOverlay} /> 
-                </View> 
-                <View style={[styles.bottomOverlay, { paddingBottom: tabBarHeight }]}> 
-                  {scanLoading ? ( 
-                    <ActivityIndicator color="#fff" size="large" /> 
-                  ) : ( 
-                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: rs(14), textAlign: "center", paddingHorizontal: rp(24) }}> 
-                      Point camera at the key-tag QR card
-                    </Text> 
-                  )} 
-                  {scanComplete && !scanLoading && (
-                    <TouchableOpacity
-                      onPress={() => { setScanComplete(false); scanned.current = false; lastScannedValue.current = null; }}
-                      style={{ marginTop: rp(16), backgroundColor: theme.colors.success, borderRadius: rp(14), paddingVertical: rp(12), paddingHorizontal: rp(32) }}> 
-                      <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: rs(2) }}>SCAN AGAIN</Text> 
-                    </TouchableOpacity> 
-                  )} 
-                </View> 
-              </View> 
-            </CameraView> 
+            <View style={{ flex: 1, backgroundColor: theme.colors.primary }}>
+              <SafeAreaView edges={["top"]} />
+              <View style={{ flexDirection: "row", alignItems: "center", padding: rp(16) }}>
+                <TouchableOpacity onPress={() => setCheckinMode(null)} style={{ padding: rp(8), backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99 }}>
+                  <Ionicons name="chevron-back" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginLeft: rp(12) }}>Enter 4-Digit Code</Text>
+              </View>
+              <View style={{ padding: rp(24), alignItems: "center", flex: 1, justifyContent: "center" }}>
+                <TextInput
+                  value={codeInput}
+                  onChangeText={setCodeInput}
+                  placeholder="0000"
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  style={{ fontSize: rs(48), fontWeight: "900", color: "#fff", letterSpacing: rs(8), textAlign: "center", borderBottomWidth: 2, borderBottomColor: theme.colors.accent, paddingBottom: rp(8), marginBottom: rp(24), minWidth: rp(200) }}
+                />
+                <TouchableOpacity onPress={handleCodeSubmit} style={{ backgroundColor: theme.colors.accent, borderRadius: rp(16), paddingVertical: rp(14), paddingHorizontal: rp(32), width: "100%", alignItems: "center" }}>
+                  {scanLoading ? <ActivityIndicator color={theme.colors.primary} /> : <Text style={{ color: theme.colors.primary, fontWeight: "900", letterSpacing: rs(2) }}>VERIFY</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
       ) : (
@@ -865,61 +897,46 @@ export default function Checkin() {
                   <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: rs(12) }}>Change Card</Text>
                 </TouchableOpacity>
               </View>
-              
-              {eventAllowsInstantPark && (
-                <View style={{ backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: "#C7D2FE", borderRadius: rp(16), padding: rp(12), marginBottom: rp(16), flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <View style={{ flex: 1, marginRight: rp(10) }}>
-                    <Text style={{ fontSize: rs(12), fontWeight: "900", color: theme.colors.primary }}>⚡ INSTANT PARK</Text>
-                    <Text style={{ fontSize: rs(11), color: theme.colors.primary, marginTop: rp(2) }}>
-                      Guest doesn't want to share personal details — skip name & phone
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setInstantPark(v => !v)}
-                    style={{ width: rp(52), height: rp(30), borderRadius: rp(15), padding: rp(3), backgroundColor: instantPark ? theme.colors.primary : theme.colors.border }}
-                  >
-                    <View style={{ width: rp(24), height: rp(24), borderRadius: rp(12), backgroundColor: theme.colors.surface, marginLeft: instantPark ? rp(22) : 0 }} />
-                  </TouchableOpacity>
-                </View>
-              )}
-              
-              <VehicleDetailsSection 
-                plate={plate} setPlate={setPlate} guestName={guestName} setGuestName={setGuestName} 
-                color={color} setColor={setColor} make={make} setMake={setMake} 
-                carType={carType} setCarType={setCarType} notes={notes} setNotes={setNotes} 
-                errors={errors} setErrors={setErrors} instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+
+
+
+              <VehicleDetailsSection
+                plate={plate} setPlate={setPlate} guestName={guestName} setGuestName={setGuestName}
+                color={color} setColor={setColor} make={make} setMake={setMake}
+                carType={carType} setCarType={setCarType} notes={notes} setNotes={setNotes}
+                errors={errors} setErrors={setErrors}
                 fieldRefs={fieldRefs}
               />
 
-              
-              <GuestContactSection 
-                guestPhone={guestPhone} setGuestPhone={setGuestPhone} altGuestPhone={altGuestPhone} setAltGuestPhone={setAltGuestPhone}
-                errors={errors} setErrors={setErrors} instantPark={instantPark} eventAllowsInstantPark={eventAllowsInstantPark}
+
+              <GuestContactSection
+                guestPhone={guestPhone} setGuestPhone={setGuestPhone} 
+                errors={errors} setErrors={setErrors}
                 fieldRefs={fieldRefs}
               />
-              
+
               <EntryGateSection eventGates={eventGates} selectedGate={selectedGate} setSelectedGate={setSelectedGate} />
-              
-              <DamageSection 
+
+              <DamageSection
                 hasDamage={hasDamage} setHasDamage={setHasDamage} damageTypes={damageTypes} setDamageTypes={setDamageTypes}
                 damageNotes={damageNotes} setDamageNotes={setDamageNotes} showOtherDamage={showOtherDamage} setShowOtherDamage={setShowOtherDamage}
               />
-              
-              <PhotoGridSection 
-                photos={photos} 
-                errors={errors} 
-                takePhoto={takePhoto} 
-                onRemovePhoto={onRemovePhoto} 
+
+              <PhotoGridSection
+                photos={photos}
+                errors={errors}
+                takePhoto={takePhoto}
+                onRemovePhoto={onRemovePhoto}
               />
-              
+
               <Btn onPress={submit} disabled={submitting} style={{ marginTop: rp(10), marginBottom: rp(40) }}>
-                {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>CHECK IN VEHICLE</Text>}
+                {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>INSTANT PARK</Text>}
               </Btn>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       )}
-      
+
       <RNModal visible={!!nextPhotoLabel} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -966,6 +983,7 @@ export default function Checkin() {
           setScanLoading(false);
           scanned.current = false;
           lastScannedValue.current = null;
+          setCodeInput("");
         }}
       />
     </Screen>
@@ -1009,15 +1027,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: rp(30),
   },
-  overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, 
-  topOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }, 
-  bottomOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center" }, 
-  sideOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }, 
-  scanBox: { width: 240, height: 240, justifyContent: "center", alignItems: "center" }, 
-  corner: { position: "absolute", width: rp(24), height: rp(24), borderColor: theme.colors.accent, borderWidth: rp(3) }, 
+  overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  topOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
+  bottomOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center" },
+  sideOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
+  scanBox: { width: 240, height: 240, justifyContent: "center", alignItems: "center" },
+  corner: { position: "absolute", width: rp(24), height: rp(24), borderColor: theme.colors.accent, borderWidth: rp(3) },
   laserLine: { width: "100%", height: rp(2), backgroundColor: theme.colors.accent, shadowColor: theme.colors.accent, shadowOpacity: 0.8, shadowRadius: 4, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
-  topLeft: { top: 0, left: 0, borderBottomWidth: rp(0), borderRightWidth: rp(0) }, 
-  topRight: { top: 0, right: 0, borderBottomWidth: rp(0), borderLeftWidth: rp(0) }, 
-  bottomLeft: { bottom: 0, left: 0, borderTopWidth: rp(0), borderRightWidth: rp(0) }, 
-  bottomRight: { bottom: 0, right: 0, borderTopWidth: rp(0), borderLeftWidth: rp(0) }, 
+  topLeft: { top: 0, left: 0, borderBottomWidth: rp(0), borderRightWidth: rp(0) },
+  topRight: { top: 0, right: 0, borderBottomWidth: rp(0), borderLeftWidth: rp(0) },
+  bottomLeft: { bottom: 0, left: 0, borderTopWidth: rp(0), borderRightWidth: rp(0) },
+  bottomRight: { bottom: 0, right: 0, borderTopWidth: rp(0), borderLeftWidth: rp(0) },
 });
