@@ -44,7 +44,7 @@ export default function AppLoader() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#3F0163", // Deep purple
+    backgroundColor: "#ffffff", // Deep purple
     alignItems: "center",
     justifyContent: "center",
   },

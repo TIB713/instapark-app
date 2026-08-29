@@ -1166,7 +1166,7 @@ export default function HotelDetail() {
 
       {/* Add Special Event Modal */}
       <Modal visible={showAddEventModal} transparent animationType="slide" onRequestClose={() => setShowAddEventModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(24), paddingBottom: rp(24) + (insets?.bottom || 0) }}>
               <View style={{ alignItems: "center", marginBottom: rp(16) }}>

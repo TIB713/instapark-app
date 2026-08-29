@@ -333,7 +333,7 @@ export default function Login() {
       <View style={{ position: "absolute", bottom: -SCREEN_H * 0.1, right: -SCREEN_H * 0.1, width: SCREEN_H * 0.4, height: SCREEN_H * 0.4, borderRadius: SCREEN_H * 0.2, backgroundColor: accent, opacity: 0.15, transform: [{ scale: 1.5 }] }} />
       
       <SafeAreaView style={{ flex: 1 }}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={{ flex: 1, justifyContent: "center" }}>
 

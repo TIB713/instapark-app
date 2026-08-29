@@ -352,7 +352,7 @@ export default function Hotels() {
       >
         <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F3FF" }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={{ flex: 1 }}
           >
             <View

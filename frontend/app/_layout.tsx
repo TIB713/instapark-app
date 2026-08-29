@@ -1,3 +1,6 @@
+import * as SplashScreen from "expo-splash-screen";
+SplashScreen.preventAutoHideAsync().catch(() => {});
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
 import * as Notifications from 'expo-notifications';
@@ -112,6 +115,7 @@ export default function RootLayout() {
   }
 
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <ConfirmDialogHost />
       <Stack screenOptions={{ headerShown: false }}>
@@ -135,5 +139,6 @@ export default function RootLayout() {
         <Stack.Screen name="(driver)/failed-syncs" />
               </Stack>
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

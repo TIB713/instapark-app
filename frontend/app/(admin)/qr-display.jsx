@@ -123,7 +123,7 @@ export default function AdminQRDisplay() {
 
       <Sheet open={smsModalVisible} onClose={() => setSmsModalVisible(false)}>
         <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"} 
+          behavior={Platform.OS === "ios" ? "padding" : undefined} 
         >
           <View style={{ paddingBottom: rp(10) }}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(20) }}> 

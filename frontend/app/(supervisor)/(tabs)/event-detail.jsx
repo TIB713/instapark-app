@@ -100,7 +100,31 @@ export default function SupervisorEventDetail() {
     }
   }, [showQr, currentEventId]);
 
+
+  const closeEvent = () => {
+    confirmDialog.destructiveConfirm("Close event", "Are you sure? This cannot be undone.", async () => {
+      try {
+        await api.post(`/events/${currentEventId}/close`);
+        fetchEvent();
+      } catch (err) {
+        confirmDialog.info("Error", err.response?.data?.detail || "Could not close event");
+      }
+    });
+  };
+
+  const reopenEvent = () => {
+    confirmDialog.confirm("Reactivate event", "Are you sure you want to reopen this event?", async () => {
+      try {
+        await api.post(`/events/${currentEventId}/reopen`);
+        fetchEvent();
+      } catch (err) {
+        confirmDialog.info("Error", err.response?.data?.detail || "Could not reopen event");
+      }
+    });
+  };
+
   const isClosed = event?.status === "closed";
+
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -397,6 +421,16 @@ export default function SupervisorEventDetail() {
                 <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={iconBtn}>
                   <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
                 </TouchableOpacity>
+                {isClosed && (
+                  <TouchableOpacity onPress={reopenEvent} style={[iconBtn, { backgroundColor: theme.colors.success + "20" }]}>
+                    <Ionicons name="play" size={22} color={theme.colors.success} />
+                  </TouchableOpacity>
+                )}
+                {event?.status === "active" && (
+                  <TouchableOpacity onPress={closeEvent} style={[iconBtn, { backgroundColor: theme.colors.danger + "20" }]}>
+                    <Ionicons name="trash-outline" size={20} color={theme.colors.danger} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -532,7 +566,7 @@ export default function SupervisorEventDetail() {
         {tab === "cars" ? (
           <>
             {/* Add Car Button */}
-            {!isClosed && (
+            {(!isClosed && event?.is_checkin_open !== false) && (
               <TouchableOpacity
                 onPress={() => router.push({ pathname: "/(supervisor)/(tabs)/scan", params: { cameFromDetail: "true" } })}
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#111827", borderRadius: rp(16), paddingVertical: rp(16), marginBottom: rp(16) }}
@@ -1572,7 +1606,7 @@ export default function SupervisorEventDetail() {
       {/* RESOLVE INCIDENT MODAL */}
       <Modal visible={showResolveModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: (insets?.bottom || 0)}}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />

@@ -1,4 +1,5 @@
 // code before full redesign
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState, useRef } from "react";
 import { View, Text, Animated, Easing, Image } from "react-native";
 import AppLoader from "../components/AppLoader";
@@ -18,29 +19,24 @@ export default function Index() {
   const loadStartTime = useRef(Date.now()).current;
   
   useEffect(() => {
-    if (readyRoute) {
-      const elapsed = Date.now() - loadStartTime;
-      const delay = Math.max(0, 5000 - elapsed);
-
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 350,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 0.95,
-            duration: 350,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          })
-        ]).start(() => {
-          router.replace(readyRoute);
-        });
-      }, delay);
-    }
+    if (!readyRoute) return;
+    SplashScreen.hideAsync().catch(() => {});
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      router.replace(readyRoute);
+    });
   }, [readyRoute]);
 
 

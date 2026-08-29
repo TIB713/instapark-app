@@ -173,7 +173,7 @@ export default function DriverNew() {
   return (
     <Screen scroll={false}>
       <TopBar title="Add Driver" onBack={() => router.replace("/(supervisor)/(tabs)/team")} />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(theme.spacing.xl), paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
 
                 

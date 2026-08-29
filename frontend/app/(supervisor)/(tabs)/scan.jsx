@@ -353,6 +353,8 @@ export default function ScanQrCard() {
         visible={!!alreadyCheckedIn}
         plate={alreadyCheckedIn?.plate}
         carType={alreadyCheckedIn?.car_type}
+        reason={alreadyCheckedIn?.status}
+        reservedByName={alreadyCheckedIn?.reserved_by_name}
         onDismiss={() => {
           setAlreadyCheckedIn(null);
           setScanComplete(false);

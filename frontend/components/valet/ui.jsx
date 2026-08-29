@@ -328,8 +328,6 @@ const styles = StyleSheet.create({
   },
   topBar: {
     backgroundColor: theme.colors.primary,
-    borderBottomLeftRadius: theme.radius.lg,
-    borderBottomRightRadius: theme.radius.lg,
     paddingBottom: rp(theme.spacing.xl),
   },
   topBarContent: {

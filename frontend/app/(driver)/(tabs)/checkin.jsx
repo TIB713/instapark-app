@@ -323,6 +323,7 @@ export default function Checkin() {
   const [qrCardId, setQrCardId] = useState("");
   const [checkinMode, setCheckinMode] = useState(null); // null | "scan" | "code"
   const [codeInput, setCodeInput] = useState("");
+  const codeInputRef = useRef(null);
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanComplete, setScanComplete] = useState(false);
@@ -341,6 +342,7 @@ export default function Checkin() {
   const [make, setMake] = useState("");
   const [notes, setNotes] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [eventInfo, setEventInfo] = useState(null);
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
   const [carType, setCarType] = useState("normal");
@@ -354,6 +356,20 @@ export default function Checkin() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
+  const isSubmittedRef = useRef(false);
+  const qrCardIdRef = useRef("");
+
+  useEffect(() => {
+    qrCardIdRef.current = qrCardId;
+  }, [qrCardId]);
+
+  useEffect(() => {
+    return () => {
+      if (qrCardIdRef.current && !isSubmittedRef.current) {
+        api.post(`/qr-cards/${qrCardIdRef.current}/release-reservation`).catch(() => {});
+      }
+    };
+  }, []);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successCar, setSuccessCar] = useState(null);
@@ -385,6 +401,7 @@ export default function Checkin() {
         const { data } = await api.get(`/events/${currentEventId}`);
         setEventGates(data.gates || []);
         if (data.gates?.[0]) setSelectedGate(data.gates[0]);
+        setEventInfo(data);
       } catch { }
     })();
   }, [currentEventId]);
@@ -470,6 +487,9 @@ export default function Checkin() {
   };
 
   const cancelScan = () => {
+    if (qrCardId && !isSubmittedRef.current) {
+      api.post(`/qr-cards/${qrCardId}/release-reservation`).catch(() => {});
+    }
     setQrToken("");
     setKeyTagNumber("");
     setQrCardId("");
@@ -590,6 +610,12 @@ export default function Checkin() {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     try {
+      if (eventInfo?.is_checkin_open === false) {
+        confirmDialog.info("Check-in not open yet", "Check-in opens 30 minutes before the event start time.");
+        isSubmittingRef.current = false;
+        setSubmitting(false);
+        return;
+      }
       const entries = Object.entries(photos).filter(([, uri]) => !!uri);
 
       const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
@@ -624,6 +650,7 @@ export default function Checkin() {
           photos: []
         });
 
+        isSubmittedRef.current = true;
         setSuccessCar({ plate: plate.trim().toUpperCase(), checkin_code: "SYNC", id: "offline" });
         setShowSuccessModal(true);
 
@@ -664,6 +691,7 @@ export default function Checkin() {
 
       const { data: car } = await api.post("/cars", payload, { timeout: 30000 });
 
+      isSubmittedRef.current = true;
       setSuccessCar(car);
       setShowSuccessModal(true);
 
@@ -766,10 +794,23 @@ export default function Checkin() {
     );
   }
 
+  if (eventInfo?.is_checkin_open === false) {
+    return (
+      <Screen scroll={false}>
+        <TopBar title="Check In Vehicle" />
+        <EmptyState
+          icon={<Ionicons name="time-outline" size={64} color={theme.colors.textMuted} />}
+          title="Event is upcoming"
+          body={`Check-in opens 30 minutes before the event start time${eventInfo?.start_time ? ` (${eventInfo.start_time})` : ""}.`}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen scroll={false} style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.surface }} />
-      <TopBar title="Check In" hideBack />
+      {checkinMode === null && !qrToken && <TopBar title="Check In" />}
 
       {!qrToken ? (
         <View style={{ flex: 1, backgroundColor: "#000" }}>
@@ -858,15 +899,35 @@ export default function Checkin() {
                 <Text style={{ color: "#fff", fontSize: rs(18), fontWeight: "900", marginLeft: rp(12) }}>Enter 4-Digit Code</Text>
               </View>
               <View style={{ padding: rp(24), alignItems: "center", flex: 1, justifyContent: "center" }}>
-                <TextInput
-                  value={codeInput}
-                  onChangeText={setCodeInput}
-                  placeholder="0000"
-                  placeholderTextColor="rgba(255,255,255,0.5)"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  style={{ fontSize: rs(48), fontWeight: "900", color: "#fff", letterSpacing: rs(8), textAlign: "center", borderBottomWidth: 2, borderBottomColor: theme.colors.accent, paddingBottom: rp(8), marginBottom: rp(24), minWidth: rp(200) }}
-                />
+                <TouchableOpacity activeOpacity={1} onPress={() => codeInputRef.current?.focus()}>
+              <View style={{ flexDirection: "row", gap: rp(12), marginBottom: rp(24), justifyContent: "center" }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <View
+                    key={i}
+                    style={{
+                      width: rp(56), height: rp(64), borderRadius: rp(12),
+                      backgroundColor: "rgba(255,255,255,0.12)",
+                      borderWidth: 2,
+                      borderColor: codeInput.length === i ? theme.colors.accent : "rgba(255,255,255,0.25)",
+                      alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#fff" }}>
+                      {codeInput[i] || ""}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <TextInput
+                ref={codeInputRef}
+                value={codeInput}
+                onChangeText={setCodeInput}
+                keyboardType="number-pad"
+                maxLength={4}
+                autoFocus
+                style={{ position: "absolute", opacity: 0, height: 1, width: 1 }}
+              />
+            </TouchableOpacity>
                 <TouchableOpacity onPress={handleCodeSubmit} style={{ backgroundColor: theme.colors.accent, borderRadius: rp(16), paddingVertical: rp(14), paddingHorizontal: rp(32), width: "100%", alignItems: "center" }}>
                   {scanLoading ? <ActivityIndicator color={theme.colors.primary} /> : <Text style={{ color: theme.colors.primary, fontWeight: "900", letterSpacing: rs(2) }}>VERIFY</Text>}
                 </TouchableOpacity>
@@ -877,7 +938,7 @@ export default function Checkin() {
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? rp(60) : 0}
         >
           <ScrollView
@@ -977,6 +1038,8 @@ export default function Checkin() {
         visible={!!alreadyCheckedIn}
         plate={alreadyCheckedIn?.plate}
         carType={alreadyCheckedIn?.car_type}
+        reason={alreadyCheckedIn?.status}
+        reservedByName={alreadyCheckedIn?.reserved_by_name}
         onDismiss={() => {
           setAlreadyCheckedIn(null);
           setScanComplete(false);

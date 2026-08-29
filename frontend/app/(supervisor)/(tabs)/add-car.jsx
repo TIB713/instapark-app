@@ -88,11 +88,11 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
   return (
     <View style={{ marginBottom: 20 }}>
       <Lbl>VEHICLE PHOTOS (OPTIONAL)</Lbl>
-      <View style={{ 
-        flexDirection: "row", flexWrap: "wrap", gap: rp(10), 
-        borderWidth: errors.photos ? rp(1) : 0, 
-        borderColor: theme.colors.danger, 
-        borderRadius: rp(16), 
+      <View style={{
+        flexDirection: "row", flexWrap: "wrap", gap: rp(10),
+        borderWidth: errors.photos ? rp(1) : 0,
+        borderColor: theme.colors.danger,
+        borderRadius: rp(16),
         padding: errors.photos ? rp(8) : 0,
         marginBottom: errors.photos ? 0 : rp(16)
       }}>
@@ -130,14 +130,14 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
 });
 
 const VehicleDetailsSection = memo(({
-  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, 
+  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors,
   pendingLookup, setPendingLookup, lookupApplied, setLookupApplied, plateLookedUp, setPlateLookedUp, setGuestPhone,
   lookupPlate, confirmLookup, rejectLookup, clearGuestOnly, fieldRefs
 }) => {
   return (
     <>
       <Lbl>LICENSE PLATE *</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.plate = el; }}  style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.plate = el; }} style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="car-outline" size={20} color={theme.colors.primary} />
         <TextInput
           testID="plate-input"
@@ -218,21 +218,21 @@ const VehicleDetailsSection = memo(({
         </View>
       )}
       <Lbl>GUEST NAME (OPTIONAL)</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }}  style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }} style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
-        <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }}  value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor={theme.colors.textMuted} style={textInput} />
+        <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }} value={guestName} onChangeText={(text) => { setGuestName(text); if (errors.guestName) setErrors(prev => ({ ...prev, guestName: undefined })); }} placeholder="Guest Name" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.guestName && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.guestName}</Text>}
       <Lbl>VEHICLE COLOR (OPTIONAL)</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }}  style={[inputRow, errors.color && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }} style={[inputRow, errors.color && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="color-palette-outline" size={20} color={theme.colors.primary} />
-        <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }}  value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor={theme.colors.textMuted} style={textInput} />
+        <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.color = el; }} value={color} onChangeText={(text) => { setColor(text); if (errors.color) setErrors(prev => ({ ...prev, color: undefined })); }} placeholder="Black" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.color && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.color}</Text>}
       <Lbl>VEHICLE MAKE/MODEL (OPTIONAL)</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }}  style={[inputRow, errors.make && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }} style={[inputRow, errors.make && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="construct-outline" size={20} color={theme.colors.primary} />
-        <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }}  value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor={theme.colors.textMuted} style={textInput} />
+        <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.make = el; }} value={make} onChangeText={(text) => { setMake(text); if (errors.make) setErrors(prev => ({ ...prev, make: undefined })); }} placeholder="Honda Civic" placeholderTextColor={theme.colors.textMuted} style={textInput} />
       </View>
       {errors.make && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.make}</Text>}
       <Lbl>CAR TYPE *</Lbl>
@@ -331,7 +331,7 @@ const GuestContactSection = memo(({ guestPhone, setGuestPhone, errors, setErrors
   return (
     <>
       <Lbl>GUEST MOBILE (OPTIONAL)</Lbl>
-      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestPhone = el; }}  style={[inputRow, errors.guestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
+      <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestPhone = el; }} style={[inputRow, errors.guestPhone && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="phone-portrait-outline" size={20} color={theme.colors.primary} />
         <TextInput
           value={guestPhone}
@@ -388,6 +388,7 @@ export default function AddCar() {
   const [notes, setNotes] = useState("");
   const [guestNotes, setGuestNotes] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [eventInfo, setEventInfo] = useState(null);
   const [eventGates, setEventGates] = useState([]);
   const [selectedGate, setSelectedGate] = useState("");
   const [carType, setCarType] = useState("normal");
@@ -395,18 +396,32 @@ export default function AddCar() {
   const [damageNotes, setDamageNotes] = useState("");
   const [damageTypes, setDamageTypes] = useState([]);
   const [showOtherDamage, setShowOtherDamage] = useState(false);
-  
+
   const [pendingLookup, setPendingLookup] = useState(null);
   const [lookupApplied, setLookupApplied] = useState(false);
   const [plateLookedUp, setPlateLookedUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
+  const isSubmittedRef = useRef(false);
+  const qrCardIdRef = useRef("");
+
+  useEffect(() => {
+    qrCardIdRef.current = qrCardId;
+  }, [qrCardId]);
+
+  useEffect(() => {
+    return () => {
+      if (qrCardIdRef.current && !isSubmittedRef.current) {
+        api.post(`/qr-cards/${qrCardIdRef.current}/release-reservation`).catch(() => { });
+      }
+    };
+  }, []);
   const [errors, setErrors] = useState({});
   const [prefilledCarId, setPrefilledCarId] = useState(null);
   const [passToken, setPassToken] = useState(null);
   const [guestName, setGuestName] = useState("");
   const [isPreRegistered, setIsPreRegistered] = useState(false);
-  
+
   const [qrToken, setQrToken] = useState("");
   const [keyTagNumber, setKeyTagNumber] = useState("");
   const [qrCardId, setQrCardId] = useState("");
@@ -485,6 +500,7 @@ export default function AddCar() {
         const { data } = await api.get(`/events/${currentEventId}`);
         setEventGates(data.gates || []);
         if (data.gates?.[0]) setSelectedGate(data.gates[0]);
+        setEventInfo(data);
       } catch { }
       try {
         const draft = await AsyncStorage.getItem("add_car_draft");
@@ -497,7 +513,7 @@ export default function AddCar() {
           setGuestPhone(d.guestPhone || "");
           setSelectedGate(d.selectedGate || "");
           if (d.carType) setCarType(d.carType);
-          
+
           if (d.hasDamage) setHasDamage(d.hasDamage);
           if (d.damageNotes) setDamageNotes(d.damageNotes);
           if (d.damageTypes) setDamageTypes(d.damageTypes);
@@ -587,19 +603,19 @@ export default function AddCar() {
   const takePhoto = useCallback(async (label) => {
     if (!permissionGrantedRef.current) {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) { 
-        confirmDialog.info("Camera permission needed", ""); 
-        return; 
+      if (!perm.granted) {
+        confirmDialog.info("Camera permission needed", "");
+        return;
       }
       permissionGrantedRef.current = true;
     }
-    
-    const result = await ImagePicker.launchCameraAsync({ 
-      quality: 0.7, 
-      allowsEditing: false, 
-      mediaTypes: ImagePicker.MediaTypeOptions.Images 
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+      allowsEditing: false,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images
     });
-    
+
     if (!result.canceled) {
       const rawUri = result.assets[0].uri;
       setPhotos(prev => {
@@ -622,7 +638,7 @@ export default function AddCar() {
       );
 
       uploadPromisesRef.current[label] = (async () => {
-        await resizeQueueRef.current.catch(() => {});
+        await resizeQueueRef.current.catch(() => { });
         const uri = resizedPhotosRef.current[label] || rawUri;
         const fd = new FormData();
         fd.append("file", { uri, type: "image/jpeg", name: "photo.jpg" });
@@ -681,8 +697,14 @@ export default function AddCar() {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     try {
+      if (eventInfo?.is_checkin_open === false) {
+        confirmDialog.info("Check-in not open yet", "Check-in opens 30 minutes before the event start time.");
+        isSubmittingRef.current = false;
+        setSubmitting(false);
+        return;
+      }
       const entries = Object.entries(photos).filter(([, uri]) => !!uri);
-      
+
       const photoLocalPaths = { front: null, back: null, left: null, right: null, extra: null };
       const net = await NetInfo.fetch();
       if (!net.isConnected) {
@@ -692,7 +714,7 @@ export default function AddCar() {
           await FileSystem.copyAsync({ from: uri, to: localPath });
           photoLocalPaths[label] = localPath;
         }));
-        
+
         if (isPreRegistered && prefilledCarId) {
           await enqueueCheckinAction({
             action: "complete_prereg",
@@ -735,6 +757,7 @@ export default function AddCar() {
           });
           await AsyncStorage.removeItem("add_car_draft");
           confirmDialog.info("Saved offline", "Vehicle check-in queued. Will sync when connected.");
+          isSubmittedRef.current = true;
           router.replace({
             pathname: "/(supervisor)/(tabs)/qr-display",
             params: { carId: tempId, plate: plate.trim().toUpperCase(), checkinCode: "SYNC", token: "sync_pending", keyTagNumber, returnTo: "/(supervisor)/(tabs)/scan" },
@@ -744,9 +767,9 @@ export default function AddCar() {
       }
 
       try { await api.post(`/slots/event/${currentEventId}/initialize`); } catch { }
-      
+
       let finalCarId;
-      
+
       if (isPreRegistered && prefilledCarId) {
         const { data: updatedCar } = await api.patch(`/cars/${prefilledCarId}/complete-checkin`, {
           check_in_driver_id: selectedDriverId,
@@ -755,9 +778,9 @@ export default function AddCar() {
           notes: notes.trim(),
           gate: selectedGate,
         }, { timeout: 30000 });
-        
+
         finalCarId = updatedCar.id;
-        
+
         await AsyncStorage.removeItem("add_car_draft");
         router.replace({
           pathname: "/(supervisor)/(tabs)/qr-display",
@@ -786,16 +809,16 @@ export default function AddCar() {
         };
 
         const { data: car } = await api.post("/cars", payload, { timeout: 30000 });
-        
+
         finalCarId = car.id;
-        
+
         await AsyncStorage.removeItem("add_car_draft");
         router.replace({
           pathname: "/(supervisor)/(tabs)/qr-display",
           params: { carId: car.id, plate: car.plate, checkinCode: car.checkin_code, token: qrToken, keyTagNumber: car.key_tag_number || keyTagNumber, returnTo: "/(supervisor)/(tabs)/scan" },
         });
       }
-      
+
       // Decoupled Background Photo Upload
       (async () => {
         try {
@@ -803,11 +826,11 @@ export default function AddCar() {
             const url = await uploadPromisesRef.current[label];
             return { label, url };
           }));
-          
+
           const urls = [];
           const successLabels = [];
           const failedLabels = [];
-          
+
           results.forEach((r, idx) => {
             if (r.status === "fulfilled") {
               urls.push(r.value.url);
@@ -816,11 +839,11 @@ export default function AddCar() {
               failedLabels.push(entries[idx][0]);
             }
           });
-          
+
           if (urls.length > 0) {
             await api.post(`/cars/${finalCarId}/photos`, { urls, type: "checkin", labels: successLabels }, { timeout: 30000 });
           }
-          
+
           if (failedLabels.length > 0) {
             throw new Error("Some photos failed to upload initially");
           }
@@ -836,14 +859,14 @@ export default function AddCar() {
               localPaths[label] = localPath;
               labelsToQueue.push(label);
             }));
-            
+
             await enqueuePhotoAttach(finalCarId, { photoLocalPaths: localPaths, labels: labelsToQueue });
           } catch (qErr) {
             console.warn("Failed to enqueue photo attach fallback", qErr);
           }
         }
       })();
-      
+
     } catch (err) {
       const gotServerResponse = !!err.response;
       if (!gotServerResponse) {
@@ -870,6 +893,7 @@ export default function AddCar() {
           });
           await AsyncStorage.removeItem("add_car_draft");
           confirmDialog.info("Saved for retry", "Connection was too slow to confirm. This check-in has been queued and will sync automatically.");
+          isSubmittedRef.current = true;
           router.replace({
             pathname: "/(supervisor)/(tabs)/qr-display",
             params: { carId: `offline_${Date.now()}`, plate: plate.trim().toUpperCase(), checkinCode: "SYNC", token: "sync_pending", keyTagNumber, returnTo: "/(supervisor)/(tabs)/scan" },
@@ -890,20 +914,39 @@ export default function AddCar() {
     }
   };
 
+  if (eventInfo?.is_checkin_open === false) {
+    return (
+      <Screen scroll={false} testID="add-car-screen">
+        <TopBar title="Check In Car" />
+        <EmptyState
+          icon={<Ionicons name="time-outline" size={64} color={theme.colors.textMuted} />}
+          title="Event is upcoming"
+          body={`Check-in opens 30 minutes before the event start time${eventInfo?.start_time ? ` (${eventInfo.start_time})` : ""}.`}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen scroll={false} testID="add-car-screen">
       <TopBar
         title="Check In Car"
-        onBack={() => router.replace(returnTo)}
+        onBack={() => {
+          if (qrCardId && !isSubmittedRef.current) api.post(`/qr-cards/${qrCardId}/release-reservation`).catch(() => { });
+          router.replace(returnTo);
+        }}
         rightNode={
-          <TouchableOpacity onPress={() => router.push({ pathname: "/(supervisor)/(tabs)/scan", params: { returnTo } })}>
+          <TouchableOpacity onPress={() => {
+            if (qrCardId && !isSubmittedRef.current) api.post(`/qr-cards/${qrCardId}/release-reservation`).catch(() => { });
+            router.push({ pathname: "/(supervisor)/(tabs)/scan", params: { returnTo } });
+          }}>
             <Ionicons name="qr-code-outline" size={24} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         }
       />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(100)  + tabBarHeight}}>
-          
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(18) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(100) + tabBarHeight }}>
+
           {keyTagNumber ? (
             <View style={{
               backgroundColor: theme.colors.primaryLight, borderWidth: rp(1), borderColor: theme.colors.border,
@@ -959,7 +1002,7 @@ export default function AddCar() {
               </View>
             </View>
           ) : null}
-          
+
 
           <Card style={{ marginBottom: rp(16) }}>
             <VehicleDetailsSection
@@ -970,11 +1013,11 @@ export default function AddCar() {
               carType={carType} setCarType={setCarType}
               notes={notes} setNotes={setNotes}
               errors={errors} setErrors={setErrors}
-              
+
               pendingLookup={pendingLookup} setPendingLookup={setPendingLookup}
               lookupApplied={lookupApplied} setLookupApplied={setLookupApplied}
               plateLookedUp={plateLookedUp} setPlateLookedUp={setPlateLookedUp}
-              setGuestPhone={setGuestPhone} 
+              setGuestPhone={setGuestPhone}
               lookupPlate={lookupPlate} confirmLookup={confirmLookup} rejectLookup={rejectLookup} clearGuestOnly={clearGuestOnly}
               fieldRefs={fieldRefs}
             />
@@ -990,9 +1033,9 @@ export default function AddCar() {
           <Card style={{ marginBottom: rp(16) }}>
             <GuestContactSection
               guestPhone={guestPhone} setGuestPhone={setGuestPhone}
-              
+
               errors={errors} setErrors={setErrors}
-              
+
               fieldRefs={fieldRefs}
             />
           </Card>
@@ -1018,7 +1061,7 @@ export default function AddCar() {
             ) : drivers.length === 0 ? (
               <Text style={{ color: theme.colors.textMuted, fontSize: rs(13), marginBottom: rp(16) }}>No drivers rostered on this event yet.</Text>
             ) : (
-              <View ref={el => { if (fieldRefs.current) fieldRefs.current.driver = el; }}  style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), borderWidth: rp(1), borderColor: errors.driver ? theme.colors.danger : theme.colors.border, overflow: "hidden" }}>
+              <View ref={el => { if (fieldRefs.current) fieldRefs.current.driver = el; }} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(16), borderWidth: rp(1), borderColor: errors.driver ? theme.colors.danger : theme.colors.border, overflow: "hidden" }}>
                 {drivers.map((d, idx) => {
                   const meta = statusMeta(d.duty_status);
                   const selected = selectedDriverId === d.id;

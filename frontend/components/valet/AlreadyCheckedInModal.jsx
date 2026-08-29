@@ -5,7 +5,8 @@ import { rs, rp } from '../../utils/responsive';
 import { Btn } from './ui';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function AlreadyCheckedInModal({ visible, plate, carType, onDismiss }) {
+export default function AlreadyCheckedInModal({ visible, plate, carType, reason = "checked_in", reservedByName, onDismiss }) {
+  const isReserved = reason === "reserved";
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <TouchableWithoutFeedback onPress={onDismiss}>
@@ -17,18 +18,23 @@ export default function AlreadyCheckedInModal({ visible, plate, carType, onDismi
             <Ionicons name="warning" size={rs(32)} color={theme.colors.warning} />
           </View>
           
-          <Text style={styles.title}>Vehicle Already Checked In</Text>
+          <Text style={styles.title}>{isReserved ? "Card In Use" : "Vehicle Already Checked In"}</Text>
           
-          <View style={styles.plateContainer}>
-            <Text style={styles.plateText}>{plate || 'UNKNOWN'}</Text>
-          </View>
-          
-          {carType && (
-            <Text style={styles.carType}>{carType.toUpperCase()}</Text>
+          {!isReserved && (
+            <>
+              <View style={styles.plateContainer}>
+                <Text style={styles.plateText}>{plate || 'UNKNOWN'}</Text>
+              </View>
+              {carType && (
+                <Text style={styles.carType}>{carType.toUpperCase()}</Text>
+              )}
+            </>
           )}
           
           <Text style={styles.message}>
-            This vehicle is already checked in.
+            {isReserved 
+              ? `This card is currently being scanned by ${reservedByName || 'another user'}. Try again in a moment or use a different card.`
+              : 'This vehicle is already checked in.'}
           </Text>
           
           <Btn onPress={onDismiss} style={styles.button}>

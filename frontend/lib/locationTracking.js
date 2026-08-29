@@ -54,8 +54,14 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 });
 
 // ── Start tracking ───────────────────────────────────────────────────────────
+const BACKGROUND_TRACKING_ENABLED = true; // flip to false to disable
+                                             // background location app-wide
+                                             // without a rebuild, if it's
+                                             // causing crashes on event day
+
 export const startLocationTracking = async () => {
   try {
+    if (!BACKGROUND_TRACKING_ENABLED) return false;
     const { status: fg } = await Location.requestForegroundPermissionsAsync();
     if (fg !== "granted") return false;
     const { status: bg } = await Location.requestBackgroundPermissionsAsync();

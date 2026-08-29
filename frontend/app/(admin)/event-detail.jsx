@@ -97,7 +97,7 @@ export default function EventDetail() {
     return () => backHandler.remove();
   }, [showCarModal, showAddDriverModal, showAddSupervisorModal, showIncidentModal, showSpecialEventQRModal]);
 
-  const { currentEventId } = useAppStore();
+  const { currentEventId, user } = useAppStore();
   const scrollViewRef = useRef(null);
   const fieldRefs = useRef({});
 
@@ -728,6 +728,17 @@ export default function EventDetail() {
     }, "Close");
   };
 
+  const reopenEvent = () => {
+    confirmDialog.confirm("Reactivate event", "Are you sure you want to reopen this event?", async () => {
+      try {
+        await api.post(`/events/${currentEventId}/reopen`);
+        fetchEvent();
+      } catch (e) {
+        confirmDialog.info("Couldn't reactivate event", "Something went wrong reopening the event. Check your connection and try again.");
+      }
+    }, "Reactivate");
+  };
+
   const removeCar = (car) => {
     confirmDialog.destructiveConfirm("Remove vehicle", `Remove ${car.plate}?`, async () => {
       try {
@@ -1173,7 +1184,7 @@ export default function EventDetail() {
               )}
               {event?.end_time && (
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(10), fontWeight: "600", marginTop: rp(4) }}>
-                  Auto-closes {event.auto_close_grace_minutes ?? 30} min after {event.end_time}
+                  Closes automatically once all vehicles are retrieved after {event.end_time}
                 </Text>
               )}
             </View>
@@ -1183,6 +1194,11 @@ export default function EventDetail() {
             >
               <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
             </TouchableOpacity>
+            {isClosed && user?.role && ["owner", "admin", "superadmin"].includes(user.role) && (
+              <TouchableOpacity onPress={reopenEvent} style={[iconBtn, { backgroundColor: "rgba(16,185,129,0.7)" }]}>
+                <Ionicons name="play-circle" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
             {event?.status === "active" && (
               <TouchableOpacity onPress={closeEvent} style={[iconBtn, { backgroundColor: "rgba(244,63,94,0.7)" }]}>
                 <Ionicons name="trash-outline" size={20} color="#fff" />
@@ -3286,7 +3302,7 @@ export default function EventDetail() {
       {/* RESOLVE INCIDENT MODAL */}
       <Modal visible={showResolveModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
             <View style={{ backgroundColor: "#fff", borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: (insets?.bottom || 0) }}>
               <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                 <View style={{ backgroundColor: "#D1D5DB", width: rp(48), height: rp(4), borderRadius: rp(99) }} />

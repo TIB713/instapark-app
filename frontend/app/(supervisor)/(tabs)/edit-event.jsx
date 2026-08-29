@@ -170,7 +170,7 @@ export default function EditEvent() {
     <Screen scroll={false}>
       <TopBar title={isHotelDailyEdit ? "Edit Today's Parking" : "Edit Event"} onBack={() => router.back()} />
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(theme.spacing.xl), paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
           {!isHotelDailyEdit && (
             <>
