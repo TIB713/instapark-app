@@ -452,9 +452,13 @@ export default function AddCar() {
     if (params.prefill_qr_card_id) setQrCardId(params.prefill_qr_card_id);
   }, [params.prefill_qr_card_id]);
 
+  const lastScanKeyRef = useRef(null);
+
   useFocusEffect(
     useCallback(() => {
-      if (!params.prefill_plate && !params.prefill_qr_token) {
+      const scanKey = params.prefill_qr_card_id || params.prefill_car_id || params.prefill_pass_token || null;
+      
+      if (scanKey === null || scanKey !== lastScanKeyRef.current) {
         setPlate("");
         setColor("");
         setMake("");
@@ -476,8 +480,11 @@ export default function AddCar() {
         setPassToken(null);
         setGuestName("");
         setIsPreRegistered(false);
+        setSelectedDriverId(null);
+        
+        lastScanKeyRef.current = scanKey;
       }
-    }, [params.prefill_plate])
+    }, [params.prefill_plate, params.prefill_qr_token, params.prefill_qr_card_id, params.prefill_car_id, params.prefill_pass_token])
   );
 
   useEffect(() => {

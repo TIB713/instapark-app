@@ -81,7 +81,10 @@ export default function RootLayout() {
         if (lastRole) useAppStore.setState({ lastKnownRole: lastRole });
         const eventId = await AsyncStorage.getItem("current_event_id");
         const driverStr = await AsyncStorage.getItem("driver_session");
-        if (eventId) useAppStore.getState().setCurrentEventId(eventId);
+        // current_event_id is only meaningful for GPS tracking when the
+        // logged-in user is a driver — supervisors/admins reuse this same
+        // key just to remember which event they're viewing in the UI.
+        if (eventId && lastRole === "driver") useAppStore.getState().setCurrentEventId(eventId);
         if (driverStr) {
           useAppStore.getState().setDriver(JSON.parse(driverStr));
           useAppStore.getState().fetchEvents();
@@ -97,9 +100,12 @@ export default function RootLayout() {
   useEffect(() => {
     const sub = AppState.addEventListener("change", async (nextState) => {
       if (nextState === "active") {
+        const role = await getItem("last_known_role");
+        if (role !== "driver") return; // location tracking is driver-only
+
         // App came to foreground — check if event is still open
         await checkEventStatusAndStop();
-        
+
         const eventId = await AsyncStorage.getItem("current_event_id");
         if (eventId) {
           const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);

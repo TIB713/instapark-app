@@ -54,10 +54,15 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 });
 
 // ── Start tracking ───────────────────────────────────────────────────────────
-const BACKGROUND_TRACKING_ENABLED = true; // flip to false to disable
-                                             // background location app-wide
-                                             // without a rebuild, if it's
-                                             // causing crashes on event day
+const BACKGROUND_TRACKING_ENABLED = false; // disabled for tomorrow's event —
+                                              // background+foreground-service
+                                              // location permission requests
+                                              // were crashing on some Android
+                                              // devices (see git history /
+                                              // team notes). Revisit after
+                                              // the event with time to test
+                                              // properly on multiple real
+                                              // devices before re-enabling.
 
 export const startLocationTracking = async () => {
   try {

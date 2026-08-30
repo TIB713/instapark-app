@@ -248,20 +248,30 @@ export default function SupervisorEventDetail() {
     }, [currentEventId, fetchEvent, fetchCars, fetchDrivers, fetchStats, fetchSlots, fetchIncidents, fetchSOSAlerts])
   );
 
+  const fetchDebounceTimer = useRef(null);
+
   useEffect(() => {
     if (!currentEventId) return;
     connectWS(`/event/${currentEventId}`, (msg) => {
-      if (msg.type === "car_update") fetchCars();
+      if (msg.type === "car_update") {
+        if (fetchDebounceTimer.current) clearTimeout(fetchDebounceTimer.current);
+        fetchDebounceTimer.current = setTimeout(() => {
+          fetchCars();
+          fetchStats();
+        }, 300);
+      }
       if (msg.type === "slot_update") fetchSlots();
+      if (msg.type === "driver_status_update") fetchDrivers();
     });
     connectWS(`/sos/${currentEventId}`, (msg) => {
       if (msg.type === "sos_alert" || msg.type === "sos_resolved") fetchSOSAlerts();
     });
     return () => {
+      if (fetchDebounceTimer.current) clearTimeout(fetchDebounceTimer.current);
       disconnectWS(`/event/${currentEventId}`);
       disconnectWS(`/sos/${currentEventId}`);
     };
-  }, [currentEventId]);
+  }, [currentEventId, fetchCars, fetchStats, fetchDrivers, fetchSlots]);
 
   const filteredCars = useMemo(() => {
     return cars.filter((c) => {
