@@ -52,6 +52,10 @@ export default function ProfileScreen() {
   };
 
   const openEvent = async (e) => {
+    if (e.status === "upcoming") {
+      confirmDialog.info("Event not open yet", `This event opens at ${e.start_time || "the scheduled time"}.`);
+      return;
+    }
     useAppStore.getState().setCurrentEventId(e.id);
     await AsyncStorage.setItem("current_event_id", e.id);
     await updateJourney(null, "idle");
@@ -183,15 +187,26 @@ export default function ProfileScreen() {
                     <Ionicons name="location" size={20} color={theme.colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: rs(theme.fontSize.bodyLarge), fontWeight: theme.fontWeight.bold, color: theme.colors.textPrimary }} numberOfLines={1}>
-                      {e.name}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8), marginBottom: rp(2) }}>
+                      <Text style={{ fontSize: rs(theme.fontSize.bodyLarge), fontWeight: theme.fontWeight.bold, color: theme.colors.textPrimary }} numberOfLines={1}>
+                        {e.name}
+                      </Text>
+                      {e.status === "upcoming" ? (
+                        <View style={{ backgroundColor: theme.colors.warning, paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4) }}>
+                          <Text style={{ color: "#FFF", fontSize: rs(10), fontWeight: "800" }}>UPCOMING</Text>
+                        </View>
+                      ) : (
+                        <View style={{ backgroundColor: theme.colors.success, paddingHorizontal: rp(6), paddingVertical: rp(2), borderRadius: rp(4) }}>
+                          <Text style={{ color: "#FFF", fontSize: rs(10), fontWeight: "800" }}>LIVE</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={{ fontSize: rs(theme.fontSize.body), color: theme.colors.textSecondary }} numberOfLines={1}>
                       {e.venue}
                     </Text>
                     {e.date && (
                       <Text style={{ fontSize: rs(theme.fontSize.caption), color: theme.colors.textMuted, marginTop: rp(2) }}>
-                        {e.date}
+                        {e.date}{e.start_time ? ` • ${e.start_time}` : ""}
                       </Text>
                     )}
                   </View>

@@ -129,7 +129,7 @@ export default function AllEvents() {
       </SafeAreaView>
 
       <View style={{ flexDirection: "row", gap: rp(8), paddingHorizontal: rp(16), paddingTop: rp(16) }}>
-        {["all", "active", "closed", ...(isHotelOwner ? ["special", "daily"] : [])].map((f) => (
+        {["all", "active", "upcoming", "closed", ...(isHotelOwner ? ["special", "daily"] : [])].map((f) => (
           <TouchableOpacity
             key={f}
             onPress={() => setFilter(f)}
@@ -174,7 +174,7 @@ export default function AllEvents() {
               flexDirection: "row",
               alignItems: "center",
               borderLeftWidth: rp(4),
-              borderLeftColor: e.status === "active" ? "#059669" : "#9CA3AF",
+              borderLeftColor: e.status === "active" ? "#059669" : e.status === "upcoming" ? "#F59E0B" : "#9CA3AF",
               ...cardShadow,
               shadowColor: ACCENT,
             }}
@@ -199,14 +199,14 @@ export default function AllEvents() {
                     paddingHorizontal: rp(8),
                     paddingVertical: rp(3),
                     borderRadius: rp(99),
-                    backgroundColor: e.status === "active" ? "#D1FAE5" : "#F3F4F6",
+                    backgroundColor: e.status === "active" ? "#D1FAE5" : e.status === "upcoming" ? "#FEF3C7" : "#F3F4F6",
                   }}
                 >
                   <Text
                     style={{
                       fontSize: rs(10),
                       fontWeight: "800",
-                      color: e.status === "active" ? "#059669" : "#6B7280",
+                      color: e.status === "active" ? "#059669" : e.status === "upcoming" ? "#D97706" : "#6B7280",
                       letterSpacing: rs(1),
                     }}
                   >

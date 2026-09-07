@@ -99,6 +99,7 @@ export default function SupervisorTabsLayout() {
         name="scan"
         options={{
           title: "Check In",
+          unmountOnBlur: true,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "checkmark-circle" : "checkmark-circle-outline"} size={24} color={color} />
           ),

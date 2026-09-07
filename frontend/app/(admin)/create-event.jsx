@@ -165,6 +165,8 @@ export default function CreateEvent() {
           : "Failed to create event";
       if (message && message.toLowerCase().includes("event limit reached")) {
         confirmDialog.info("Event limit reached", "You've used up your available events for this account. Contact your admin to increase your limit, or archive an old event to free up space.");
+      } else if (message && (message.toLowerCase().includes("exceeds the available limit") || message.toLowerCase().includes("exceeding the available limit"))) {
+        confirmDialog.info("Capacity Limit Reached", `The car/QR capacity for this ${isHotelOwner ? 'hotel' : 'account'} has been reached. Please reduce the number of cars for this event, or contact your provider/superadmin to increase the allocation.`);
       } else {
         confirmDialog.info("Couldn't create event", message);
       }

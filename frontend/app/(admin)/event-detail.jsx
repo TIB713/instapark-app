@@ -137,6 +137,8 @@ export default function EventDetail() {
   const [incidents, setIncidents] = useState([]);
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [reportEmail, setReportEmail] = useState("");
+  const [sendingReport, setSendingReport] = useState(false);
   const [specialEventHotel, setSpecialEventHotel] = useState(null);
   const [specialEventQRToken, setSpecialEventQRToken] = useState(null);
   const [showSpecialEventQRModal, setShowSpecialEventQRModal] = useState(false);
@@ -190,7 +192,6 @@ export default function EventDetail() {
   const [drvName, setDrvName] = useState("");
   const [drvEmail, setDrvEmail] = useState("");
   const [drvPhone, setDrvPhone] = useState("");
-  const [drvPin, setDrvPin] = useState("");
   const [drvPhoto, setDrvPhoto] = useState(null);
   const [drvPhotoUri, setDrvPhotoUri] = useState(null);
   const [drvLicenseNumber, setDrvLicenseNumber] = useState("");
@@ -739,6 +740,17 @@ export default function EventDetail() {
     }, "Reactivate");
   };
 
+  const activateEventManually = () => {
+    confirmDialog.confirm("Activate event", "Are you sure you want to manually activate this event early?", async () => {
+      try {
+        await api.post(`/events/${currentEventId}/activate`);
+        fetchEvent();
+      } catch (err) {
+        confirmDialog.info("Error", err.response?.data?.detail || "Could not activate event");
+      }
+    });
+  };
+
   const removeCar = (car) => {
     confirmDialog.destructiveConfirm("Remove vehicle", `Remove ${car.plate}?`, async () => {
       try {
@@ -833,10 +845,7 @@ export default function EventDetail() {
     const errs = {};
     if (!drvName.trim()) errs.name = "Name is required";
     if (!drvEmail.trim()) errs.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) errs.email = "Please enter a valid email address";
-    if (!drvPin.trim()) errs.pin = "PIN is required";
-    else if (drvPin.length !== 4 || !/^\d{4}$/.test(drvPin)) errs.pin = "PIN must be exactly 4 digits";
-    if (!drvGender) errs.gender = "Please select gender";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(drvEmail.trim())) errs.email = "Please enter a valid email address";if (!drvGender) errs.gender = "Please select gender";
     if (!drvPhone.trim()) errs.phone = "Phone is required";
     else if (!/^\d{10}$/.test(drvPhone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
     if (drvPan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(drvPan.trim().toUpperCase())) errs.pan = "Expected format: ABCDE1234F";
@@ -856,7 +865,7 @@ export default function EventDetail() {
     const errs = validateSupervisor();
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      scrollToFirstError(["name", "email", "phone", "bankAccount", "aadharNumber", "aadharPhoto", "pin", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
+      scrollToFirstError(["name", "email", "phone", "bankAccount", "aadharNumber", "aadharPhoto", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
       return;
     }
 
@@ -934,7 +943,6 @@ export default function EventDetail() {
     setDrvName("");
     setDrvEmail("");
     setDrvPhone("");
-    setDrvPin("");
     setDrvPhoto(null);
     setDrvPhotoUri(null);
     setDrvLicenseNumber("");
@@ -1002,7 +1010,7 @@ export default function EventDetail() {
     const errs = validateDriver();
     setDriverErrors(errs);
     if (Object.keys(errs).length > 0) {
-      scrollToFirstError(["name", "email", "phone", "bankAccount", "aadharNumber", "aadharPhoto", "pin", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
+      scrollToFirstError(["name", "email", "phone", "bankAccount", "aadharNumber", "aadharPhoto", "licenseNumber", "licensePhoto"], errs, fieldRefs, scrollViewRef);
       return;
     }
 
@@ -1059,7 +1067,6 @@ export default function EventDetail() {
         name: drvName.trim(),
         email: drvEmail.trim().toLowerCase(),
         phone: phoneToSave,
-        pin: drvPin,
         driver_photo: photoUrl || undefined,
         pan_number: drvPan.trim() || undefined,
         bank_account_number: drvBankAccount.trim() || undefined,
@@ -1156,7 +1163,7 @@ export default function EventDetail() {
                 <View style={{ flexDirection: "row", marginTop: rp(4), alignItems: "center", gap: rp(8) }}>
                   <View
                     style={{
-                      backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)",
+                      backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : event.status === "upcoming" ? "rgba(245,158,11,0.25)" : "rgba(255,255,255,0.18)",
                       paddingHorizontal: rp(8),
                       paddingVertical: rp(2),
                       borderRadius: rp(99),
@@ -1197,6 +1204,11 @@ export default function EventDetail() {
             {isClosed && user?.role && ["owner", "admin", "superadmin"].includes(user.role) && (
               <TouchableOpacity onPress={reopenEvent} style={[iconBtn, { backgroundColor: "rgba(16,185,129,0.7)" }]}>
                 <Ionicons name="play-circle" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {event?.status === "upcoming" && user?.role && ["owner", "admin", "superadmin"].includes(user.role) && (
+              <TouchableOpacity onPress={activateEventManually} style={[iconBtn, { backgroundColor: "rgba(245,158,11,0.7)" }]}>
+                <Ionicons name="flash" size={20} color="#fff" />
               </TouchableOpacity>
             )}
             {event?.status === "active" && (
@@ -2017,7 +2029,7 @@ export default function EventDetail() {
             ))}
           </View>
 
-          {/* {event?.event_type !== "hotel_daily" && (
+          {event?.event_type !== "hotel_daily" && (
             <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
               <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(16) }}>Event Host</Text>
 
@@ -2082,7 +2094,53 @@ export default function EventDetail() {
                 </View>
               )}
             </View>
-          )} */}
+          )}
+
+          <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
+            <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(4) }}>Send Report by Email</Text>
+            <Text style={{ fontSize: rs(12), color: "#6B7280", marginBottom: rp(16) }}>
+              Manually send the full event report (PDF/CSV) to any email address right now.
+            </Text>
+            <View style={{ flexDirection: "row", gap: rp(8) }}>
+              <TextInput
+                value={reportEmail}
+                onChangeText={setReportEmail}
+                placeholder="recipient@example.com"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={{ flex: 1, backgroundColor: "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: "#111827" }}
+              />
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!reportEmail) {
+                    confirmDialog.info("Required", "Please enter an email address");
+                    return;
+                  }
+                  setSendingReport(true);
+                  try {
+                    await api.post(`/events/${currentEventId}/send-report`, {
+                      email: reportEmail
+                    });
+                    setReportEmail("");
+                    confirmDialog.info("Success", "Report queued for sending!");
+                  } catch (err) {
+                    confirmDialog.info("Error", err?.response?.data?.detail || "Couldn't send report.");
+                  } finally {
+                    setSendingReport(false);
+                  }
+                }}
+                disabled={sendingReport}
+                style={{ backgroundColor: sendingReport ? "#9CA3AF" : "#059669", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
+              >
+                {sendingReport ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>Send</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <TouchableOpacity
             onPress={exportCSV}
@@ -2852,9 +2910,6 @@ export default function EventDetail() {
                     <Text style={{ fontWeight: '600', color: drvGender === 'female' ? '#1D4ED8' : '#4B5563', fontSize: rp(14) }}>Female</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={modalLabel}>4-DIGIT PIN <Text style={{ color: '#EF4444' }}>*</Text></Text>
-                <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.pin = el; }}  value={drvPin} onChangeText={t => { setDrvPin(t); if (driverErrors.pin) setDriverErrors(prev => ({ ...prev, pin: undefined })); }} placeholder="4-digit PIN" keyboardType="numeric" maxLength={4} style={[modalInput, driverErrors.pin && modalInputError]} />
-                {driverErrors.pin && <Text style={modalErrorText}>* {driverErrors.pin}</Text>}
                 <Text style={modalLabel}>EMAIL <Text style={{ color: '#EF4444' }}>*</Text></Text>
                 <TextInput ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  value={drvEmail} onChangeText={t => { setDrvEmail(t); if (driverErrors.email) setDriverErrors(prev => ({ ...prev, email: undefined })); }} placeholder="driver@example.com" autoCapitalize="none" keyboardType="email-address" style={[modalInput, driverErrors.email && modalInputError]} />
                 {driverErrors.email && <Text style={modalErrorText}>* {driverErrors.email}</Text>}

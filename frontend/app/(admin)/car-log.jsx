@@ -365,7 +365,10 @@ export default function CarLog() {
               </TouchableOpacity> 
               <View style={{ marginLeft: rp(14), flex: 1 }}> 
                 <Text style={{ fontSize: rs(22), fontWeight: "900", 
-                  color: "#fff" }}>{car.plate}</Text> 
+                  color: "#fff" }}>{car.plate || "No Plate"}</Text> 
+                {car.has_plate_issue && car.plate && (
+                  <Text style={{ color: "#FCD34D", fontSize: rs(11), fontWeight: "700" }}>TC NUMBER</Text>
+                )}
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: rs(13) }}> 
                   {car.color} {car.make} 
                 </Text> 

@@ -132,11 +132,12 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
 const VehicleDetailsSection = memo(({
   plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors,
   pendingLookup, setPendingLookup, lookupApplied, setLookupApplied, plateLookedUp, setPlateLookedUp, setGuestPhone,
-  lookupPlate, confirmLookup, rejectLookup, clearGuestOnly, fieldRefs
+  lookupPlate, confirmLookup, rejectLookup, clearGuestOnly, fieldRefs,
+  hasPlateIssue, setHasPlateIssue
 }) => {
   return (
     <>
-      <Lbl>LICENSE PLATE *</Lbl>
+      <Lbl>{hasPlateIssue ? "TC NUMBER (OPTIONAL)" : "LICENSE PLATE *"}</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.plate = el; }} style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="car-outline" size={20} color={theme.colors.primary} />
         <TextInput
@@ -160,15 +161,29 @@ const VehicleDetailsSection = memo(({
               }
             }
           }}
-          onBlur={() => lookupPlate(plate.trim().toUpperCase())}
-          placeholder="GJ01AB1234"
+          onBlur={() => { if (!hasPlateIssue) lookupPlate(plate.trim().toUpperCase()); }}
+          placeholder={hasPlateIssue ? "e.g. TC1234XYZ — or leave blank" : "GJ01AB1234"}
           placeholderTextColor={theme.colors.textMuted}
           autoCapitalize="characters"
-          maxLength={11}
+          maxLength={hasPlateIssue ? 20 : 11}
           style={textInput}
         />
       </View>
       {errors.plate && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
+
+      <TouchableOpacity
+        onPress={() => { setHasPlateIssue(v => !v); if (errors.plate) setErrors(prev => ({ ...prev, plate: undefined })); }}
+        style={{ flexDirection: "row", alignItems: "center", gap: rp(8), marginBottom: rp(16) }}
+      >
+        <Ionicons
+          name={hasPlateIssue ? "checkbox" : "square-outline"}
+          size={20}
+          color={hasPlateIssue ? theme.colors.primary : theme.colors.textMuted}
+        />
+        <Text style={{ fontSize: rs(12), fontWeight: "700", color: theme.colors.textSecondary }}>
+          Number plate issue (new vehicle / TC number / no plate)
+        </Text>
+      </TouchableOpacity>
       {pendingLookup && (
         <View style={{ backgroundColor: theme.colors.successLight, borderWidth: rp(1), borderColor: theme.colors.success, borderRadius: rp(16), padding: rp(12), marginBottom: rp(16) }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: rp(10) }}>
@@ -383,6 +398,7 @@ export default function AddCar() {
   const fieldRefs = useRef({});
 
   const [plate, setPlate] = useState("");
+  const [hasPlateIssue, setHasPlateIssue] = useState(false);
   const [color, setColor] = useState("");
   const [make, setMake] = useState("");
   const [notes, setNotes] = useState("");
@@ -520,6 +536,7 @@ export default function AddCar() {
           setGuestPhone(d.guestPhone || "");
           setSelectedGate(d.selectedGate || "");
           if (d.carType) setCarType(d.carType);
+          if (d.hasPlateIssue) setHasPlateIssue(d.hasPlateIssue);
 
           if (d.hasDamage) setHasDamage(d.hasDamage);
           if (d.damageNotes) setDamageNotes(d.damageNotes);
@@ -602,10 +619,10 @@ export default function AddCar() {
 
   useEffect(() => {
     if (!submitting) {
-      const draft = { plate, color, make, notes, guestPhone, selectedGate, carType, hasDamage, damageNotes, damageTypes, guestName };
+      const draft = { plate, color, make, notes, guestPhone, selectedGate, carType, hasPlateIssue, hasDamage, damageNotes, damageTypes, guestName };
       AsyncStorage.setItem("add_car_draft", JSON.stringify(draft)).catch(() => { });
     }
-  }, [plate, color, make, notes, guestPhone, selectedGate, carType, hasDamage, damageNotes, damageTypes, guestName, submitting]);
+  }, [plate, color, make, notes, guestPhone, selectedGate, carType, hasPlateIssue, hasDamage, damageNotes, damageTypes, guestName, submitting]);
 
   const takePhoto = useCallback(async (label) => {
     if (!permissionGrantedRef.current) {
@@ -665,8 +682,10 @@ export default function AddCar() {
   const submit = async () => {
     setSubmitting(true);
     const errs = {};
-    if (!plate.trim()) errs.plate = "License plate is required";
-    else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
+    if (!hasPlateIssue) {
+      if (!plate.trim()) errs.plate = "License plate is required";
+      else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
+    }
     if (!selectedDriverId) errs.driver = "Please select a driver to hand this car to";
     let phoneToSave = "";
     if (guestPhone.trim()) {
@@ -690,7 +709,7 @@ export default function AddCar() {
 
     confirmDialog.confirm(
       "Confirm check-in",
-      `Confirm check-in for ${plate}?`,
+      `Confirm check-in for ${plate.trim() || "this vehicle (no plate)"}?`,
       () => {
         doSubmit(phoneToSave);
       },
@@ -753,6 +772,7 @@ export default function AddCar() {
             guestPhone: phoneToSave,
             isPreRegistered: false,
             carType,
+            hasPlateIssue,
 
             hasDamage,
             damageNotes: damageNotes.trim() || null,
@@ -808,6 +828,7 @@ export default function AddCar() {
           guest_name: guestName.trim() || null,
           is_pre_registered: false,
           car_type: carType,
+          has_plate_issue: hasPlateIssue,
 
           has_damage: hasDamage,
           damage_notes: damageNotes.trim() || null,
@@ -889,6 +910,7 @@ export default function AddCar() {
             isPreRegistered,
             prefilledCarId,
             carType,
+            hasPlateIssue,
 
             hasDamage,
             damageNotes: damageNotes.trim() || null,
@@ -1020,6 +1042,7 @@ export default function AddCar() {
               carType={carType} setCarType={setCarType}
               notes={notes} setNotes={setNotes}
               errors={errors} setErrors={setErrors}
+              hasPlateIssue={hasPlateIssue} setHasPlateIssue={setHasPlateIssue}
 
               pendingLookup={pendingLookup} setPendingLookup={setPendingLookup}
               lookupApplied={lookupApplied} setLookupApplied={setLookupApplied}
@@ -1093,7 +1116,7 @@ export default function AddCar() {
           </Card>
 
           <Btn variant="accent" onPress={submit} disabled={submitting} style={{ marginBottom: rp(16) }}>
-            {submitting ? "CHECKING IN..." : "CHECK IN VEHICLE"}
+            {submitting ? \"PARKING...\" : \"INSTANT PARK\"}
           </Btn>
           <View style={{ height: rp(40) }} />
         </ScrollView>

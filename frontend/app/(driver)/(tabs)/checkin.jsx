@@ -23,7 +23,6 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Location from "expo-location";
 import { startLocationTracking, updateJourney, LOCATION_TASK_NAME } from "../../../lib/locationTracking";
 
 import api from "../../../lib/api";
@@ -125,11 +124,12 @@ const PhotoGridSection = memo(({ photos, errors, takePhoto, onRemovePhoto }) => 
 });
 
 const VehicleDetailsSection = memo(({
-  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, fieldRefs
+  plate, setPlate, guestName, setGuestName, color, setColor, make, setMake, carType, setCarType, notes, setNotes, errors, setErrors, fieldRefs,
+  hasPlateIssue, setHasPlateIssue
 }) => {
   return (
     <>
-      <Lbl>LICENSE PLATE *</Lbl>
+      <Lbl>{hasPlateIssue ? "TC NUMBER (OPTIONAL)" : "LICENSE PLATE *"}</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.plate = el; }} style={[inputRow, errors.plate && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
         <Ionicons name="car-outline" size={20} color={theme.colors.primary} />
         <TextInput
@@ -140,14 +140,28 @@ const VehicleDetailsSection = memo(({
             const cleaned = v.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
             setPlate(cleaned);
           }}
-          placeholder="GJ01AB1234"
+          placeholder={hasPlateIssue ? "e.g. TC1234XYZ — or leave blank" : "GJ01AB1234"}
           placeholderTextColor={theme.colors.textMuted}
           autoCapitalize="characters"
-          maxLength={11}
+          maxLength={hasPlateIssue ? 20 : 11}
           style={textInput}
         />
       </View>
       {errors.plate && <Text style={{ color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(4), marginBottom: rp(8) }}>* {errors.plate}</Text>}
+
+      <TouchableOpacity
+        onPress={() => { setHasPlateIssue(v => !v); if (errors.plate) setErrors(prev => ({ ...prev, plate: undefined })); }}
+        style={{ flexDirection: "row", alignItems: "center", gap: rp(8), marginBottom: rp(16) }}
+      >
+        <Ionicons
+          name={hasPlateIssue ? "checkbox" : "square-outline"}
+          size={20}
+          color={hasPlateIssue ? theme.colors.primary : theme.colors.textMuted}
+        />
+        <Text style={{ fontSize: rs(12), fontWeight: "700", color: theme.colors.textSecondary }}>
+          Number plate issue (new vehicle / TC number / no plate)
+        </Text>
+      </TouchableOpacity>
 
       <Lbl>GUEST NAME (OPTIONAL)</Lbl>
       <View ref={el => { if (fieldRefs.current) fieldRefs.current.guestName = el; }} style={[inputRow, errors.guestName && { borderColor: theme.colors.danger, marginBottom: 0 }]}>
@@ -322,6 +336,12 @@ export default function Checkin() {
   const [keyTagNumber, setKeyTagNumber] = useState("");
   const [qrCardId, setQrCardId] = useState("");
   const [checkinMode, setCheckinMode] = useState(null); // null | "scan" | "code"
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => setCheckinMode(null);
+    }, [])
+  );
   const [codeInput, setCodeInput] = useState("");
   const codeInputRef = useRef(null);
 
@@ -338,6 +358,7 @@ export default function Checkin() {
   } catch (e) { }
 
   const [plate, setPlate] = useState("");
+  const [hasPlateIssue, setHasPlateIssue] = useState(false);
   const [color, setColor] = useState("");
   const [make, setMake] = useState("");
   const [notes, setNotes] = useState("");
@@ -571,8 +592,10 @@ export default function Checkin() {
   const submit = async () => {
     setSubmitting(true);
     const errs = {};
-    if (!plate.trim()) errs.plate = "License plate is required";
-    else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
+    if (!hasPlateIssue) {
+      if (!plate.trim()) errs.plate = "License plate is required";
+      else if (!validatePlate(plate.trim())) errs.plate = "Please enter a valid Indian vehicle number plate.";
+    }
 
     let phoneToSave = "";
     if (guestPhone.trim()) {
@@ -596,7 +619,7 @@ export default function Checkin() {
 
     confirmDialog.confirm(
       "Confirm check-in",
-      `Confirm check-in for ${plate}?`,
+      `Confirm check-in for ${plate.trim() || "this vehicle (no plate)"}?`,
       () => {
         doSubmit(phoneToSave);
       },
@@ -623,7 +646,7 @@ export default function Checkin() {
       if (!net.isConnected) {
         await Promise.all(Object.entries(photos).map(async ([label, uri]) => {
           if (!uri) return;
-          const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim().toUpperCase()}_${label}_${Date.now()}.jpg`;
+          const localPath = `${FileSystem.documentDirectory}checkin_${plate.trim().toUpperCase() || "NOPLATE"}_${label}_${Date.now()}.jpg`;
           await FileSystem.copyAsync({ from: uri, to: localPath });
           photoLocalPaths[label] = localPath;
         }));
@@ -640,6 +663,7 @@ export default function Checkin() {
           guestPhone: phoneToSave,
           isPreRegistered: false,
           carType,
+          hasPlateIssue,
 
           hasDamage,
           damageNotes: damageNotes.trim() || null,
@@ -654,16 +678,6 @@ export default function Checkin() {
         setSuccessCar({ plate: plate.trim().toUpperCase(), checkin_code: "SYNC", id: "offline" });
         setShowSuccessModal(true);
 
-        const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
-        if (!running) {
-          const started = await startLocationTracking();
-          if (!started) {
-            confirmDialog.info(
-              "Location permission needed",
-              "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
-            );
-          }
-        }
         await updateJourney("offline", "checkin");
 
         return;
@@ -682,6 +696,7 @@ export default function Checkin() {
         guest_name: guestName.trim() || null,
         is_pre_registered: false,
         car_type: carType,
+        has_plate_issue: hasPlateIssue,
 
         has_damage: hasDamage,
         damage_notes: damageNotes.trim() || null,
@@ -695,16 +710,6 @@ export default function Checkin() {
       setSuccessCar(car);
       setShowSuccessModal(true);
 
-      const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
-      if (!running) {
-        const started = await startLocationTracking();
-        if (!started) {
-          confirmDialog.info(
-            "Location permission needed",
-            "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
-          );
-        }
-      }
       await updateJourney(car.id, "checkin");
 
       // Decoupled Background Photo Upload
@@ -967,6 +972,7 @@ export default function Checkin() {
                 carType={carType} setCarType={setCarType} notes={notes} setNotes={setNotes}
                 errors={errors} setErrors={setErrors}
                 fieldRefs={fieldRefs}
+                hasPlateIssue={hasPlateIssue} setHasPlateIssue={setHasPlateIssue}
               />
 
 

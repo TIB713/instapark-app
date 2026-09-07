@@ -38,9 +38,10 @@ export default function SupervisorDashboard() {
 
   const todayStr = todayIST();
   const todayDaily = events.find(e => e.hotel_id === user?.hotel_id && e.date === todayStr && e.event_type === "hotel_daily");
-  const active = events.filter((e) => e.status === "active").slice(0, 5);
-  const past = events.filter((e) => e.status !== "active").slice(0, 5);
-  const spotlightEvents = active.length > 0 ? active : (todayDaily ? [todayDaily] : []);
+  const notClosed = events.filter((e) => e.status === "active" || e.status === "upcoming").slice(0, 5);
+  const liveCount = events.filter((e) => e.status === "active").length;
+  const past = events.filter((e) => e.status === "closed").slice(0, 5);
+  const spotlightEvents = notClosed.length > 0 ? notClosed : (todayDaily ? [todayDaily] : []);
 
   const fetchExtras = async () => {
     try {
@@ -52,7 +53,7 @@ export default function SupervisorDashboard() {
     
     try {
       let openList = [];
-      await Promise.all(active.map(async (event) => {
+      await Promise.all(notClosed.map(async (event) => {
         try {
           const { data } = await api.get(`/incidents/event/${event.id}`);
           const activeIncidents = (data || []).filter(i => i.status !== "RESOLVED" && i.status !== "DISMISSED");
@@ -90,7 +91,7 @@ export default function SupervisorDashboard() {
     useCallback(() => {
       fetchAll();
       if (events.length > 0) fetchExtras();
-    }, [fetchAll, events.length, active.length, spotlightEvents.length])
+    }, [fetchAll, events.length, notClosed.length, spotlightEvents.length])
   );
 
   const onRefresh = () => {
@@ -176,7 +177,7 @@ export default function SupervisorDashboard() {
               <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontWeight: 'bold', marginTop: rp(2) }}>Events</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: theme.radius.lg, paddingVertical: rp(10), alignItems: 'center' }}>
-              <Heading level="subtitle" style={{ color: theme.colors.success }}>{active.length}</Heading>
+              <Heading level="subtitle" style={{ color: theme.colors.success }}>{liveCount}</Heading>
               <Text style={{ fontSize: rs(10), color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontWeight: 'bold', marginTop: rp(2) }}>Active</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: theme.radius.lg, paddingVertical: rp(10), alignItems: 'center' }}>
@@ -214,6 +215,11 @@ export default function SupervisorDashboard() {
                             <Text style={{ color: "#FFFFFF", fontSize: rs(9), fontWeight: "900" }}>LIVE</Text>
                           </View>
                         )}
+                        {event.status === 'upcoming' && (
+                          <View style={{ backgroundColor: theme.colors.warning, borderRadius: rp(4), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                            <Text style={{ color: "#FFFFFF", fontSize: rs(9), fontWeight: "900" }}>UPCOMING</Text>
+                          </View>
+                        )}
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: rp(4) }}>
                         <Ionicons name="location-outline" size={12} color={theme.colors.textSecondary} />
@@ -243,12 +249,16 @@ export default function SupervisorDashboard() {
                     ) : (
                       <>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: 'bold' }}>Max cars</Text>
-                          <Text style={{ fontSize: rs(16), fontWeight: 'bold', color: theme.colors.textPrimary, marginTop: rp(2) }}>{event.max_cars || 0}</Text>
+                          <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: 'bold' }}>Cars</Text>
+                          <ActivityIndicator size="small" color={theme.colors.textMuted} style={{ marginTop: rp(4), alignSelf: 'flex-start' }} />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: 'bold' }}>Gates</Text>
-                          <Text style={{ fontSize: rs(16), fontWeight: 'bold', color: theme.colors.textPrimary, marginTop: rp(2) }}>{event.gates?.length || 0}</Text>
+                          <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: 'bold' }}>Parked</Text>
+                          <ActivityIndicator size="small" color={theme.colors.textMuted} style={{ marginTop: rp(4), alignSelf: 'flex-start' }} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: 'bold' }}>Delivered</Text>
+                          <ActivityIndicator size="small" color={theme.colors.textMuted} style={{ marginTop: rp(4), alignSelf: 'flex-start' }} />
                         </View>
                       </>
                     )}
@@ -307,7 +317,7 @@ export default function SupervisorDashboard() {
                 <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
               </View>
               <Text style={{ fontWeight: 'bold', fontSize: rs(14), color: theme.colors.textPrimary }}>Active events</Text>
-              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>{active.length} active</Text>
+              <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>{liveCount} active</Text>
             </Card>
           </View>
         </View>

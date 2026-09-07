@@ -55,7 +55,6 @@ export default function DriverEdit() {
           setDrvEmail(drv.email || "");
           setDrvPhone(drv.phone || "");
           setDrvGender(drv.gender || "");
-          setDrvPassword(drv.pin || "");
           setDrvPan(drv.pan_number || "");
           setDrvBankAccount(drv.bank_account_number || "");
           setDrvBankIfsc(drv.bank_ifsc || "");

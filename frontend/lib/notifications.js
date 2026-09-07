@@ -1,14 +1,25 @@
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { useAppStore } from './store';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data;
+    const isRetrievalScreen = data?.screen === 'retrievals';
+    const isDriverContext = !!useAppStore.getState().driver;
+    // Drivers already get an in-app modal (vibration + sound) for retrieval requests
+    // via the WebSocket, driven from useIncomingRequests.js — suppress the redundant
+    // OS banner/sound for them so it doesn't double-alert. Supervisors have no
+    // equivalent in-app alert, so their banner/sound stays on.
+    const suppress = isRetrievalScreen && isDriverContext;
+    return {
+      shouldShowBanner: !suppress,
+      shouldShowList: true,
+      shouldPlaySound: !suppress,
+      shouldSetBadge: true,
+    };
+  },
 });
 
 export async function registerForPushNotifications(api) {

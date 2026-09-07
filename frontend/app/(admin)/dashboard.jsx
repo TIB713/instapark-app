@@ -138,7 +138,8 @@ export default function Dashboard() {
   const todaySpecial = specialEvents.filter(e => e.date === todayStr);
   const todayDaily = dailyEvents.find(e => e.date === todayStr);
   const active = events.filter((e) => e.status === "active");
-  const past = events.filter((e) => e.status !== "active");
+  const upcoming = events.filter((e) => e.status === "upcoming");
+  const past = events.filter((e) => e.status === "closed");
 
   if (loading) {
     return (
@@ -333,9 +334,9 @@ export default function Dashboard() {
                   </View>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(10) }}>
-                  <View style={{ backgroundColor: todayDaily?.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
-                    <Text style={{ color: todayDaily?.status === "active" ? "#059669" : "#6B7280", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(1) }}>
-                      {todayDaily ? (todayDaily.status === "active" ? "ACTIVE" : "CLOSED") : "NO EVENT TODAY"}
+                  <View style={{ backgroundColor: todayDaily?.status === "active" ? "#D1FAE5" : todayDaily?.status === "upcoming" ? "#FEF3C7" : "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                    <Text style={{ color: todayDaily?.status === "active" ? "#059669" : todayDaily?.status === "upcoming" ? "#D97706" : "#6B7280", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(1) }}>
+                      {todayDaily ? (todayDaily.status === "active" ? "ACTIVE" : todayDaily.status === "upcoming" ? "UPCOMING" : "CLOSED") : "NO EVENT TODAY"}
                     </Text>
                   </View>
                 </View>
@@ -368,9 +369,9 @@ export default function Dashboard() {
                       </View>
                     </View>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(10) }}>
-                      <View style={{ backgroundColor: e.status === "active" ? "#D1FAE5" : "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
-                        <Text style={{ color: e.status === "active" ? "#059669" : "#6B7280", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(1) }}>
-                          {e.status === "active" ? "ACTIVE" : "CLOSED"}
+                      <View style={{ backgroundColor: e.status === "active" ? "#D1FAE5" : e.status === "upcoming" ? "#FEF3C7" : "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                        <Text style={{ color: e.status === "active" ? "#059669" : e.status === "upcoming" ? "#D97706" : "#6B7280", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(1) }}>
+                          {e.status === "active" ? "ACTIVE" : e.status === "upcoming" ? "UPCOMING" : "CLOSED"}
                         </Text>
                       </View>
                     </View>
@@ -474,6 +475,63 @@ export default function Dashboard() {
                 ))
               )}
             </View>
+
+            {upcoming.length > 0 && (
+              <View style={{ paddingHorizontal: rp(16), marginTop: rp(24) }}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: rp(12) }}>
+                  <Text style={labelStyle}>UPCOMING EVENTS</Text>
+                  <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: rp(10), paddingVertical: rp(2), borderRadius: rp(99), marginLeft: rp(8) }}>
+                    <Text style={{ color: "#D97706", fontWeight: "800", fontSize: rs(11) }}>{upcoming.length}</Text>
+                  </View>
+                </View>
+                {upcoming.map((e) => (
+                  <TouchableOpacity
+                    key={e.id}
+                    testID={`upcoming-event-${e.id}`}
+                    onPress={() => openEvent(e)}
+                    activeOpacity={0.85}
+                    style={[cardBase, cardShadow, { borderLeftWidth: rp(4), borderLeftColor: "#F59E0B", flexDirection: "row", alignItems: "center", marginBottom: rp(12) }]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: rp(8) }}>
+                        <Text style={{ fontWeight: "900", color: "#111827", fontSize: rs(16) }}>{e.name}</Text>
+                        {e.event_type === "hotel_daily" && (
+                          <View style={{ backgroundColor: "#0284C7", borderRadius: rp(6), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                            <Text style={{ color: "#fff", fontSize: rs(9), fontWeight: "800" }}>🏨 AUTO</Text>
+                          </View>
+                        )}
+                        {e.event_type === "hotel_special" && (
+                          <View style={{ backgroundColor: "#1D4ED8", borderRadius: rp(6), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                            <Text style={{ color: "#fff", fontSize: rs(9), fontWeight: "800" }}>🏨 SPECIAL</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(6), flexWrap: "wrap", gap: rp(12) }}>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Ionicons name="calendar-outline" size={rs(13)} color="#7C3AED" />
+                          <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(4) }}>{e.date}</Text>
+                        </View>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Ionicons name="time-outline" size={rs(13)} color="#7C3AED" />
+                          <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(4) }}>{e.start_time}—{e.end_time}</Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(4) }}>
+                        <Ionicons name="location-outline" size={rs(13)} color="#7C3AED" />
+                        <Text style={{ color: "#6B7280", fontSize: rs(12), marginLeft: rp(4) }}>{e.venue}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(10) }}>
+                        <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: rp(8), paddingVertical: rp(3), borderRadius: rp(99) }}>
+                          <Text style={{ color: "#D97706", fontWeight: "800", fontSize: rs(10), letterSpacing: rs(1) }}>UPCOMING</Text>
+                        </View>
+                        <Text style={{ color: "#9CA3AF", fontSize: rs(11), marginLeft: rp(8) }}>Max {e.max_cars} cars</Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={rs(20)} color="#9CA3AF" style={{ marginLeft: rp(8) }} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {past.length > 0 && (
               <View style={{ paddingHorizontal: rp(16), marginTop: rp(24) }}>

@@ -22,7 +22,12 @@ export function useIncomingRequests() {
           requestSoundRef.current = sound;
           await sound.playAsync();
         } catch (e) {
-          console.warn("Failed to play trip-request audio", e);
+          // Android denies audio focus while a phone call is active — expected,
+          // not a bug. The modal + vibration still alert the driver either way.
+          const isFocusDenied = String(e?.message || e).includes("AudioFocusNotAcquiredException");
+          if (!isFocusDenied) {
+            console.warn("Failed to play trip-request audio", e);
+          }
         }
       })();
       timeout = setTimeout(() => {

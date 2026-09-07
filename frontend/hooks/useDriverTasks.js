@@ -6,7 +6,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
 
 import api from '../lib/api';
 import { useAppStore } from '../lib/store';
@@ -23,6 +22,7 @@ import {
   checkEventStatusAndStop,
   isJourneyAccepted,
   startLocationTracking,
+  stopLocationTracking,
   LOCATION_TASK_NAME
 } from '../lib/locationTracking';
 
@@ -70,9 +70,20 @@ export function useDriverTasks(
     const syncEvents = async () => {
       await useAppStore.getState().fetchEvents();
       const latestEvents = useAppStore.getState().events;
-      const activeId = useAppStore.getState().currentEventId;
-      if (activeId && !latestEvents.some((e) => e.id === activeId)) {
+      const currentId = useAppStore.getState().currentEventId;
+      const currentEvent = latestEvents.find((e) => e.id === currentId);
+
+      // Deselect: event closed (dropped from the list) or is no longer in its live window
+      if (currentId && (!currentEvent || currentEvent.status !== "active")) {
         useAppStore.getState().setCurrentEventId(null);
+        await stopLocationTracking();
+      }
+
+      // Select: an assigned event just became live and it isn't already the current one
+      const liveEvent = latestEvents.find((e) => e.status === "active");
+      if (liveEvent && useAppStore.getState().currentEventId !== liveEvent.id) {
+        useAppStore.getState().setCurrentEventId(liveEvent.id);
+        await startLocationTracking();
       }
     };
     syncEvents();
@@ -172,6 +183,7 @@ export function useDriverTasks(
     connectWS(`/event/${currentEventId}`, (msg) => {
       if (msg.type === "car_update") fetchMyCarsRef.current();
       if (msg.type === "slot_update" && fetchSlots) fetchSlots(msg.data);
+      if (msg.type === "event_activated") useAppStore.getState().fetchEvents();
     });
     connectWS(`/retrievals/${currentEventId}`, (msg) => {
       if (msg.type === "retrieval_update") {
@@ -210,6 +222,7 @@ export function useDriverTasks(
       connectWS(`/event/${currentEventId}`, (msg) => {
         if (msg.type === "car_update") fetchMyCarsRef.current();
         if (msg.type === "slot_update" && fetchSlots) fetchSlots(msg.data);
+        if (msg.type === "event_activated") useAppStore.getState().fetchEvents();
       });
       connectWS(`/retrievals/${currentEventId}`, (msg) => {
         if (msg.type === "retrieval_update") {
@@ -285,16 +298,6 @@ const acceptRetrieval = async (car, options = {}) => {
     if (fromIncomingRequest) seenRequestIdsRef.current.add(String(car.id));
     setPickingUp((prev) => ({ ...prev, [car.id]: true }));
     try {
-      const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
-      if (!running) {
-        const started = await startLocationTracking();
-        if (!started) {
-          confirmDialog.info(
-            "Location permission needed",
-            "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
-          );
-        }
-      }
       await api.patch(`/cars/${car.id}/pickup`, { retrieval_driver_id: resolvedDriverId });
       if (fromIncomingRequest) {
         setTab("at_gate");

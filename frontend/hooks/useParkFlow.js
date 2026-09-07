@@ -35,6 +35,27 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
 
   const resizedParkPhotosRef = useRef({});
   const holdTimerRef = useRef(null);
+  const latestGPSRef = useRef(null);
+  const gpsWatchSubRef = useRef(null);
+
+  const startGPSWatch = async () => {
+    try {
+      latestGPSRef.current = null;
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+      gpsWatchSubRef.current = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.High, timeInterval: 2000, distanceInterval: 3 },
+        (loc) => { latestGPSRef.current = { lat: loc.coords.latitude, lng: loc.coords.longitude }; }
+      );
+    } catch { }
+  };
+
+  const stopGPSWatch = () => {
+    if (gpsWatchSubRef.current) {
+      gpsWatchSubRef.current.remove();
+      gpsWatchSubRef.current = null;
+    }
+  };
 
   const fetchEvent = useCallback(async () => {
     if (!currentEventId) return;
@@ -76,16 +97,18 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
   };
 
   const selectSlot = async (slotNumber) => {
-    if (selectedSlot != null && (selectedSlot !== slotNumber)) {
-      releaseSlot(selectedZone, selectedSlot); // fire-and-forget release of the old pick
+    const previousSlot = selectedSlot;
+    if (previousSlot != null && previousSlot !== slotNumber) {
+      releaseSlot(selectedZone, previousSlot); // fire-and-forget release of the old pick
     }
+    setSelectedSlot(slotNumber); // optimistic — reflect the tap immediately
+    clearInterval(holdTimerRef.current);
     const ok = await holdSlot(selectedZone, slotNumber);
     if (ok) {
-      setSelectedSlot(slotNumber);
-      clearInterval(holdTimerRef.current);
-      holdTimerRef.current = setInterval(() => holdSlot(selectedZone, slotNumber), 45000); // refresh before 90s TTL
+      holdTimerRef.current = setInterval(() => holdSlot(selectedZone, slotNumber), 45000);
     } else {
-      fetchSlots(); // refresh grid so the just-taken/held slot shows correctly
+      setSelectedSlot(previousSlot ?? null); // revert only if the hold actually failed
+      fetchSlots();
     }
   };
 
@@ -95,6 +118,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     setSelectedSlot(null);
     setSlots([]);
     setShowParkModal(true);
+    startGPSWatch();
     Promise.all([fetchEvent(), fetchSlots()]).then(() => setOpeningParkModal(null));
   };
 
@@ -157,7 +181,8 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
   const doConfirmPark = async () => {
     setConfirmingPark(true);
     try {
-      const gpsPin = await captureGPSOnce();
+      const gpsPin = latestGPSRef.current || await captureGPSOnce();
+      stopGPSWatch();
       setCapturedGPS(gpsPin);
       const net = await NetInfo.fetch();
 
@@ -295,7 +320,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
       driver,
     },
     openParkModal,
-    closeParkModal: () => setShowParkModal(false),
+    closeParkModal: () => { setShowParkModal(false); stopGPSWatch(); },
     setShowParkModal,
     setSelectedCar,
     setEventZones,

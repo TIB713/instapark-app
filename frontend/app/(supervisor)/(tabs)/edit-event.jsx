@@ -152,7 +152,13 @@ export default function EditEvent() {
       }
       router.back();
     } catch (e) {
-      confirmDialog.info("Couldn't save", e.response?.data?.detail || "Something went wrong saving. Check your connection and try again.");
+      const detail = e.response?.data?.detail || "Something went wrong saving. Check your connection and try again.";
+      if (typeof detail === "string" && (detail.toLowerCase().includes("exceeds the available limit") || detail.toLowerCase().includes("exceeding the available limit"))) {
+        const isHotelOwner = user?.provider_type === "hotel_owner";
+        confirmDialog.info("Capacity Limit Reached", `The car/QR capacity for this ${isHotelOwner ? 'hotel' : 'account'} has been reached. Please reduce the number of cars for this event, or contact your provider/superadmin to increase the allocation.`);
+      } else {
+        confirmDialog.info("Couldn't save", detail);
+      }
     } finally {
       setSaving(false);
     }

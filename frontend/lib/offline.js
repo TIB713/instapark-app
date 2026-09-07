@@ -163,6 +163,7 @@ export const processPendingQueue = async () => {
                 check_in_driver_id: item.checkInDriverId,
                 guest_phone: item.guestPhone,
                 car_type: item.carType,
+                has_plate_issue: item.hasPlateIssue,
 
                 has_damage: item.hasDamage,
                 damage_notes: item.damageNotes,

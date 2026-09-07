@@ -51,7 +51,8 @@ export default function SupervisorEventsTab() {
     
     if (filter === "all") return true;
     if (filter === "active") return e.status === "active";
-    if (filter === "closed") return e.status !== "active";
+    if (filter === "upcoming") return e.status === "upcoming";
+    if (filter === "closed") return e.status === "closed";
     return true;
   });
 
@@ -94,6 +95,7 @@ export default function SupervisorEventsTab() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rp(8) }}>
           <Chip label="All" active={filter === "all"} onPress={() => setFilter("all")} />
           <Chip label="Active" active={filter === "active"} onPress={() => setFilter("active")} />
+          <Chip label="Upcoming" active={filter === "upcoming"} onPress={() => setFilter("upcoming")} />
           <Chip label="Closed" active={filter === "closed"} onPress={() => setFilter("closed")} />
         </ScrollView>
       </View>
@@ -112,9 +114,10 @@ export default function SupervisorEventsTab() {
           />
         ) : (
           filteredEvents.map((e) => {
-            const isActive = e.status === "active";
-            const iconBg = isActive ? theme.colors.successLight : theme.colors.primaryLight;
-            const iconColor = isActive ? theme.colors.success : theme.colors.primary;
+            const isLive = e.status === "active";
+            const isUpcoming = e.status === "upcoming";
+            const iconBg = isLive ? theme.colors.successLight : theme.colors.primaryLight;
+            const iconColor = isLive ? theme.colors.success : theme.colors.primary;
             
             return (
               <Card
@@ -139,9 +142,14 @@ export default function SupervisorEventsTab() {
                   <View style={{ flex: 1, paddingRight: rp(10) }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: rp(theme.spacing.sm), flexWrap: "wrap" }}>
                       <Text style={{ fontWeight: "900", color: theme.colors.textPrimary, fontSize: rs(16) }}>{e.name}</Text>
-                      {isActive && (
+                      {isLive && (
                         <View style={{ backgroundColor: theme.colors.danger, borderRadius: rp(4), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
                           <Text style={{ color: "#FFFFFF", fontSize: rs(9), fontWeight: "900" }}>LIVE</Text>
+                        </View>
+                      )}
+                      {isUpcoming && (
+                        <View style={{ backgroundColor: theme.colors.warning, borderRadius: rp(4), paddingHorizontal: rp(6), paddingVertical: rp(2) }}>
+                          <Text style={{ color: "#FFFFFF", fontSize: rs(9), fontWeight: "900" }}>UPCOMING</Text>
                         </View>
                       )}
                       {e.event_type === "hotel_daily" && (

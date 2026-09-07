@@ -71,6 +71,7 @@ export default function DriverTabsLayout() {
         options={{
           title: "Scan Pass",
           href: null,
+          unmountOnBlur: true,
         }}
       />
 

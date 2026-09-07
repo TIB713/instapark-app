@@ -112,6 +112,17 @@ export default function SupervisorEventDetail() {
     });
   };
 
+  const activateEventManually = () => {
+    confirmDialog.confirm("Activate event", "Are you sure you want to manually activate this event early?", async () => {
+      try {
+        await api.post(`/events/${currentEventId}/activate`);
+        fetchEvent();
+      } catch (err) {
+        confirmDialog.info("Error", err.response?.data?.detail || "Could not activate event");
+      }
+    });
+  };
+
   const reopenEvent = () => {
     confirmDialog.confirm("Reactivate event", "Are you sure you want to reopen this event?", async () => {
       try {
@@ -172,6 +183,8 @@ export default function SupervisorEventDetail() {
   const [selectedZone, setSelectedZone] = useState(null);
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [reportEmail, setReportEmail] = useState("");
+  const [sendingReport, setSendingReport] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
   const [liveQueueToken, setLiveQueueToken] = useState(null);
@@ -262,6 +275,7 @@ export default function SupervisorEventDetail() {
       }
       if (msg.type === "slot_update") fetchSlots();
       if (msg.type === "driver_status_update") fetchDrivers();
+      if (msg.type === "event_activated") fetchEvent();
     });
     connectWS(`/sos/${currentEventId}`, (msg) => {
       if (msg.type === "sos_alert" || msg.type === "sos_resolved") fetchSOSAlerts();
@@ -278,7 +292,7 @@ export default function SupervisorEventDetail() {
       if (search) {
         const q = search.toLowerCase();
         const matchesPlate = c.plate?.toLowerCase().includes(q);
-        const matchesCode = c.checkin_code?.includes(search.trim());
+        const matchesCode = c.status !== "DELIVERED" && c.checkin_code?.includes(search.trim());
         if (!matchesPlate && !matchesCode) return false;
       }
       if (statusFilter !== "ALL" && c.status !== statusFilter) return false;
@@ -315,14 +329,11 @@ export default function SupervisorEventDetail() {
   const exportCSV = async () => {
     setExportingCSV(true);
     try {
-      const { data } = await api.get(`/events/${currentEventId}/report`);
-      const headers = ["Plate", "Make", "Color", "Status", "Zone", "Slot", "Key Tag", "Check-in Driver", "Retrieval Driver", "Duration (min)", "Retrieval Time (min)", "Platform Rating", "Notes", "Pre-registered", "Walk-in", "Peak Hour", "Still Parked"].join(",");
-      const rows = data.cars.map(c => [c.plate, c.make, c.color, c.status, c.zone || "", c.slot || "", c.key_tag || "", c.check_in_driver || "", c.retrieval_driver || "", c.duration_minutes || "", c.retrieval_minutes || "", c.rating || "", `"${(c.notes || "").replace(/"/g, "'")}"`, data.summary.pre_registered || 0, data.summary.walk_in || 0, data.summary.peak_hour || "—", data.summary.still_parked || 0].join(","));
-      const csv = [headers, ...rows].join("\n");
-      const filename = `${data.event.name.replace(/\s+/g, "_")}_report.csv`;
+      const res = await api.get(`/events/${currentEventId}/report.csv`, { responseType: "text" });
+      const filename = `${(event?.name || "event").replace(/\s+/g, "_")}_report.csv`;
       const path = `${FileSystem.documentDirectory}${filename}`;
-      await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-      await Sharing.shareAsync(path, { mimeType: "text/csv", dialogTitle: `${data.event.name} — Event Report` });
+      await FileSystem.writeAsStringAsync(path, res.data, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(path, { mimeType: "text/csv", dialogTitle: `${event?.name || "Event"} — Event Report` });
     } catch {
       confirmDialog.info("Couldn't generate CSV", "Something went wrong creating the file. Please try again.");
     } finally {
@@ -333,18 +344,9 @@ export default function SupervisorEventDetail() {
   const exportPDF = async () => {
     setExportingPDF(true);
     try {
-      const { data } = await api.get(`/events/${currentEventId}/report`);
-      const e = data.event;
-      const s = data.summary;
-
-      const carRows = data.cars.map(c => `<tr><td>${c.plate}</td><td>${c.color} ${c.make}</td><td>${c.status}</td><td>${c.check_in_driver || "—"}</td><td>${c.retrieval_driver || "—"}</td><td>${c.duration_minutes != null ? fmtDuration(c.duration_minutes) : "—"}</td><td>${c.rating ? "★".repeat(c.rating) : "—"}</td><td>${c.notes || "—"}</td></tr>`).join("");
-      const driverRows = data.drivers.map(d => `<tr><td>${d.name}</td><td>${d.employee_id}</td><td>${d.checkins}</td><td>${d.parkings}</td><td>${d.retrievals}</td><td style="color:${d.incidents > 0 ? theme.colors.danger : theme.colors.textSecondary}">${d.incidents}</td></tr>`).join("");
-      const incidentRows = data.incidents.length > 0 ? data.incidents.map(i => `<tr><td>${i.plate}</td><td>${i.driver_name || "—"}</td><td>${i.description}</td><td>${new Date(i.created_at).toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</td></tr>`).join("") : `<tr><td colspan="4" style="text-align:center; color:#9CA3AF;">No incidents</td></tr>`;
-
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;font-size:12px;}.header{background:${ACCENT_COLOR};color:white;padding:24px 28px;}.header h1{font-size:22px;font-weight:900;}.header p{opacity:0.8;margin-top:3px;font-size:12px;}.section{padding:20px 28px;border-bottom:1px solid #f3f4f6;}.section h2{font-size:11px;font-weight:800;color:${ACCENT_COLOR};letter-spacing:3px;margin-bottom:12px;text-transform:uppercase;}.stats{display:flex;gap:12px;flex-wrap:wrap;}.stat{background:#f9fafb;border-radius:10px;padding:12px 16px;text-align:center;min-width:100px;}.stat-val{font-size:22px;font-weight:900;color:#111827;}.stat-lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}table{width:100%;border-collapse:collapse;font-size:11px;}th{padding:8px;text-align:left;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700;border-bottom:1px solid #e5e7eb;}td{padding:8px;border-bottom:1px solid #f3f4f6;}.footer{padding:16px 28px;text-align:center;color:#9ca3af;font-size:10px;}</style></head><body><div class="header"><h1>${e.name}</h1><p>${e.date || ""} ${e.start_time ? "· " + e.start_time + " to " + e.end_time : ""} ${e.venue ? "· " + e.venue : ""}</p><p style="margin-top:6px;font-size:10px;opacity:0.6;">Generated ${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })}</p></div><div class="section"><h2>Summary</h2><div class="stats"><div class="stat"><div class="stat-val">${s.total_cars}</div><div class="stat-lbl">Total Cars</div></div><div class="stat"><div class="stat-val">${s.pre_registered || 0}</div><div class="stat-lbl">Pre-Registered</div></div><div class="stat"><div class="stat-val">${s.walk_in || 0}</div><div class="stat-lbl">Walk-in</div></div><div class="stat"><div class="stat-val">${s.delivered}</div><div class="stat-lbl">Delivered</div></div><div class="stat"><div class="stat-val">${s.still_parked || 0}</div><div class="stat-lbl">Still Parked</div></div><div class="stat"><div class="stat-val">${s.avg_retrieval_minutes}m</div><div class="stat-lbl">Avg Retrieval</div></div><div class="stat"><div class="stat-val">${s.platform_avg_rating > 0 ? s.platform_avg_rating + "★" : "—"}</div><div class="stat-lbl">Platform Rating</div></div><div class="stat"><div class="stat-val">${s.total_incidents}</div><div class="stat-lbl">Incidents</div></div><div class="stat"><div class="stat-val">${s.peak_hour || "—"}</div><div class="stat-lbl">Peak Hour</div></div><div class="stat"><div class="stat-val">${s.total_drivers}</div><div class="stat-lbl">Drivers</div></div></div></div><div class="section"><h2>Driver Performance</h2><table><thead><tr><th>Driver</th><th>Emp ID</th><th>Check-ins</th><th>Parkings</th><th>Retrievals</th><th>Incidents</th></tr></thead><tbody>${driverRows}</tbody></table></div><div class="section"><h2>Incidents</h2><table><thead><tr><th>Plate</th><th>Driver</th><th>Description</th><th>Time</th></tr></thead><tbody>${incidentRows}</tbody></table></div><div class="section"><h2>All Vehicles (${s.total_cars})</h2><table><thead><tr><th>Plate</th><th>Vehicle</th><th>Status</th><th>Check-in By</th><th>Retrieved By</th><th>Duration</th><th>Rating</th><th>Notes</th></tr></thead><tbody>${carRows}</tbody></table></div><div class="footer">InstaPark — Smart Valet Operations · ${e.name}</div></body></html>`;
-
-      const { uri } = await Print.printToFileAsync({ html });
-      const filename = `${e.name.replace(/\s+/g, "_")}_report.pdf`;
+      const res = await api.get(`/events/${currentEventId}/report.html`, { responseType: "text" });
+      const { uri } = await Print.printToFileAsync({ html: res.data });
+      const filename = `${(event?.name || "event").replace(/\s+/g, "_")}_report.pdf`;
       const newPath = `${FileSystem.documentDirectory}${filename}`;
       await FileSystem.moveAsync({ from: uri, to: newPath });
       await Sharing.shareAsync(newPath, { UTI: ".pdf", mimeType: "application/pdf" });
@@ -386,7 +388,7 @@ export default function SupervisorEventDetail() {
                 {/* Pills Row */}
                 <View style={{ flexDirection: "row", gap: rp(8), flexWrap: "wrap" }}>
                   {event?.status && (
-                    <View style={{ backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.18)", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(6) }}>
+                    <View style={{ backgroundColor: event.status === "active" ? "rgba(16,185,129,0.25)" : event.status === "upcoming" ? "rgba(245,158,11,0.25)" : "rgba(255,255,255,0.18)", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(6) }}>
                       <Text style={{ color: "#fff", fontSize: rs(10), fontWeight: "900", letterSpacing: rs(1) }}>
                         {event.status === "closed" ? "CLOSED" : event.status.toUpperCase()}
                       </Text>
@@ -444,27 +446,6 @@ export default function SupervisorEventDetail() {
               </View>
             </View>
 
-            {/* 4 Metric Pills inside Hero */}
-            <View style={{ flexDirection: "row", gap: rp(8), marginTop: rp(16) }}>
-              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>{stats?.total_cars || 0}</Heading>
-                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>CARS</Text>
-              </View>
-              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>{stats?.still_parked || 0}</Heading>
-                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>PARKED</Text>
-              </View>
-              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>{stats?.total_delivered || 0}</Heading>
-                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>DELIVERED</Text>
-              </View>
-              <View style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center" }}>
-                <Heading level="display" style={{ fontSize: rs(20), color: "#FFFFFF" }}>
-                  {slots ? slots.filter(s => s.is_occupied).length : 0}/{slots ? slots.length : 0}
-                </Heading>
-                <Text style={{ fontSize: rs(9), color: "rgba(255,255,255,0.7)", fontWeight: "800", marginTop: rp(2), letterSpacing: 1 }}>SLOTS</Text>
-              </View>
-            </View>
           </View>
         </SafeAreaView>
 
@@ -526,8 +507,22 @@ export default function SupervisorEventDetail() {
 
       </View>
 
-      {/* Sub-Tabs Row */}
-      <View style={{ flexDirection: "row", marginTop: rp(16), marginHorizontal: rp(16), gap: rp(6) }}>
+      {event?.status === "upcoming" ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: rp(20), marginTop: rp(40) }}>
+          <Ionicons name="time-outline" size={rp(64)} color={theme.colors.textMuted} style={{ marginBottom: rp(16) }} />
+          <Text style={{ fontSize: rs(18), fontWeight: "800", color: theme.colors.textPrimary, marginBottom: rp(8) }}>Event Not Yet Active</Text>
+          <Text style={{ fontSize: rs(14), color: theme.colors.textSecondary, textAlign: "center", marginBottom: rp(32), lineHeight: rs(20) }}>This event is scheduled for the future. It will activate automatically 30 minutes before the start time.</Text>
+          <TouchableOpacity 
+            onPress={activateEventManually}
+            style={{ backgroundColor: ACCENT_COLOR, paddingVertical: rp(16), paddingHorizontal: rp(32), borderRadius: rp(99), flexDirection: "row", alignItems: "center", ...cardShadow }}>
+            <Ionicons name="flash-outline" size={20} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "900", fontSize: rs(14), marginLeft: rp(8), letterSpacing: rs(0.5) }}>ACTIVATE NOW</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* Sub-Tabs Row */}
+          <View style={{ flexDirection: "row", marginTop: rp(16), marginHorizontal: rp(16), gap: rp(6) }}>
         {(() => {
           const tabLabel = (t) => {
             if (t === "employees") return "Team";
@@ -653,14 +648,14 @@ export default function SupervisorEventDetail() {
                       {car.zone && car.slot && (
                         <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
                           <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
-                            {car.zone}-{car.slot}{(car.key_tag_number || car.key_tag) ? ` · #${car.key_tag_number || car.key_tag}` : ""}
+                            {car.zone}-{car.slot}{(car.key_tag_number || car.key_tag) ? ` · #${car.key_tag_number || car.key_tag}` : ""}{car.card_code ? ` · Code ${car.card_code}` : ""}
                           </Text>
                         </View>
                       )}
                       {!car.zone && !car.slot && (car.key_tag_number || car.key_tag) && (
                         <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
                           <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
-                            Key Tag #{car.key_tag_number || car.key_tag}
+                            Key Tag #{car.key_tag_number || car.key_tag}{car.card_code ? ` • Code ${car.card_code}` : ""}
                           </Text>
                         </View>
                       )}
@@ -720,7 +715,7 @@ export default function SupervisorEventDetail() {
                       </View>
                     </View>
                     <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginTop: rp(4) }}>
-                      {car.guest_name || "—"} · Driver: {car.driverName}{(car.key_tag_number || car.key_tag) ? ` · #${car.key_tag_number || car.key_tag}` : ""}
+                      {car.guest_name || "—"} · Driver: {car.driverName}{(car.key_tag_number || car.key_tag) ? ` · #${car.key_tag_number || car.key_tag}` : ""}{car.card_code ? ` · Code ${car.card_code}` : ""}
                     </Text>
                     {car.minutesInStatus != null && (
                       <Text style={{ color: theme.colors.textMuted, fontSize: rs(11), marginTop: rp(4) }}>
@@ -835,36 +830,6 @@ export default function SupervisorEventDetail() {
           </View>
         ) : tab === "insights" ? (
           <View style={{ flex: 1, paddingBottom: rp(100)  + tabBarHeight}}>
-            {(() => {
-              const total = slots.length;
-              const occupied = slots.filter(s => s.is_occupied).length;
-              const free = total - occupied;
-              const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
-              const barColor = pct >= 90 ? theme.colors.danger : pct >= 70 ? "#F59E0B" : theme.colors.success;
-              return (
-                <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(20), marginBottom: rp(16), ...cardShadow }}>
-                  <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(3), marginBottom: rp(12) }}>CAPACITY OVERVIEW</Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: rp(12) }}>
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ fontSize: rs(28), fontWeight: "900", color: "#111827" }}>{occupied}</Text>
-                      <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, fontWeight: "700" }}>OCCUPIED</Text>
-                    </View>
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ fontSize: rs(28), fontWeight: "900", color: theme.colors.success }}>{free}</Text>
-                      <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, fontWeight: "700" }}>FREE</Text>
-                    </View>
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ fontSize: rs(28), fontWeight: "900", color: ACCENT_COLOR }}>{total}</Text>
-                      <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, fontWeight: "700" }}>TOTAL</Text>
-                    </View>
-                  </View>
-                  <View style={{ height: rp(10), backgroundColor: "#F3F4F6", borderRadius: rp(99), overflow: "hidden" }}>
-                    <View style={{ height: rp(10), width: `${pct}%`, backgroundColor: barColor, borderRadius: rp(99) }} />
-                  </View>
-                  <Text style={{ color: theme.colors.textSecondary, fontSize: rs(12), marginTop: rp(8), textAlign: "right" }}>{pct}% full</Text>
-                </View>
-              );
-            })()}
 
             {(() => {
               const zones = [...new Set(slots.map(s => s.zone_name))];
@@ -932,6 +897,9 @@ export default function SupervisorEventDetail() {
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: rp(16) }}>
               {[
 
+                { label: "CARS", value: stats?.total_cars ?? 0, color: theme.colors.primary, icon: "car" },
+                { label: "PARKED", value: stats?.still_parked ?? 0, color: "#7C3AED", icon: "location" },
+                { label: "SLOTS", value: `${slots ? slots.filter(s => s.is_occupied).length : 0}/${slots ? slots.length : 0}`, color: ACCENT_COLOR, icon: "grid" },
                 { label: "DELIVERED", value: stats?.total_delivered ?? 0, color: theme.colors.textSecondary, icon: "checkmark-circle" },
                 { label: "INCIDENTS", value: stats?.total_incidents ?? 0, color: (stats?.total_incidents > 0 ? theme.colors.danger : theme.colors.success), icon: "warning" },
                 { label: "PEAK HOUR", value: stats?.peak_hour ?? "—", color: "#4F46E5", icon: "trending-up" },
@@ -961,6 +929,120 @@ export default function SupervisorEventDetail() {
                 </View>
               ))}
             </View>
+
+            {event?.event_type !== "hotel_daily" && (
+              <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
+                <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(16) }}>Event Host</Text>
+
+                <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", marginBottom: rp(4), letterSpacing: rs(1) }}>HOST NAME</Text>
+                <TextInput
+                  value={event?.host_name || ""}
+                  onChangeText={txt => setEvent(prev => ({ ...prev, host_name: txt }))}
+                  placeholder="e.g. John Doe"
+                  placeholderTextColor="#9CA3AF"
+                  editable={!isClosed}
+                  style={{ backgroundColor: isClosed ? "#F3F4F6" : "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: isClosed ? "#9CA3AF" : "#111827", marginBottom: rp(16) }}
+                />
+
+                <Text style={{ fontSize: rs(10), fontWeight: "800", color: "#9CA3AF", marginBottom: rp(4), letterSpacing: rs(1) }}>HOST EMAIL</Text>
+                <View style={{ flexDirection: "row", gap: rp(8) }}>
+                  <TextInput
+                    value={event?.host_email || ""}
+                    onChangeText={txt => setEvent(prev => ({ ...prev, host_email: txt }))}
+                    placeholder="john@example.com"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!isClosed}
+                    style={{ flex: 1, backgroundColor: isClosed ? "#F3F4F6" : "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: isClosed ? "#9CA3AF" : "#111827" }}
+                  />
+                  {!isClosed && (
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (!event?.host_email) {
+                          confirmDialog.info("Required", "Please enter host email");
+                          return;
+                        }
+                        try {
+                          await api.patch(`/events/${currentEventId}/host`, {
+                            host_name: event.host_name,
+                            host_email: event.host_email
+                          });
+                          confirmDialog.info("Success", "Host updated and portal email sent");
+                          fetchStats(); // supervisor file calls fetchStats/cars independently
+                        } catch (err) {
+                          confirmDialog.info("Couldn't update host", "Something went wrong updating the host. Check your connection and try again.");
+                        }
+                      }}
+                      style={{ backgroundColor: "#1A3C6E", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>
+                        {event?.host_email_sent ? "Resend Portal" : "Send Portal"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {isClosed && (
+                  <Text style={{ color: "#EF4444", fontSize: rs(11), marginTop: rp(8), fontWeight: "600" }}>
+                    Cannot send portal email — event is closed
+                  </Text>
+                )}
+
+                {event?.host_email_sent && (
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: rp(12), gap: rp(6) }}>
+                    <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                    <Text style={{ fontSize: rs(12), fontWeight: "800", color: "#059669" }}>Portal email sent</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View style={{ backgroundColor: "#fff", borderRadius: rp(24), padding: rp(24), marginBottom: rp(16), ...cardShadow }}>
+              <Text style={{ fontSize: rs(16), fontWeight: "900", color: "#0F2044", marginBottom: rp(4) }}>Send Report by Email</Text>
+              <Text style={{ fontSize: rs(12), color: "#6B7280", marginBottom: rp(16) }}>
+                Manually send the full event report (PDF/CSV) to any email address right now.
+              </Text>
+              <View style={{ flexDirection: "row", gap: rp(8) }}>
+                <TextInput
+                  value={reportEmail}
+                  onChangeText={setReportEmail}
+                  placeholder="recipient@example.com"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={{ flex: 1, backgroundColor: "#F9FAFB", borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), padding: rp(12), color: "#111827" }}
+                />
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!reportEmail) {
+                      confirmDialog.info("Required", "Please enter an email address");
+                      return;
+                    }
+                    setSendingReport(true);
+                    try {
+                      await api.post(`/events/${currentEventId}/send-report`, {
+                        email: reportEmail
+                      });
+                      setReportEmail("");
+                      confirmDialog.info("Success", "Report queued for sending!");
+                    } catch (err) {
+                      confirmDialog.info("Error", err?.response?.data?.detail || "Couldn't send report.");
+                    } finally {
+                      setSendingReport(false);
+                    }
+                  }}
+                  disabled={sendingReport}
+                  style={{ backgroundColor: sendingReport ? "#9CA3AF" : "#059669", paddingHorizontal: rp(16), justifyContent: "center", borderRadius: rp(12) }}
+                >
+                  {sendingReport ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: rs(12) }}>Send</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
           </View>
         ) : tab === "incidents" ? (
           <View style={{ flex: 1, paddingBottom: rp(100)  + tabBarHeight}}>
@@ -1136,6 +1218,8 @@ export default function SupervisorEventDetail() {
 
         ) : null}
       </ScrollView>
+      </>
+      )}
 
 
       <Modal visible={showCarModal} animationType="slide" transparent>
@@ -1156,14 +1240,14 @@ export default function SupervisorEventDetail() {
                           {selectedCar.zone && selectedCar.slot && (
                             <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
                               <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
-                                {selectedCar.zone}-{selectedCar.slot}{(selectedCar.key_tag_number || selectedCar.key_tag) ? ` · #${selectedCar.key_tag_number || selectedCar.key_tag}` : ""}
+                                {selectedCar.zone}-{selectedCar.slot}{(selectedCar.key_tag_number || selectedCar.key_tag) ? ` · #${selectedCar.key_tag_number || selectedCar.key_tag}` : ""}{selectedCar.card_code ? ` · Code ${selectedCar.card_code}` : ""}
                               </Text>
                             </View>
                           )}
                           {!selectedCar.zone && !selectedCar.slot && (selectedCar.key_tag_number || selectedCar.key_tag) && (
                             <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: rp(8), paddingVertical: rp(4), borderRadius: rp(8) }}>
                               <Text style={{ color: "#4B5563", fontSize: rs(10), fontWeight: "800" }}>
-                                Key Tag #{selectedCar.key_tag_number || selectedCar.key_tag}
+                                Key Tag #{selectedCar.key_tag_number || selectedCar.key_tag}{selectedCar.card_code ? ` • Code ${selectedCar.card_code}` : ""}
                               </Text>
                             </View>
                           )}

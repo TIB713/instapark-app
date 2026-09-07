@@ -45,7 +45,6 @@ export default function DriverStats() {
   const [driver, setDriver] = useState(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
   const [panNumber, setPanNumber] = useState("");
   const [bankAccount, setBankAccount] = useState("");
@@ -125,7 +124,6 @@ export default function DriverStats() {
     if (!name.trim()) errs.name = "Name is required";
     if (!phone.trim()) errs.phone = "Phone is required";
     else if (!/^\d{10}$/.test(phone.trim().replace(/\D/g, ""))) errs.phone = "Please enter a valid 10-digit phone number";
-    if (pin && !/^\d{4}$/.test(pin)) errs.pin = "PIN must be exactly 4 digits";
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Please enter a valid email address";
     if (panNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber.trim().toUpperCase())) errs.panNumber = "Expected format: ABCDE1234F";
     if (bankAccount.trim() && !/^\d{9,18}$/.test(bankAccount.trim())) errs.bankAccount = "Must be 9-18 digits";
@@ -143,14 +141,13 @@ export default function DriverStats() {
     const errs = validateDriver();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      scrollToFirstError(["name", "phone", "pin", "email", "panNumber", "bankAccount", "bankIfsc", "licenseNumber", "licensePhoto", "aadharNumber", "aadharPhoto"], errs, fieldRefs, scrollViewRef);
+      scrollToFirstError(["name", "phone", "email", "panNumber", "bankAccount", "bankIfsc", "licenseNumber", "licensePhoto", "aadharNumber", "aadharPhoto"], errs, fieldRefs, scrollViewRef);
       confirmDialog.info("Validation error", "Please check the highlighted fields");
       return;
     }
     setErrors({});
     try {
       const body = { name, phone };
-      if (pin && pin.length === 4) body.pin = pin;
       if (email.trim()) body.email = email.trim();
       if (panNumber.trim()) body.pan_number = panNumber.trim();
       if (bankAccount.trim()) body.bank_account_number = bankAccount.trim();
@@ -161,7 +158,6 @@ export default function DriverStats() {
       if (aadharPhoto) body.aadhar_photo = aadharPhoto;
       await api.patch(`/drivers/${driverId}`, body);
       confirmDialog.info("Updated", "Driver updated successfully");
-      setPin("");
     } catch (e) {
       confirmDialog.info("Operation failed", e.response?.data?.detail || "Failed");
     }
@@ -509,13 +505,7 @@ export default function DriverStats() {
               <Ionicons name="call-outline" size={16} color="#7C3AED" />
               <TextInput value={phone} onChangeText={v => setPhone(v.replace(/\D/g, "").slice(0, 10))} keyboardType="phone-pad" maxLength={10} style={miniInputText} />
             </View>
-            {errors.phone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.phone}</Text>}
-            <Text style={miniLabel}>NEW PIN (LEAVE BLANK TO KEEP)</Text>
-            <View ref={el => { if (fieldRefs.current) fieldRefs.current.pin = el; }}  style={[miniInput, errors.pin && { borderColor: "#EF4444" }]}>
-              <Ionicons name="keypad-outline" size={16} color="#7C3AED" />
-              <TextInput value={pin} onChangeText={setPin} keyboardType="numeric" maxLength={4} secureTextEntry style={miniInputText} />
-            </View>
-            {errors.pin && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.pin}</Text>}
+            {errors.phone && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(2) }}>{errors.phone}</Text>}</View>
             <Text style={miniLabel}>EMAIL</Text>
             <View ref={el => { if (fieldRefs.current) fieldRefs.current.email = el; }}  style={[miniInput, errors.email && { borderColor: "#EF4444" }]}>
               <Ionicons name="mail-outline" size={16} color="#7C3AED" />

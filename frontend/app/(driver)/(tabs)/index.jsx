@@ -5,7 +5,6 @@ import { theme } from '../../../utils/theme';
 import { Audio } from "expo-av";
 import { confirmDialog } from "../../../lib/confirmDialog";
 import { Vibration } from "react-native";
-import * as Location from "expo-location";
 import { Linking } from "react-native";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { rs, rp } from '../../../utils/responsive';
@@ -248,7 +247,7 @@ export default function Tasks() {
           <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceAlt, padding: rp(8), borderRadius: rp(8), marginBottom: rp(12) }}>
             <Ionicons name="location" size={14} color={theme.colors.textPrimary} />
             <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: rs(12), marginLeft: rp(6) }}>
-              Zone {car.zone} • Slot {car.slot}{(car.key_tag_number || car.key_tag) ? ` • Key Tag #${car.key_tag_number || car.key_tag}` : ""}
+              Zone {car.zone} • Slot {car.slot}{(car.key_tag_number || car.key_tag) ? ` • Key Tag #${car.key_tag_number || car.key_tag}` : ""}{car.card_code ? ` • Code ${car.card_code}` : ""}
             </Text>
           </View>
         )}
@@ -256,7 +255,7 @@ export default function Tasks() {
           <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceAlt, padding: rp(8), borderRadius: rp(8), marginBottom: rp(12) }}>
             <Ionicons name="pricetag-outline" size={14} color={theme.colors.textPrimary} />
             <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: rs(12), marginLeft: rp(6) }}>
-              Key Tag #{car.key_tag_number || car.key_tag}
+              Key Tag #{car.key_tag_number || car.key_tag}{car.card_code ? ` • Code ${car.card_code}` : ""}
             </Text>
           </View>
         )}
@@ -298,16 +297,6 @@ export default function Tasks() {
               onPress={async () => {
                 setAcceptingCarId(car.id);
                 try {
-                  const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
-                  if (!running) {
-                    const started = await startLocationTracking();
-                    if (!started) {
-                      confirmDialog.info(
-                        "Location permission needed",
-                        "InstaPark couldn't start sharing your location. Your supervisor won't be able to see you on the map. Please enable location permission for this app in your device settings."
-                      );
-                    }
-                  }
                   await updateJourney(car.id, "checkin");
                   await markJourneyAccepted(car.id);
                   setAcceptedCarIds(prev => new Set(prev).add(car.id));
@@ -619,7 +608,7 @@ export default function Tasks() {
           {(parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag) && (
             <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: rp(12), paddingVertical: rp(8), borderRadius: rp(8) }}>
               <Ionicons name="pricetag" size={16} color="#4B5563" style={{ marginRight: rp(8) }} />
-              <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Key Tag #{parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag}</Text>
+              <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Key Tag #{parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag}{parkedCarInfo?.card_code ? ` • Code ${parkedCarInfo.card_code}` : ""}</Text>
             </View>
           )}
         </View>
@@ -647,7 +636,7 @@ export default function Tasks() {
           {(incomingRequest?.key_tag_number || incomingRequest?.key_tag) && (
             <View style={{ backgroundColor: theme.colors.surfaceAlt, paddingHorizontal: rp(16), paddingVertical: rp(8), borderRadius: rp(12), marginBottom: rp(16) }}>
               <Text style={{ fontSize: rs(18), fontWeight: "900", color: theme.colors.primary }}>
-                Key Tag #{incomingRequest?.key_tag_number || incomingRequest?.key_tag}
+                Key Tag #{incomingRequest?.key_tag_number || incomingRequest?.key_tag}{incomingRequest?.card_code ? ` • Code ${incomingRequest.card_code}` : ""}
               </Text>
             </View>
           )}
