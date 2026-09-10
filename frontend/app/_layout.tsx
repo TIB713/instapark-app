@@ -65,7 +65,7 @@ export default function RootLayout() {
           router.push('/(supervisor)/(tabs)/event-detail');
           break;
         case 'event_detail':
-          router.push('/(admin)/event-detail');
+          router.push('/(admin)/(tabs)/event-detail');
           break;
         default:
           break;
@@ -127,19 +127,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)/login" />
-        <Stack.Screen name="(admin)/dashboard" />
-        <Stack.Screen name="(admin)/create-event" />
-        <Stack.Screen name="(admin)/edit-event" />
-        <Stack.Screen name="(admin)/event-detail" />
-        <Stack.Screen name="(admin)/all-events" />
-        <Stack.Screen name="(admin)/driver-stats" />
-        <Stack.Screen name="(admin)/driver-event-cars" />
-        <Stack.Screen name="(admin)/supervisor-detail" />
-        <Stack.Screen name="(admin)/qr-display" />
-        <Stack.Screen name="(admin)/hotels" />
-        <Stack.Screen name="(admin)/hotel-detail" />
-        <Stack.Screen name="(admin)/manage-employees" />
-        <Stack.Screen name="(admin)/pre-register-qr" />
+        <Stack.Screen name="(admin)" />
         <Stack.Screen name="(supervisor)" />
         <Stack.Screen name="(driver)/(tabs)" />
         <Stack.Screen name="(driver)/failed-syncs" />

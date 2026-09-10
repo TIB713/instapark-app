@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   plateContainer: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.surfaceAlt,
     paddingVertical: rp(theme.spacing.sm),
     paddingHorizontal: rp(theme.spacing.lg),
     borderRadius: theme.radius.sm,

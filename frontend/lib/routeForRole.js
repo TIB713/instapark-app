@@ -2,7 +2,7 @@ import { useAppStore } from "./store";
 
 export function getRouteForRole(role) {
   if (role === "admin" || role === "owner" || role === "superadmin") {
-    return "/(admin)/dashboard";
+    return "/(admin)/(tabs)";
   } else if (role === "supervisor") {
     return "/(supervisor)/(tabs)";
   } else if (role === "driver") {

@@ -36,6 +36,11 @@ export const theme = {
     info: '#0284C7',
     infoLight: '#E0F2FE',
 
+    // Aliases for backwards compatibility (will be migrated away from)
+    error: '#D64545',
+    background: '#FAF7F2', // Alias for surfaceAlt
+    secondary: '#F4E6FA',  // Alias for primaryLight
+
     // ---- Neutrals (text, borders, surfaces)
     textPrimary: '#1A1025',
     textSecondary: '#6F6A78',
@@ -56,6 +61,9 @@ export const theme = {
     subtitle: 18,  // section headers within a screen
     title: 20,     // screen titles in header
     display: 24,   // stat numbers, hero numbers
+    
+    // Alias for backwards compatibility
+    h3: 18,
   },
 
   fontWeight: {

@@ -1,6 +1,6 @@
 import { confirmDialog } from "../../../lib/confirmDialog";
 import { useEffect, useState, useRef } from "react";
-import { rs, rp } from '../../../utils/responsive';
+import { rs, rp } from "../../../utils/responsive";
 import {
   View,
   Text,
@@ -14,25 +14,47 @@ import {
 
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format, parse } from "date-fns";
 import api from "../../../lib/api";
 import { useAppStore } from "../../../lib/store";
 import VenuePicker from "../../../components/VenuePicker";
+
 import { scrollToFirstError } from "../../../lib/scrollToFirstError";
 import { theme } from "../../../utils/theme";
-import { Screen, TopBar, Btn } from "../../../components/valet/ui";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Field, FieldLabel, fieldTextInputStyle } from "../../../components/valet/ui";
+import { Hero } from "../../../components/admin/Hero";
+
+const inputBoxStyle = {
+  backgroundColor: theme.colors.surface,
+  borderRadius: rp(theme.radius.md),
+  borderWidth: rp(1),
+  borderColor: theme.colors.border,
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: rp(14),
+  paddingVertical: rp(14),
+  marginBottom: rp(theme.spacing.md),
+};
+
+const errorTextStyle = {
+  color: theme.colors.danger,
+  fontSize: rs(theme.fontSize.caption),
+  fontWeight: theme.fontWeight.bold,
+  marginTop: rp(-8),
+  marginBottom: rp(12)
+};
 
 export default function EditEvent() {
   const router = useRouter();
   const { user } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { eventId } = useLocalSearchParams();
   const scrollViewRef = useRef(null);
   const fieldRefs = useRef({});
-  const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
 
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(null);
@@ -173,113 +195,110 @@ export default function EditEvent() {
   }
 
   return (
-    <Screen scroll={false}>
-      <TopBar title={isHotelDailyEdit ? "Edit Today's Parking" : "Edit Event"} onBack={() => router.back()} />
+    <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt }} testID="edit-event-screen">
+      <Hero
+        eyebrow="Event settings"
+        title={isHotelDailyEdit ? "Edit Today's Parking" : `Edit ${name || 'Event'}`}
+        onBack={() => router.back()}
+      />
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: rp(theme.spacing.xl), paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
+        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(theme.spacing.xl), paddingTop: rp(theme.spacing.lg) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
           {!isHotelDailyEdit && (
             <>
-              <Text style={modalLabel}>EVENT NAME</Text>
-              <View ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }} style={[inputRowStyle, formErrors.name && modalInputError]}>
-                <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
-                <TextInput value={name} onChangeText={(txt) => {
-                  setName(txt);
-                  if (formErrors.name) setFormErrors(prev => ({ ...prev, name: null }));
-                }} style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }} />
-              </View>
-              {formErrors.name && <Text style={modalErrorText}>* {formErrors.name}</Text>}
+              <FieldLabel>EVENT NAME</FieldLabel>
+              <Field icon="calendar-outline" error={formErrors.name}>
+                <TextInput
+                  ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}
+                  value={name}
+                  onChangeText={(txt) => {
+                    setName(txt);
+                    if (formErrors.name) setFormErrors(prev => ({ ...prev, name: null }));
+                  }}
+                  style={fieldTextInputStyle}
+                />
+              </Field>
+              {formErrors.name && <Text style={errorTextStyle}>* {formErrors.name}</Text>}
 
-              <View style={{ flexDirection: "row", gap: rp(12) }}>
+              <View style={{ flexDirection: "row", gap: rp(theme.spacing.md) }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={modalLabel}>START DATE</Text>
+                  <FieldLabel>START DATE</FieldLabel>
                   <TouchableOpacity onPress={() => setShowDP(true)} style={inputBoxStyle}>
-                    <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
-                    <Text style={{ marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(14), fontFamily: theme.fontFamily.regular }}>{format(date, "MMM d, yyyy")}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+                    <Ionicons name="calendar-outline" size={rs(18)} color={theme.colors.primary} />
+                    <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{format(date, "MMM d, yyyy")}</Text>
+                    <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
                   </TouchableOpacity>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={modalLabel}>END DATE</Text>
+                  <FieldLabel>END DATE</FieldLabel>
                   <TouchableOpacity onPress={() => setShowEDP(true)} style={inputBoxStyle}>
-                    <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
-                    <Text style={{ marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(14), fontFamily: theme.fontFamily.regular }}>{format(endDate, "MMM d, yyyy")}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+                    <Ionicons name="calendar-outline" size={rs(18)} color={theme.colors.primary} />
+                    <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{format(endDate, "MMM d, yyyy")}</Text>
+                    <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
                   </TouchableOpacity>
                 </View>
               </View>
             </>
           )}
 
-          <Text style={modalLabel}>VENUE</Text>
-          <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }} style={[inputRowStyle, formErrors.venue && modalInputError]}>
-            <Ionicons name="location-outline" size={18} color={theme.colors.primary} />
-            <VenuePicker
-              value={venue}
-              onSelect={(val) => {
-                setVenue(val.venue || "");
-                setVenuePlaceId(val.venue_place_id);
-                setVenueAddress(val.venue_address);
-                setVenueLat(val.venue_lat);
-                setVenueLng(val.venue_lng);
-                if (formErrors.venue) setFormErrors(prev => ({ ...prev, venue: null }));
-              }}
-              placeholder="Search venue e.g. ITC Narmada"
-            />
+          <FieldLabel>VENUE</FieldLabel>
+          <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }}>
+            <Field icon="location-outline" error={formErrors.venue}>
+              <VenuePicker
+                value={venue}
+                onSelect={(val) => {
+                  setVenue(val.venue || "");
+                  setVenuePlaceId(val.venue_place_id);
+                  setVenueAddress(val.venue_address);
+                  setVenueLat(val.venue_lat);
+                  setVenueLng(val.venue_lng);
+                  if (formErrors.venue) setFormErrors(prev => ({ ...prev, venue: null }));
+                }}
+                placeholder="Search venue e.g. ITC Narmada"
+              />
+            </Field>
+            {formErrors.venue && <Text style={errorTextStyle}>* {formErrors.venue}</Text>}
           </View>
-          {formErrors.venue && <Text style={modalErrorText}>* {formErrors.venue}</Text>}
 
-          <View style={{ flexDirection: "row", gap: rp(12) }}>
+          <View style={{ flexDirection: "row", gap: rp(theme.spacing.md) }}>
             <View style={{ flex: 1 }}>
-              <Text style={modalLabel}>START TIME</Text>
+              <FieldLabel>START TIME</FieldLabel>
               <TouchableOpacity onPress={() => setShowSTP(true)} style={inputBoxStyle}>
-                <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
-                <Text style={{ marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontFamily: theme.fontFamily.regular }}>{startTime}</Text>
-                <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+                <Ionicons name="time-outline" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{startTime}</Text>
+                <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={modalLabel}>END TIME</Text>
+              <FieldLabel>END TIME</FieldLabel>
               <TouchableOpacity onPress={() => setShowETP(true)} style={inputBoxStyle}>
-                <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
-                <Text style={{ marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontFamily: theme.fontFamily.regular }}>{endTime}</Text>
-                <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+                <Ionicons name="time-outline" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{endTime}</Text>
+                <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
 
           {!isHotelDailyEdit && (
             <>
-              <Text style={modalLabel}>MAX CARS</Text>
-              <View style={inputRowStyle}>
-                <Ionicons name="car-outline" size={18} color={theme.colors.primary} />
-                <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }} />
-              </View>
+              <FieldLabel>MAX CARS</FieldLabel>
+              <Field icon="car-outline">
+                <TextInput value={maxCars} onChangeText={setMaxCars} keyboardType="numeric" style={fieldTextInputStyle} />
+              </Field>
             </>
           )}
-          <Text style={modalLabel}>GATE WAIT TIMER (MINUTES)</Text>
-          <View style={inputRowStyle}>
-            <Ionicons name="timer-outline" size={18} color={theme.colors.primary} />
-            <TextInput value={gateTimerMinutes} onChangeText={setGateTimerMinutes} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }} />
-          </View>
-
-          <Text style={modalLabel}>AUTO-CLOSE GRACE PERIOD (MINUTES)</Text>
-          <View style={inputRowStyle}>
-            <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
-            <TextInput value={autoCloseGraceMinutes} onChangeText={setAutoCloseGraceMinutes} keyboardType="numeric" style={{ flex: 1, marginLeft: rp(10), paddingVertical: rp(14), fontSize: rs(15), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }} />
-          </View>
 
           {!isHotelDailyEdit && (
             <>
-              <Text style={modalLabel}>PARKING ZONES</Text>
+              <FieldLabel>PARKING ZONES</FieldLabel>
               {zones.length === 0 && (
-                <Text style={{ color: theme.colors.textMuted, fontSize: rs(14), textAlign: "center", marginBottom: rp(8), fontFamily: theme.fontFamily.regular }}>
+                <Text style={{ fontFamily: theme.fontFamily.regular, color: theme.colors.textMuted, fontSize: rs(theme.fontSize.body), textAlign: "center", marginBottom: rp(8) }}>
                   No parking zones added yet. Tap Add Zone to create one.
                 </Text>
               )}
               {zones.map((z, i) => (
-                <View key={i} style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: theme.colors.border }}>
-                  <Ionicons name="location" size={18} color={theme.colors.primary} />
+                <View key={i} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(theme.radius.md), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: theme.colors.border }}>
+                  <Ionicons name="location" size={rs(18)} color={theme.colors.primary} />
                   <TextInput
                     value={z.name}
                     onChangeText={(v) => {
@@ -289,7 +308,7 @@ export default function EditEvent() {
                     }}
                     placeholder="Zone"
                     placeholderTextColor={theme.colors.textMuted}
-                    style={{ flex: 1, borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }}
+                    style={{ flex: 1, borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(theme.radius.sm), paddingHorizontal: rp(12), paddingVertical: rp(10), color: theme.colors.textPrimary, fontWeight: theme.fontWeight.bold }}
                   />
                   <TextInput
                     value={String(z.slots)}
@@ -301,42 +320,41 @@ export default function EditEvent() {
                     keyboardType="numeric"
                     placeholder="Slots"
                     placeholderTextColor={theme.colors.textMuted}
-                    style={{ width: rp(70), borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(12), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center", color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }}
+                    style={{ width: rp(70), borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(theme.radius.sm), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center", color: theme.colors.textPrimary, fontWeight: theme.fontWeight.bold }}
                   />
                   <TouchableOpacity
                     onPress={() => setZones(zones.filter((_, idx) => idx !== i))}
                     style={{ padding: rp(4) }}
                   >
-                    <Ionicons name="remove-circle-outline" size={20} color={theme.colors.danger} />
+                    <Ionicons name="remove-circle-outline" size={rs(24)} color={theme.colors.danger} />
                   </TouchableOpacity>
                 </View>
               ))}
               <Text
                 style={{
                   color: totalSlots > maxCarsInt ? theme.colors.danger : theme.colors.success,
-                  fontWeight: "700",
-                  fontSize: rs(13),
+                  fontWeight: theme.fontWeight.bold,
+                  fontSize: rs(theme.fontSize.caption),
                   textAlign: "right",
                   marginBottom: rp(8),
-                  fontFamily: theme.fontFamily.bold,
                 }}
               >
                 Total slots: {totalSlots} / {maxCarsInt}
               </Text>
               <TouchableOpacity
                 onPress={() => setZones([...zones, { name: `Zone ${String.fromCharCode(65 + zones.length)}`, slots: 50 }])}
-                style={{ flexDirection: "row", alignItems: "center", gap: rp(6), paddingVertical: rp(10) }}
+                style={{ backgroundColor: theme.colors.primaryLight, borderRadius: rp(theme.radius.md), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(theme.spacing.md), flexDirection: "row", justifyContent: "center" }}
               >
-                <Ionicons name="add-circle-outline" size={20} color={theme.colors.primary} />
-                <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: rs(13), fontFamily: theme.fontFamily.bold }}>Add Zone</Text>
+                <Ionicons name="add" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.primary, fontWeight: theme.fontWeight.bold, marginLeft: rp(6), letterSpacing: rs(1) }}>ADD ZONE</Text>
               </TouchableOpacity>
             </>
           )}
 
-          <Text style={modalLabel}>ENTRY GATES</Text>
+          <FieldLabel>ENTRY GATES</FieldLabel>
           {gates.map((g, i) => (
-            <View key={i} style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: theme.colors.border }}>
-              <Ionicons name="enter-outline" size={18} color={theme.colors.primary} />
+            <View key={i} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(theme.radius.md), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: theme.colors.border }}>
+              <Ionicons name="enter-outline" size={rs(18)} color={theme.colors.primary} />
               <TextInput
                 value={g}
                 onChangeText={(v) => {
@@ -346,25 +364,75 @@ export default function EditEvent() {
                 }}
                 placeholder="Gate name"
                 placeholderTextColor={theme.colors.textMuted}
-                style={{ flex: 1, borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10), color: theme.colors.textPrimary, fontFamily: theme.fontFamily.regular }}
+                style={{ flex: 1, borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(theme.radius.sm), paddingHorizontal: rp(12), paddingVertical: rp(10), color: theme.colors.textPrimary, fontWeight: theme.fontWeight.bold }}
               />
               <TouchableOpacity onPress={() => setGates(gates.filter((_, k) => k !== i))}>
-                <Ionicons name="close-circle" size={24} color={theme.colors.danger} />
+                <Ionicons name="close-circle" size={rs(24)} color={theme.colors.danger} />
               </TouchableOpacity>
             </View>
           ))}
           <TouchableOpacity
             onPress={() => setGates([...gates, ""])}
-            style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(24), flexDirection: "row", justifyContent: "center", borderWidth: rp(1), borderColor: theme.colors.border }}
+            style={{ backgroundColor: theme.colors.primaryLight, borderRadius: rp(theme.radius.md), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(theme.spacing.lg), flexDirection: "row", justifyContent: "center" }}
           >
-            <Ionicons name="add" size={18} color={theme.colors.primary} />
-            <Text style={{ color: theme.colors.primary, fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1), fontFamily: theme.fontFamily.bold }}>ADD GATE</Text>
+            <Ionicons name="add" size={rs(18)} color={theme.colors.primary} />
+            <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.primary, fontWeight: theme.fontWeight.bold, marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
           </TouchableOpacity>
 
-          <Btn onPress={save} disabled={saving} style={{ marginTop: rp(theme.spacing.sm) }}>
-            {saving ? <ActivityIndicator color="#fff" /> : "SAVE CHANGES"}
-          </Btn>
-          <View style={{ height: rp(40) }} />
+          <View style={{ flexDirection: "row", gap: rp(theme.spacing.md) }}>
+            <View style={{ flex: 1 }}>
+              <FieldLabel>WAIT TIMER (MINS)</FieldLabel>
+              <Field icon="timer-outline">
+                <TextInput
+                  value={gateTimerMinutes}
+                  onChangeText={setGateTimerMinutes}
+                  keyboardType="numeric"
+                  style={fieldTextInputStyle}
+                />
+              </Field>
+            </View>
+            <View style={{ flex: 1 }}>
+              <FieldLabel>GRACE (MINS)</FieldLabel>
+              <Field icon="time-outline">
+                <TextInput
+                  value={autoCloseGraceMinutes}
+                  onChangeText={setAutoCloseGraceMinutes}
+                  keyboardType="numeric"
+                  style={fieldTextInputStyle}
+                />
+              </Field>
+            </View>
+          </View>
+          <TouchableOpacity
+            onPress={save}
+            disabled={saving}
+            style={{
+              backgroundColor: theme.colors.accent,
+              borderRadius: rp(theme.radius.md),
+              paddingVertical: rp(16),
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: theme.colors.accent,
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 4,
+              marginTop: rp(theme.spacing.xl)
+            }}
+          >
+            {saving ? (
+              <ActivityIndicator color={theme.colors.accentForeground} />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={rs(20)} color={theme.colors.accentForeground} style={{ marginRight: rp(8) }} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.accentForeground, fontWeight: theme.fontWeight.bold, fontSize: rs(theme.fontSize.bodyLarge) }}>
+                  SAVE CHANGES
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -372,24 +440,6 @@ export default function EditEvent() {
       {showEDP && <DateTimePicker value={endDate} mode="date" onChange={(_, d) => { setShowEDP(false); if (d) setEndDate(d); }} />}
       {showSTP && <DateTimePicker value={new Date(`2024-01-01T${startTime}:00`)} mode="time" is24Hour onChange={(_, d) => { setShowSTP(false); if (d) setStartTime(fmtTime(d)); }} />}
       {showETP && <DateTimePicker value={new Date(`2024-01-01T${endTime}:00`)} mode="time" is24Hour onChange={(_, d) => { setShowETP(false); if (d) setEndTime(fmtTime(d)); }} />}
-    </Screen>
+    </View>
   );
 }
-
-const modalLabel = { fontSize: rs(11), fontWeight: "800", color: theme.colors.textSecondary, letterSpacing: rs(2), marginBottom: rp(theme.spacing.sm), marginTop: rp(theme.spacing.sm), fontFamily: theme.fontFamily.bold };
-const modalInputError = { borderColor: theme.colors.danger };
-const modalErrorText = { color: theme.colors.danger, fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(theme.spacing.md), fontFamily: theme.fontFamily.regular };
-const inputRowStyle = {
-  backgroundColor: theme.colors.surfaceAlt,
-  borderRadius: rp(14),
-  borderWidth: rp(1),
-  borderColor: theme.colors.border,
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: rp(16),
-  marginBottom: rp(theme.spacing.lg),
-};
-const inputBoxStyle = {
-  ...inputRowStyle,
-  paddingVertical: rp(14),
-};

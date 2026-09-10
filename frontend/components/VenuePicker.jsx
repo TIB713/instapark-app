@@ -1,13 +1,14 @@
+import { theme } from '../utils/theme';
 import React, { useState, useRef, useEffect } from "react";
 import { View, TextInput, TouchableOpacity, Text, ActivityIndicator, Keyboard, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { rs, rp } from "../utils/responsive";
 import api from "../lib/api";
 
-export default function VenuePicker({ 
-  value, 
-  onSelect, 
-  placeholder 
+export default function VenuePicker({
+  value,
+  onSelect,
+  placeholder
 }) {
   const [textValue, setTextValue] = useState(value || "");
   const [suggestions, setSuggestions] = useState([]);
@@ -22,7 +23,7 @@ export default function VenuePicker({
   const handleChangeText = (text) => {
     setTextValue(text);
     onSelect({ venue: text, venue_place_id: null, venue_address: null, venue_lat: null, venue_lng: null });
-    
+
     if (text.trim().length < 3) {
       setSuggestions([]);
       setShowDropdown(false);
@@ -52,11 +53,11 @@ export default function VenuePicker({
 
   const handleSelect = async (place) => {
     if (place.place_id === "NONE") return;
-    
+
     Keyboard.dismiss();
     setShowDropdown(false);
     setTextValue(place.description);
-    
+
     try {
       const { data } = await api.get(`/places/details`, { params: { place_id: place.place_id } });
       const finalName = data.name || place.description;
@@ -86,15 +87,15 @@ export default function VenuePicker({
         value={textValue}
         onChangeText={handleChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
-        style={{ flex: 1, paddingVertical: rp(14), fontSize: rs(15), color: "#111827" }}
+        placeholderTextColor={theme.colors.textMuted}
+        style={{ flex: 1, paddingVertical: rp(14), fontSize: rs(15), color: theme.colors.textPrimary }}
         onFocus={() => {
           if (suggestions.length > 0) setShowDropdown(true);
         }}
       />
       {loading && (
         <View style={{ position: "absolute", right: rp(10), top: rp(14) }}>
-          <ActivityIndicator size="small" color="#9CA3AF" />
+          <ActivityIndicator size="small" color={theme.colors.textMuted} />
         </View>
       )}
       {showDropdown && suggestions.length > 0 && (
@@ -103,12 +104,12 @@ export default function VenuePicker({
           top: "100%",
           left: rp(-35), // Aligning back with InputRow layout if needed
           right: rp(-10),
-          backgroundColor: "#fff",
+          backgroundColor: theme.colors.surface,
           borderRadius: rp(12),
           borderWidth: rp(1),
-          borderColor: "#E5E7EB",
+          borderColor: theme.colors.border,
           marginTop: rp(4),
-          shadowColor: "#000",
+          shadowColor: theme.colors.textPrimary,
           shadowOpacity: 0.1,
           shadowRadius: rp(10),
           shadowOffset: { width: 0, height: rp(4) },
@@ -126,13 +127,13 @@ export default function VenuePicker({
                   paddingVertical: rp(12),
                   paddingHorizontal: rp(14),
                   borderTopWidth: idx === 0 ? 0 : rp(1),
-                  borderTopColor: "#F3F4F6",
+                  borderTopColor: theme.colors.surfaceAlt,
                   flexDirection: "row",
                   alignItems: "center"
                 }}
               >
-                {s.place_id !== "NONE" && <Ionicons name="location" size={16} color="#9CA3AF" style={{ marginRight: rp(8) }} />}
-                <Text style={{ fontSize: rs(13), color: s.place_id === "NONE" ? "#9CA3AF" : "#374151", flex: 1, textAlign: s.place_id === "NONE" ? "center" : "left" }} numberOfLines={2}>
+                {s.place_id !== "NONE" && <Ionicons name="location" size={16} color={theme.colors.textMuted} style={{ marginRight: rp(8) }} />}
+                <Text style={{ fontSize: rs(13), color: s.place_id === "NONE" ? theme.colors.textMuted : theme.colors.textSecondary, flex: 1, textAlign: s.place_id === "NONE" ? "center" : "left" }} numberOfLines={2}>
                   {s.description}
                 </Text>
               </TouchableOpacity>

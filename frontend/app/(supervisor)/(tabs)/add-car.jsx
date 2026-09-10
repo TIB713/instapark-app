@@ -1116,7 +1116,7 @@ export default function AddCar() {
           </Card>
 
           <Btn variant="accent" onPress={submit} disabled={submitting} style={{ marginBottom: rp(16) }}>
-            {submitting ? \"PARKING...\" : \"INSTANT PARK\"}
+            {submitting ? "PARKING..." : "INSTANT PARK"}
           </Btn>
           <View style={{ height: rp(40) }} />
         </ScrollView>

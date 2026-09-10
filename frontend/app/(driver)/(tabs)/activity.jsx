@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { View, FlatList, Text, ActivityIndicator, RefreshControl } from "react-native";
 import { Screen, TopBar, EmptyState, SectionTitle, Chip, Card, StatusPill, Plate, Btn } from "../../../components/valet/ui";
@@ -54,27 +55,27 @@ export default function ActivityScreen() {
   const renderItem = ({ item }) => {
     let roleText = "Checked In";
     let roleIcon = "log-in-outline";
-    let roleColor = "#10B981";
-    
+    let roleColor = theme.colors.success;
+
     if (item.role_in_event === "retrieval") {
       roleText = "Delivered";
       roleIcon = "log-out-outline";
-      roleColor = "#6366F1";
+      roleColor = theme.colors.primary;
     } else if (item.role_in_event === "both") {
       roleText = "Checked In & Delivered";
       roleIcon = "swap-horizontal-outline";
-      roleColor = "#8B5CF6";
+      roleColor = theme.colors.primary;
     }
 
-    const ts = item.role_in_event === "retrieval" || item.role_in_event === "both" 
-      ? item.delivered_at || item.retrieval_requested_at 
+    const ts = item.role_in_event === "retrieval" || item.role_in_event === "both"
+      ? item.delivered_at || item.retrieval_requested_at
       : item.check_in_time;
-      
-    const timeStr = ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' }) : "";
+
+    const timeStr = ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
 
     let statusLabel = item.status;
     let statusTone = "primary";
-    
+
     switch (item.status) {
       case "REGISTERED":
         statusLabel = "Registered";
@@ -119,7 +120,7 @@ export default function ActivityScreen() {
             <Text style={{ fontSize: rs(12), color: roleColor, fontWeight: "600" }}>{roleText}</Text>
           </View>
           <View style={{ alignItems: "flex-end" }}>
-            <Text style={{ fontSize: rs(12), color: "#6B7280" }}>{timeStr}</Text>
+            <Text style={{ fontSize: rs(12), color: theme.colors.textMuted }}>{timeStr}</Text>
             {durationCaption && (
               <Text style={{ fontSize: rs(11), color: theme.colors.textSecondary, marginTop: rp(2) }}>
                 {durationCaption}
@@ -153,7 +154,7 @@ export default function ActivityScreen() {
   return (
     <Screen scroll={false}>
       <TopBar title="My Activity" />
-      
+
       <View style={{ flexDirection: "row", paddingHorizontal: rp(20), paddingVertical: rp(12), gap: rp(8) }}>
         <Chip label="All" active={filter === "all"} onPress={() => setFilter("all")} />
         <Chip label="Check-ins" active={filter === "check_in"} onPress={() => setFilter("check_in")} />
@@ -161,7 +162,7 @@ export default function ActivityScreen() {
       </View>
 
       {loading && !refreshing ? (
-        <ActivityIndicator size="large" color="#7C3AED" style={{ marginTop: rp(40) }} />
+        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: rp(40) }} />
       ) : (
         <FlatList
           data={filteredCars}

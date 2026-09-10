@@ -79,6 +79,23 @@ export function Btn({ variant = 'primary', disabled = false, onPress, children, 
   );
 }
 
+const CARD_LAYOUT_KEYS = [
+  'flex', 'flexGrow', 'flexShrink', 'flexBasis',
+  'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight',
+  'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+  'marginHorizontal', 'marginVertical', 'alignSelf',
+];
+
+function pickCardLayoutStyle(style) {
+  if (!style) return undefined;
+  const flat = StyleSheet.flatten(style);
+  const picked = {};
+  CARD_LAYOUT_KEYS.forEach((k) => {
+    if (flat[k] !== undefined) picked[k] = flat[k];
+  });
+  return picked;
+}
+
 export function Card({ children, style, onPress }) {
   const scale = React.useRef(new Animated.Value(1)).current;
 
@@ -88,6 +105,7 @@ export function Card({ children, style, onPress }) {
         onPressIn={() => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
         onPress={onPress}
+        style={pickCardLayoutStyle(style)}
       >
         <Animated.View style={[styles.card, style, { transform: [{ scale }] }]}>
           {children}
@@ -313,7 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rp(theme.spacing.lg),
   },
   btnText: {
-    fontSize: rs(theme.fontSize.bodyLarge),
+    fontFamily: theme.fontFamily.semibold, fontSize: rs(theme.fontSize.bodyLarge),
     fontWeight: theme.fontWeight.semibold,
   },
   card: {
@@ -349,7 +367,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   topBarEyebrow: {
-    color: 'rgba(255,255,255,0.7)',
+    fontFamily: theme.fontFamily.bold, color: 'rgba(255,255,255,0.7)',
     fontSize: rs(theme.fontSize.caption),
     fontWeight: theme.fontWeight.bold,
     textTransform: 'uppercase',
@@ -357,12 +375,12 @@ const styles = StyleSheet.create({
     marginBottom: rp(4),
   },
   topBarTitle: {
-    color: '#FFFFFF',
+    fontFamily: theme.fontFamily.semibold, color: '#FFFFFF',
     fontSize: rs(theme.fontSize.subtitle),
     fontWeight: theme.fontWeight.semibold,
   },
   topBarSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
+    fontFamily: theme.fontFamily.regular, color: 'rgba(255,255,255,0.8)',
     fontSize: rs(theme.fontSize.caption),
     marginTop: rp(4),
   },
@@ -421,7 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusPillText: {
-    fontSize: rs(theme.fontSize.caption),
+    fontFamily: theme.fontFamily.semibold, fontSize: rs(theme.fontSize.caption),
     fontWeight: theme.fontWeight.semibold,
   },
   plate: {
@@ -447,14 +465,14 @@ const styles = StyleSheet.create({
     marginBottom: rp(theme.spacing.md),
   },
   emptyStateTitle: {
-    fontSize: rs(theme.fontSize.bodyLarge),
+    fontFamily: theme.fontFamily.semibold, fontSize: rs(theme.fontSize.bodyLarge),
     fontWeight: theme.fontWeight.semibold,
     color: theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: rp(theme.spacing.xs),
   },
   emptyStateBody: {
-    fontSize: rs(theme.fontSize.body),
+    fontFamily: theme.fontFamily.regular, fontSize: rs(theme.fontSize.body),
     color: theme.colors.textSecondary,
     textAlign: 'center',
     marginBottom: rp(theme.spacing.lg),
@@ -466,7 +484,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   progressBarLabel: {
-    fontSize: rs(theme.fontSize.caption),
+    fontFamily: theme.fontFamily.regular, fontSize: rs(theme.fontSize.caption),
     color: theme.colors.textSecondary,
     marginBottom: rp(theme.spacing.xs),
   },
@@ -498,7 +516,7 @@ const styles = StyleSheet.create({
     marginBottom: rp(theme.spacing.md),
   },
   sectionTitleText: {
-    fontSize: rs(theme.fontSize.caption),
+    fontFamily: theme.fontFamily.bold, fontSize: rs(theme.fontSize.caption),
     fontWeight: theme.fontWeight.bold,
     color: theme.colors.textSecondary,
     letterSpacing: 0.5,
@@ -528,7 +546,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   modalTitle: {
-    fontSize: rs(theme.fontSize.subtitle),
+    fontFamily: theme.fontFamily.bold, fontSize: rs(theme.fontSize.subtitle),
     fontWeight: theme.fontWeight.bold,
     color: theme.colors.textPrimary,
     marginBottom: rp(theme.spacing.md),
@@ -549,13 +567,47 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   chipText: {
-    fontSize: rs(theme.fontSize.body),
+    fontFamily: theme.fontFamily.regular, fontSize: rs(theme.fontSize.body),
     fontWeight: theme.fontWeight.medium,
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    fontFamily: theme.fontFamily.regular, color: '#FFFFFF',
   },
   chipTextInactive: {
-    color: theme.colors.textSecondary,
+    fontFamily: theme.fontFamily.regular, color: theme.colors.textSecondary,
   },
 });
+
+export function FieldLabel({ children }) {
+  return (
+    <Text style={{ fontFamily: theme.fontFamily.bold, fontSize: rs(theme.fontSize.caption), fontWeight: theme.fontWeight.bold, color: theme.colors.textSecondary, letterSpacing: rs(1.5), textTransform: "uppercase", marginBottom: rp(theme.spacing.xs), marginTop: rp(4) }}>
+      {children}
+    </Text>
+  );
+}
+
+export function Field({ icon, children, error }) {
+  return (
+    <View style={[fieldStyle, error && { borderColor: theme.colors.danger }]}>
+      {icon && <Ionicons name={icon} size={rs(18)} color={theme.colors.primary} />}
+      <View style={{ flex: 1, marginLeft: icon ? rp(10) : 0 }}>{children}</View>
+    </View>
+  );
+}
+
+const fieldStyle = {
+  backgroundColor: theme.colors.surface,
+  borderRadius: rp(theme.radius.md),
+  borderWidth: rp(1),
+  borderColor: theme.colors.border,
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: rp(theme.spacing.md),
+  marginBottom: rp(theme.spacing.md),
+};
+
+export const fieldTextInputStyle = {
+  fontFamily: theme.fontFamily.regular, paddingVertical: rp(14),
+  fontSize: rs(theme.fontSize.body),
+  color: theme.colors.textPrimary,
+};

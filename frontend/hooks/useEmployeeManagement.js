@@ -123,6 +123,23 @@ export function useEmployeeManagement() {
     }
   };
 
+  const createDriver = async (payload) => {
+    return api.post("/drivers", {
+      name: payload.name.trim(),
+      email: payload.email.trim().toLowerCase(),
+      phone: payload.phone.trim(),
+      gender: payload.gender,
+      driver_photo: payload.driver_photo || undefined,
+      pan_number: payload.pan_number?.trim() || undefined,
+      bank_account_number: payload.bank_account_number?.trim() || undefined,
+      bank_ifsc: payload.bank_ifsc?.trim() || undefined,
+      driving_license_number: payload.driving_license_number.trim(),
+      driving_license_photo: payload.driving_license_photo,
+      aadhar_number: payload.aadhar_number.trim(),
+      aadhar_photo: payload.aadhar_photo,
+    });
+  };
+
   return {
     drivers,
     loading,
@@ -135,5 +152,6 @@ export function useEmployeeManagement() {
     setBulkResult,
     handleActivateDriver,
     handleDriverLongPress,
+    createDriver,
   };
 }

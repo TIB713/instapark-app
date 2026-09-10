@@ -1,6 +1,6 @@
-import { useState, useEffect , useRef} from "react";
-import { confirmDialog } from "../../lib/confirmDialog";
-import { rs, rp } from '../../utils/responsive';
+import { useState, useEffect, useRef } from "react";
+import { confirmDialog } from "../../../lib/confirmDialog";
+import { rs, rp } from "../../../utils/responsive";
 import {
   View,
   Text,
@@ -10,23 +10,48 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
-import api from "../../lib/api";
-import { useAppStore } from "../../lib/store";
-import VenuePicker from "../../components/VenuePicker";
+import api from "../../../lib/api";
+import { useAppStore } from "../../../lib/store";
+import VenuePicker from "../../../components/VenuePicker";
+import { scrollToFirstError } from "../../../lib/scrollToFirstError";
 
-import { scrollToFirstError } from "../../lib/scrollToFirstError";
+import { theme } from "../../../utils/theme";
+import { Field, FieldLabel, fieldTextInputStyle } from "../../../components/valet/ui";
+import { Hero } from "../../../components/admin/Hero";
+
+const inputBoxStyle = {
+  backgroundColor: theme.colors.surface,
+  borderRadius: rp(theme.radius.md),
+  borderWidth: rp(1),
+  borderColor: theme.colors.border,
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: rp(14),
+  paddingVertical: rp(14),
+  marginBottom: rp(theme.spacing.md),
+};
+
+const errorTextStyle = {
+  color: theme.colors.danger,
+  fontSize: rs(theme.fontSize.caption),
+  fontWeight: theme.fontWeight.bold,
+  marginTop: rp(-8),
+  marginBottom: rp(12)
+};
 
 export default function CreateEvent() {
   const router = useRouter();
   const { user, setCurrentEventId } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const isHotelOwner = user?.provider_type === "hotel_owner";
   const scrollViewRef = useRef(null);
@@ -155,7 +180,7 @@ export default function CreateEvent() {
       }
       setCurrentEventId(data.id);
       await AsyncStorage.setItem("current_event_id", data.id);
-      router.replace("/(admin)/event-detail");
+      router.replace("/(admin)/(tabs)/event-detail");
     } catch (e) {
       const detail = e.response?.data?.detail;
       const message = Array.isArray(detail)
@@ -176,25 +201,18 @@ export default function CreateEvent() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5F3FF" }} testID="create-event-screen">
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#7C3AED" }}>
-        <View style={headerWrap}>
-          <View style={headerOverlay} />
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TouchableOpacity onPress={() => router.back()} style={iconBtn} testID="back-btn">
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </TouchableOpacity>
-            <Text style={{ color: "#fff", fontSize: rs(20), fontWeight: "900", marginLeft: rp(12), flex: 1 }}>
-              {isHotelOwner ? "Create Special Event" : "Create Event"}
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
+    <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt }} testID="create-event-screen">
+      <Hero
+        eyebrow="New event"
+        title={isHotelOwner ? "Create Special Event" : "Create Event"}
+        onBack={() => router.back()}
+      />
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(20), paddingTop: rp(20) }} keyboardShouldPersistTaps="handled">
-          <Label>EVENT NAME</Label>
-          <InputRow icon="calendar-outline" error={formErrors.name}>
+        <ScrollView ref={scrollViewRef} style={{ flex: 1, paddingHorizontal: rp(theme.spacing.xl), paddingTop: rp(theme.spacing.lg) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: rp(theme.spacing.xxxl) + (insets?.bottom || 0) + tabBarHeight }}>
+
+          <FieldLabel>EVENT NAME</FieldLabel>
+          <Field icon="calendar-outline" error={formErrors.name}>
             <TextInput
               ref={el => { if (fieldRefs.current) fieldRefs.current.name = el; }}
               testID="event-name-input"
@@ -204,54 +222,50 @@ export default function CreateEvent() {
                 if (formErrors.name) setFormErrors(prev => ({ ...prev, name: null }));
               }}
               placeholder="Wedding Reception"
-              placeholderTextColor="#9CA3AF"
-              style={textInputStyle}
+              style={fieldTextInputStyle}
             />
-          </InputRow>
-          {formErrors.name && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.name}</Text>}
+          </Field>
+          {formErrors.name && <Text style={errorTextStyle}>* {formErrors.name}</Text>}
 
-          <Label>HOST NAME (OPTIONAL)</Label>
-          <InputRow icon="person-outline">
+          <FieldLabel>HOST NAME (OPTIONAL)</FieldLabel>
+          <Field icon="person-outline">
             <TextInput
               value={hostName}
               onChangeText={setHostName}
               placeholder="e.g. John Doe"
-              placeholderTextColor="#9CA3AF"
-              style={textInputStyle}
+              style={fieldTextInputStyle}
             />
-          </InputRow>
+          </Field>
 
-          <Label>HOST EMAIL (OPTIONAL)</Label>
-          <InputRow icon="mail-outline">
+          <FieldLabel>HOST EMAIL (OPTIONAL)</FieldLabel>
+          <Field icon="mail-outline">
             <TextInput
               value={hostEmail}
               onChangeText={setHostEmail}
               placeholder="e.g. host@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              placeholderTextColor="#9CA3AF"
-              style={textInputStyle}
+              style={fieldTextInputStyle}
             />
-          </InputRow>
+          </Field>
 
-          <Label>VENUE</Label>
+          <FieldLabel>VENUE</FieldLabel>
           {isHotelOwner ? (
-            <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }} style={[inputRowStyle, { backgroundColor: "#F3F4F6", marginBottom: rp(4) }]}>
-              <Ionicons name="location-outline" size={18} color="#9CA3AF" />
+            <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }} style={[inputBoxStyle, { backgroundColor: theme.colors.surfaceAlt }]}>
+              <Ionicons name="location-outline" size={rs(18)} color={theme.colors.textMuted} />
               <View style={{ flex: 1, marginLeft: rp(10) }}>
                 <TextInput
                   testID="event-venue-input"
                   value={venue}
                   editable={false}
                   placeholder="Grand Ballroom"
-                  placeholderTextColor="#9CA3AF"
-                  style={[textInputStyle, { color: "#6B7280" }]}
+                  style={[fieldTextInputStyle, { fontFamily: theme.fontFamily.regular, color: theme.colors.textSecondary, paddingVertical: 0 }]}
                 />
               </View>
             </View>
           ) : (
             <View ref={el => { if (fieldRefs.current) fieldRefs.current.venue = el; }}>
-              <InputRow icon="location-outline" error={formErrors.venue}>
+              <Field icon="location-outline" error={formErrors.venue}>
                 <VenuePicker
                   value={venue}
                   onSelect={(val) => {
@@ -264,56 +278,56 @@ export default function CreateEvent() {
                   }}
                   placeholder="Search venue e.g. ITC Narmada"
                 />
-              </InputRow>
-              {formErrors.venue && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.venue}</Text>}
+              </Field>
+              {formErrors.venue && <Text style={errorTextStyle}>* {formErrors.venue}</Text>}
             </View>
           )}
           {isHotelOwner && (
-            <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
+            <Text style={{ fontFamily: theme.fontFamily.regular, color: theme.colors.textMuted, fontSize: rs(theme.fontSize.caption), marginBottom: rp(theme.spacing.md), marginTop: rp(-8) }}>
               Auto-filled from your hotel
             </Text>
           )}
 
-          <View style={{ flexDirection: "row", gap: rp(12) }}>
+          <View style={{ flexDirection: "row", gap: rp(theme.spacing.md) }}>
             <View style={{ flex: 1 }}>
-              <Label>START DATE</Label>
+              <FieldLabel>START DATE</FieldLabel>
               <TouchableOpacity onPress={() => setShowDP(true)} style={inputBoxStyle} testID="start-date-btn">
-                <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1, fontSize: rs(14) }}>{format(date, "MMM d, yyyy")}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                <Ionicons name="calendar-outline" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{format(date, "MMM d, yyyy")}</Text>
+                <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={{ flex: 1 }}>
-              <Label>END DATE</Label>
+              <FieldLabel>END DATE</FieldLabel>
               <TouchableOpacity onPress={() => setShowEDP(true)} style={inputBoxStyle}>
-                <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1, fontSize: rs(14) }}>{format(endDate, "MMM d, yyyy")}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                <Ionicons name="calendar-outline" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{format(endDate, "MMM d, yyyy")}</Text>
+                <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={{ flexDirection: "row", gap: rp(12) }}>
+          <View style={{ flexDirection: "row", gap: rp(theme.spacing.md) }}>
             <View style={{ flex: 1 }}>
-              <Label>START TIME</Label>
+              <FieldLabel>START TIME</FieldLabel>
               <TouchableOpacity onPress={() => setShowSTP(true)} style={inputBoxStyle}>
-                <Ionicons name="time-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1 }}>{startTime}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                <Ionicons name="time-outline" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{startTime}</Text>
+                <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={{ flex: 1 }}>
-              <Label>END TIME</Label>
+              <FieldLabel>END TIME</FieldLabel>
               <TouchableOpacity onPress={() => setShowETP(true)} style={inputBoxStyle}>
-                <Ionicons name="time-outline" size={18} color="#7C3AED" />
-                <Text style={{ marginLeft: rp(10), color: "#111827", flex: 1 }}>{endTime}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                <Ionicons name="time-outline" size={rs(18)} color={theme.colors.primary} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, marginLeft: rp(10), color: theme.colors.textPrimary, flex: 1, fontSize: rs(theme.fontSize.body), fontWeight: theme.fontWeight.bold }}>{endTime}</Text>
+                <Ionicons name="chevron-down" size={rs(16)} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <Label>MAX CARS</Label>
-          <InputRow icon="car-outline" error={formErrors.maxCars}>
+          <FieldLabel>MAX CARS</FieldLabel>
+          <Field icon="car-outline" error={formErrors.maxCars}>
             <TextInput
               ref={el => { if (fieldRefs.current) fieldRefs.current.maxCars = el; }}
               value={maxCars}
@@ -322,16 +336,15 @@ export default function CreateEvent() {
                 if (formErrors.maxCars) setFormErrors(prev => ({ ...prev, maxCars: null }));
               }}
               keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-              style={textInputStyle}
+              style={fieldTextInputStyle}
             />
-          </InputRow>
-          {formErrors.maxCars && <Text style={{ color: "#EF4444", fontSize: rs(11), fontWeight: "600", marginTop: rp(-12), marginBottom: rp(12) }}>* {formErrors.maxCars}</Text>}
+          </Field>
+          {formErrors.maxCars && <Text style={errorTextStyle}>* {formErrors.maxCars}</Text>}
 
-          <Label>PARKING ZONES</Label>
+          <FieldLabel>PARKING ZONES</FieldLabel>
           {zones.map((z, i) => (
-            <View key={i} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
-              <Ionicons name="location" size={18} color="#7C3AED" />
+            <View key={i} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(theme.radius.md), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: theme.colors.border }}>
+              <Ionicons name="location" size={rs(18)} color={theme.colors.primary} />
               <TextInput
                 value={z.name}
                 onChangeText={(v) => {
@@ -340,8 +353,8 @@ export default function CreateEvent() {
                   setZones(n);
                 }}
                 placeholder="Zone"
-                placeholderTextColor="#9CA3AF"
-                style={{ flex: 1, borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10) }}
+                placeholderTextColor={theme.colors.textMuted}
+                style={{ flex: 1, borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(theme.radius.sm), paddingHorizontal: rp(12), paddingVertical: rp(10), color: theme.colors.textPrimary, fontWeight: theme.fontWeight.bold }}
               />
               <TextInput
                 value={String(z.slots)}
@@ -352,37 +365,37 @@ export default function CreateEvent() {
                 }}
                 keyboardType="numeric"
                 placeholder="Slots"
-                placeholderTextColor="#9CA3AF"
-                style={{ width: rp(70), borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center" }}
+                placeholderTextColor={theme.colors.textMuted}
+                style={{ width: rp(70), borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(theme.radius.sm), paddingHorizontal: rp(10), paddingVertical: rp(10), textAlign: "center", color: theme.colors.textPrimary, fontWeight: theme.fontWeight.bold }}
               />
               <TouchableOpacity onPress={() => setZones(zones.filter((_, k) => k !== i))}>
-                <Ionicons name="close-circle" size={24} color="#F43F5E" />
+                <Ionicons name="close-circle" size={rs(24)} color={theme.colors.danger} />
               </TouchableOpacity>
             </View>
           ))}
           <Text
             style={{
-              color: totalSlots > maxCarsInt ? "#F43F5E" : "#059669",
-              fontWeight: "700",
-              fontSize: rs(13),
+              color: totalSlots > maxCarsInt ? theme.colors.danger : theme.colors.success,
+              fontWeight: theme.fontWeight.bold,
+              fontSize: rs(theme.fontSize.caption),
               textAlign: "right",
-              marginBottom: rp(8),
+              marginBottom: rp(theme.spacing.sm),
             }}
           >
             Total slots: {totalSlots} / {maxCarsInt}
           </Text>
           <TouchableOpacity
             onPress={() => setZones([...zones, { name: "", slots: 10 }])}
-            style={{ backgroundColor: "#EDE9FE", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(16), flexDirection: "row", justifyContent: "center" }}
+            style={{ backgroundColor: theme.colors.primaryLight, borderRadius: rp(theme.radius.md), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(theme.spacing.md), flexDirection: "row", justifyContent: "center" }}
           >
-            <Ionicons name="add" size={18} color="#7C3AED" />
-            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1) }}>ADD ZONE</Text>
+            <Ionicons name="add" size={rs(18)} color={theme.colors.primary} />
+            <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.primary, fontWeight: theme.fontWeight.bold, marginLeft: rp(6), letterSpacing: rs(1) }}>ADD ZONE</Text>
           </TouchableOpacity>
 
-          <Label>ENTRY GATES</Label>
+          <FieldLabel>ENTRY GATES</FieldLabel>
           {gates.map((g, i) => (
-            <View key={i} style={{ backgroundColor: "#fff", borderRadius: rp(16), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: "#E5E7EB" }}>
-              <Ionicons name="enter-outline" size={18} color="#7C3AED" />
+            <View key={i} style={{ backgroundColor: theme.colors.surface, borderRadius: rp(theme.radius.md), padding: rp(12), marginBottom: rp(8), flexDirection: "row", alignItems: "center", gap: rp(8), borderWidth: rp(1), borderColor: theme.colors.border }}>
+              <Ionicons name="enter-outline" size={rs(18)} color={theme.colors.primary} />
               <TextInput
                 value={g}
                 onChangeText={(v) => {
@@ -391,71 +404,90 @@ export default function CreateEvent() {
                   setGates(n);
                 }}
                 placeholder="Gate name"
-                placeholderTextColor="#9CA3AF"
-                style={{ flex: 1, borderWidth: rp(1), borderColor: "#E5E7EB", borderRadius: rp(12), paddingHorizontal: rp(12), paddingVertical: rp(10) }}
+                placeholderTextColor={theme.colors.textMuted}
+                style={{ flex: 1, borderWidth: rp(1), borderColor: theme.colors.border, borderRadius: rp(theme.radius.sm), paddingHorizontal: rp(12), paddingVertical: rp(10), color: theme.colors.textPrimary, fontWeight: theme.fontWeight.bold }}
               />
               <TouchableOpacity onPress={() => setGates(gates.filter((_, k) => k !== i))}>
-                <Ionicons name="close-circle" size={24} color="#F43F5E" />
+                <Ionicons name="close-circle" size={rs(24)} color={theme.colors.danger} />
               </TouchableOpacity>
             </View>
           ))}
           <TouchableOpacity
             onPress={() => setGates([...gates, ""])}
-            style={{ backgroundColor: "#EDE9FE", borderRadius: rp(16), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(24), flexDirection: "row", justifyContent: "center" }}
+            style={{ backgroundColor: theme.colors.primaryLight, borderRadius: rp(theme.radius.md), paddingVertical: rp(12), alignItems: "center", marginBottom: rp(theme.spacing.lg), flexDirection: "row", justifyContent: "center" }}
           >
-            <Ionicons name="add" size={18} color="#7C3AED" />
-            <Text style={{ color: "#7C3AED", fontWeight: "800", marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
+            <Ionicons name="add" size={rs(18)} color={theme.colors.primary} />
+            <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.primary, fontWeight: theme.fontWeight.bold, marginLeft: rp(6), letterSpacing: rs(1) }}>ADD GATE</Text>
           </TouchableOpacity>
 
-          <Label>GATE WAIT TIMER (MINUTES)</Label>
-          <InputRow icon="timer-outline">
-            <TextInput
-              value={gateTimerMinutes}
-              onChangeText={setGateTimerMinutes}
-              placeholder="5"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              maxLength={2}
-              style={textInputStyle}
-            />
-          </InputRow>
+          <View style={{ flexDirection: "row", gap: rp(theme.spacing.md) }}>
+            <View style={{ flex: 1 }}>
+              <FieldLabel>WAIT TIMER (MINS)</FieldLabel>
+              <Field icon="timer-outline">
+                <TextInput
+                  value={gateTimerMinutes}
+                  onChangeText={setGateTimerMinutes}
+                  placeholder="5"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  style={fieldTextInputStyle}
+                />
+              </Field>
+            </View>
+            <View style={{ flex: 1 }}>
+              <FieldLabel>GRACE (MINS)</FieldLabel>
+              <Field icon="time-outline">
+                <TextInput
+                  value={autoCloseGraceMinutes}
+                  onChangeText={setAutoCloseGraceMinutes}
+                  placeholder="30"
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  style={fieldTextInputStyle}
+                />
+              </Field>
+            </View>
+          </View>
 
-          <Label>AUTO-CLOSE GRACE PERIOD (MINUTES)</Label>
-          <InputRow icon="time-outline">
-            <TextInput
-              value={autoCloseGraceMinutes}
-              onChangeText={setAutoCloseGraceMinutes}
-              placeholder="30"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              maxLength={3}
-              style={textInputStyle}
-            />
-          </InputRow>
-          
-          <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
+          <Text style={{ fontFamily: theme.fontFamily.regular, color: theme.colors.textMuted, fontSize: rs(theme.fontSize.caption), marginBottom: rp(theme.spacing.md), marginTop: rp(-8) }}>
             How long a guest has to reach the gate before the car is sent back to parking.
           </Text>
           {isHotelOwner && (
-            <Text style={{ color: "#9CA3AF", fontSize: rs(12), marginBottom: rp(16) }}>
+            <Text style={{ fontFamily: theme.fontFamily.regular, color: theme.colors.textMuted, fontSize: rs(theme.fontSize.caption), marginBottom: rp(theme.spacing.md) }}>
               Hotel's daily events use 1-50 by default — pick a different range for this special event to avoid overlap
             </Text>
           )}
 
           <TouchableOpacity
-            testID="save-event-btn"
             onPress={save}
             disabled={saving}
-            activeOpacity={0.85}
-            style={primaryBtn}
+            style={{
+              backgroundColor: theme.colors.accent,
+              borderRadius: rp(theme.radius.md),
+              paddingVertical: rp(16),
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: theme.colors.accent,
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 4,
+              marginTop: rp(theme.spacing.xl)
+            }}
           >
             {saving ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.colors.accentForeground} />
             ) : (
-              <Text style={primaryBtnText}>CREATE EVENT</Text>
+              <>
+                <Ionicons name="checkmark-circle" size={rs(20)} color={theme.colors.accentForeground} style={{ marginRight: rp(8) }} />
+                <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.accentForeground, fontWeight: theme.fontWeight.bold, fontSize: rs(theme.fontSize.bodyLarge) }}>
+                  CREATE EVENT
+                </Text>
+              </>
             )}
           </TouchableOpacity>
-          <View style={{ height: rp(40) }} />
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -506,88 +538,3 @@ export default function CreateEvent() {
     </View>
   );
 }
-
-function Label({ children }) {
-  return (
-    <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#6B7280", letterSpacing: rs(3), marginBottom: rp(8), marginTop: rp(4) }}>
-      {children}
-    </Text>
-  );
-}
-
-function InputRow({ icon, children, error }) {
-  return (
-    <View style={[inputRowStyle, error && { borderColor: "#EF4444" }]}>
-      <Ionicons name={icon} size={18} color="#7C3AED" />
-      <View style={{ flex: 1, marginLeft: rp(10) }}>{children}</View>
-    </View>
-  );
-}
-
-const headerWrap = {
-  backgroundColor: "#7C3AED",
-  borderBottomLeftRadius: 44,
-  borderBottomRightRadius: 44,
-  paddingHorizontal: rp(20),
-  paddingTop: rp(8),
-  paddingBottom: rp(24),
-};
-const headerOverlay = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: "rgba(79,70,229,0.5)",
-  borderBottomLeftRadius: 44,
-  borderBottomRightRadius: 44,
-};
-const iconBtn = {
-  backgroundColor: "rgba(255,255,255,0.15)",
-  borderRadius: rp(99),
-  padding: rp(8),
-};
-const inputRowStyle = {
-  backgroundColor: "#fff",
-  borderRadius: rp(16),
-  borderWidth: rp(1),
-  borderColor: "#E5E7EB",
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: rp(16),
-  marginBottom: rp(16),
-};
-const textInputStyle = {
-  paddingVertical: rp(14),
-  fontSize: rs(15),
-  color: "#111827",
-};
-const inputBoxStyle = {
-  backgroundColor: "#fff",
-  borderRadius: rp(16),
-  borderWidth: rp(1),
-  borderColor: "#E5E7EB",
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: rp(14),
-  paddingVertical: rp(14),
-  marginBottom: rp(16),
-};
-const primaryBtn = {
-  backgroundColor: "#7C3AED",
-  borderRadius: rp(16),
-  paddingVertical: rp(16),
-  alignItems: "center",
-  marginBottom: rp(16),
-  shadowColor: "#7C3AED",
-  shadowOpacity: 0.3,
-  shadowRadius: rp(16),
-  shadowOffset: { width: 0, height: rp(6) },
-  elevation: 6,
-};
-const primaryBtnText = {
-  color: "#fff",
-  fontWeight: "900",
-  fontSize: rs(15),
-  letterSpacing: rs(2),
-};

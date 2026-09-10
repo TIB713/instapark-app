@@ -355,7 +355,7 @@ export default function Tasks() {
                       onPress={() => removeHandoverPhoto(car)}
                       style={{ position: "absolute", top: -6, right: -6, backgroundColor: theme.colors.danger, borderRadius: rp(99), width: rp(22), height: rp(22), alignItems: "center", justifyContent: "center" }}
                     >
-                      <Ionicons name="close" size={13} color="#FFFFFF" />
+                      <Ionicons name="close" size={13} color={theme.colors.surface} />
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -445,7 +445,7 @@ export default function Tasks() {
     <Screen scroll={false}>
       {!currentEventId ? (
         <EmptyState
-          icon={<Ionicons name="calendar-outline" size={64} color="#9CA3AF" />}
+          icon={<Ionicons name="calendar-outline" size={64} color={theme.colors.textMuted} />}
           title="No active event"
           body="Ask your supervisor to assign you to an event."
           cta={<Btn onPress={() => router.push("/(driver)/(tabs)/profile")}>Go to Profile</Btn>}
@@ -461,13 +461,13 @@ export default function Tasks() {
                 onPress={() => openSOS()}
                 style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.danger, alignItems: 'center', justifyContent: 'center' }}
               >
-                <MaterialCommunityIcons name="alarm-light-outline" size={20} color="#FFFFFF" />
+                <MaterialCommunityIcons name="alarm-light-outline" size={20} color={theme.colors.surface} />
               </TouchableOpacity>
             }
           />
 
           <View style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.colors.surface,
             marginHorizontal: rp(16),
             marginTop: rp(12),
             borderRadius: rp(12),
@@ -475,7 +475,7 @@ export default function Tasks() {
             flexDirection: "row",
             justifyContent: "space-around",
             alignItems: "center",
-            shadowColor: "#000",
+            shadowColor: theme.colors.textPrimary,
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 4,
@@ -483,18 +483,18 @@ export default function Tasks() {
             zIndex: 10
           }}>
             <View style={{ alignItems: "center", flex: 1 }}>
-              <Heading level="display" style={{ fontSize: rs(20), color: "#111827" }}>{stats.parked_count}</Heading>
-              <Text style={{ fontSize: rs(11), color: "#6B7280", marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Parked</Text>
+              <Heading level="display" style={{ fontSize: rs(20), color: theme.colors.textPrimary }}>{stats.parked_count}</Heading>
+              <Text style={{ fontSize: rs(11), color: theme.colors.textMuted, marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Parked</Text>
             </View>
-            <View style={{ width: 1, backgroundColor: "#E5E7EB", height: "100%" }} />
+            <View style={{ width: 1, backgroundColor: theme.colors.border, height: "100%" }} />
             <View style={{ alignItems: "center", flex: 1 }}>
-              <Heading level="display" style={{ fontSize: rs(20), color: "#111827" }}>{stats.delivered_count}</Heading>
-              <Text style={{ fontSize: rs(11), color: "#6B7280", marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Delivered</Text>
+              <Heading level="display" style={{ fontSize: rs(20), color: theme.colors.textPrimary }}>{stats.delivered_count}</Heading>
+              <Text style={{ fontSize: rs(11), color: theme.colors.textMuted, marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Delivered</Text>
             </View>
-            <View style={{ width: 1, backgroundColor: "#E5E7EB", height: "100%" }} />
+            <View style={{ width: 1, backgroundColor: theme.colors.border, height: "100%" }} />
             <View style={{ alignItems: "center", flex: 1 }}>
-              <Heading level="display" style={{ fontSize: rs(20), color: "#111827" }}>{stats.avg_retrieval_minutes}</Heading>
-              <Text style={{ fontSize: rs(11), color: "#6B7280", marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Avg Min</Text>
+              <Heading level="display" style={{ fontSize: rs(20), color: theme.colors.textPrimary }}>{stats.avg_retrieval_minutes}</Heading>
+              <Text style={{ fontSize: rs(11), color: theme.colors.textMuted, marginTop: rp(4), textTransform: "uppercase", fontWeight: "600" }}>Avg Min</Text>
             </View>
           </View>
 
@@ -507,15 +507,15 @@ export default function Tasks() {
           </View>
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: rp(16), marginBottom: rp(12) }}>
-            <Text style={{ fontSize: rs(11), fontWeight: "800", color: "#7C3AED", letterSpacing: rs(3) }}>LIVE QUEUE</Text>
-            <Text style={{ fontSize: rs(12), color: "#6B7280", fontWeight: "600" }}>{unifiedList.length} active</Text>
+            <Text style={{ fontSize: rs(11), fontWeight: "800", color: theme.colors.primary, letterSpacing: rs(3) }}>LIVE QUEUE</Text>
+            <Text style={{ fontSize: rs(12), color: theme.colors.textMuted, fontWeight: "600" }}>{unifiedList.length} active</Text>
           </View>
 
           {failedCount > 0 && (
             <TouchableOpacity onPress={() => router.push("/(driver)/failed-syncs")}>
-              <View style={{ backgroundColor: "#FEE2E2", padding: rp(12), marginHorizontal: rp(16), marginBottom: rp(12), borderRadius: rp(14), borderWidth: rp(1), borderColor: "#FCA5A5", flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="warning" size={16} color="#B91C1C" />
-                <Text style={{ color: "#B91C1C", fontSize: rs(12), fontWeight: "700", marginLeft: rp(8), flex: 1 }}>
+              <View style={{ backgroundColor: theme.colors.dangerLight, padding: rp(12), marginHorizontal: rp(16), marginBottom: rp(12), borderRadius: rp(14), borderWidth: rp(1), borderColor: "#FCA5A5", flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="warning" size={16} color={theme.colors.danger} />
+                <Text style={{ color: theme.colors.danger, fontSize: rs(12), fontWeight: "700", marginLeft: rp(8), flex: 1 }}>
                   {failedCount} sync failure(s) • these check-ins could not be uploaded.
                 </Text>
               </View>
@@ -523,7 +523,7 @@ export default function Tasks() {
           )}
 
           {pendingCount > 0 && (
-            <View style={{ backgroundColor: "#FEF3C7", padding: rp(12), marginHorizontal: rp(16), marginBottom: rp(12), borderRadius: rp(14), borderWidth: rp(1), borderColor: "#F59E0B", flexDirection: "row", alignItems: "center" }}>
+            <View style={{ backgroundColor: theme.colors.warningLight, padding: rp(12), marginHorizontal: rp(16), marginBottom: rp(12), borderRadius: rp(14), borderWidth: rp(1), borderColor: theme.colors.warning, flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="cloud-offline" size={16} color="#92400E" />
               <Text style={{ color: "#92400E", fontSize: rs(12), fontWeight: "700", marginLeft: rp(8) }}>
                 {pendingCount} action(s) pending • will sync when online.
@@ -534,7 +534,7 @@ export default function Tasks() {
           <ScrollView
             style={{ flex: 1, paddingHorizontal: rp(16) }}
             contentContainerStyle={{ paddingBottom: rp(100) }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#059669" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.success} />}
           >
             {unifiedList.length === 0 ? (
               <EmptyState title="No cars in queue" body="No vehicles match the selected filter." />
@@ -550,7 +550,7 @@ export default function Tasks() {
 
       {/* SOS Modal */}
       <Modal open={showSOSModal} onClose={closeSOS} title="Send SOS Alert">
-        <Text style={{ fontSize: rs(13), color: "#6B7280", marginBottom: rp(20) }}>Your supervisor will be notified immediately.</Text>
+        <Text style={{ fontSize: rs(13), color: theme.colors.textMuted, marginBottom: rp(20) }}>Your supervisor will be notified immediately.</Text>
 
         <SectionTitle>What do you need help with?</SectionTitle>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: rp(8), marginBottom: rp(16) }}>
@@ -576,7 +576,7 @@ export default function Tasks() {
           onChangeText={setSosNote}
           multiline
           numberOfLines={3}
-          style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: rp(10), padding: rp(12), fontSize: rs(14), color: "#111827", textAlignVertical: "top", marginBottom: rp(20), minHeight: rp(80) }}
+          style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: rp(10), padding: rp(12), fontSize: rs(14), color: theme.colors.textPrimary, textAlignVertical: "top", marginBottom: rp(20), minHeight: rp(80) }}
         />
 
         <Btn variant="outline" onPress={takeSosPhoto} style={{ marginBottom: rp(24) }}>
@@ -594,21 +594,21 @@ export default function Tasks() {
       {/* Park Success Modal - keeping React Native Modal because it requires completely custom UI for QR Code display */}
       <Modal open={showParkSuccessModal} onClose={() => { }} title="Vehicle Parked!">
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "baseline", gap: rp(8), marginBottom: rp(12) }}>
-          <Text style={{ fontSize: rs(16), fontWeight: "700", color: "#6B7280", textAlign: "center" }}>
+          <Text style={{ fontSize: rs(16), fontWeight: "700", color: theme.colors.textMuted, textAlign: "center" }}>
             {parkedCarInfo?.plate}
           </Text>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "center", gap: rp(8), marginBottom: rp(16), flexWrap: "wrap" }}>
-          <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
-            <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Zone {parkedCarInfo?.zone}</Text>
+          <View style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
+            <Text style={{ fontSize: rs(12), fontWeight: "700", color: theme.colors.textSecondary }}>Zone {parkedCarInfo?.zone}</Text>
           </View>
-          <View style={{ backgroundColor: "#F3F4F6", borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
-            <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Slot {parkedCarInfo?.slot}</Text>
+          <View style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: rp(12), paddingVertical: rp(6), paddingHorizontal: rp(12) }}>
+            <Text style={{ fontSize: rs(12), fontWeight: "700", color: theme.colors.textSecondary }}>Slot {parkedCarInfo?.slot}</Text>
           </View>
           {(parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag) && (
-            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", paddingHorizontal: rp(12), paddingVertical: rp(8), borderRadius: rp(8) }}>
-              <Ionicons name="pricetag" size={16} color="#4B5563" style={{ marginRight: rp(8) }} />
-              <Text style={{ fontSize: rs(12), fontWeight: "700", color: "#374151" }}>Key Tag #{parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag}{parkedCarInfo?.card_code ? ` • Code ${parkedCarInfo.card_code}` : ""}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceAlt, paddingHorizontal: rp(12), paddingVertical: rp(8), borderRadius: rp(8) }}>
+              <Ionicons name="pricetag" size={16} color={theme.colors.textSecondary} style={{ marginRight: rp(8) }} />
+              <Text style={{ fontSize: rs(12), fontWeight: "700", color: theme.colors.textSecondary }}>Key Tag #{parkedCarInfo?.key_tag_number || parkedCarInfo?.key_tag}{parkedCarInfo?.card_code ? ` • Code ${parkedCarInfo.card_code}` : ""}</Text>
             </View>
           )}
         </View>
@@ -629,7 +629,7 @@ export default function Tasks() {
       {/* Incoming Request Full Screen */}
       <Modal open={!!incomingRequest} onClose={dismissIncomingRequest} title="">
         <View style={{ alignItems: "center", marginBottom: rp(24) }}>
-          <Text style={{ fontSize: rs(20), fontWeight: "900", color: "#111827", textAlign: "center", marginBottom: rp(24) }}>New Retrieval Request</Text>
+          <Text style={{ fontSize: rs(20), fontWeight: "900", color: theme.colors.textPrimary, textAlign: "center", marginBottom: rp(24) }}>New Retrieval Request</Text>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rp(24), marginBottom: rp(16), marginTop: rp(12) }}>
             <Plate value={incomingRequest?.plate} style={{ transform: [{ scale: 1.5 }] }} />
           </View>
@@ -640,17 +640,17 @@ export default function Tasks() {
               </Text>
             </View>
           )}
-          <Text style={{ fontSize: rs(16), color: "#6B7280", textAlign: "center", marginBottom: rp(16) }}>{incomingRequest?.color} {incomingRequest?.make}</Text>
+          <Text style={{ fontSize: rs(16), color: theme.colors.textMuted, textAlign: "center", marginBottom: rp(16) }}>{incomingRequest?.color} {incomingRequest?.make}</Text>
         </View>
 
         {(incomingRequest?.zone || incomingRequest?.slot) && (
-          <Card style={{ marginBottom: rp(24), backgroundColor: "#F3F4F6", alignItems: "center" }}>
-            <Text style={{ fontSize: rs(14), fontWeight: "700", color: "#374151" }}>Zone {incomingRequest?.zone} · Slot {incomingRequest?.slot}</Text>
+          <Card style={{ marginBottom: rp(24), backgroundColor: theme.colors.surfaceAlt, alignItems: "center" }}>
+            <Text style={{ fontSize: rs(14), fontWeight: "700", color: theme.colors.textSecondary }}>Zone {incomingRequest?.zone} · Slot {incomingRequest?.slot}</Text>
           </Card>
         )}
 
         {incomingRequest?.notes && (
-          <View style={{ backgroundColor: "#FEF3C7", borderRadius: rp(12), padding: rp(12), marginBottom: rp(24) }}>
+          <View style={{ backgroundColor: theme.colors.warningLight, borderRadius: rp(12), padding: rp(12), marginBottom: rp(24) }}>
             <Text style={{ color: "#92400E", fontSize: rs(13), fontWeight: "600", textAlign: "center" }}>{incomingRequest.notes}</Text>
           </View>
         )}
