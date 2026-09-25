@@ -547,7 +547,7 @@ export default function Checkin() {
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.7,
       allowsEditing: false,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images
+      mediaTypes: ['images']
     });
 
     if (!result.canceled) {

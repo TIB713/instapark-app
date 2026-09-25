@@ -22,7 +22,7 @@ Notifications.setNotificationHandler({
   },
 });
 
-export async function registerForPushNotifications(api) {
+export async function registerForPushNotifications(api, role) {
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -48,10 +48,25 @@ export async function registerForPushNotifications(api) {
       }
     }
     if (!token) throw lastErr;
-    console.log('[PUSH] Registered push token:', token.data?.substring(0, 40) + '...');
-    try { await api.post('/drivers/push-token', { push_token: token.data }); return token.data; } catch {}
-    try { await api.post('/providers/push-token', { push_token: token.data }); return token.data; } catch {}
-    try { await api.post('/supervisors/push-token', { push_token: token.data }); return token.data; } catch {}
+    console.log('[PUSH] Got push token:', token.data?.substring(0, 40) + '...');
+
+    let endpoint = "";
+    if (role === "driver") endpoint = "/drivers/push-token";
+    else if (role === "provider" || role === "owner") endpoint = "/providers/push-token";
+    else if (role === "supervisor") endpoint = "/supervisors/push-token";
+    else if (role === "admin" || role === "superadmin") endpoint = "/admins/push-token";
+
+    if (endpoint) {
+      try {
+        await api.post(endpoint, { push_token: token.data });
+        console.log(`[PUSH] Successfully registered token for role '${role}' at ${endpoint}`);
+      } catch (e) {
+        console.log(`[PUSH] Failed to register token for role '${role}' at ${endpoint}:`, e.response?.data || e.message);
+      }
+    } else {
+      console.log(`[PUSH] No push token endpoint defined for role '${role}'`);
+    }
+
     return token.data;
   } catch (e) {
     console.warn('Push registration failed:', e);

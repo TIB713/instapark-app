@@ -1,5 +1,6 @@
 import { confirmDialog } from "../../../lib/confirmDialog";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { rs, rp } from "../../../utils/responsive";
 import {
   View,
@@ -30,6 +31,7 @@ import { Hero } from "../../../components/admin/Hero";
 export default function Hotels() {
   const router = useRouter();
   const { action } = useLocalSearchParams();
+  const tabBarHeight = useBottomTabBarHeight();
   const { user, setCurrentEventId } = useAppStore();
   const scrollViewRef = useRef(null);
   const fieldRefs = useRef({});
@@ -88,10 +90,10 @@ export default function Hotels() {
 
   // Auto-update single zone's slots when totalSlots changes
   useEffect(() => {
-    if (zones.length === 1 && totalSlots) {
-      setZones([{ ...zones[0], slots: totalSlots }]);
+    if (zones.length === 1 && zones[0].slots !== totalSlots && totalSlots) {
+      setZones(prev => [{ ...prev[0], slots: totalSlots }]);
     }
-  }, [totalSlots, zones]);
+  }, [totalSlots]);
 
   const resetForm = () => {
     setName("");
@@ -482,7 +484,7 @@ export default function Hotels() {
                   <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.primary, fontSize: rs(14), fontWeight: theme.fontWeight.bold }}>Add Zone</Text>
                 </TouchableOpacity>
 
-                <View style={{ marginTop: rp(theme.spacing.xl), marginBottom: rp(theme.spacing.xxxl) }}>
+                <View style={{ marginTop: rp(theme.spacing.xl), marginBottom: rp(theme.spacing.xxxl) + tabBarHeight }}>
                   <Btn
                     variant="primary"
                     onPress={saveHotel}

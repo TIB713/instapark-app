@@ -71,6 +71,28 @@ const resolveSOSAlert = async (alertId) => {
     );
   }
 
+const resolveForcedSOS = async (alertId) => {
+    setResolvingForcedSOS(true);
+    // Silence audio and vibration immediately
+    Vibration.cancel();
+    if (sosSoundRef.current) {
+      sosSoundRef.current.stopAsync().then(() => sosSoundRef.current.unloadAsync()).catch(() => {});
+      sosSoundRef.current = null;
+    }
+
+    try {
+      await api.patch(`/sos/${alertId}/resolve`);
+      setForcedSOSAlert(null);
+      fetchSOSAlerts();
+    } catch (e) {
+      console.warn("Failed to resolve SOS:", e);
+      // We don't reset forcedSOSAlert so the modal stays open, but we silenced the audio
+      throw e;
+    } finally {
+      setResolvingForcedSOS(false);
+    }
+  };
+
   useEffect(() => {
     configureBackgroundAudio();
   }, []);
@@ -84,6 +106,7 @@ const resolveSOSAlert = async (alertId) => {
   }, [activeSOSQueue, forcedSOSAlert]);
 
   useEffect(() => {
+    let isCurrent = true;
     if (forcedSOSAlert) {
       Vibration.vibrate([600, 400], true);
       (async () => {
@@ -92,6 +115,10 @@ const resolveSOSAlert = async (alertId) => {
             require("../assets/sounds/sos-alarm.mp3"),
             { isLooping: true }
           );
+          if (!isCurrent) {
+            sound.stopAsync().then(() => sound.unloadAsync()).catch(() => {});
+            return;
+          }
           sosSoundRef.current = sound;
           await sound.playAsync();
         } catch (e) {
@@ -105,8 +132,8 @@ const resolveSOSAlert = async (alertId) => {
         sosSoundRef.current = null;
       }
     }
+    return () => { isCurrent = false; };
   }, [forcedSOSAlert]);
-
 
   return {
     sosAlerts, setSOSAlerts,
@@ -116,6 +143,6 @@ const resolveSOSAlert = async (alertId) => {
     activeSOSQueue, setActiveSOSQueue,
     forcedSOSAlert, setForcedSOSAlert,
     resolvingForcedSOS, setResolvingForcedSOS,
-    fetchSOSAlerts, resolveSOSAlert
+    fetchSOSAlerts, resolveSOSAlert, resolveForcedSOS
   };
 }

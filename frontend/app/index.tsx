@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { useAppStore } from "../lib/store";
 import api from "../lib/api";
 import { getRouteForRole } from "../lib/routeForRole";
+import { registerForPushNotifications } from "../lib/notifications";
 
 export default function Index() {
   const router = useRouter();
@@ -67,6 +68,11 @@ export default function Index() {
           useAppStore.getState().setDriver(driverData);
           if (eid) useAppStore.getState().setCurrentEventId(eid);
         }
+        try {
+          registerForPushNotifications(api, role);
+        } catch (e) {
+          console.warn("Push restore failed:", e);
+        }
 
         setReadyRoute(getRouteForRole(role) as any);
       };
@@ -101,6 +107,7 @@ export default function Index() {
                   if (d?.id && d?.role === "driver") {
                     useAppStore.getState().setDriver(d);
                     if (eid) useAppStore.getState().setCurrentEventId(eid);
+                    try { registerForPushNotifications(api, d.role); } catch (e) {}
                     setReadyRoute("/(driver)/(tabs)" as any);
                     return;
                   } else {
@@ -112,6 +119,7 @@ export default function Index() {
                     const cachedUser = JSON.parse(adminStr);
                     if (cachedUser?.role === lastRole) {
                       useAppStore.getState().setUser(cachedUser);
+                      try { registerForPushNotifications(api, cachedUser.role); } catch (e) {}
                       setReadyRoute(getRouteForRole(lastRole) as any);
                       return;
                     }
@@ -143,6 +151,11 @@ export default function Index() {
           }
           useAppStore.getState().setDriver(d);
           if (eid) useAppStore.getState().setCurrentEventId(eid);
+          try {
+            registerForPushNotifications(api, d.role);
+          } catch (e) {
+            console.warn("Push restore failed:", e);
+          }
           setChecking(false);
           router.replace("/(driver)/(tabs)" as any);
           return;

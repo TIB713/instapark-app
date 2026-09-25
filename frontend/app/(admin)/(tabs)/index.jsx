@@ -157,12 +157,12 @@ export default function Dashboard() {
 
   const pulseStats = isHotelOwner ? [
     { icon: "star", value: avgRating, label: "RATING", color: theme.colors.primary },
-    { icon: "calendar", value: totalSpecialEventsCount, label: "SPECIAL", color: theme.colors.accent },
-    { icon: "qr-code", value: "-", label: "QR CODES", color: theme.colors.success }
+    { icon: "calendar", value: totalSpecialEventsCount, label: "SPECIAL", color: theme.colors.accent }
+    // { icon: "qr-code", value: "-", label: "QR CODES", color: theme.colors.success } // hidden: no mechanism to use this per client requirement
   ] : [
     { icon: "business", value: hotels.length, label: "HOTELS", color: theme.colors.primary },
-    { icon: "star", value: avgRating, label: "RATING", color: theme.colors.accent },
-    { icon: "qr-code", value: "-", label: "QR CODES", color: theme.colors.success }
+    { icon: "star", value: avgRating, label: "RATING", color: theme.colors.accent }
+    // { icon: "qr-code", value: "-", label: "QR CODES", color: theme.colors.success } // hidden: no mechanism to use this per client requirement
   ];
 
   const renderListCard = (e) => {

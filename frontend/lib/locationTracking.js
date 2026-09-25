@@ -54,7 +54,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 });
 
 // ── Start tracking ───────────────────────────────────────────────────────────
-const BACKGROUND_TRACKING_ENABLED = false; // disabled for tomorrow's event —
+const BACKGROUND_TRACKING_ENABLED = true; // disabled for tomorrow's event —
                                               // background+foreground-service
                                               // location permission requests
                                               // were crashing on some Android
@@ -67,14 +67,40 @@ const BACKGROUND_TRACKING_ENABLED = false; // disabled for tomorrow's event —
 export const startLocationTracking = async () => {
   try {
     if (!BACKGROUND_TRACKING_ENABLED) return false;
-    const { status: fg } = await Location.requestForegroundPermissionsAsync();
-    if (fg !== "granted") return false;
-    const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-    if (bg !== "granted") return false;
 
-    const already = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => false);
+    console.log("[GPS] Requesting foreground permissions");
+    let fg = "denied";
+    try {
+      const fgRes = await Location.requestForegroundPermissionsAsync();
+      fg = fgRes.status;
+    } catch (e) {
+      console.warn("[GPS] Foreground permission request failed:", e);
+    }
+    console.log("[GPS] Foreground permission status:", fg);
+    
+    if (fg !== "granted") return false;
+
+    console.log("[GPS] Requesting background permissions");
+    let bg = "denied";
+    try {
+      const bgRes = await Location.requestBackgroundPermissionsAsync();
+      bg = bgRes.status;
+    } catch (e) {
+      console.warn("[GPS] Background permission request failed:", e);
+    }
+    console.log("[GPS] Background permission status:", bg);
+
+    console.log("[GPS] Checking if tracking already started");
+    let already = false;
+    try {
+      already = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+    } catch (e) {
+      console.warn("[GPS] Failed to check if tracking started:", e);
+    }
+    console.log("[GPS] Tracking already started:", already);
     if (already) return true;
 
+    console.log("[GPS] Starting location updates");
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy: Location.Accuracy.Balanced,
       timeInterval: 5000,
@@ -85,8 +111,10 @@ export const startLocationTracking = async () => {
         notificationColor: theme.colors.primary,
       },
     });
+    console.log("[GPS] Successfully started location updates");
     return true;
-  } catch {
+  } catch (e) {
+    console.warn("[GPS] Unexpected error in startLocationTracking:", e);
     return false;
   }
 };

@@ -24,6 +24,7 @@ import {
   Share,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
 const FEEDBACK_QUESTIONS = [
@@ -88,6 +89,7 @@ const cardShadow = {
 
 export default function EventDetail() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const router = useRouter();
 
@@ -594,7 +596,7 @@ export default function EventDetail() {
         }}
         badges={[
           event?.status ? { label: event.status === "closed" ? "CLOSED" : event.status.toUpperCase(), tone: event.status === "active" ? "primary" : "warning" } : null,
-          guestCount != null ? { label: `${guestCount} GUESTS INVITED`, tone: "primary" } : null,
+          // guestCount != null ? { label: `${guestCount} GUESTS INVITED`, tone: "primary" } : null, // hidden: guest-invited count no longer shown in header per client request
           event?.event_type === "hotel_daily" ? { label: "🏨 Auto Daily", tone: "warning" } : null,
           event?.event_type === "hotel_special" ? { label: "🏨 Special", tone: "warning" } : null,
         ].filter(Boolean)}
@@ -1838,7 +1840,7 @@ export default function EventDetail() {
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, elevation: 100 }}>
           <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-              <View style={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), paddingBottom: rp(20) + (insets?.bottom || 0), maxHeight: "85%" }}>
+              <View style={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: rp(20), paddingBottom: rp(20) + (insets?.bottom || 0) + tabBarHeight, maxHeight: "85%" }}>
                 <View style={{ alignItems: "center", marginBottom: rp(12) }}>
                   <View style={{ backgroundColor: theme.colors.border, width: rp(48), height: rp(4), borderRadius: rp(99) }} />
                 </View>
@@ -1992,7 +1994,7 @@ export default function EventDetail() {
               <View style={{
                 backgroundColor: theme.colors.surface,
                 borderTopLeftRadius: 36, borderTopRightRadius: 36,
-                padding: rp(20), maxHeight: "92%"
+                padding: rp(20), paddingBottom: rp(20) + (insets?.bottom || 0) + tabBarHeight, maxHeight: "92%"
               }}>
 
                 {/* Handle */}
@@ -2337,7 +2339,7 @@ export default function EventDetail() {
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, elevation: 100 }}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
-              <View style={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: (insets?.bottom || 0) }}>
+              <View style={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: (insets?.bottom || 0) + tabBarHeight }}>
                 <View style={{ alignItems: "center", marginBottom: rp(14) }}>
                   <View style={{ backgroundColor: theme.colors.border, width: rp(48), height: rp(4), borderRadius: rp(99) }} />
                 </View>

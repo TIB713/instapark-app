@@ -152,7 +152,7 @@ export function useParkFlow(retrievals, fetchMyCars, fetchRetrievals, refreshPen
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.5,
       allowsEditing: false,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
     });
     setTakingParkPhoto(false);
     if (!result.canceled) {

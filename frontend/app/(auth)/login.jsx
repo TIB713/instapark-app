@@ -164,7 +164,7 @@ export default function Login() {
       setUser(data.user);
     }
     await setItem("last_known_role", data.user.role);
-    try { registerForPushNotifications(api); } catch { }
+    try { registerForPushNotifications(api, data.user.role); } catch { }
 
     if (data.user.role === "driver") {
       await useAppStore.getState().fetchEvents();

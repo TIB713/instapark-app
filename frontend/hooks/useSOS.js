@@ -62,7 +62,7 @@ export function useSOS() {
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.5,
       allowsEditing: false,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
     });
     if (!result.canceled) setSosPhoto(result.assets[0].uri);
   };

@@ -41,7 +41,7 @@ export default function DriverBulkUpload() {
     }
   };
 
-  const expectedColumns = ["name", "driver_code", "mobile", "licence_no", "shift", "available"];
+  // const expectedColumns = ["name", "driver_code", "mobile", "licence_no", "shift", "available"];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt }} testID="bulk-add-driver-screen">
@@ -82,7 +82,7 @@ export default function DriverBulkUpload() {
         </View>
 
         {/* Expected Columns */}
-        <View style={{ marginTop: rp(theme.spacing.md) }}>
+        {/* <View style={{ marginTop: rp(theme.spacing.md) }}>
           <Text style={{ fontFamily: theme.fontFamily.semibold, fontSize: rs(12), color: theme.colors.textSecondary, marginBottom: rp(theme.spacing.sm), fontWeight: "600" }}>
             Expected columns
           </Text>
@@ -91,7 +91,7 @@ export default function DriverBulkUpload() {
               <Chip key={col} label={col} size="small" variant="outline" />
             ))}
           </View>
-        </View>
+        </View> */}
 
         {/* File Preview Card */}
         {selectedFile && (

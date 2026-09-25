@@ -23,6 +23,7 @@ import QRCode from "react-native-qrcode-svg";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import CityStatePicker from "../../../components/CityStatePicker";
 import { State } from "country-state-city";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,8 +34,8 @@ import { useAppStore } from "../../../lib/store";
 
 import { theme } from "../../../utils/theme";
 import { Screen, TopBar, Card, Btn, StatusPill } from "../../../components/valet/ui";
-import SectionHead from "../../../components/admin/SectionHead";
-import StatCard from "../../../components/admin/StatCard";
+import { SectionHead } from "../../../components/admin/SectionHead";
+import { StatCard } from "../../../components/admin/StatCard";
 import { Hero } from "../../../components/admin/Hero";
 
 const generateTempPassword = () => Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + "1!";
@@ -64,6 +65,7 @@ function InfoRow({ label, value, editing, onChange, keyboardType = "default" }) 
 export default function HotelDetail() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
 
   useEffect(() => {
     const backAction = () => {
@@ -917,13 +919,36 @@ export default function HotelDetail() {
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, elevation: 100 }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-              <View style={{ backgroundColor: theme.colors.surfaceAlt, borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), padding: rp(theme.spacing.lg), paddingBottom: rp(theme.spacing.lg) + (insets?.bottom || 0) }}>
-                <View style={{ alignItems: "center", marginBottom: rp(theme.spacing.md) }}>
-                  <View style={{ backgroundColor: theme.colors.border, width: rp(48), height: rp(4), borderRadius: rp(99) }} />
+              <View style={{ backgroundColor: theme.colors.surfaceAlt, borderTopLeftRadius: rp(36), borderTopRightRadius: rp(36), maxHeight: "92%", paddingBottom: rp(theme.spacing.lg) + (insets?.bottom || 0) + tabBarHeight }}>
+                <View
+                  style={{
+                    backgroundColor: theme.colors.primary,
+                    borderTopLeftRadius: rp(36),
+                    borderTopRightRadius: rp(36),
+                    paddingHorizontal: rp(theme.spacing.lg),
+                    paddingTop: rp(theme.spacing.md),
+                    paddingBottom: rp(theme.spacing.lg),
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowAddEventModal(false);
+                      setNewEventName("");
+                      setNewEventHostName("");
+                      setNewEventHostEmail("");
+                      setNewEventGates(["Main Gate"]);
+                      setNewEventZones([{ name: "Zone A", slots: "50" }]);
+                    }}
+                    style={{ padding: rp(8), marginLeft: -rp(8) }}
+                  >
+                    <Ionicons name="close" size={rs(24)} color={theme.colors.surface} />
+                  </TouchableOpacity>
+                  <Text style={{ fontFamily: theme.fontFamily.bold, color: theme.colors.surface, fontSize: rs(20), fontWeight: theme.fontWeight.bold, marginLeft: rp(12) }}>Add Special Event</Text>
                 </View>
-                <Text style={{ fontFamily: theme.fontFamily.bold, fontSize: rs(theme.fontSize.subtitle), fontWeight: theme.fontWeight.bold, color: theme.colors.primary, marginBottom: rp(theme.spacing.lg) }}>Add Special Event</Text>
 
-                <ScrollView showsVerticalScrollIndicator={false}>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ paddingHorizontal: rp(theme.spacing.lg) }} contentContainerStyle={{ paddingTop: rp(theme.spacing.lg) }}>
                   <Text style={modalLabel}>EVENT NAME</Text>
                   <TextInput value={newEventName} onChangeText={setNewEventName} placeholder="Wedding Reception" placeholderTextColor={theme.colors.textMuted} style={modalInput} />
 

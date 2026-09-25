@@ -395,7 +395,7 @@ const takeHandoverPhoto = async (car) => {
   let result;
   try {
     result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.5,
       allowsEditing: false
     });
